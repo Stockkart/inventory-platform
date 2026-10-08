@@ -40,6 +40,18 @@ export const barcodeLabelLayoutApi = {
     );
     return response.data;
   },
+  /**
+   * The effective layout an unsaved draft would print with (sticker size, sheet
+   * grid, roll page box), resolved by the server. Nothing is saved and the
+   * session cache is untouched.
+   */
+  preview: async (data: SaveLabelLayoutRequest): Promise<LabelLayoutResponse> => {
+    const response = await apiClient.post<ApiResponse<LabelLayoutResponse>>(
+      BARCODE_LABEL_LAYOUT_ENDPOINTS.PREVIEW,
+      data,
+    );
+    return response.data;
+  },
   fieldCatalog: async (): Promise<FieldCatalogResponse> => {
     const response = await apiClient.get<ApiResponse<FieldCatalogResponse>>(
       BARCODE_LABEL_LAYOUT_ENDPOINTS.FIELD_CATALOG,

@@ -74,7 +74,8 @@ export interface SheetPreset {
  * The resolved roll geometry carried on the effective layout when `printMedia` is
  * `ROLL` and the shop saved how its roll is cut (mirrors the backend `RollSpec`).
  * One roll row prints per page: `pageWidthMm` spans every label and gap across
- * the web, `pageHeightMm` is one label. Absent/`null` means the legacy
+ * the web, `pageHeightMm` is one label, `pitchMm` is the column pitch already
+ * snapped to printer dots by the API. Absent/`null` means the legacy
  * single-column roll output where the printer driver decides the page.
  */
 export interface RollSpec {
@@ -82,13 +83,15 @@ export interface RollSpec {
   columnGapMm: number;
   pageWidthMm: number;
   pageHeightMm: number;
+  pitchMm: number;
 }
 
-/** Fewest / most labels per roll row the backend accepts (`RollLayoutCalculator`). */
-export const ROLL_LABELS_ACROSS_MIN = 1;
-export const ROLL_LABELS_ACROSS_MAX = 4;
-/** Widest roll column gap the backend accepts, in millimetres. */
-export const ROLL_COLUMN_GAP_MAX_MM = 20;
+/** Roll-setup bounds published by the field catalog (mirrors the backend `RollLimitsDto`). */
+export interface RollLimits {
+  minLabelsAcross: number;
+  maxLabelsAcross: number;
+  maxColumnGapMm: number;
+}
 
 /** The resolved sheet geometry carried on the effective layout when `printMedia` is `SHEET`. */
 export interface SheetSpec {
@@ -144,6 +147,11 @@ export interface FieldCatalogResponse {
    * before Requirement 11 stay type-compatible; the backend always includes it.
    */
   templates?: TemplateInfo[];
+  /**
+   * Bounds for the roll setup controls. Optional so older servers stay
+   * type-compatible; the controls are hidden when it is absent.
+   */
+  rollLimits?: RollLimits;
 }
 
 export interface EnabledField {

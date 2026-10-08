@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { barcodeLabelLayoutApi } from '../api/barcodeLabelLayout.api';
 import type {
   FieldCatalogResponse,
@@ -33,6 +33,25 @@ export function useLabelFieldCatalogQuery(options?: LabelLayoutQueryOptions) {
     queryFn: barcodeLabelLayoutApi.fieldCatalog,
     enabled: options?.enabled ?? true,
     staleTime: 5 * 60_000,
+  });
+}
+
+/**
+ * Server-resolved effective layout for an unsaved draft, used by the live
+ * preview so the screen never computes sticker, sheet or roll geometry itself.
+ * Keyed by the request; the previous result stays on screen while a new one loads.
+ */
+export function useLabelLayoutPreviewQuery(
+  request: SaveLabelLayoutRequest,
+  options?: LabelLayoutQueryOptions,
+) {
+  return useQuery<LabelLayoutResponse>({
+    queryKey: productKeys.labelLayoutPreview(request),
+    queryFn: () => barcodeLabelLayoutApi.preview(request),
+    enabled: options?.enabled ?? true,
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+    retry: false,
   });
 }
 
