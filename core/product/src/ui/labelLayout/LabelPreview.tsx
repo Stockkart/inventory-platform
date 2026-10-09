@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef } from 'react';
 import JsBarcode from 'jsbarcode';
 import { Alert, Box, Stack, Text, surfaceChrome } from '@inventory-platform/ui-kit';
 import type { EffectiveLabelLayout, LabelData } from '../../model/labelLayout.types.js';
-import { renderBarcodeLabelsHtml } from '../../lib/renderBarcodeLabelsHtml.js';
+import { fitBarcodeSvgToDots, usableWidthMmOf } from '../../lib/barcodeDots.js';
+import { renderBarcodeLabelsHtml, usableRollSpec } from '../../lib/renderBarcodeLabelsHtml.js';
 
 export interface LabelPreviewProps {
   label: LabelData;
@@ -51,13 +52,19 @@ function drawBars(frame: HTMLIFrameElement | null): void {
     const code = svg.dataset.code;
     if (!code) return;
     try {
+      // Same sizing as the print window (`printBarcodeLabels.ts`): one px per
+      // module, then snap to whole printer dots so the preview shows the real
+      // bar width and height the printer will produce.
       JsBarcode(svg, code, {
         format: 'CODE128',
         displayValue: false,
         margin: 0,
-        height: 40,
-        width: 1.6,
+        height: 50,
+        width: 1,
       });
+      const view = frame.contentWindow;
+      const usable = view ? usableWidthMmOf(svg, view) : null;
+      if (usable !== null) fitBarcodeSvgToDots(svg, usable);
     } catch {
       // Invalid code for CODE128 — leave the bars area empty.
     }
@@ -73,27 +80,39 @@ function drawBars(frame: HTMLIFrameElement | null): void {
 export function LabelPreview({ label, layout, title = 'Live preview' }: LabelPreviewProps) {
   const frameRef = useRef<HTMLIFrameElement>(null);
 
-  // SHEET mode previews one full sheet (one sticker per cell); ROLL previews a
-  // single enlarged sticker as before.
+  // SHEET mode previews one full sheet (one sticker per cell); a ROLL with a
+  // saved roll setup previews one roll row (one sticker per column); a legacy
+  // ROLL previews a single enlarged sticker as before.
   const sheet =
     layout.printMedia === 'SHEET' && layout.sheetSpec && layout.sheetSpec.perSheet >= 1
       ? layout.sheetSpec
       : null;
+  const roll = sheet ? null : usableRollSpec(layout);
+  // The fixed-size page the preview scales to fit, when there is one.
+  const page = useMemo(
+    () =>
+      sheet
+        ? { copies: sheet.perSheet, widthMm: sheet.pageWidthMm, heightMm: sheet.pageHeightMm }
+        : roll
+        ? { copies: roll.labelsAcross, widthMm: roll.pageWidthMm, heightMm: roll.pageHeightMm }
+        : null,
+    [sheet, roll],
+  );
 
   const result = useMemo(() => {
-    const labels = sheet ? Array.from({ length: sheet.perSheet }, () => label) : [label];
+    const labels = page ? Array.from({ length: page.copies }, () => label) : [label];
     return renderBarcodeLabelsHtml(labels, layout);
-  }, [label, layout, sheet]);
+  }, [label, layout, page]);
 
-  const sheetFrameHeightPx = sheet
-    ? Math.round(SHEET_PREVIEW_WIDTH_PX * (sheet.pageHeightMm / sheet.pageWidthMm))
+  const pageFrameHeightPx = page
+    ? Math.round(SHEET_PREVIEW_WIDTH_PX * (page.heightMm / page.widthMm))
     : PREVIEW_FRAME_HEIGHT_PX;
 
   const html = result.ok
-    ? sheet
+    ? page
       ? injectBeforeHead(
           result.html,
-          sheetPreviewStyle(SHEET_PREVIEW_WIDTH_PX / (sheet.pageWidthMm * PX_PER_MM)),
+          sheetPreviewStyle(SHEET_PREVIEW_WIDTH_PX / (page.widthMm * PX_PER_MM)),
         )
       : injectBeforeHead(result.html, PREVIEW_STYLE)
     : null;
@@ -116,6 +135,8 @@ export function LabelPreview({ label, layout, title = 'Live preview' }: LabelPre
           <Text variant="caption" color="secondary">
             {sheet
               ? `${layout.stickerSize} mm · ${sheet.perSheet} per sheet (${sheet.columns} × ${sheet.rows}) · updates as you change the layout`
+              : roll
+              ? `${layout.stickerSize} mm · ${roll.labelsAcross} across, one roll row of ${roll.pageWidthMm} mm · updates as you change the layout`
               : `${layout.stickerSize} mm sticker · updates as you change the layout`}
           </Text>
         </Stack>
@@ -133,8 +154,8 @@ export function LabelPreview({ label, layout, title = 'Live preview' }: LabelPre
               sandbox="allow-same-origin"
               className={surfaceChrome.invoicePreviewFrame}
               style={
-                sheet
-                  ? { width: SHEET_PREVIEW_WIDTH_PX, maxWidth: '100%', height: sheetFrameHeightPx }
+                page
+                  ? { width: SHEET_PREVIEW_WIDTH_PX, maxWidth: '100%', height: pageFrameHeightPx }
                   : { width: '100%', height: PREVIEW_FRAME_HEIGHT_PX }
               }
               onLoad={(e) => drawBars(e.currentTarget)}

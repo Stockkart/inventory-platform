@@ -59,7 +59,7 @@ const SHEET_SPEC: SheetSpec = {
 };
 
 describe('computeCompactZones zone assignment and default showLabel', () => {
-  it('places fields in their explicit zone and applies the per-zone default showLabel', () => {
+  it('places fields in their explicit zone and prints values only by default', () => {
     const layout = compactLayout({
       enabledFields: [
         field('productName', 'Product', 'text', { zone: 'HEADER' }),
@@ -76,17 +76,15 @@ describe('computeCompactZones zone assignment and default showLabel', () => {
 
     const zones = computeCompactZones(label, layout);
 
-    // HEADER never shows the label.
+    // No field name in any zone unless asked for; the un-zoned field defaults to LEFT.
     expect(zones.header).toEqual([{ kind: 'field', fieldKey: 'productName', text: 'Paracetamol' }]);
-    // RIGHT: currency hides the label, non-currency shows an uppercased label.
     expect(zones.right).toEqual([
       { kind: 'field', fieldKey: 'mrp', text: '₹12.00' },
-      { kind: 'field', fieldKey: 'gst', text: 'GST: 12%' },
+      { kind: 'field', fieldKey: 'gst', text: '12%' },
     ]);
-    // LEFT always shows an uppercased label; the un-zoned field defaults to LEFT.
     expect(zones.left).toEqual([
-      { kind: 'field', fieldKey: 'batchNo', text: 'BATCH: B1' },
-      { kind: 'field', fieldKey: 'hsn', text: 'HSN: 3004' },
+      { kind: 'field', fieldKey: 'batchNo', text: 'B1' },
+      { kind: 'field', fieldKey: 'hsn', text: '3004' },
     ]);
   });
 
@@ -115,7 +113,7 @@ describe('computeCompactZones zone assignment and default showLabel', () => {
       enabledFields: [
         // HEADER default is false; explicit true forces the label on.
         field('productName', 'Product', 'text', { zone: 'HEADER', showLabel: true }),
-        // LEFT default is true; the override map turns it off.
+        // The override map also wins (here it keeps the LEFT default of off).
         field('batchNo', 'Batch', 'text', { zone: 'LEFT' }),
         // RIGHT currency default is false; explicit true forces the label on.
         field('mrp', 'MRP', 'currency', { zone: 'RIGHT', showLabel: true }),
@@ -148,8 +146,8 @@ describe('computeCompactZones zone assignment and default showLabel', () => {
       ],
     });
     const zones = computeCompactZones({ code: 'C', values: { batchNo: '', mrp: '' } }, printBlank);
-    // LEFT default shows the label; RIGHT currency default hides it.
-    expect(zones.left).toEqual([{ kind: 'field', fieldKey: 'batchNo', text: 'BATCH:' }]);
+    // Values only by default, so a blank value prints an empty line in every zone.
+    expect(zones.left).toEqual([{ kind: 'field', fieldKey: 'batchNo', text: '' }]);
     expect(zones.right).toEqual([{ kind: 'field', fieldKey: 'mrp', text: '' }]);
   });
 });

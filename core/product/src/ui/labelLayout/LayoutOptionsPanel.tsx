@@ -1,9 +1,18 @@
-import { Box, FormField, Select, Switch, Text, surfaceChrome } from '@inventory-platform/ui-kit';
+import {
+  Box,
+  FormField,
+  Input,
+  Select,
+  Switch,
+  Text,
+  surfaceChrome,
+} from '@inventory-platform/ui-kit';
 import type {
   BarcodePosition,
   BlankValueBehavior,
   CurrencyStyle,
   PrintMedia,
+  RollLimits,
   SheetPreset,
   StickerSize,
   StickerSizeSpec,
@@ -24,6 +33,14 @@ export interface LayoutOptionsPanelProps {
   sheetPreset: string | null;
   /** Sheet presets compatible with `stickerSize`, already filtered by the caller. */
   sheetPresets: SheetPreset[];
+  /** Labels side by side on the roll; shown only while `printMedia` is `ROLL`. */
+  rollLabelsAcross: number;
+  /** Gap between neighbouring roll labels in millimetres; shown only for `ROLL`. */
+  rollColumnGapMm: number;
+  /** Resolved web width for the current roll setup (from the API preview), for the hint line. */
+  rollPageWidthMm?: number;
+  /** Roll-setup bounds from the field catalog; the roll controls are hidden without them. */
+  rollLimits?: RollLimits;
   /** Current sticker template (Req 11). */
   template: StickerTemplate;
   /** Barcode band position for `COMPACT` (Req 11). */
@@ -58,6 +75,15 @@ const CURRENCY_STYLE_OPTIONS: ReadonlyArray<{ value: CurrencyStyle; label: strin
 
 const PRINT_ON_ROLL = 'ROLL';
 
+/** Labels-across choices for the bounds the API publishes. */
+function labelsAcrossOptions(limits: RollLimits): Array<{ value: string; label: string }> {
+  const options: Array<{ value: string; label: string }> = [];
+  for (let n = limits.minLabelsAcross; n <= limits.maxLabelsAcross; n += 1) {
+    options.push({ value: String(n), label: n === 1 ? '1 (single column)' : `${n} side by side` });
+  }
+  return options;
+}
+
 export function stickerSizeOptionLabel(spec: StickerSizeSpec): string {
   return `${spec.widthMm}x${spec.heightMm} mm · up to ${spec.maxLines} lines`;
 }
@@ -82,6 +108,10 @@ export function LayoutOptionsPanel({
   printMedia,
   sheetPreset,
   sheetPresets,
+  rollLabelsAcross,
+  rollColumnGapMm,
+  rollPageWidthMm,
+  rollLimits,
   template,
   barcodePosition,
   currencyStyle,
@@ -166,6 +196,57 @@ export function LayoutOptionsPanel({
           {selectedGrid.perSheet} per sheet ({selectedGrid.columns} × {selectedGrid.rows}) ·{' '}
           {selectedPreset.pageWidthMm}×{selectedPreset.pageHeightMm} mm page
         </Text>
+      ) : null}
+
+      {printMedia === 'ROLL' && rollLimits ? (
+        <>
+          <FormField
+            label="Labels across the roll"
+            htmlFor="label-layout-roll-across"
+            hint="How many stickers sit side by side on one row of the roll"
+          >
+            <Select
+              id="label-layout-roll-across"
+              value={String(rollLabelsAcross)}
+              options={labelsAcrossOptions(rollLimits)}
+              onChange={(e) => onChange({ rollLabelsAcross: Number(e.target.value) })}
+            />
+          </FormField>
+
+          {rollLabelsAcross > 1 ? (
+            <FormField
+              label="Gap between columns (mm)"
+              htmlFor="label-layout-roll-gap"
+              hint="Measure the liner between two neighbouring stickers"
+            >
+              <Input
+                id="label-layout-roll-gap"
+                type="number"
+                min={0}
+                max={rollLimits.maxColumnGapMm}
+                step={0.5}
+                value={rollColumnGapMm}
+                onChange={(e) => {
+                  // Parse only; the API validates the range and the preview shows its message.
+                  const next = Number(e.target.value);
+                  if (Number.isFinite(next)) onChange({ rollColumnGapMm: next });
+                }}
+              />
+            </FormField>
+          ) : null}
+
+          {rollPageWidthMm !== undefined ? (
+            <Text
+              as="p"
+              variant="caption"
+              color="secondary"
+              className={surfaceChrome.invoiceToggleHint}
+            >
+              Each print row is {rollPageWidthMm} mm wide. Set the printer driver's label width to
+              the same value.
+            </Text>
+          ) : null}
+        </>
       ) : null}
 
       <FormField label="Barcode position" htmlFor="label-layout-barcode-position">

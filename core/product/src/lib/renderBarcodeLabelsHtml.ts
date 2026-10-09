@@ -4,6 +4,7 @@ import {
   type EffectiveLabelLayout,
   type LabelData,
   type LabelZone,
+  type RollSpec,
   type SheetSpec,
   type StickerSizeSpec,
 } from '../model/labelLayout.types';
@@ -31,19 +32,37 @@ export type RenderOptions = { startPosition?: number };
  * Sticker-level CSS for the `COMPACT` template (Req 11). Shared verbatim between the
  * `ROLL` and `SHEET` style blocks so a compact sticker renders identically in both.
  * The base `.sticker`, `.bars`, `.code` and `.line` rules still apply; these add the
- * header band, the two-column body and the condensed type scale.
+ * header band, the two-column body and the condensed type scale. Left-column lines
+ * wrap at word breaks to at most two lines instead of being cut with "…"; the header
+ * and the right column (prices) stay on one line. The sticker never grows past its size.
  */
 const COMPACT_CSS = `.compact{align-items:stretch;padding:1.5mm;font-family:"Arial Narrow","Roboto Condensed","Liberation Sans Narrow",system-ui,sans-serif}
-    .compact .hdr{width:100%;font-size:11pt;font-weight:700;text-transform:uppercase}
+    .compact .hdr{width:100%;font-size:9pt;font-weight:700;text-transform:uppercase}
     .compact .hdr .line{text-align:left}
     .compact .body{display:flex;gap:1.5mm;flex:1;min-height:0}
     .compact .col{display:flex;flex-direction:column;min-width:0}
     .compact .left{flex:3}
     .compact .right{flex:2;text-align:right}
-    .compact .left .line{font-size:7.5pt;text-align:left}
-    .compact .right .line{font-size:10pt;font-weight:700;text-align:right}
+    .compact .left .line{font-size:8pt;text-align:left;white-space:normal;overflow-wrap:break-word;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-height:1.15}
+    .compact .right .line{font-size:9pt;font-weight:700;text-align:right}
     .compact .bars{height:30%;width:100%}
     .compact .code{font-size:9pt;letter-spacing:1px;text-align:center}`;
+
+/**
+ * Sticker-level CSS shared by every page-based layout (`SHEET` and a `ROLL` with a
+ * `rollSpec`): the sticker is sized by its inline style, has no dashed border and
+ * no margin because the grid cell places it exactly on the label. Every text line
+ * is at least semibold: thermal printers threshold anti-aliased glyphs onto a
+ * 0.125 mm dot grid, and a regular-weight 9 pt stroke is ~1 dot wide, so its
+ * thin horizontals drop out at random; semibold keeps every stroke ≥ 2 dots.
+ */
+const PAGE_STICKER_CSS = `.sticker{box-sizing:border-box;display:inline-flex;flex-direction:column;align-items:center;justify-content:flex-start;border:none;padding:2mm;overflow:hidden;page-break-inside:avoid}
+    .bars{height:38%;width:90%}
+    .code,.line{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:system-ui,sans-serif;text-align:center;font-weight:600}
+    .code{font-size:9pt;letter-spacing:.5px}
+    .line{font-size:9pt}
+    .code+.line,.bars+.line{font-weight:700}
+    ${COMPACT_CSS}`;
 
 export function escapeHtml(value: string): string {
   return value
@@ -166,10 +185,8 @@ export function computeCompactZones(label: LabelData, layout: EffectiveLabelLayo
 
     const key = field.fieldKey;
     const zone: LabelZone = field.zone ?? layout.fieldZones?.[key] ?? 'LEFT';
-    const showLabel =
-      field.showLabel ??
-      layout.fieldLabelOverrides?.[key] ??
-      (zone === 'HEADER' ? false : zone === 'RIGHT' ? field.valueType !== 'currency' : true);
+    // The server resolves `showLabel` (COMPACT: values only unless overridden).
+    const showLabel = field.showLabel ?? layout.fieldLabelOverrides?.[key] ?? false;
 
     const value = resolveFieldValue(label, key);
     let text: string;
@@ -301,13 +318,7 @@ function renderSheetHtml(
     @page { size: ${sheet.pageWidthMm}mm ${sheet.pageHeightMm}mm; margin: 0 }
     body { font-family: system-ui, sans-serif; margin: 0; color: #111; }
     .page { display: grid; grid-template-columns: repeat(${sheet.columns}, ${sheet.pitchXMm}mm); grid-auto-rows: ${sheet.pitchYMm}mm; padding: ${sheet.marginTopMm}mm 0 0 ${sheet.marginLeftMm}mm; width: ${sheet.pageWidthMm}mm; height: ${sheet.pageHeightMm}mm; box-sizing: border-box }
-    .sticker{box-sizing:border-box;display:inline-flex;flex-direction:column;align-items:center;justify-content:flex-start;border:none;padding:2mm;overflow:hidden;page-break-inside:avoid}
-    .bars{height:38%;width:90%}
-    .code,.line{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:system-ui,sans-serif;text-align:center}
-    .code{font-size:10pt;letter-spacing:.5px}
-    .line{font-size:9pt}
-    .code+.line,.bars+.line{font-weight:600}
-    ${COMPACT_CSS}
+    ${PAGE_STICKER_CSS}
   </style>
 </head>
 <body>
@@ -316,6 +327,69 @@ function renderSheetHtml(
 </html>`;
 
   return { ok: true, html };
+}
+
+/**
+ * `ROLL` with a saved roll setup: one roll row per page. The `@page` box is the
+ * full web width (every label plus the gaps between them) by one label height,
+ * with no margin, so the printer lays each row down in a single feed and its gap
+ * sensor advances to the next row. Stickers fill the row left to right in label
+ * order; every page except the last carries `break-after: page`. There is no
+ * start position: a roll has no fixed first cell.
+ */
+function renderRollHtml(
+  labels: readonly LabelData[],
+  layout: EffectiveLabelLayout,
+  roll: RollSpec,
+): RenderResult {
+  const across = Math.max(1, Math.trunc(roll.labelsAcross));
+  // Column pitch from the API (label + gap, snapped to whole printer dots there)
+  // so every column starts on the same dot phase.
+  const { pitchMm } = roll;
+
+  const pages: string[] = [];
+  for (let i = 0; i < labels.length; i += across) {
+    pages.push(
+      labels
+        .slice(i, i + across)
+        .map((label, offset) => renderStickerForTemplate(label, layout, i + offset))
+        .join(''),
+    );
+  }
+  const pagesHtml = pages
+    .map((inner, pageIndex) => {
+      const isLast = pageIndex === pages.length - 1;
+      const style = isLast ? '' : ' style="break-after:page"';
+      return `<div class="page"${style}>${inner}</div>`;
+    })
+    .join('');
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Barcode labels</title>
+  <style>
+    @page { size: ${roll.pageWidthMm}mm ${roll.pageHeightMm}mm; margin: 0 }
+    body { font-family: system-ui, sans-serif; margin: 0; color: #111; }
+    .page { display: grid; grid-template-columns: repeat(${across}, ${pitchMm}mm); grid-auto-rows: ${roll.pageHeightMm}mm; width: ${roll.pageWidthMm}mm; height: ${roll.pageHeightMm}mm; box-sizing: border-box }
+    ${PAGE_STICKER_CSS}
+  </style>
+</head>
+<body>
+  ${pagesHtml}
+</body>
+</html>`;
+
+  return { ok: true, html };
+}
+
+/** The usable roll spec of a layout, or `null` when it should print the legacy roll output. */
+export function usableRollSpec(layout: EffectiveLabelLayout): RollSpec | null {
+  const roll = layout.rollSpec;
+  if (!roll || !(roll.labelsAcross >= 1)) return null;
+  if (!(roll.pageWidthMm > 0) || !(roll.pageHeightMm > 0) || !(roll.pitchMm > 0)) return null;
+  return roll;
 }
 
 export function renderBarcodeLabelsHtml(
@@ -337,6 +411,13 @@ export function renderBarcodeLabelsHtml(
     sheetSpec.perSheet >= 1
   ) {
     return renderSheetHtml(labels, layout, sheetSpec, opts?.startPosition);
+  }
+
+  // ROLL with a saved roll setup prints one row per page; without one the
+  // legacy roll output below is kept byte-identical.
+  const roll = usableRollSpec(layout);
+  if (roll) {
+    return renderRollHtml(labels, layout, roll);
   }
 
   const stickerHtml = labels

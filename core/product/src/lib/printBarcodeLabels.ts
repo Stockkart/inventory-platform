@@ -1,4 +1,5 @@
 import JsBarcode from 'jsbarcode';
+import { fitBarcodeSvgToDots, usableWidthMmOf } from './barcodeDots';
 import { labelLayoutSession } from './labelLayoutSession';
 import { renderBarcodeLabelsHtml, type RenderOptions } from './renderBarcodeLabelsHtml';
 import {
@@ -44,13 +45,19 @@ export function openBarcodeLabelPrintWindow(
         const idx = Number(node.getAttribute('data-idx'));
         const code = node.dataset.code || labels[idx]?.code;
         if (!code) return;
+        // One CSS px per module so the svg's width attribute is the module count;
+        // the height is a placeholder because the sticker CSS stretches the bars.
         JsBarcode(node, code, {
           format: 'CODE128',
           displayValue: false,
           margin: 0,
-          height: 48,
-          width: 1.4,
+          height: 50,
+          width: 1,
         });
+        // Thermal printers rasterise on a fixed dot grid: pin every module to a
+        // whole number of dots or the bars print 1-or-2 dots wide and never scan.
+        const usable = usableWidthMmOf(node, win);
+        if (usable !== null) fitBarcodeSvgToDots(node, usable);
       });
       win.focus();
       win.print();

@@ -40,6 +40,14 @@ export interface LabelLayoutDraft {
   printMedia: PrintMedia;
   /** Chosen Sheet_Preset id when `printMedia` is `SHEET`; `null` for `ROLL`. */
   sheetPreset: string | null;
+  /**
+   * Labels side by side on the roll when `printMedia` is `ROLL`, as entered.
+   * The API validates it (bounds come from `catalog.rollLimits`); saving always
+   * sends the roll fields, so a saved `ROLL` layout prints one roll row per page.
+   */
+  rollLabelsAcross: number;
+  /** Gap between neighbouring roll labels in millimetres, as entered. */
+  rollColumnGapMm: number;
   /** Sticker template (Req 11). `STACKED` is today's single-column layout. */
   template: StickerTemplate;
   /** Barcode band position for `COMPACT` (Req 11). */
@@ -107,6 +115,7 @@ export function draftFromLayout(
   layout: EffectiveLabelLayout | LabelLayoutResponse,
 ): LabelLayoutDraft {
   const printMedia: PrintMedia = layout.printMedia ?? 'ROLL';
+  const roll = printMedia === 'ROLL' ? layout.rollSpec : null;
   return {
     enabledFieldKeys: layout.enabledFields.map((f) => f.fieldKey),
     stickerSize: layout.stickerSize,
@@ -115,6 +124,9 @@ export function draftFromLayout(
     blankValueBehavior: layout.blankValueBehavior,
     printMedia,
     sheetPreset: printMedia === 'SHEET' ? layout.sheetPreset ?? null : null,
+    // Initial form values only; a layout saved without a roll setup starts at 1 across, no gap.
+    rollLabelsAcross: roll?.labelsAcross ?? 1,
+    rollColumnGapMm: roll?.columnGapMm ?? 0,
     template: layout.template ?? 'STACKED',
     barcodePosition: layout.barcodePosition ?? 'TOP',
     currencyStyle: layout.currencyStyle ?? 'RUPEE_SYMBOL',
@@ -141,6 +153,8 @@ export function draftsEqual(a: LabelLayoutDraft, b: LabelLayoutDraft): boolean {
     a.blankValueBehavior !== b.blankValueBehavior ||
     a.printMedia !== b.printMedia ||
     a.sheetPreset !== b.sheetPreset ||
+    a.rollLabelsAcross !== b.rollLabelsAcross ||
+    a.rollColumnGapMm !== b.rollColumnGapMm ||
     a.template !== b.template ||
     a.barcodePosition !== b.barcodePosition ||
     a.currencyStyle !== b.currencyStyle ||
@@ -287,7 +301,7 @@ export function toEffectiveLayout(
     const field = index.get(key);
     if (!field) continue;
     const zone = resolveFieldZone(draft, key);
-    const showLabel = resolveFieldShowLabel(draft, field, zone, compact);
+    const showLabel = resolveFieldShowLabel(draft, field, compact);
     enabledFields.push({
       fieldKey: field.fieldKey,
       label: field.label,
@@ -300,16 +314,19 @@ export function toEffectiveLayout(
   const sheetSpec = isSheet
     ? resolveSheetSpec(catalog, draft.sheetPreset, draft.stickerSize)
     : undefined;
+  const stickerSizeSpec = stickerSizeSpecFor(draft.stickerSize, catalog);
   return {
     enabledFields,
     stickerSize: draft.stickerSize,
-    stickerSizeSpec: stickerSizeSpecFor(draft.stickerSize, catalog),
+    stickerSizeSpec,
     showBarcodeText: draft.showBarcodeText,
     showFieldLabels: draft.showFieldLabels,
     blankValueBehavior: draft.blankValueBehavior,
     printMedia: draft.printMedia,
     sheetPreset: isSheet ? draft.sheetPreset : null,
     sheetSpec: sheetSpec ?? null,
+    // Roll geometry is resolved by the API (`useLabelLayoutPreviewQuery`), never here.
+    rollSpec: null,
     template: draft.template,
     barcodePosition: draft.barcodePosition,
     currencyStyle: draft.currencyStyle,
@@ -326,21 +343,17 @@ function resolveFieldZone(draft: LabelLayoutDraft, key: string): LabelZone {
 /**
  * Resolved `showLabel` for a field, matching the renderer and the backend
  * `ZoneResolver` (Req 11.2): a per-field override wins; otherwise `STACKED` uses
- * `showFieldLabels` and `COMPACT` uses the per-zone default (HEADER off, LEFT on,
- * RIGHT on unless the value is a currency).
+ * `showFieldLabels` and `COMPACT` prints values only (no field name) in every zone.
  */
 function resolveFieldShowLabel(
   draft: LabelLayoutDraft,
   field: PrintableField,
-  zone: LabelZone,
   compact: boolean,
 ): boolean {
   const override = draft.fieldLabelOverrides[field.fieldKey];
   if (override !== undefined) return override;
   if (!compact) return draft.showFieldLabels;
-  if (zone === 'HEADER') return false;
-  if (zone === 'RIGHT') return field.valueType !== 'currency';
-  return true;
+  return false;
 }
 
 /**
@@ -400,6 +413,9 @@ export function prepareSaveRequest(
     blankValueBehavior: draft.blankValueBehavior,
     printMedia: draft.printMedia,
     sheetPreset: draft.printMedia === 'SHEET' ? draft.sheetPreset : null,
+    // Roll fields ride along only for ROLL; the backend ignores them for SHEET anyway.
+    rollLabelsAcross: draft.printMedia === 'ROLL' ? draft.rollLabelsAcross : null,
+    rollColumnGapMm: draft.printMedia === 'ROLL' ? draft.rollColumnGapMm : null,
     template: draft.template,
     barcodePosition: draft.barcodePosition,
     currencyStyle: draft.currencyStyle,

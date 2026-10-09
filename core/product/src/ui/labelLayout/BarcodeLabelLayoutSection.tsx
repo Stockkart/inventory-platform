@@ -17,6 +17,7 @@ import {
 import {
   useLabelFieldCatalogQuery,
   useLabelLayoutDefaultsMutation,
+  useLabelLayoutPreviewQuery,
   useLabelLayoutQuery,
   useSaveLabelLayoutMutation,
 } from '../../queries/labelLayout.queries.js';
@@ -135,7 +136,25 @@ function LabelLayoutEditor({
   );
   const saveBlocked = overLimit || hasZoneOverflow;
   const unavailable = useMemo(() => unavailableKeys(draft, catalog), [draft, catalog]);
-  const effective = useMemo(() => toEffectiveLayout(draft, catalog), [draft, catalog]);
+  // Roll geometry (page box, dot-snapped pitch) comes from the API preview of the
+  // draft; the screen never computes it. Valid drafts only: an over-limit draft is
+  // already flagged above and cannot be saved anyway.
+  const previewRequest = useMemo(() => prepareSaveRequest(draft, catalog), [draft, catalog]);
+  const previewQuery = useLabelLayoutPreviewQuery(previewRequest, {
+    enabled: draft.printMedia === 'ROLL' && !saveBlocked,
+  });
+  const previewError =
+    previewQuery.isError && draft.printMedia === 'ROLL'
+      ? saveErrorMessage(previewQuery.error)
+      : null;
+  const baseEffective = useMemo(() => toEffectiveLayout(draft, catalog), [draft, catalog]);
+  const effective = useMemo(
+    () =>
+      draft.printMedia === 'ROLL' && !previewError
+        ? { ...baseEffective, rollSpec: previewQuery.data?.rollSpec ?? null }
+        : baseEffective,
+    [baseEffective, draft.printMedia, previewError, previewQuery.data],
+  );
   const sample = useMemo(() => buildSampleLabelData(catalog), [catalog]);
   const groups = useMemo(() => groupCatalogFields(catalog), [catalog]);
   const sizeSpec = stickerSizeSpecFor(draft.stickerSize, catalog);
@@ -338,6 +357,12 @@ function LabelLayoutEditor({
         </Alert>
       ) : null}
 
+      {previewError ? (
+        <Alert variant="warning" className={surfaceChrome.invoiceSettingsAlert}>
+          {previewError}
+        </Alert>
+      ) : null}
+
       {overLimit ? (
         <Alert variant="warning" className={surfaceChrome.invoiceSettingsAlert}>
           Sticker {sizeLabel} allows at most {maxLines} lines; {enabledCount} enabled. Remove fields
@@ -378,6 +403,10 @@ function LabelLayoutEditor({
             printMedia={draft.printMedia}
             sheetPreset={draft.sheetPreset}
             sheetPresets={sheetPresets}
+            rollLabelsAcross={draft.rollLabelsAcross}
+            rollColumnGapMm={draft.rollColumnGapMm}
+            rollPageWidthMm={effective.rollSpec?.pageWidthMm}
+            rollLimits={catalog.rollLimits}
             template={draft.template}
             barcodePosition={draft.barcodePosition}
             currencyStyle={draft.currencyStyle}

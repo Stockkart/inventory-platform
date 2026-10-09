@@ -103,6 +103,8 @@ function arbDraft(catalog: FieldCatalogResponse): fc.Arbitrary<LabelLayoutDraft>
     blankValueBehavior: fc.constantFrom(...BLANK_BEHAVIORS),
     printMedia: fc.constantFrom(...PRINT_MEDIA),
     sheetPreset: fc.option(fc.stringMatching(/^[A-Z0-9_]{1,10}$/), { nil: null }),
+    rollLabelsAcross: fc.integer({ min: 1, max: 4 }),
+    rollColumnGapMm: fc.integer({ min: 0, max: 20 }),
     template: fc.constantFrom(...TEMPLATES),
     barcodePosition: fc.constantFrom(...BARCODE_POSITIONS),
     currencyStyle: fc.constantFrom(...CURRENCY_STYLES),
@@ -260,9 +262,7 @@ describe('labelLayoutDraft property tests', () => {
           let expectedShowLabel: boolean;
           if (override !== undefined) expectedShowLabel = override;
           else if (!compact) expectedShowLabel = draft.showFieldLabels;
-          else if (zone === 'HEADER') expectedShowLabel = false;
-          else if (zone === 'RIGHT') expectedShowLabel = source!.valueType !== 'currency';
-          else expectedShowLabel = true;
+          else expectedShowLabel = false;
           expect(field.showLabel).toBe(expectedShowLabel);
         }
 
@@ -348,6 +348,7 @@ const A4_PLAIN: SheetPreset = {
   perStickerSize: {
     '50x25': { columns: 3, rows: 10, perSheet: 30, pitchXMm: 52, pitchYMm: 27 },
     '38x25': { columns: 5, rows: 10, perSheet: 50, pitchXMm: 40, pitchYMm: 27 },
+    '38x38': { columns: 5, rows: 7, perSheet: 35, pitchXMm: 40, pitchYMm: 40 },
     '100x50': { columns: 1, rows: 5, perSheet: 5, pitchXMm: 102, pitchYMm: 52 },
   },
 };
@@ -456,6 +457,8 @@ function compactDraft(overrides: Partial<LabelLayoutDraft> = {}): LabelLayoutDra
     blankValueBehavior: 'HIDE_LINE',
     printMedia: 'ROLL',
     sheetPreset: null,
+    rollLabelsAcross: 1,
+    rollColumnGapMm: 0,
     template: 'COMPACT',
     barcodePosition: 'TOP',
     currencyStyle: 'RUPEE_SYMBOL',
@@ -522,12 +525,11 @@ describe('dropFieldMaps', () => {
 });
 
 describe('toEffectiveLayout (compact resolution)', () => {
-  it('resolves per-zone showLabel defaults and currency RIGHT label-off', () => {
+  it('resolves zones and prints values only by default', () => {
     const effective = toEffectiveLayout(compactDraft(), COMPACT_CATALOG);
     const byKey = new Map(effective.enabledFields.map((f) => [f.fieldKey, f] as const));
     expect(byKey.get('shopName')).toMatchObject({ zone: 'HEADER', showLabel: false });
-    expect(byKey.get('productName')).toMatchObject({ zone: 'LEFT', showLabel: true });
-    // mrp is RIGHT + currency → label off by default.
+    expect(byKey.get('productName')).toMatchObject({ zone: 'LEFT', showLabel: false });
     expect(byKey.get('mrp')).toMatchObject({ zone: 'RIGHT', showLabel: false });
     expect(effective.template).toBe('COMPACT');
     expect(effective.currencyStyle).toBe('RUPEE_SYMBOL');
