@@ -39,3 +39,7 @@ Auth / onboarding: `journeyChrome` from ui-kit. Profile and lists: `surfaceChrom
 - `@inventory-platform/session` — auth + shop
 - `@inventory-platform/shell` — dashboard chrome after login
 - `@inventory-platform/schema` — onboarding vertical fields
+
+### Vendor form: GSTIN first
+
+`VendorEditForm` starts with the GSTIN. As soon as 15 valid characters are typed (offline check in `model/gstin.ts`, same algorithm as the backend) it calls `GET /taxation/gstin/{gstin}` through `useGstinLookupQuery`, shows the registration status, and fills the empty fields (company name, address, city, state, pincode) from the record — never overwriting what was typed; "Use these details" does. The State dropdown (`model/gst-states.ts`) is locked to the GSTIN's state; without a GSTIN it is required, because the backend needs a valid GSTIN or `postalAddress.stateCode` to decide IGST vs CGST/SGST (`vendorIsPlaceable`).

@@ -12,6 +12,12 @@ export const VENDOR_ENDPOINTS = {
   BY_ID: (id: string) => `/vendors/${id}`,
 } as const;
 
+/** Served by the taxation module (same precedent as product's HSN rate lookup). */
+export const GSTIN_ENDPOINTS = {
+  LOOKUP: (gstin: string) => `/taxation/gstin/${encodeURIComponent(gstin)}`,
+  REVERIFY: (gstin: string) => `/taxation/gstin/${encodeURIComponent(gstin)}/reverify`,
+} as const;
+
 /** Shop RBAC / access paths. */
 export const SHOP_ACCESS_ENDPOINTS = {
   ME_ACCESS: '/shops/me/access',

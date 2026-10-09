@@ -81,15 +81,30 @@ export type VendorBusinessType = 'WHOLESALE' | 'RETAIL' | 'MANUFACTURER' | 'DIST
 /** Whether a supplier's line amounts already contain GST. */
 export type PurchaseTaxTreatment = 'INCLUSIVE' | 'EXCLUSIVE';
 
+/** A party's address as fields. `stateCode` is the two-digit GST state code the tax code reads. */
+export interface PostalAddress {
+  line1?: string | null;
+  line2?: string | null;
+  city?: string | null;
+  district?: string | null;
+  stateCode?: string | null;
+  pincode?: string | null;
+}
+
 export interface Vendor {
   vendorId: string;
   name: string;
   contactEmail: string;
   contactPhone: string;
   address: string;
+  postalAddress?: PostalAddress | null;
   companyName: string;
   businessType: VendorBusinessType;
   gstinUin?: string | null;
+  /** When the GST network last confirmed the GSTIN; null when it has not been verified. */
+  gstinVerifiedAt?: string | null;
+  /** The network's status at that time: Active, Cancelled, Suspended, … */
+  gstinStatus?: string | null;
   /** Drug licence number, as printed on a pharmacy bill. */
   dlNo?: string | null;
   /**
@@ -113,6 +128,8 @@ export interface CreateVendorDto {
   contactEmail?: string;
   contactPhone: string;
   address?: string;
+  postalAddress?: PostalAddress;
+  companyName?: string;
   businessType: VendorBusinessType;
   gstinUin?: string;
   dlNo?: string;
@@ -136,9 +153,12 @@ export interface VendorResponse {
   contactEmail: string;
   contactPhone: string;
   address: string;
+  postalAddress?: PostalAddress | null;
   companyName: string;
   businessType: VendorBusinessType;
   gstinUin?: string | null;
+  gstinVerifiedAt?: string | null;
+  gstinStatus?: string | null;
   /** Drug licence number, as printed on a pharmacy bill. */
   dlNo?: string | null;
   /** Optional. Set when vendor is linked to a registered user. */
@@ -229,6 +249,7 @@ export interface UpdateVendorDto {
   contactEmail?: string;
   contactPhone?: string;
   address?: string;
+  postalAddress?: PostalAddress;
   companyName?: string;
   businessType?: string;
   gstinUin?: string;

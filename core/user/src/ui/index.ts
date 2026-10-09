@@ -1,5 +1,10 @@
 export { CustomerEditForm } from './CustomerEditForm';
-export { VendorEditForm } from './VendorEditForm';
+export {
+  VENDOR_PLACE_REQUIRED_MESSAGE,
+  VendorEditForm,
+  prefillFromGstin,
+  vendorIsPlaceable,
+} from './VendorEditForm';
 export { ShopProfileForm } from './ShopProfileForm';
 export { InvoiceSettingsSection } from './InvoiceSettingsSection';
 export { InvoiceSeriesSection } from './InvoiceSeriesSection';
