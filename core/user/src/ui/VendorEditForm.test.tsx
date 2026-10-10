@@ -6,7 +6,7 @@ import type { UpdateVendorDto } from '@inventory-platform/user/types';
 import type { GstinLookupResult } from '../model/gstin-lookup.types';
 import { VendorEditForm, prefillFromGstin, vendorIsPlaceable } from './VendorEditForm';
 
-const api = vi.hoisted(() => ({ lookup: vi.fn(), reverify: vi.fn() }));
+const api = vi.hoisted(() => ({ lookup: vi.fn(), reverify: vi.fn(), settings: vi.fn() }));
 vi.mock('../api/gstin.api', () => ({ gstinApi: api }));
 
 const RECORD: GstinLookupResult = {
@@ -55,12 +55,33 @@ const current = () =>
 beforeEach(() => {
   api.lookup.mockReset();
   api.lookup.mockResolvedValue(RECORD);
+  api.settings.mockReset();
+  api.settings.mockResolvedValue({ verificationEnabled: true, provider: 'gstinapi.in' });
+});
+
+describe('<VendorEditForm> with verification switched off', () => {
+  it('keeps the GSTIN as plain text, never looks it up, and needs no state', async () => {
+    api.settings.mockResolvedValue({ verificationEnabled: false, provider: 'none' });
+    renderForm();
+    await waitFor(() => expect(api.settings).toHaveBeenCalled());
+    fireEvent.change(screen.getByLabelText('GSTIN / UIN'), { target: { value: 'anything goes' } });
+    expect(current().gstinUin).toBe('anything goes');
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByLabelText('State')).not.toBeDisabled();
+    expect(vendorIsPlaceable(current(), false)).toBe(true);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(api.lookup).not.toHaveBeenCalled();
+  });
 });
 
 describe('<VendorEditForm> GSTIN first', () => {
   it('looks up a complete valid GSTIN once, prefills the empty fields and locks the state', async () => {
     renderForm({ name: 'My usual name' });
+    await waitFor(() => expect(api.settings).toHaveBeenCalled());
     const box = screen.getByLabelText('GSTIN / UIN');
+    await waitFor(() =>
+      expect(box).toHaveAttribute('placeholder', expect.stringContaining('e.g.')),
+    );
     fireEvent.change(box, { target: { value: '27aapfu0939f1zv' } });
 
     await waitFor(() => expect(api.lookup).toHaveBeenCalledTimes(1));
@@ -87,8 +108,9 @@ describe('<VendorEditForm> GSTIN first', () => {
     expect(screen.getByLabelText('State')).not.toBeDisabled();
   });
 
-  it('an unregistered supplier is placed by the state dropdown', () => {
+  it('an unregistered supplier is placed by the state dropdown', async () => {
     renderForm();
+    await waitFor(() => expect(api.settings).toHaveBeenCalled());
     expect(vendorIsPlaceable(current())).toBe(false);
     fireEvent.change(screen.getByLabelText('State'), { target: { value: '10' } });
     expect(current().postalAddress?.stateCode).toBe('10');

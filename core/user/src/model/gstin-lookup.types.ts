@@ -34,3 +34,9 @@ export interface GstinLookupResult {
   } | null;
   lastCheckedAt: string | null;
 }
+
+/** GET /taxation/gstin/settings — whether online verification (and the stricter rules) is on. */
+export interface GstinSettings {
+  verificationEnabled: boolean;
+  provider: string;
+}

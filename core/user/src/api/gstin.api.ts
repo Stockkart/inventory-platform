@@ -1,6 +1,6 @@
 import { apiClient } from '@inventory-platform/api-client';
 import type { ApiResponse } from '@inventory-platform/contracts';
-import type { GstinLookupResult } from '../model/gstin-lookup.types';
+import type { GstinLookupResult, GstinSettings } from '../model/gstin-lookup.types';
 import { GSTIN_ENDPOINTS } from './endpoints';
 
 /**
@@ -8,6 +8,11 @@ import { GSTIN_ENDPOINTS } from './endpoints';
  * GST network only for a GSTIN it has never seen — so repeat lookups cost nothing.
  */
 export const gstinApi = {
+  settings: async (): Promise<GstinSettings> => {
+    const response = await apiClient.get<ApiResponse<GstinSettings>>(GSTIN_ENDPOINTS.SETTINGS);
+    return response.data;
+  },
+
   lookup: async (gstin: string, signal?: AbortSignal): Promise<GstinLookupResult> => {
     const response = await apiClient.get<ApiResponse<GstinLookupResult>>(
       GSTIN_ENDPOINTS.LOOKUP(gstin),

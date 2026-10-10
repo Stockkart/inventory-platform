@@ -14,6 +14,7 @@ export const VENDOR_ENDPOINTS = {
 
 /** Served by the taxation module (same precedent as product's HSN rate lookup). */
 export const GSTIN_ENDPOINTS = {
+  SETTINGS: '/taxation/gstin/settings',
   LOOKUP: (gstin: string) => `/taxation/gstin/${encodeURIComponent(gstin)}`,
   REVERIFY: (gstin: string) => `/taxation/gstin/${encodeURIComponent(gstin)}/reverify`,
 } as const;

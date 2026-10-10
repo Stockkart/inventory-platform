@@ -26,7 +26,7 @@ import { invitationsApi } from '../api/invitations.api';
 import { shopAccessApi } from '../api/shop-access.api';
 import { vendorsApi, type VendorsListParams } from '../api/vendors.api';
 import { gstinApi } from '../api/gstin.api';
-import type { GstinLookupResult } from '../model/gstin-lookup.types';
+import type { GstinLookupResult, GstinSettings } from '../model/gstin-lookup.types';
 import { isValidGstin, normalizeGstin } from '../model/gstin';
 import { userKeys } from './keys';
 
@@ -162,6 +162,25 @@ export function useUpdateMemberAccessMutation(
 }
 
 export { customersApi, vendorsApi, shopAccessApi, invitationsApi };
+
+/**
+ * Whether online GSTIN verification is on. Until it is, the vendor form keeps its old behaviour
+ * (free-text GSTIN, no required state). Unknown — still loading or failed — reads as off.
+ */
+export function useGstinSettingsQuery() {
+  return useQuery<GstinSettings>({
+    queryKey: userKeys.gstinSettings(),
+    queryFn: gstinApi.settings,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+}
+
+/** True only when the server says verification is on. */
+export function useGstinVerificationEnabled(): boolean {
+  const settings = useGstinSettingsQuery();
+  return settings.data?.verificationEnabled === true;
+}
 
 /**
  * What the GST network knows about a GSTIN, once it passes the offline check. Keyed by the

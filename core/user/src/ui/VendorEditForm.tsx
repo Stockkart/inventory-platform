@@ -22,7 +22,11 @@ import {
   normalizeGstin,
 } from '../model/gstin';
 import type { GstinLookupResult } from '../model/gstin-lookup.types';
-import { useGstinLookupQuery, useReverifyGstinMutation } from '../queries/hooks';
+import {
+  useGstinLookupQuery,
+  useGstinVerificationEnabled,
+  useReverifyGstinMutation,
+} from '../queries/hooks';
 
 interface VendorEditFormProps {
   value: UpdateVendorDto;
@@ -50,10 +54,15 @@ function isPresetBusinessType(value: string): boolean {
   return PRESET_BUSINESS_TYPES.has(value);
 }
 
-/** The vendor can be placed for tax: a valid GSTIN, or a state on the address. */
+/**
+ * The vendor can be placed for tax: a valid GSTIN, or a state on the address. Only asked for
+ * when online verification is on; with it off the form behaves as it always did.
+ */
 export function vendorIsPlaceable(
   value: Pick<UpdateVendorDto, 'gstinUin' | 'postalAddress'>,
+  strict = true,
 ): boolean {
+  if (!strict) return true;
   return isValidGstin(value.gstinUin) || Boolean(value.postalAddress?.stateCode);
 }
 
@@ -98,10 +107,13 @@ export function VendorEditForm({ value, onChange, disabled = false }: VendorEdit
     }
   }, [value.businessType]);
 
-  const gstin = normalizeGstin(value.gstinUin);
+  // With verification off the GSTIN field is plain text, as it always was: no lookup, no
+  // check-character error, no required state.
+  const strict = useGstinVerificationEnabled();
+  const gstin = strict ? normalizeGstin(value.gstinUin) : (value.gstinUin ?? '').trim();
   const gstinComplete = gstin.length === GSTIN_LENGTH;
-  const gstinValid = isValidGstin(gstin);
-  const lookup = useGstinLookupQuery(gstin, { enabled: gstinValid && !disabled });
+  const gstinValid = strict && isValidGstin(gstin);
+  const lookup = useGstinLookupQuery(gstin, { enabled: strict && gstinValid && !disabled });
   const reverify = useReverifyGstinMutation();
   const record = lookup.data;
 
@@ -117,13 +129,13 @@ export function VendorEditForm({ value, onChange, disabled = false }: VendorEdit
     latest.current.onChange(prefillFromGstin(latest.current.value, record));
   }, [record, prefilledFor]);
 
-  const stateFromGstin = gstinStateCode(gstin);
+  const stateFromGstin = strict ? gstinStateCode(gstin) : null;
   const stateLocked = Boolean(stateFromGstin);
   const addr = value.postalAddress ?? {};
   const setAddr = (patch: Partial<PostalAddress>) =>
     onChange({ ...value, postalAddress: { ...addr, ...patch } });
 
-  const placeable = vendorIsPlaceable(value);
+  const placeable = vendorIsPlaceable(value, strict);
 
   return (
     <Stack gap="lg">
@@ -139,6 +151,10 @@ export function VendorEditForm({ value, onChange, disabled = false }: VendorEdit
               id="vendor-gstin"
               value={value.gstinUin ?? ''}
               onChange={(e) => {
+                if (!strict) {
+                  onChange({ ...value, gstinUin: e.currentTarget.value });
+                  return;
+                }
                 const next = normalizeGstin(e.currentTarget.value).slice(0, GSTIN_LENGTH);
                 const nextState = gstinStateCode(next);
                 onChange({
@@ -152,7 +168,7 @@ export function VendorEditForm({ value, onChange, disabled = false }: VendorEdit
                     : value.postalAddress,
                 });
               }}
-              placeholder="15 characters, e.g. 27AAPFU0939F1ZV"
+              placeholder={strict ? '15 characters, e.g. 27AAPFU0939F1ZV' : '15-character GSTIN'}
               disabled={disabled}
               autoComplete="off"
               spellCheck={false}
