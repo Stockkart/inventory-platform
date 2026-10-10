@@ -33,7 +33,8 @@ bridge counts as present, whether to print or download, invoice or estimate, cop
 `.prn` filename, how long to watch the job and what a result means. Nothing here reads the
 bridge payload or decides an outcome.
 
-- `ui/useDotMatrixPrint.ts` drives `PrintInvoiceModal` (`SALE`).
+- `ui/useDotMatrixPrint.ts` is shared by `PrintInvoiceModal` (`SALE`) and
+  `PrintCreditNoteModal` (`REFUND`, `VENDOR_RETURN`).
 - `queries/hooks.ts` `usePrintBridgeStatusQuery` probes the bridge when the dot matrix option
   is chosen (1.2 s timeout, never retried) and asks the backend what it found:
   `NOT_DETECTED`, `OUTDATED` (still prints) or `CONNECTED`, with the download link.
@@ -46,7 +47,7 @@ bridge payload or decides an outcome.
 - `lib/printBridge.ts` is the only raw `fetch` in this package, on purpose: the bridge is a
   loopback app, not the StockKart API, so `apiClient`'s base URL and auth headers would be wrong
   there. Everything that talks to the StockKart API goes through `api/print.api.ts`.
-- `lib/printDocument.ts` saves the printer file and opens PDF previews for both print modals.
+- `lib/printDocument.ts` saves the printer file and opens PDF previews for both modals.
 - Open follow-up: the `.prn` fallback does not set the printer's pitch (the bridge adds that),
   so without a bridge the operator sets it on the printer.
 
