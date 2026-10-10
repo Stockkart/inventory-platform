@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown, ChevronRight, Search } from 'lucide-react';
 import { cartApi, shopMenuApi } from '@inventory-platform/product/api';
+import type { InventoryItem } from '@inventory-platform/product/types';
 import type {
   MenuItem,
   MenuRate,
@@ -29,6 +30,10 @@ import {
   productChrome,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
+import { StationSelect, stationsInMenu } from '../ui/StationSelect';
+import { LinkedStockRow } from '../ui/LinkedStockRow';
+import { StockItemPicker } from '../ui/StockItemPicker';
+import { useSellDirectLotsQuery } from '../queries/sellDirectLots';
 
 export function meta() {
   return [{ title: 'Menu - StockKart' }, { name: 'description', content: 'Manage your cafe menu' }];
@@ -97,8 +102,11 @@ function normalizeSectionsForCompare(sections: MenuSection[]): string {
         .map((i) => ({
           id: i.id,
           name: i.name.trim(),
-          sellingPrice: Number(i.sellingPrice) || 0,
-          sellMode: 'menu' as const,
+          sellingPrice: i.sellMode === 'direct' ? null : Number(i.sellingPrice) || 0,
+          // A placed stock lot differs from a dish only by these two; leave them out and adding or
+          // removing a placement leaves Save greyed out.
+          sellMode: i.sellMode === 'direct' ? ('direct' as const) : ('menu' as const),
+          inventoryId: i.sellMode === 'direct' ? i.inventoryId ?? null : null,
           available: i.available !== false,
           // Must be compared too: without it, editing only the station leaves the menu looking
           // unchanged and Save stays disabled.
@@ -139,6 +147,28 @@ export function MenuAdminPage() {
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const loadedRef = useRef(false);
   const savedSnapshotRef = useRef('');
+  const knownStations = useMemo(() => stationsInMenu(sections), [sections]);
+  const lotsQuery = useSellDirectLotsQuery();
+  const lots = useMemo(() => lotsQuery.data ?? [], [lotsQuery.data]);
+  const lotsError = lotsQuery.isError
+    ? lotsQuery.error instanceof Error
+      ? lotsQuery.error.message
+      : 'Failed to load stock items'
+    : null;
+  /** Section whose "Add stock item" picker is open. */
+  const [pickerSectionId, setPickerSectionId] = useState<string | null>(null);
+  const lotsById = useMemo(() => new Map(lots.map((lot) => [lot.id, lot] as const)), [lots]);
+  const linkedIds = useMemo(
+    () =>
+      new Set(
+        sections.flatMap((s) =>
+          s.items
+            .filter((i) => i.sellMode === 'direct' && i.inventoryId)
+            .map((i) => i.inventoryId as string),
+        ),
+      ),
+    [sections],
+  );
 
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const hasActiveSearch = normalizedSearch.length > 0;
@@ -277,6 +307,32 @@ export function MenuAdminPage() {
     );
   };
 
+  const addStockItem = (sectionId: string, lot: InventoryItem) => {
+    setSections((prev) =>
+      prev.map((s) => {
+        if (s.id !== sectionId) return s;
+        // An untouched blank row is dropped rather than left beside the placement.
+        const kept = s.items.filter((i) => i.name.trim() || i.sellMode === 'direct');
+        return {
+          ...s,
+          items: [
+            ...kept,
+            {
+              id: newId(),
+              name: lot.name ?? 'Stock item',
+              sellingPrice: null,
+              sellMode: 'direct' as const,
+              inventoryId: lot.id,
+              available: true,
+              department: '',
+            },
+          ],
+        };
+      }),
+    );
+    setPickerSectionId(null);
+  };
+
   const addItem = (sectionId: string) => {
     setSections((prev) =>
       prev.map((s) => (s.id === sectionId ? { ...s, items: [...s.items, emptyItem()] } : s)),
@@ -379,6 +435,17 @@ export function MenuAdminPage() {
           items: s.items
             .filter((i) => i.name.trim())
             .map((i) => {
+              if (i.sellMode === 'direct') {
+                // The lot owns price and tax; the server clears them anyway.
+                return {
+                  ...i,
+                  name: i.name.trim(),
+                  sellingPrice: null,
+                  rates: [],
+                  sellMode: 'direct' as const,
+                  inventoryId: i.inventoryId ?? null,
+                };
+              }
               const rates = namedPortions(i).map((r) => ({
                 id: r.id || freezePortionId(r.name, []),
                 name: r.name.trim(),
@@ -568,6 +635,18 @@ export function MenuAdminPage() {
                   <Box className={productChrome.menuAdminSectionBody}>
                     <Box className={productChrome.menuAdminItemGrid}>
                       {section.items.map((item) => {
+                        if (item.sellMode === 'direct') {
+                          return (
+                            <LinkedStockRow
+                              key={item.id}
+                              item={item}
+                              lot={item.inventoryId ? lotsById.get(item.inventoryId) ?? null : null}
+                              knownStations={knownStations}
+                              onChange={(patch) => updateItem(section.id, item.id, patch)}
+                              onRemove={() => removeItem(section.id, item.id)}
+                            />
+                          );
+                        }
                         const isAvailable = item.available !== false;
                         const portions = item.rates ?? [];
                         const isPortioned = namedPortions(item).length > 0;
@@ -695,17 +774,13 @@ export function MenuAdminPage() {
                               <Text as="span" className={productChrome.menuAdminItemPricePrefix}>
                                 Station
                               </Text>
-                              <Input
+                              <StationSelect
                                 value={item.department ?? ''}
-                                onChange={(e) =>
-                                  updateItem(section.id, item.id, {
-                                    department: e.target.value,
-                                  })
+                                knownStations={knownStations}
+                                ariaLabel={`Station for ${item.name || 'this item'}`}
+                                onChange={(next) =>
+                                  updateItem(section.id, item.id, { department: next })
                                 }
-                                placeholder="KITCHEN"
-                                className={productChrome.menuAdminItemDepartment}
-                                aria-label="Kitchen station"
-                                title="Which counter makes this item. Blank routes it to the kitchen."
                               />
                             </Box>
 
@@ -752,6 +827,15 @@ export function MenuAdminPage() {
                     >
                       + Add item to {sectionTitle}
                     </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className={productChrome.menuAdminAddItem}
+                      onClick={() => setPickerSectionId(section.id)}
+                    >
+                      + Add stock item to {sectionTitle}
+                    </Button>
                   </Box>
                 ) : null}
               </Box>
@@ -759,6 +843,16 @@ export function MenuAdminPage() {
           })}
         </Box>
       )}
+      <StockItemPicker
+        open={pickerSectionId !== null}
+        lots={lots}
+        linkedIds={linkedIds}
+        loadError={lotsError}
+        onPick={(lot) => {
+          if (pickerSectionId) addStockItem(pickerSectionId, lot);
+        }}
+        onClose={() => setPickerSectionId(null)}
+      />
     </Stack>
   );
 }

@@ -1,7 +1,8 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { MenuItem, ShopMenu } from '../types/menu';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MenuAdminPage } from './MenuAdminPage';
 
 /**
@@ -21,6 +22,7 @@ import { MenuAdminPage } from './MenuAdminPage';
 const menuGet = vi.fn();
 const menuPut = vi.fn();
 const cartAdd = vi.fn();
+const catalogGet = vi.fn();
 
 vi.mock('@inventory-platform/product/api', () => ({
   shopMenuApi: {
@@ -28,6 +30,7 @@ vi.mock('@inventory-platform/product/api', () => ({
     put: (...args: unknown[]) => menuPut(...args),
   },
   cartApi: { add: (...args: unknown[]) => cartAdd(...args) },
+  sellCatalogApi: { get: (...args: unknown[]) => catalogGet(...args) },
 }));
 
 vi.mock('@inventory-platform/session', () => ({
@@ -71,7 +74,12 @@ function saveButton(): HTMLButtonElement {
 
 async function renderPage(items: MenuItem[]) {
   menuGet.mockResolvedValue(savedMenu(items));
-  render(<MenuAdminPage />);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <QueryClientProvider client={client}>
+      <MenuAdminPage />
+    </QueryClientProvider>,
+  );
   await waitFor(() => expect(saveButton()).toBeTruthy());
 }
 
@@ -79,6 +87,8 @@ beforeEach(() => {
   menuGet.mockReset();
   menuPut.mockReset();
   cartAdd.mockReset();
+  catalogGet.mockReset();
+  catalogGet.mockResolvedValue({ menu: { sections: [] }, directStock: [] });
 });
 
 afterEach(() => {
@@ -205,5 +215,66 @@ describe('MenuAdminPage portions', () => {
 
     await waitFor(() => expect(cartAdd).toHaveBeenCalledTimes(1));
     expect(cartAdd.mock.calls[0][0].items).toEqual([{ sellableRef: 'menu:m2', quantity: 1 }]);
+  });
+});
+
+describe('MenuAdminPage linked stock', () => {
+  const lassiLot = { id: 'inv-1', name: 'Lassi', currentBaseCount: 8, sellingPrice: 40 };
+  const cokeLot = { id: 'inv-2', name: 'Coke', currentBaseCount: 5, sellingPrice: 20 };
+
+  function linked(inventoryId: string, name: string): MenuItem {
+    return {
+      id: `link-${inventoryId}`,
+      name,
+      sellingPrice: null,
+      sellMode: 'direct',
+      inventoryId,
+      available: true,
+    };
+  }
+
+  async function renderWithLots(items: MenuItem[], lots: object[]) {
+    catalogGet.mockResolvedValue({ menu: { sections: [] }, directStock: lots });
+    await renderPage(items);
+    await waitFor(() => expect(catalogGet).toHaveBeenCalled());
+  }
+
+  it('offers only unlinked stock in the picker', async () => {
+    await renderWithLots([plainItem, linked('inv-1', 'Lassi')], [lassiLot, cokeLot]);
+    fireEvent.click(screen.getByRole('button', { name: /Add stock item/i }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog.textContent).toContain('Coke');
+    expect(dialog.textContent).not.toContain('Lassi');
+  });
+
+  it('adding a stock item enables Save and saves it as a direct link without a price', async () => {
+    await renderWithLots([plainItem], [lassiLot, cokeLot]);
+    menuPut.mockImplementation(async (menu: ShopMenu) => menu);
+
+    fireEvent.click(screen.getByRole('button', { name: /Add stock item/i }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: /Coke/ }));
+    expect(saveButton().disabled).toBe(false);
+    fireEvent.click(saveButton());
+
+    await waitFor(() => expect(menuPut).toHaveBeenCalledTimes(1));
+    const sent = menuPut.mock.calls[0][0] as ShopMenu;
+    const item = sent.sections[0].items.find((i) => i.inventoryId === 'inv-2');
+    expect(item).toMatchObject({ sellMode: 'direct', inventoryId: 'inv-2', sellingPrice: null });
+    expect(typeof sent.revision).toBe('number');
+  });
+
+  it("a linked row shows the lot's price and stock read-only", async () => {
+    await renderWithLots([linked('inv-2', 'Coke')], [cokeLot]);
+    expect(await screen.findByText('₹20.00')).toBeTruthy();
+    expect(screen.getByText('5 in stock')).toBeTruthy();
+    expect(screen.queryByLabelText('Price')).toBeNull();
+  });
+
+  it('a link whose lot is gone says so and can still be removed', async () => {
+    await renderWithLots([plainItem, linked('inv-9', 'Old Juice')], [cokeLot]);
+    expect(await screen.findByText('Stock item missing')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Old Juice' }));
+    expect(screen.queryByText('Stock item missing')).toBeNull();
   });
 });

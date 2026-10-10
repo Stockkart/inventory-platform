@@ -1,4 +1,4 @@
-export { cafeKotKeys } from './keys';
+export { cafeKotKeys, cafeMenuKeys } from './keys';
 export {
   usePunchMutation,
   useReprintKotMutation,
@@ -6,3 +6,4 @@ export {
   outcomeOf,
   keyAfter,
 } from './hooks';
+export { useSellDirectLotsQuery } from './sellDirectLots';
