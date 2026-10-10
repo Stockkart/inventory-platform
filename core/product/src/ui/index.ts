@@ -73,3 +73,4 @@ export { ActiveFilterChips } from './search/ActiveFilterChips';
 export type { ActiveFilterChipsProps } from './search/ActiveFilterChips';
 export { SortSelect, describeSort } from './search/SortSelect';
 export type { SortSelectProps } from './search/SortSelect';
+export { CafeSellCatalogPanel } from './CafeSellCatalogPanel';
