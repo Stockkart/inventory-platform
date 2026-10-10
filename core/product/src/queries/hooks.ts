@@ -9,14 +9,25 @@ import {
 import type {
   AmendVendorPurchaseInvoicePayload,
   CartResponse,
+  CreatePrintJobRequest,
   HsnGstRates,
+  PrintJobPlan,
+  PrintOutcomeResult,
   PurchaseTaxPreviewRequest,
+  ReportPrintOutcomeRequest,
   StockEntryEstimateResponse,
 } from '@inventory-platform/product/types';
 import { inventoryApi } from '../api/inventory.api';
 import { estimatesApi } from '../api/estimates.api';
 import { productApi } from '../api/product.api';
-import { isBridgeUp, type BridgeHealth } from '../lib/printBridge';
+import {
+  isBridgeUp,
+  observeBridge,
+  observeSendFailure,
+  pollJobOutcome,
+  sendToBridge,
+} from '../lib/printBridge';
+import { printApi } from '../api/print.api';
 import { stockEntryEstimatesApi } from '../api/stockEntryEstimates.api';
 import { productKeys } from './keys';
 
@@ -135,18 +146,60 @@ export function useAmendVendorPurchaseInvoiceMutation() {
 }
 
 /**
- * Probes the local dot matrix print bridge. It is local state, not server state, so it is
- * re-probed every time `enabled` turns on (the print modal opening) and never retried:
- * `isBridgeUp` already times out and resolves to null on any failure.
+ * The print bridge on this computer, as the backend judges it: not detected, outdated or
+ * connected, with the download link. Probing has to happen here - only a page on the shop PC
+ * can reach the bridge - but the verdict is the backend's. Re-probed every time `enabled`
+ * turns on (the print modal opening) and never retried: `isBridgeUp` already times out.
  */
-export function usePrintBridgeHealthQuery(enabled: boolean) {
-  return useQuery<BridgeHealth | null>({
-    queryKey: productKeys.printBridgeHealth(),
-    queryFn: () => isBridgeUp(),
+export function usePrintBridgeStatusQuery(enabled: boolean) {
+  return useQuery({
+    queryKey: productKeys.printBridgeStatus(),
+    queryFn: async () => {
+      const observation = observeBridge(await isBridgeUp());
+      const status = await printApi.bridgeStatus(observation);
+      return { observation, status };
+    },
     enabled,
     staleTime: 0,
     gcTime: 0,
     retry: false,
     refetchOnWindowFocus: false,
+  });
+}
+
+/**
+ * Prints one document on the dot matrix printer. Carries, never decides:
+ * 1. ask the backend how (`POST /print-jobs`, with what the bridge probe saw);
+ * 2. if it says BRIDGE, send its `bridgeRequest` to the bridge unchanged;
+ * 3. watch the bridge's job history for as long as the backend said;
+ * 4. report what was seen and return the backend's verdict.
+ */
+export function usePrintDocumentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (
+      request: CreatePrintJobRequest,
+    ): Promise<{ plan: PrintJobPlan; outcome: PrintOutcomeResult | null }> => {
+      const plan = await printApi.createJob(request);
+      if (plan.action !== 'BRIDGE' || !plan.poll) {
+        return { plan, outcome: null };
+      }
+      let report: ReportPrintOutcomeRequest;
+      try {
+        const { jobId } = await sendToBridge(plan.bridgeRequest);
+        const polled = await pollJobOutcome(jobId, plan.poll);
+        report = { observation: polled.observation, bridgeJobId: jobId, error: polled.error };
+      } catch (err) {
+        const failure = observeSendFailure(err);
+        report = { observation: failure.observation, bridgeJobId: null, error: failure.error };
+      }
+      const outcome = await printApi.reportOutcome(plan.printJobId, report);
+      return { plan, outcome };
+    },
+    onSuccess: ({ outcome }) => {
+      if (outcome?.outcome === 'BRIDGE_UNREACHABLE') {
+        void queryClient.invalidateQueries({ queryKey: productKeys.printBridgeStatus() });
+      }
+    },
   });
 }

@@ -1,14 +1,17 @@
 /**
- * Client for the StockKart dot matrix print bridge, a small local application that
+ * Transport to the StockKart dot matrix print bridge, a small local application that
  * listens on loopback and writes raw ESC/P bytes to a locally attached printer.
  *
- * The bridge is optional. Every failure path here is recoverable: callers fall back to
- * downloading the print file so billing is never blocked by a missing bridge.
+ * This file carries and observes; it decides nothing. The backend (`POST /print-jobs`)
+ * decides whether a document goes to the bridge, what the bridge is sent and what any
+ * result means. Here: probe the bridge, send the backend's payload unchanged, watch the
+ * bridge's job history, and say what was seen.
  *
  * This file uses raw `fetch` on purpose. The bridge is a loopback app, not the StockKart
  * API, so `apiClient` (base URL, auth and shop headers) would be wrong here. See the
  * package README, "Dot matrix printing".
  */
+import type { PrintBridgeObservation, PrintObservation } from '@inventory-platform/product/types';
 
 /** Loopback origin the bridge listens on. Never a LAN address. */
 export const BRIDGE_ORIGIN = 'http://127.0.0.1:9110';
@@ -25,16 +28,6 @@ export interface BridgeHealth {
   printers: string[];
   selectedPrinter: string | null;
   ready: boolean;
-}
-
-/** The bridge picks its page length by this; an estimate uses a shorter form than a tax invoice. */
-export type PrintDocType = 'INVOICE' | 'ESTIMATE';
-
-export interface PrintJobRequest {
-  docType: PrintDocType;
-  docId: string;
-  copies: number;
-  text: string;
 }
 
 export interface PrintJobAccepted {
@@ -100,8 +93,15 @@ export async function isBridgeUp(
   }
 }
 
+/** What a probe saw, in the shape the backend reads. */
+export function observeBridge(health: BridgeHealth | null): PrintBridgeObservation {
+  return health
+    ? { reachable: true, version: health.version ?? null, selectedPrinter: health.selectedPrinter }
+    : { reachable: false, version: null, selectedPrinter: null };
+}
+
 /**
- * Send a rendered document to the bridge for printing.
+ * Send the backend's `bridgeRequest` to the bridge, unchanged and unread.
  *
  * The timeout stays armed for the full call, including the body read after
  * headers arrive: a bridge that answers 202 and then stalls mid-body must
@@ -110,17 +110,12 @@ export async function isBridgeUp(
  * Classification of failures, by design:
  * - `fetch()` itself never settling (no connection, refused, or aborted
  *   before headers arrived) is UNREACHABLE: the bridge was never reached at
- *   all, so a caller's file-download fallback is honest - nothing was
- *   printed.
+ *   all, so nothing was printed.
  * - Everything else - a settled response with a non-2xx status, a settled
  *   2xx response whose body fails to parse, or a settled 2xx response whose
  *   body read is later aborted by the timeout - is REJECTED, carrying
- *   `response.status`: the bridge was reached and did answer. Under this
- *   wire contract a 202 means the job was queued, not that printing
- *   finished, so a timeout while confirming the body very likely means the
- *   job already reached the printer. Treating that as UNREACHABLE would
- *   make a caller's fallback silently produce a second physical invoice;
- *   REJECTED surfaces an actionable error instead.
+ *   `response.status`: the bridge was reached and did answer, so the job may
+ *   already have reached the printer.
  *
  * @throws PrintBridgeError with kind UNREACHABLE only when the bridge could not be
  *     contacted at all, or kind REJECTED (carrying the HTTP status) for every case
@@ -128,7 +123,7 @@ export async function isBridgeUp(
  *     Never throws anything else, including a raw parse error.
  */
 export async function sendToBridge(
-  job: PrintJobRequest,
+  payload: unknown,
   timeoutMs: number = BRIDGE_PRINT_TIMEOUT_MS,
 ): Promise<PrintJobAccepted> {
   const { signal, done } = withTimeout(timeoutMs);
@@ -138,7 +133,7 @@ export async function sendToBridge(
       response = await fetch(`${BRIDGE_ORIGIN}/print`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(job),
+        body: JSON.stringify(payload),
         signal,
       });
     } catch {
@@ -171,46 +166,60 @@ export async function sendToBridge(
 }
 
 /**
- * `POST /print` answers `202` as soon as the job is queued, before it has
- * actually reached the printer - the bridge prints in a background
- * goroutine and records the terminal state (`PRINTED` / `FAILED`) in its own
- * job history, in memory only. Nothing else in StockKart ever looks at that
- * history unless a caller polls it, so a printer that is off, out of paper,
- * jammed, or renamed would otherwise fail silently: the modal would already
- * be closed, and the operator would move on believing the invoice printed.
+ * What a failed send looked like, for the backend to judge. A 409 is the bridge
+ * suppressing a duplicate of a job it already has in flight.
  */
-export type PrintJobStatus = 'QUEUED' | 'PRINTED' | 'FAILED';
+export function observeSendFailure(error: unknown): {
+  observation: PrintObservation;
+  error: string | null;
+} {
+  if (error instanceof PrintBridgeError) {
+    if (error.kind === 'UNREACHABLE') {
+      return { observation: 'UNREACHABLE', error: null };
+    }
+    if (error.status === 409) {
+      return { observation: 'DUPLICATE', error: null };
+    }
+    return { observation: 'REJECTED', error: error.message };
+  }
+  return {
+    observation: 'REJECTED',
+    error: error instanceof Error ? error.message : 'Print bridge request failed',
+  };
+}
 
-export interface PrintJob {
+/**
+ * `POST /print` answers `202` as soon as the job is queued, before it has
+ * actually reached the printer - the bridge prints in a background goroutine
+ * and records the terminal state (`PRINTED` / `FAILED`) in its own job
+ * history, in memory only. Polling it is the only way to see a printer that
+ * is off, out of paper or jammed.
+ */
+export type BridgeJobStatus = 'QUEUED' | 'PRINTED' | 'FAILED';
+
+export interface BridgeJob {
   id: string;
-  docType: PrintDocType;
+  docType: string;
   docId: string;
   copies: number;
-  status: PrintJobStatus;
+  status: BridgeJobStatus;
   error: string | null;
   at: string;
 }
 
-/** Default poll budget: roughly 5 seconds, per design spec finding on silent print failures. */
-export const JOB_POLL_BUDGET_MS = 5000;
-
-/** How often to re-check `GET /jobs` while a job is still `QUEUED`. */
-export const JOB_POLL_INTERVAL_MS = 500;
-
 /**
  * Fetch the bridge's recent job history. Like {@link isBridgeUp}, this never
  * throws - any failure (network, timeout, malformed body) resolves to an
- * empty list, so a poll loop can simply try again on the next interval
- * rather than crash the caller.
+ * empty list, so a poll loop can simply try again on the next interval.
  */
-export async function getJobs(timeoutMs: number = BRIDGE_HEALTH_TIMEOUT_MS): Promise<PrintJob[]> {
+export async function getJobs(timeoutMs: number = BRIDGE_HEALTH_TIMEOUT_MS): Promise<BridgeJob[]> {
   const { signal, done } = withTimeout(timeoutMs);
   try {
     const response = await fetch(`${BRIDGE_ORIGIN}/jobs`, { method: 'GET', signal });
     if (!response.ok) {
       return [];
     }
-    const body = (await response.json()) as { jobs?: PrintJob[] };
+    const body = (await response.json()) as { jobs?: BridgeJob[] };
     return Array.isArray(body.jobs) ? body.jobs : [];
   } catch {
     return [];
@@ -219,50 +228,36 @@ export async function getJobs(timeoutMs: number = BRIDGE_HEALTH_TIMEOUT_MS): Pro
   }
 }
 
-/**
- * The honest, terminal-or-not outcome of a print job, once polling stops.
- * `STILL_QUEUED` is a real, distinct outcome - not a stand-in for success or
- * failure - because rounding it either way would be a lie: rounding up
- * claims a legally-required document printed when it may not have; rounding
- * down invites the operator to reprint a job that is about to complete,
- * producing a second physical invoice.
- */
-export type PrintJobOutcome =
-  | { status: 'PRINTED' }
-  | { status: 'FAILED'; error: string }
-  | { status: 'STILL_QUEUED' };
+/** What polling saw: the bridge's own terminal state, or that it was still queued. */
+export interface PolledJob {
+  observation: Extract<PrintObservation, 'PRINTED' | 'FAILED' | 'STILL_QUEUED'>;
+  error: string | null;
+}
 
 /**
- * Poll `GET /jobs` for one job's terminal state for up to `budgetMs`
- * (default {@link JOB_POLL_BUDGET_MS}, ~5s). Resolves as soon as the bridge
- * reports `PRINTED` or `FAILED`; resolves `STILL_QUEUED` once the budget is
- * spent without seeing either. Never throws - a bridge that stops answering
- * mid-poll just runs out the budget and resolves `STILL_QUEUED`, which is
- * the honest answer ("we lost track, but it was queued") rather than an
- * error the caller would have to guess how to handle.
+ * Poll `GET /jobs` for one job's terminal state for up to `budgetMs`, every
+ * `intervalMs` (both from the backend's print job). Resolves as soon as the
+ * bridge reports `PRINTED` or `FAILED`; resolves `STILL_QUEUED` once the
+ * budget is spent without seeing either. Never throws - a bridge that stops
+ * answering mid-poll runs out the budget, which is the honest answer.
  */
 export async function pollJobOutcome(
   jobId: string,
-  options: { budgetMs?: number; intervalMs?: number } = {},
-): Promise<PrintJobOutcome> {
-  const budgetMs = options.budgetMs ?? JOB_POLL_BUDGET_MS;
-  const intervalMs = options.intervalMs ?? JOB_POLL_INTERVAL_MS;
-  const deadline = Date.now() + budgetMs;
+  options: { budgetMs: number; intervalMs: number },
+): Promise<PolledJob> {
+  const deadline = Date.now() + options.budgetMs;
 
-  const checkOnce = async (): Promise<PrintJobOutcome | null> => {
+  const checkOnce = async (): Promise<PolledJob | null> => {
     const jobs = await getJobs();
     const job = jobs.find((candidate) => candidate.id === jobId);
     if (!job) {
       return null;
     }
     if (job.status === 'PRINTED') {
-      return { status: 'PRINTED' };
+      return { observation: 'PRINTED', error: null };
     }
     if (job.status === 'FAILED') {
-      return {
-        status: 'FAILED',
-        error: job.error && job.error.length > 0 ? job.error : 'Unknown printer error',
-      };
+      return { observation: 'FAILED', error: job.error && job.error.length > 0 ? job.error : null };
     }
     return null; // still QUEUED, or not yet visible in the history
   };
@@ -273,75 +268,11 @@ export async function pollJobOutcome(
   }
 
   while (Date.now() < deadline) {
-    await sleep(Math.min(intervalMs, Math.max(0, deadline - Date.now())));
+    await sleep(Math.min(options.intervalMs, Math.max(0, deadline - Date.now())));
     const result = await checkOnce();
     if (result) {
       return result;
     }
   }
-  return { status: 'STILL_QUEUED' };
-}
-
-/** Exact wording required by the design spec (§4.2 step 3). */
-export const PRINTED_MESSAGE = 'Sent to printer';
-
-export type PrintOutcomeChannel = 'success' | 'info' | 'error';
-
-export interface PrintOutcomeReport {
-  channel: PrintOutcomeChannel;
-  message: string;
-  /** Whether the caller should close the print modal after reporting this. */
-  shouldClose: boolean;
-}
-
-/**
- * Turns a polled {@link PrintJobOutcome} into what the operator should be
- * told, and whether it is safe to close the modal.
- *
- * `FAILED` deliberately does not close the modal: the operator needs the
- * failure - and the bridge's own error text - to stay on screen so they can
- * decide whether to reload paper and retry, rather than have it vanish
- * behind a closed modal that looks identical to success.
- */
-export function describePrintOutcome(outcome: PrintJobOutcome): PrintOutcomeReport {
-  switch (outcome.status) {
-    case 'PRINTED':
-      return { channel: 'success', message: PRINTED_MESSAGE, shouldClose: true };
-    case 'FAILED':
-      return {
-        channel: 'error',
-        message: `Print failed: ${outcome.error}`,
-        shouldClose: false,
-      };
-    case 'STILL_QUEUED':
-      return {
-        channel: 'info',
-        message:
-          'Sent to the printer - still printing. Check the print bridge window if it does not finish shortly.',
-        shouldClose: true,
-      };
-  }
-}
-
-/**
- * A `409` from `POST /print` means the bridge suppressed a duplicate of a
- * job it already accepted within the last 10 seconds - the invoice is
- * already on its way to the printer. That is information, not a failure:
- * presenting the bridge's own message ("duplicate job suppressed") in an
- * error toast reads as "printing failed" for an event that actually means
- * "it already printed", and is exactly what pushes an uncertain operator to
- * print a second physical copy.
- *
- * Returns `null` for every other {@link PrintBridgeError}, so callers fall
- * through to their normal error handling.
- */
-export function describeDuplicateJob(error: PrintBridgeError): PrintOutcomeReport | null {
-  if (error.kind === 'REJECTED' && error.status === 409) {
-    return {
-      channel: 'info',
-      message: 'This invoice was already sent to the printer moments ago.',
-      shouldClose: true,
-    };
-  }
-  return null;
+  return { observation: 'STILL_QUEUED', error: null };
 }
