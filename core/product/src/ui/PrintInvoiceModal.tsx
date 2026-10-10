@@ -1,9 +1,19 @@
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { LucideIcon } from 'lucide-react';
 import { FileText, Printer, Receipt } from 'lucide-react';
 import { cartApi } from '../api/cart.api';
 import { invoiceSettingsApi } from '../api/invoice-settings.api';
+import {
+  PrintBridgeError,
+  describeDuplicateJob,
+  describePrintOutcome,
+  pollJobOutcome,
+  sendToBridge,
+} from '../lib/printBridge';
+import type { BridgeHealth, PrintDocType, PrintOutcomeReport } from '../lib/printBridge';
 import type { PrinterType } from '../api/endpoints';
+import { productKeys, usePrintBridgeHealthQuery } from '../queries/hooks';
 import {
   Alert,
   Box,
@@ -28,7 +38,17 @@ interface PrintInvoiceModalProps {
   invoiceNo?: string;
   /** Defaults to "Invoice"; use "Estimate" for quote PDFs. */
   documentLabel?: string;
+  /** Sent to the print bridge, which sets the page length from it. Defaults to INVOICE. */
+  documentKind?: PrintDocType;
   onError?: (message: string) => void;
+  /** Called once the bridge confirms a print actually reached the printer. */
+  onSuccess?: (message: string) => void;
+  /**
+   * Called for outcomes that are neither success nor failure: the bridge
+   * suppressed a duplicate print of an invoice already on its way, or the
+   * job was still queued when polling stopped watching it.
+   */
+  onInfo?: (message: string) => void;
 }
 
 const PRINTER_OPTIONS: Array<{
@@ -84,11 +104,15 @@ export function PrintInvoiceModal({
   purchaseId,
   invoiceNo,
   documentLabel = 'Invoice',
+  documentKind = 'INVOICE',
   onError,
+  onSuccess,
+  onInfo,
 }: PrintInvoiceModalProps) {
   const [printerType, setPrinterType] = useState<PrinterType>('NORMAL');
   const [shopDefault, setShopDefault] = useState<PrinterType | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -112,6 +136,13 @@ export function PrintInvoiceModal({
     };
   }, [isOpen]);
 
+  // Probe the local print bridge whenever the modal opens. Never blocks the UI:
+  // isBridgeUp resolves to null on any failure, and the modal stays usable. A probe
+  // in flight counts as "no bridge", as does a closed modal.
+  const bridgeQuery = usePrintBridgeHealthQuery(isOpen);
+  const bridge: BridgeHealth | null =
+    isOpen && !bridgeQuery.isFetching ? bridgeQuery.data ?? null : null;
+
   const handlePreviewPdf = async () => {
     setIsGenerating(true);
     try {
@@ -134,11 +165,77 @@ export function PrintInvoiceModal({
     setIsGenerating(true);
     try {
       const textBlob = await cartApi.getInvoiceDotMatrixText(purchaseId);
+      // .prn, not .txt. The text carries the printer's bold and double-width
+      // codes, and Windows hands a .txt to Notepad, which prints those bytes as
+      // characters. It does not set the pitch: the bridge adds that, so without
+      // it the operator has to set the pitch on the printer.
       const slug = documentLabel.toLowerCase().replace(/\s+/g, '-');
-      downloadBlob(textBlob, `${slug}-${invoiceNo || purchaseId}.txt`);
+      downloadBlob(textBlob, `${slug}-${invoiceNo || purchaseId}.prn`);
       onClose();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to download print file';
+      const message = err instanceof Error ? err.message : 'Failed to download the printer file';
+      onError?.(message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Routes a polled outcome or a duplicate-job notice to the right feedback
+  // channel, and closes the modal only when the report says it is safe to -
+  // a FAILED print stays on screen so the operator sees it and can retry.
+  const reportOutcome = (report: PrintOutcomeReport) => {
+    if (report.channel === 'success') {
+      onSuccess?.(report.message);
+    } else if (report.channel === 'info') {
+      onInfo?.(report.message);
+    } else {
+      onError?.(report.message);
+    }
+    if (report.shouldClose) {
+      onClose();
+    }
+  };
+
+  const handlePrintToBridge = async () => {
+    setIsGenerating(true);
+    let textBlob: Blob | null = null;
+    try {
+      textBlob = await cartApi.getInvoiceDotMatrixText(purchaseId);
+      const text = await textBlob.text();
+      // copies: 0 tells the bridge to apply its own configured
+      // `defaultCopies` (e.g. original + customer copy for GST). Hardcoding
+      // 1 here would silently override that setting on every print.
+      const { jobId } = await sendToBridge({
+        docType: documentKind,
+        docId: purchaseId,
+        copies: 0,
+        text,
+      });
+      // A 202 only means the job was queued, not that it printed - poll the
+      // bridge's job history for the real outcome before telling the
+      // operator anything.
+      const outcome = await pollJobOutcome(jobId);
+      reportOutcome(describePrintOutcome(outcome));
+    } catch (err) {
+      // Bridge missing or blocked by the browser: degrade to the download that
+      // worked before the bridge existed, rather than failing the sale.
+      if (err instanceof PrintBridgeError && err.kind === 'UNREACHABLE' && textBlob) {
+        const slug = documentLabel.toLowerCase().replace(/\s+/g, '-');
+        downloadBlob(textBlob, `${slug}-${invoiceNo || purchaseId}.prn`);
+        queryClient.setQueryData(productKeys.printBridgeHealth(), null);
+        onError?.('Print bridge not running. Printer file downloaded instead.');
+        onClose();
+        return;
+      }
+      if (err instanceof PrintBridgeError) {
+        const duplicate = describeDuplicateJob(err);
+        if (duplicate) {
+          reportOutcome(duplicate);
+          return;
+        }
+      }
+      const message =
+        err instanceof Error ? err.message : `Failed to print ${documentLabel.toLowerCase()}`;
       onError?.(message);
     } finally {
       setIsGenerating(false);
@@ -203,9 +300,13 @@ export function PrintInvoiceModal({
           </Box>
           {isDotMatrix ? (
             <Alert variant="info">
-              Print the .txt at 10 CPI (Pica). Standard 80-column printers only paint 8 inches; the
-              extra 10×12 paper beside the holes cannot be used. Do not print the PDF on the
-              dot-matrix.
+              {bridge
+                ? `Prints directly to ${
+                    bridge.selectedPrinter ?? 'the selected printer'
+                  } via the print bridge on this computer.`
+                : `Print bridge not detected on this computer. The bill downloads as a .prn printer file. Set the printer to ${
+                    documentKind === 'ESTIMATE' ? '10 CPI (pica)' : 'condensed, 17 CPI'
+                  } first, then send the file straight to the printer - copy /b <file> PRN on Windows. Do not open it first: it carries bold and wide-print codes that anything else prints as characters. Never print the PDF on a dot-matrix printer.`}
             </Alert>
           ) : null}
         </Stack>
@@ -234,16 +335,26 @@ export function PrintInvoiceModal({
         <Button
           type="button"
           variant="solid"
-          onClick={() => void (isDotMatrix ? handleDownloadPrintFile() : handlePreviewPdf())}
+          onClick={() =>
+            void (isDotMatrix
+              ? bridge
+                ? handlePrintToBridge()
+                : handleDownloadPrintFile()
+              : handlePreviewPdf())
+          }
           disabled={isGenerating}
         >
           {isGenerating ? (
             <Inline gap="sm" align="center">
               <Spinner size="sm" />
-              Generating…
+              {isDotMatrix && bridge ? 'Printing…' : 'Generating…'}
             </Inline>
           ) : isDotMatrix ? (
-            'Download print file'
+            bridge ? (
+              'Print'
+            ) : (
+              'Download printer file'
+            )
           ) : (
             'Generate PDF'
           )}

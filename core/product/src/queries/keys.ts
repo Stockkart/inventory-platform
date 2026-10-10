@@ -31,6 +31,7 @@ export const productKeys = {
   search: (request: SearchRequest | null) => [...base.all, 'search', request] as const,
   searchValues: (field: string, prefix: string) =>
     [...base.all, 'search-values', field, prefix] as const,
+  printBridgeHealth: () => [...base.all, 'print-bridge-health'] as const,
 };
 
 export const PRODUCT_MODULE_VERSION = '0.1.0';
