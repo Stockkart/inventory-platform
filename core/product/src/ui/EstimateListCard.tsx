@@ -302,7 +302,6 @@ export function EstimateListCard({
         purchaseId={estimate.purchaseId}
         invoiceNo={estimate.estimateNo ?? undefined}
         documentLabel="Estimate"
-        documentKind="ESTIMATE"
         onError={(msg) => msg && notifyError(msg)}
         onSuccess={(msg) => msg && notifySuccess(msg)}
         onInfo={(msg) => msg && notifyInfo(msg)}

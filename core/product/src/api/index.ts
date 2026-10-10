@@ -9,6 +9,7 @@ export { sellCatalogApi } from './sell-catalog.api';
 export { purchasesApi } from './purchases.api';
 export { refundsApi } from './refunds.api';
 export { creditNoteApi } from './credit-note.api';
+export { printApi } from './print.api';
 export type { CreditNoteSource } from './credit-note.api';
 export { uploadApi } from './upload.api';
 export {
@@ -23,6 +24,7 @@ export {
   CHECKOUT_ENDPOINTS,
   SHOP_SELL_ENDPOINTS,
   INVOICE_ENDPOINTS,
+  PRINT_ENDPOINTS,
   PURCHASE_ENDPOINTS,
   REFUND_ENDPOINTS,
   UPLOAD_ENDPOINTS,
