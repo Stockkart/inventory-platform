@@ -754,12 +754,18 @@ importers:
 
   plugins/cafe:
     dependencies:
+      '@inventory-platform/api-client':
+        specifier: workspace:*
+        version: link:../../platform/api-client
       '@inventory-platform/contracts':
         specifier: workspace:*
         version: link:../../platform/contracts
       '@inventory-platform/product':
         specifier: workspace:*
         version: link:../../core/product
+      '@inventory-platform/query':
+        specifier: workspace:*
+        version: link:../../platform/query
       '@inventory-platform/routing':
         specifier: workspace:*
         version: link:../../platform/routing
