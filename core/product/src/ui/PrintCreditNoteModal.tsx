@@ -4,6 +4,7 @@ import { FileText, Printer, Receipt } from 'lucide-react';
 import { creditNoteApi, type CreditNoteSource } from '../api/credit-note.api';
 import { invoiceSettingsApi } from '../api/invoice-settings.api';
 import type { PrinterType } from '../api/endpoints';
+import { downloadBlob, openPdfPreview } from '../lib/printDocument';
 import {
   Alert,
   Box,
@@ -55,27 +56,6 @@ const PRINTER_OPTIONS: Array<{
     icon: Receipt,
   },
 ];
-
-function downloadBlob(blob: Blob, filename: string) {
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-}
-
-function openPdfPreview(blob: Blob, fallbackName: string) {
-  const url = window.URL.createObjectURL(blob);
-  const newWindow = window.open(url, '_blank');
-  if (!newWindow) {
-    downloadBlob(blob, fallbackName);
-  } else {
-    window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-  }
-}
 
 export function PrintCreditNoteModal({
   isOpen,
