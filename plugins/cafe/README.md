@@ -84,12 +84,15 @@ confidence.
 
 ## Layout
 
-`pages/` · `routes/` · `routes.ts` · `nav.ts` · `types/` · `index.ts`
+`api/` · `queries/` · `lib/` · `pages/` · `ui/` · `routes/` · `routes.ts` · `nav.ts` · `types/` · `index.ts`
 
 ## Notes
 
 - Ensure the dashboard layout loads the vertical plugin so cafe nav icons/labels resolve.
 - Prefer `productChrome` for stock/search cards consistent with medical Scan Sell.
+- `core/product` is `type:core` and may not import this package. Sell-screen UI owned by
+  cafe is contributed through `VerticalPlugin.sellActions` and rendered by
+  `VerticalSellActions` from `@inventory-platform/routing`.
 
 ## Related
 
