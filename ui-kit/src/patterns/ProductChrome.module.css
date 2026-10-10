@@ -180,7 +180,9 @@
   background: var(--sk-color-bg-elevated, #fff);
   border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, #94a3b8);
   border-radius: var(--sk-radius-xl, 14px);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 14px 32px rgba(15, 23, 42, 0.1);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 14px 32px rgba(15, 23, 42, 0.1);
   animation: skTypeaheadIn 0.14s ease-out;
 }
 @keyframes skTypeaheadIn {
@@ -537,7 +539,9 @@
   color: inherit !important;
   font: inherit !important;
   cursor: pointer;
-  transition: background-color 0.12s ease, border-color 0.12s ease;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease;
 }
 .customerPartyResult:hover:not(:disabled) {
   background: color-mix(
@@ -965,12 +969,78 @@
   overscroll-behavior: contain;
 }
 
+/*
+ * Cafe section tones. A tone class sets --cafe-tone on a section (or tab); everything inside
+ * reads the variable, so one class colours the header, tiles and add badges together. The
+ * colours are theme tokens (categorical palette, success for direct stock), so dark mode is
+ * handled by the theme rather than here.
+ */
+.cafeTone0 {
+  --cafe-tone: var(--sk-color-category-1);
+}
+.cafeTone1 {
+  --cafe-tone: var(--sk-color-category-2);
+}
+.cafeTone2 {
+  --cafe-tone: var(--sk-color-category-3);
+}
+.cafeTone3 {
+  --cafe-tone: var(--sk-color-category-4);
+}
+.cafeTone4 {
+  --cafe-tone: var(--sk-color-category-5);
+}
+.cafeTone5 {
+  --cafe-tone: var(--sk-color-category-6);
+}
+.cafeToneStock {
+  --cafe-tone: var(--sk-color-success);
+}
+
+.cafeTone0,
+.cafeTone1,
+.cafeTone2,
+.cafeTone3,
+.cafeTone4,
+.cafeTone5,
+.cafeToneStock {
+  --cafe-tone-soft: color-mix(in srgb, var(--cafe-tone) 10%, transparent);
+  --cafe-tone-on: var(--sk-color-text-inverse);
+}
+
+[data-theme='dark'] .cafeTone0,
+[data-theme='dark'] .cafeTone1,
+[data-theme='dark'] .cafeTone2,
+[data-theme='dark'] .cafeTone3,
+[data-theme='dark'] .cafeTone4,
+[data-theme='dark'] .cafeTone5,
+[data-theme='dark'] .cafeToneStock {
+  --cafe-tone-soft: color-mix(in srgb, var(--cafe-tone) 16%, transparent);
+  --cafe-tone-on: var(--sk-color-text-inverse);
+}
+
 .cafeCatalogSection {
   margin-bottom: 1.4rem;
 }
 
 .cafeCatalogSectionHeader {
   margin-bottom: 0.7rem;
+  padding: 0.55rem 0.75rem;
+  border-left: 4px solid var(--cafe-tone, var(--sk-color-accent));
+  border-radius: 8px;
+  background: var(--cafe-tone-soft, var(--sk-color-accent-soft));
+}
+
+.cafeCatalogSectionTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--cafe-tone, var(--sk-color-text-primary));
+}
+
+.cafeCatalogSectionHeader .cafeCatalogCount {
+  background: var(--cafe-tone, var(--sk-color-accent));
+  color: var(--cafe-tone-on, var(--sk-color-text-inverse));
+  border-color: transparent;
 }
 
 .cafeCatalogGrid {
@@ -979,16 +1049,18 @@
   gap: 0.7rem;
 }
 
-.cafeCatalogTile {
+.cafeCatalogTile,
+.cafeCatalogTilePortioned,
+.cafeCatalogTileStock {
   min-height: 92px;
   text-align: left;
-  border-left: 3px solid var(--sk-color-border-strong);
+  border-left: 3px solid var(--cafe-tone, var(--sk-color-accent));
 }
 
-.cafeCatalogTilePortioned {
-  min-height: 92px;
-  text-align: left;
-  border-left: 3px solid var(--sk-color-accent);
+.cafeCatalogSection .cafeCatalogTile:hover:not(:disabled),
+.cafeCatalogSection .cafeCatalogTilePortioned:hover:not(:disabled),
+.cafeCatalogSection .cafeCatalogTileStock:hover:not(:disabled) {
+  background: var(--cafe-tone-soft, var(--sk-color-hover));
 }
 
 .cafeCatalogTileHint {
@@ -1014,26 +1086,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.cafeCatalogTileStock {
-  min-height: 92px;
-  text-align: left;
-  border-left: 3px solid #22c55e;
-}
-
-.cafeCatalogAddBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: rgba(59, 130, 246, 0.12);
-  color: var(--sk-color-brand, #355a82);
-  font-size: 1rem;
-  font-weight: 600;
-  line-height: 1;
-}
-
+.cafeCatalogAddBadge,
 .cafeCatalogAddBadgeStock {
   display: inline-flex;
   align-items: center;
@@ -1041,8 +1094,8 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: rgba(34, 197, 94, 0.14);
-  color: #16a34a;
+  background: var(--cafe-tone-soft, var(--sk-color-accent-soft));
+  color: var(--cafe-tone, var(--sk-color-brand));
   font-size: 1rem;
   font-weight: 600;
   line-height: 1;
@@ -1051,6 +1104,27 @@
 .cafeCatalogTab {
   border-radius: 999px;
   flex-shrink: 0;
+}
+
+/* Inactive tab: a dot in its section's tone ties the tab to the header below it. */
+.cafeCatalogTabToned::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--cafe-tone);
+}
+
+/* Three classes plus the attribute outrank the Button variant rules, hover included. */
+.cafeCatalogTabs .cafeCatalogTab.cafeCatalogTabToned[aria-selected='true'] {
+  background: var(--cafe-tone);
+  color: var(--cafe-tone-on);
+}
+
+.cafeCatalogTabs .cafeCatalogTab.cafeCatalogTabToned[aria-selected='true']::before {
+  background: var(--cafe-tone-on);
 }
 
 /* Menu admin */
@@ -1171,7 +1245,10 @@
   border-radius: 10px;
   background: var(--sk-color-bg-elevated, #fff);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    opacity 0.15s ease;
 }
 
 .menuAdminItem:hover {
@@ -1773,7 +1850,10 @@
 
 .clickableCard {
   cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease,
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease,
     transform 0.15s ease;
 }
 
@@ -2293,7 +2373,9 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .searchResultCard:hover {
@@ -2601,7 +2683,10 @@
   box-shadow: none !important;
   color: inherit !important;
   font: inherit !important;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease,
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease,
     transform 0.15s ease;
 }
 
@@ -2694,7 +2779,10 @@
   border: 2px solid var(--sk-color-border-strong, #cbd5e1);
   background: var(--sk-color-bg-elevated, #fff);
   box-sizing: border-box;
-  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .printOptionSelected .printOptionRadio {
