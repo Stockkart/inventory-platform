@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { EstimateSummary } from '@inventory-platform/product/types';
+import { useNotify } from '@inventory-platform/session';
 import { formatCustomerDisplayName } from '../lib/customerDisplay';
 import {
   Alert,
@@ -137,6 +138,7 @@ export function EstimateListCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const { error: notifyError, success: notifySuccess, info: notifyInfo } = useNotify;
   const canPrint = estimate.estimateState === 'LOCKED' || estimate.estimateState === 'CONVERTED';
   const canConvert =
     estimate.itemCount > 0 &&
@@ -300,6 +302,10 @@ export function EstimateListCard({
         purchaseId={estimate.purchaseId}
         invoiceNo={estimate.estimateNo ?? undefined}
         documentLabel="Estimate"
+        documentKind="ESTIMATE"
+        onError={(msg) => msg && notifyError(msg)}
+        onSuccess={(msg) => msg && notifySuccess(msg)}
+        onInfo={(msg) => msg && notifyInfo(msg)}
       />
     </>
   );
