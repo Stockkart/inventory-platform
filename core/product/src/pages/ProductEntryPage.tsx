@@ -10,6 +10,7 @@ import { productApi } from '../api/product.api';
 import { barcodesApi } from '../api/barcodes.api';
 import { stockEntryEstimatesApi } from '../api/stockEntryEstimates.api';
 import { mapLastInventoryToRegistrationPatch } from '../lib/registrationPrefill';
+import { requiresExplicitPackSize } from '../lib/packagingPackSize';
 import {
   clearProductEntryDraft,
   readProductEntryDraft,
@@ -2748,8 +2749,7 @@ export function ProductEntryPage() {
           );
           const normalizedUnitsPerPack = packagingFactorToUnitsPerPack(displayFactor, unitDef);
           if (
-            unitDef?.allowsUnitsPerPack &&
-            unitDef.sellUnitRule === 'PACK_ONLY' &&
+            requiresExplicitPackSize(unitDef) &&
             !isSelfPackUnit(baseUqcForValidation, packagingUnits) &&
             normalizedUnitsPerPack <= 0
           ) {

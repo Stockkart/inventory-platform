@@ -24,7 +24,6 @@ export {
   isDateInRange,
   paginateLocal,
   matchesRegexField,
-  buildVendorInvoiceSearchQuery,
 } from './historyFilters';
 export type { HistoryFilters, HistoryTab } from './historyFilters';
 export { HistoryListSummary } from './HistoryListSummary';
@@ -66,6 +65,7 @@ export type { CustomerProductHistoryHintProps } from './CustomerProductHistoryHi
 export { useCustomerProductHistory } from './useCustomerProductHistory';
 export * from './scanSellStyles';
 export { CustomRemindersSection } from './CustomReminderInput';
+export { CafeSellCatalogPanel } from './CafeSellCatalogPanel';
 export { BarcodeLabelLayoutSection } from './labelLayout/BarcodeLabelLayoutSection';
 export { SearchFilterStrip } from './search/SearchFilterStrip';
 export type { SearchFilterStripProps } from './search/SearchFilterStrip';

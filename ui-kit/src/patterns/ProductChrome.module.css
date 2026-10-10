@@ -965,12 +965,99 @@
   overscroll-behavior: contain;
 }
 
+/*
+ * Cafe section tones. A tone class sets --cafe-tone on a section (or tab); everything inside
+ * reads the variable, so one class colours the header, tiles and add badges together. Light
+ * values hold 4.5:1 against white; dark values are lighter so they hold against slate.
+ */
+.cafeTone0 {
+  --cafe-tone: #1d4ed8;
+}
+.cafeTone1 {
+  --cafe-tone: #c2410c;
+}
+.cafeTone2 {
+  --cafe-tone: #be123c;
+}
+.cafeTone3 {
+  --cafe-tone: #0f766e;
+}
+.cafeTone4 {
+  --cafe-tone: #b45309;
+}
+.cafeTone5 {
+  --cafe-tone: #a21caf;
+}
+.cafeToneStock {
+  --cafe-tone: #15803d;
+}
+
+[data-theme='dark'] .cafeTone0 {
+  --cafe-tone: #60a5fa;
+}
+[data-theme='dark'] .cafeTone1 {
+  --cafe-tone: #fb923c;
+}
+[data-theme='dark'] .cafeTone2 {
+  --cafe-tone: #fb7185;
+}
+[data-theme='dark'] .cafeTone3 {
+  --cafe-tone: #2dd4bf;
+}
+[data-theme='dark'] .cafeTone4 {
+  --cafe-tone: #fbbf24;
+}
+[data-theme='dark'] .cafeTone5 {
+  --cafe-tone: #e879f9;
+}
+[data-theme='dark'] .cafeToneStock {
+  --cafe-tone: #4ade80;
+}
+
+.cafeTone0,
+.cafeTone1,
+.cafeTone2,
+.cafeTone3,
+.cafeTone4,
+.cafeTone5,
+.cafeToneStock {
+  --cafe-tone-soft: color-mix(in srgb, var(--cafe-tone) 10%, transparent);
+  --cafe-tone-on: #ffffff;
+}
+
+[data-theme='dark'] .cafeTone0,
+[data-theme='dark'] .cafeTone1,
+[data-theme='dark'] .cafeTone2,
+[data-theme='dark'] .cafeTone3,
+[data-theme='dark'] .cafeTone4,
+[data-theme='dark'] .cafeTone5,
+[data-theme='dark'] .cafeToneStock {
+  --cafe-tone-soft: color-mix(in srgb, var(--cafe-tone) 16%, transparent);
+  --cafe-tone-on: #0f172a;
+}
+
 .cafeCatalogSection {
   margin-bottom: 1.4rem;
 }
 
 .cafeCatalogSectionHeader {
   margin-bottom: 0.7rem;
+  padding: 0.55rem 0.75rem;
+  border-left: 4px solid var(--cafe-tone, var(--sk-color-accent));
+  border-radius: 8px;
+  background: var(--cafe-tone-soft, var(--sk-color-accent-soft));
+}
+
+.cafeCatalogSectionTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--cafe-tone, var(--sk-color-text-primary));
+}
+
+.cafeCatalogSectionHeader .cafeCatalogCount {
+  background: var(--cafe-tone, var(--sk-color-accent));
+  color: var(--cafe-tone-on, #ffffff);
+  border-color: transparent;
 }
 
 .cafeCatalogGrid {
@@ -979,32 +1066,44 @@
   gap: 0.7rem;
 }
 
-.cafeCatalogTile {
-  min-height: 92px;
-  text-align: left;
-  border-left: 3px solid #355a82;
-}
-
+.cafeCatalogTile,
+.cafeCatalogTilePortioned,
 .cafeCatalogTileStock {
   min-height: 92px;
   text-align: left;
-  border-left: 3px solid #22c55e;
+  border-left: 3px solid var(--cafe-tone, var(--sk-color-accent));
 }
 
-.cafeCatalogAddBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: rgba(59, 130, 246, 0.12);
-  color: var(--sk-color-brand, #355a82);
-  font-size: 1rem;
+.cafeCatalogSection .cafeCatalogTile:hover:not(:disabled),
+.cafeCatalogSection .cafeCatalogTilePortioned:hover:not(:disabled),
+.cafeCatalogSection .cafeCatalogTileStock:hover:not(:disabled) {
+  background: var(--cafe-tone-soft, var(--sk-color-hover));
+}
+
+.cafeCatalogTileHint {
+  font-size: 0.7rem;
   font-weight: 600;
-  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-secondary, #64748b);
 }
 
+.cafeCatalogPortionList {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.cafeCatalogPortionRow {
+  min-height: 52px;
+  text-align: left;
+  border-left: 3px solid var(--sk-color-accent);
+}
+
+.cafeCatalogPortionPrice {
+  font-variant-numeric: tabular-nums;
+}
+
+.cafeCatalogAddBadge,
 .cafeCatalogAddBadgeStock {
   display: inline-flex;
   align-items: center;
@@ -1012,8 +1111,8 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: rgba(34, 197, 94, 0.14);
-  color: #16a34a;
+  background: var(--cafe-tone-soft, var(--sk-color-accent-soft));
+  color: var(--cafe-tone, var(--sk-color-brand));
   font-size: 1rem;
   font-weight: 600;
   line-height: 1;
@@ -1022,6 +1121,27 @@
 .cafeCatalogTab {
   border-radius: 999px;
   flex-shrink: 0;
+}
+
+/* Inactive tab: a dot in its section's tone ties the tab to the header below it. */
+.cafeCatalogTabToned::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--cafe-tone);
+}
+
+/* Three classes plus the attribute outrank the Button variant rules, hover included. */
+.cafeCatalogTabs .cafeCatalogTab.cafeCatalogTabToned[aria-selected='true'] {
+  background: var(--cafe-tone);
+  color: var(--cafe-tone-on);
+}
+
+.cafeCatalogTabs .cafeCatalogTab.cafeCatalogTabToned[aria-selected='true']::before {
+  background: var(--cafe-tone-on);
 }
 
 /* Menu admin */
@@ -1184,6 +1304,44 @@
   font-weight: 600 !important;
 }
 
+.menuAdminItemDepartment {
+  flex: 1;
+  min-width: 0;
+  text-transform: uppercase;
+}
+
+.menuAdminPortionSection {
+  display: grid;
+  gap: 0.45rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+}
+
+.menuAdminPortionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.menuAdminPortionRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 6.5rem auto;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.menuAdminPortionPrice {
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600 !important;
+}
+
+.menuAdminPortionHint {
+  font-size: 0.75rem;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
 .menuAdminItemMeta {
   display: flex;
   align-items: center;
@@ -1305,6 +1463,11 @@
 .historyHintInline {
   margin-top: 0.4rem;
   display: inline-flex;
+  /* inline-flex hugs its label only until a flex column stretches it: `align-items: stretch`
+     is the default, so inside a Stack the pill spanned the whole cart line instead of
+     sitting beside its text. */
+  align-self: flex-start;
+  max-width: 100%;
 }
 
 .historyHintNew {

@@ -1,3 +1,4 @@
+import { formatDocumentDate } from '../lib/documentDate';
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import { useAmendVendorPurchaseInvoiceMutation } from '../queries/hooks';
 import { inventoryApi } from '../api/inventory.api';
@@ -33,15 +34,7 @@ import {
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { isVendorReturnEnabled } from '@inventory-platform/routing';
-import {
-  HistoryListSummary,
-  hasActiveHistoryFilters,
-  isDateInRange,
-  buildVendorInvoiceSearchQuery,
-  paginateLocal,
-  matchesRegexField,
-  VendorInvoiceExpandedBody,
-} from '../ui';
+import { HistoryListSummary, hasActiveHistoryFilters, VendorInvoiceExpandedBody } from '../ui';
 import type { HistoryFilters } from '../ui';
 import { useAuthStore, useNotify, useShopCapabilitiesStore } from '@inventory-platform/session';
 
@@ -62,21 +55,6 @@ function formatMoney(n: number | null | undefined): string {
     currency: 'INR',
     maximumFractionDigits: 2,
   }).format(n);
-}
-
-function formatDateShort(iso: string | null | undefined): string {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } catch {
-    return iso;
-  }
 }
 
 function readInventoryIdentity(item: InventoryItem): string | null {
@@ -160,8 +138,6 @@ export type VendorInvoicesPageProps = {
   filters?: HistoryFilters;
 };
 
-const FILTER_FETCH_SIZE = 100;
-
 export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoicesPageProps) {
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
   const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
@@ -207,19 +183,23 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
     setError(null);
     try {
       if (filtering && filters) {
-        const q = buildVendorInvoiceSearchQuery(filters);
-        const res = await inventoryApi.listVendorPurchaseInvoices(0, FILTER_FETCH_SIZE, q);
-        let rows = res.invoices ?? [];
-        rows = rows.filter((inv) =>
-          isDateInRange(inv.invoiceDate, filters.dateFrom, filters.dateTo),
+        // Every filter goes to the server so it searches the shop's whole history. Filtering a
+        // fetched page here only ever saw the most recently entered bills.
+        const res = await inventoryApi.listVendorPurchaseInvoices(
+          filterPage - 1,
+          embeddedPageSize,
+          undefined,
+          {
+            invoiceNo: filters.invoiceNo,
+            vendor: filters.vendor,
+            from: filters.dateFrom || undefined,
+            to: filters.dateTo || undefined,
+          },
         );
-        rows = rows.filter((inv) => matchesRegexField(filters.invoiceNo, inv.invoiceNo));
-        rows = rows.filter((inv) => matchesRegexField(filters.vendor, vendorDisplay(inv)));
-        const paged = paginateLocal(rows, filterPage, embeddedPageSize);
-        setFilteredTotal(paged.total);
-        setInvoices(paged.slice);
-        setTotalPages(paged.totalPages);
-        setTotalItems(paged.total);
+        setFilteredTotal(res.page?.totalItems ?? 0);
+        setInvoices(res.invoices ?? []);
+        setTotalPages(res.page?.totalPages ?? 0);
+        setTotalItems(res.page?.totalItems ?? 0);
       } else if (embedded) {
         const res = await inventoryApi.listVendorPurchaseInvoices(
           page,
@@ -477,7 +457,7 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
                         Date
                       </Text>
                       <Text as="p" className={productChrome.salePickValue}>
-                        {formatDateShort(inv.invoiceDate)}
+                        {formatDocumentDate(inv.invoiceDate)}
                       </Text>
                     </Box>
                     <Box className={productChrome.salePickField}>
@@ -567,7 +547,7 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
                     <Text weight="semibold">{vendorDisplay(inv)}</Text>
                   </TableCell>
                   <TableCell>
-                    <Text color="secondary">{formatDateShort(inv.invoiceDate)}</Text>
+                    <Text color="secondary">{formatDocumentDate(inv.invoiceDate)}</Text>
                   </TableCell>
                   <TableCell className={surfaceChrome.numericCell}>
                     <Text color="secondary">{inv.lineCount}</Text>
