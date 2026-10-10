@@ -1,6 +1,4 @@
 import type { ReactNode } from 'react';
-import type { CustomerProductHistoryResponse } from '@inventory-platform/product/types';
-import { inventorySellableRef } from '@inventory-platform/product/types';
 import {
   Badge,
   Button,
@@ -11,7 +9,6 @@ import {
   cn,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
-import { CustomerProductHistoryHint } from './CustomerProductHistoryHint';
 import {
   cartLineActionsStyle,
   cartLineFooterStyle,
@@ -29,14 +26,11 @@ function money(n: number): string {
 
 export interface ScanSellCafeStockLineProps {
   name: string;
-  inventoryId: string;
   unitLabel?: string;
   price: number;
   quantity: number;
   lineTotal: number;
   disabled?: boolean;
-  customerProductHistory?: CustomerProductHistoryResponse | null;
-  customerProductHistoryLoading?: boolean;
   /** Per-line margin caption. Caller decides whether purchase-side figures may be shown. */
   marginNote?: ReactNode;
   onChangeQty: (delta: number) => void;
@@ -46,14 +40,11 @@ export interface ScanSellCafeStockLineProps {
 
 export function ScanSellCafeStockLine({
   name,
-  inventoryId,
   unitLabel,
   price,
   quantity,
   lineTotal,
   disabled = false,
-  customerProductHistory,
-  customerProductHistoryLoading = false,
   marginNote,
   onChangeQty,
   onSetQuantity,
@@ -69,11 +60,6 @@ export function ScanSellCafeStockLine({
             </Text>
             <Badge variant="neutral">Stock</Badge>
           </Inline>
-          <CustomerProductHistoryHint
-            sellableRef={inventorySellableRef(inventoryId)}
-            history={customerProductHistory ?? null}
-            loading={customerProductHistoryLoading}
-          />
           <Text variant="caption" className={cartLineMetaStyle}>
             {unitLabel ? `${unitLabel} · ` : ''}
             {money(price)} each

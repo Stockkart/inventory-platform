@@ -36,6 +36,13 @@
   --sk-color-danger-soft: rgba(220, 38, 38, 0.12);
   --sk-color-info: #1e3a5f;
   --sk-color-info-soft: rgba(30, 58, 95, 0.12);
+  /* Categorical palette: tells sibling groups apart (e.g. cafe menu sections). Not status colours. */
+  --sk-color-category-1: #1d4ed8;
+  --sk-color-category-2: #c2410c;
+  --sk-color-category-3: #be123c;
+  --sk-color-category-4: #0f766e;
+  --sk-color-category-5: #b45309;
+  --sk-color-category-6: #a21caf;
   --sk-color-focus-ring: rgba(30, 58, 95, 0.35);
   --sk-color-hover: rgba(15, 23, 42, 0.04);
 
@@ -69,10 +76,10 @@
   --sk-z-modal: 9000;
   --sk-z-toast: 9500;
 
-  --sk-font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui,
-    sans-serif;
-  --sk-font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui,
-    sans-serif;
+  --sk-font-sans:
+    'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --sk-font-display:
+    'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --sk-font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', monospace;
 
   --sk-space-marketing-y: 5rem;
@@ -113,6 +120,12 @@
   --sk-color-bg-sidebar: #0b1220;
   --sk-color-bg-header: #111827;
   --sk-color-text-primary: #f8fafc;
+  --sk-color-category-1: #60a5fa;
+  --sk-color-category-2: #fb923c;
+  --sk-color-category-3: #fb7185;
+  --sk-color-category-4: #2dd4bf;
+  --sk-color-category-5: #fbbf24;
+  --sk-color-category-6: #e879f9;
   --sk-color-text-secondary: #cbd5e1;
   --sk-color-text-muted: #94a3b8;
   --sk-color-text-inverse: #0f172a;

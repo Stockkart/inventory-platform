@@ -30,14 +30,17 @@ Theme: wrap with `ThemeProvider`, or `@import '@inventory-platform/ui-kit/theme/
 
 ## Layers
 
-| Layer       | Location                                     | Examples                                  |
-| ----------- | -------------------------------------------- | ----------------------------------------- |
-| Tokens      | `theme/`, `tokens/`                          | `--sk-*` CSS variables                    |
-| Primitives  | `forms/`, `layout/`, `feedback/`, `overlay/` | `Button`, `Box`, `Alert`, `Drawer`        |
-| Patterns    | `patterns/`                                  | `PageHeader`, `PaginationBar`, `AppShell` |
-| Chrome maps | `patterns/*Chrome*`                          | CSS module class bags for domains         |
+| Layer  | Location            | Examples               |
+| ------ | ------------------- | ---------------------- |
+| Tokens | `theme/`, `tokens/` | `--sk-*` CSS variables |
+
+| Primitives | `forms/`, `layout/`, `feedback/`, `overlay/` | `Button`, `Box`, `Alert`, `Drawer` |
+| Patterns | `patterns/` | `PageHeader`, `PaginationBar`, `AppShell` |
+| Chrome maps | `patterns/*Chrome*` | CSS module class bags for domains |
 
 Domain widgets and pages stay in `core/*/ui` and `core/*/pages`.
+
+**Categorical palette.** `--sk-color-category-1` … `-6` (light and dark values in `theme/tokens.css`) tell sibling groups apart, e.g. cafe menu sections. They are not status colours; use `--sk-color-success` / `-warning` / `-danger` / `-info` for state.
 
 ## Chrome map
 
