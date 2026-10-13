@@ -243,6 +243,9 @@ describe('renderBarcodeLabelsHtml COMPACT template', () => {
     expect(html).toContain('.compact .left{flex:3}');
     expect(html).toContain('.compact .right{flex:2;text-align:right}');
     expect(html).toContain('text-transform:uppercase');
+    // The header line and the bars are centred across the sticker.
+    expect(html).toContain('.compact .hdr .line{text-align:center}');
+    expect(html).toContain('.compact .bars{height:30%;width:100%;align-self:center}');
   });
 
   it('orders header, barcode and body with barcodePosition TOP (the default)', () => {
@@ -368,12 +371,35 @@ describe('STACKED template is unaffected by the Requirement 11 optional fields',
     expect(withTemplate).toEqual(base);
   });
 
-  it('ignores barcodePosition, currencyStyle, fieldZones and fieldLabelOverrides for STACKED', () => {
+  it('puts the bars and code after the field lines with barcodePosition BOTTOM for STACKED', () => {
+    const result = renderBarcodeLabelsHtml(labels, {
+      ...stacked,
+      template: 'STACKED',
+      barcodePosition: 'BOTTOM',
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const { html } = result;
+
+    const line = html.indexOf('class="line"');
+    const bars = html.indexOf('class="bars"');
+    const code = html.indexOf('class="code"');
+    expect(line).toBeGreaterThanOrEqual(0);
+    expect(line).toBeLessThan(bars);
+    expect(bars).toBeLessThan(code);
+  });
+
+  it('keeps the bars and code first for STACKED when barcodePosition is TOP', () => {
+    const base = renderBarcodeLabelsHtml(labels, stacked);
+    const withTop = renderBarcodeLabelsHtml(labels, { ...stacked, barcodePosition: 'TOP' });
+    expect(withTop).toEqual(base);
+  });
+
+  it('ignores currencyStyle, fieldZones and fieldLabelOverrides for STACKED', () => {
     const base = renderBarcodeLabelsHtml(labels, stacked);
     const withExtras = renderBarcodeLabelsHtml(labels, {
       ...stacked,
       template: 'STACKED',
-      barcodePosition: 'BOTTOM',
       currencyStyle: 'RS_PREFIX',
       fieldZones: { productName: 'HEADER', mrp: 'RIGHT' },
       fieldLabelOverrides: { productName: true, mrp: true },

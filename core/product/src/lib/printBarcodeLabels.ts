@@ -1,7 +1,11 @@
 import JsBarcode from 'jsbarcode';
 import { fitBarcodeSvgToDots, usableWidthMmOf } from './barcodeDots';
 import { labelLayoutSession } from './labelLayoutSession';
-import { renderBarcodeLabelsHtml, type RenderOptions } from './renderBarcodeLabelsHtml';
+import {
+  renderBarcodeLabelsHtml,
+  repeatLabels,
+  type RenderOptions,
+} from './renderBarcodeLabelsHtml';
 import {
   DEFAULT_LAYOUT,
   type EffectiveLabelLayout,
@@ -17,7 +21,8 @@ import {
  * Rendering errors (e.g. an empty list, Req 7.13) are thrown before any window opens.
  *
  * `opts.startPosition` (Req 10.9) is forwarded to the renderer; it only affects
- * `SHEET` layouts and is ignored for `ROLL`.
+ * `SHEET` layouts and is ignored for `ROLL`. `opts.copies` repeats each label in
+ * the print job, so every sticker on a multi-across roll row is used.
  */
 export function openBarcodeLabelPrintWindow(
   labels: LabelData[],
@@ -38,12 +43,14 @@ export function openBarcodeLabelPrintWindow(
   win.document.write(result.html);
   win.document.close();
 
+  // `data-idx` counts printed stickers (after `copies`), not input labels.
+  const printed = repeatLabels(labels, opts?.copies);
   const draw = () => {
     try {
       const nodes = win.document.querySelectorAll<SVGSVGElement>('svg.bars[data-idx]');
       nodes.forEach((node) => {
         const idx = Number(node.getAttribute('data-idx'));
-        const code = node.dataset.code || labels[idx]?.code;
+        const code = node.dataset.code || printed[idx]?.code;
         if (!code) return;
         // One CSS px per module so the svg's width attribute is the module count;
         // the height is a placeholder because the sticker CSS stretches the bars.
