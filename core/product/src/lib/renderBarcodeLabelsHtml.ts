@@ -35,17 +35,19 @@ export type RenderOptions = { startPosition?: number };
  * header band, the two-column body and the condensed type scale. Left-column lines
  * wrap at word breaks to at most two lines instead of being cut with "…"; the header
  * and the right column (prices) stay on one line. The sticker never grows past its size.
+ * The header line and the bars sit centred across the sticker; the body columns keep
+ * their own left/right alignment.
  */
 const COMPACT_CSS = `.compact{align-items:stretch;padding:1.5mm;font-family:"Arial Narrow","Roboto Condensed","Liberation Sans Narrow",system-ui,sans-serif}
     .compact .hdr{width:100%;font-size:9pt;font-weight:700;text-transform:uppercase}
-    .compact .hdr .line{text-align:left}
+    .compact .hdr .line{text-align:center}
     .compact .body{display:flex;gap:1.5mm;flex:1;min-height:0}
     .compact .col{display:flex;flex-direction:column;min-width:0}
     .compact .left{flex:3}
     .compact .right{flex:2;text-align:right}
     .compact .left .line{font-size:8pt;text-align:left;white-space:normal;overflow-wrap:break-word;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-height:1.15}
     .compact .right .line{font-size:9pt;font-weight:700;text-align:right}
-    .compact .bars{height:30%;width:100%}
+    .compact .bars{height:30%;width:100%;align-self:center}
     .compact .code{font-size:9pt;letter-spacing:1px;text-align:center}`;
 
 /**
@@ -139,17 +141,26 @@ export function computeStickerLines(label: LabelData, layout: EffectiveLabelLayo
   return lines;
 }
 
+/**
+ * Renders one `STACKED` sticker: the bars with the code line under them, and the field
+ * lines in one centred column. `barcodePosition: 'BOTTOM'` moves the bars and code below
+ * the field lines; `TOP` (the default) keeps them first.
+ */
 function renderSticker(label: LabelData, layout: EffectiveLabelLayout, index: number): string {
   const { widthMm, heightMm } = resolveStickerSize(layout);
   const code = escapeHtml(label.code);
-  const lines = computeStickerLines(label, layout)
-    .map((line) =>
-      line.kind === 'code'
-        ? `<div class="code">${escapeHtml(line.text)}</div>`
-        : `<div class="line">${escapeHtml(line.text)}</div>`,
-    )
+  const lines = computeStickerLines(label, layout);
+  const codeHtml = lines
+    .filter((line) => line.kind === 'code')
+    .map((line) => `<div class="code">${escapeHtml(line.text)}</div>`)
     .join('');
-  return `<div class="sticker" style="width:${widthMm}mm;height:${heightMm}mm"><svg class="bars" data-idx="${index}" data-code="${code}"></svg>${lines}</div>`;
+  const fieldsHtml = lines
+    .filter((line) => line.kind !== 'code')
+    .map((line) => `<div class="line">${escapeHtml(line.text)}</div>`)
+    .join('');
+  const bars = `<svg class="bars" data-idx="${index}" data-code="${code}"></svg>${codeHtml}`;
+  const body = layout.barcodePosition === 'BOTTOM' ? fieldsHtml + bars : bars + fieldsHtml;
+  return `<div class="sticker" style="width:${widthMm}mm;height:${heightMm}mm">${body}</div>`;
 }
 
 /** The three `COMPACT` zones, in render order within the sticker body/header. */

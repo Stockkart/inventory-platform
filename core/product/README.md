@@ -71,7 +71,10 @@ Product Search and Scan & Sell call `POST /inventory/search` (`inventoryApi.sear
 - **Compact template.** Prints values only (no "PRODUCT NAME:" prefix) unless a field's label is
   switched on; the server resolves this per field (`showLabel`). Left-column values wrap at word
   breaks to two lines, the header and the price stay on one line, and nothing grows past the
-  sticker size (checked for 2-up 38x38).
+  sticker size (checked for 2-up 38x38). The header line and the bars are centred across the
+  sticker.
+- **Barcode position.** `TOP` (default) or `BOTTOM` applies to both templates. On Stacked, `BOTTOM`
+  prints the field lines first, then the bars with the code under them.
 - **Bars a scanner can read.** Thermal printers print whole dots (0.125 mm at 203 dpi).
   `lib/barcodeDots.ts` sizes each printed Code128 module to a whole number of dots, measured
   against the sticker in the print window (≈24 mm wide for a 14-character code on 38 mm), with
