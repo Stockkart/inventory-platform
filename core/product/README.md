@@ -72,6 +72,10 @@ Product Search and Scan & Sell call `POST /inventory/search` (`inventoryApi.sear
   switched on; the server resolves this per field (`showLabel`). Left-column values wrap at word
   breaks to two lines, the header and the price stay on one line, and nothing grows past the
   sticker size (checked for 2-up 38x38).
+- **Copies of each sticker.** The Print barcode stickers popup asks how many copies of each
+  sticker to print (default 1); the renderer repeats each label in place (`RenderOptions.copies`),
+  so one product printed 6 times on a 2-across roll fills 3 full rows. Use this instead of the
+  printer dialog's Copies, which reprints a whole page and leaves the right column empty.
 - **Bars a scanner can read.** Thermal printers print whole dots (0.125 mm at 203 dpi).
   `lib/barcodeDots.ts` sizes each printed Code128 module to a whole number of dots, measured
   against the sticker in the print window (≈24 mm wide for a 14-character code on 38 mm), with

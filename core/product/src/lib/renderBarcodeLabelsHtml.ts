@@ -25,8 +25,18 @@ export type StickerLine = {
 
 export type RenderResult = { ok: true; html: string } | { ok: false; error: string };
 
-/** Render-time options. `startPosition` only affects `SHEET` mode (Req 10.9). */
-export type RenderOptions = { startPosition?: number };
+/**
+ * Render-time options. `startPosition` only affects `SHEET` mode (Req 10.9).
+ * `copies` prints each label that many times in a row (default 1), so a 2-across
+ * roll fills both columns instead of the printer dialog repeating a half-empty row.
+ */
+export type RenderOptions = { startPosition?: number; copies?: number };
+
+/** Each label repeated `copies` times in place (`A A B B`); `copies` below 1 counts as 1. */
+export function repeatLabels(labels: readonly LabelData[], copies = 1): LabelData[] {
+  const times = Math.max(1, Math.trunc(copies) || 1);
+  return labels.flatMap((label) => Array.from({ length: times }, () => label));
+}
 
 /**
  * Sticker-level CSS for the `COMPACT` template (Req 11). Shared verbatim between the
@@ -393,10 +403,11 @@ export function usableRollSpec(layout: EffectiveLabelLayout): RollSpec | null {
 }
 
 export function renderBarcodeLabelsHtml(
-  labels: readonly LabelData[],
+  items: readonly LabelData[],
   layout: EffectiveLabelLayout,
   opts?: RenderOptions,
 ): RenderResult {
+  const labels = repeatLabels(items, opts?.copies);
   if (labels.length === 0) {
     return { ok: false, error: 'No labels to print' };
   }
