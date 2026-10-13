@@ -85,23 +85,30 @@ export function PrintBarcodeLabelsModal({
   // Raw text so the user can type freely; clamped to `[1, perSheet]` on blur
   // and whenever the value feeds a calculation (Req 10.11). Resets on close.
   const [startInput, setStartInput] = useState('1');
+  // Raw text for "Copies of each sticker"; read as a whole number ≥ 1. Resets on close.
+  const [copiesInput, setCopiesInput] = useState('1');
   const layoutQuery = useLabelLayoutQuery({ enabled: isOpen });
 
   useEffect(() => {
     // Clear a stale failure message whenever the modal is reopened.
     if (isOpen) setPrintError(null);
     // Forget a prior start position once the modal is dismissed.
-    else setStartInput('1');
+    else {
+      setStartInput('1');
+      setCopiesInput('1');
+    }
   }, [isOpen]);
 
   const count = preloaded?.length ?? (productIds?.length ?? 0) + (codes?.length ?? 0);
+  const copies = Math.max(1, Math.trunc(Number(copiesInput)) || 1);
 
   // Sheet summary + start position apply only to the loaded SHEET layout (Req 10.11).
   const summarySheet = sheetSpecOf(layoutQuery.data);
   const perSheet = summarySheet?.perSheet ?? 0;
   const startPosition = perSheet >= 1 ? clamp(Math.trunc(Number(startInput) || 1), 1, perSheet) : 1;
   // Items to print, in task-defined precedence; undefined when it cannot be known yet.
-  const sheetItemCount = preloaded?.length ?? codes?.length ?? productIds?.length;
+  const itemCount = preloaded?.length ?? codes?.length ?? productIds?.length;
+  const sheetItemCount = itemCount !== undefined ? itemCount * copies : undefined;
   const sheetsNeeded =
     perSheet >= 1 && sheetItemCount !== undefined
       ? Math.ceil((sheetItemCount + startPosition - 1) / perSheet)
@@ -131,8 +138,11 @@ export function PrintBarcodeLabelsModal({
       // re-clamp against the layout actually used for printing (Req 10.9, 10.11).
       const printSheet = sheetSpecOf(layout);
       const opts = printSheet
-        ? { startPosition: clamp(Math.trunc(Number(startInput) || 1), 1, printSheet.perSheet) }
-        : undefined;
+        ? {
+            copies,
+            startPosition: clamp(Math.trunc(Number(startInput) || 1), 1, printSheet.perSheet),
+          }
+        : { copies };
       openBarcodeLabelPrintWindow(rows, layout, opts);
       onClose();
     } catch (err) {
@@ -197,9 +207,24 @@ export function PrintBarcodeLabelsModal({
           <Inline gap="sm" align="center">
             <Icon icon={Printer} size="sm" />
             <Text>
-              {count} sticker{count === 1 ? '' : 's'}
+              {count * copies} sticker{count * copies === 1 ? '' : 's'}
             </Text>
           </Inline>
+          <FormField
+            label="Copies of each sticker"
+            htmlFor="print-copies"
+            hint="Set copies here, not in the printer dialog, so every label across the roll is used"
+          >
+            <Input
+              id="print-copies"
+              type="number"
+              min={1}
+              value={copiesInput}
+              disabled={isPrinting}
+              onChange={(event) => setCopiesInput(event.target.value)}
+              onBlur={() => setCopiesInput(String(copies))}
+            />
+          </FormField>
           {summarySheet ? (
             <Stack gap="xs">
               <Text color="secondary">
