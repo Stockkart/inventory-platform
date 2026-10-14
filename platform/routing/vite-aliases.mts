@@ -97,6 +97,7 @@ export function generateInventoryWorkspaceAliases({
     '@inventory-platform/plan/types': core('plan', 'src/model/index.ts'),
     '@inventory-platform/product/types': core('product', 'src/model/index.ts'),
     '@inventory-platform/user/types': core('user', 'src/model/index.ts'),
+    '@inventory-platform/user/ui': core('user', 'src/ui/index.ts'),
     '@inventory-platform/accounting/types': core('accounting', 'src/model/index.ts'),
     '@inventory-platform/analytics/types': core('analytics', 'src/model/index.ts'),
     '@inventory-platform/credit/types': core('credit', 'src/model/index.ts'),
