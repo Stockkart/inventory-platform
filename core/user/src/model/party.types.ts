@@ -175,8 +175,11 @@ export interface Customer {
   name: string;
   phone: string;
   address: string | null;
+  postalAddress?: PostalAddress | null;
   email: string | null;
   gstin?: string | null;
+  gstinVerifiedAt?: string | null;
+  gstinStatus?: string | null;
   dlNo?: string | null;
   pan?: string | null;
   partyType?: CustomerPartyType | null;
@@ -192,8 +195,11 @@ export interface CustomerResponse {
   name: string;
   phone: string;
   address: string | null;
+  postalAddress?: PostalAddress | null;
   email: string | null;
   gstin?: string | null;
+  gstinVerifiedAt?: string | null;
+  gstinStatus?: string | null;
   dlNo?: string | null;
   pan?: string | null;
   /** PAN derived from GSTIN: 10 chars from 3rd character (1-based). */
@@ -219,6 +225,8 @@ export interface CreateCustomerDto {
   phone?: string;
   email?: string;
   address?: string;
+  /** Optional fielded address; the state code is what decides IGST on a sale. */
+  postalAddress?: PostalAddress;
   gstin?: string;
   dlNo?: string;
   pan?: string;
@@ -230,6 +238,7 @@ export interface UpdateCustomerDto {
   phone?: string;
   email?: string;
   address?: string;
+  postalAddress?: PostalAddress;
   gstin?: string;
   dlNo?: string;
   pan?: string;

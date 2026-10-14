@@ -1,4 +1,5 @@
-export { CustomerEditForm } from './CustomerEditForm';
+export { CustomerEditForm, prefillCustomerFromGstin } from './CustomerEditForm';
+export { GstinField, stateImpliedBy, type GstinFieldProps, type GstinParty } from './GstinField';
 export {
   VENDOR_PLACE_REQUIRED_MESSAGE,
   VendorEditForm,
