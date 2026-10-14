@@ -102,8 +102,14 @@ Product Search and Scan & Sell call `POST /inventory/search` (`inventoryApi.sear
 - **Compact template.** Prints values only (no "PRODUCT NAME:" prefix) unless a field's label is
   switched on; the server resolves this per field (`showLabel`). Left-column values wrap at word
   breaks to two lines, the header and the price stay on one line, and nothing grows past the
-  sticker size (checked for 2-up 38x38). The header line and the bars are centred across the
-  sticker.
+  sticker size (checked for 2-up 38x38). The right column is as wide as its longest value (up to
+  60%), so "₹350.00" prints whole instead of "₹350…". The header line and the bars are centred
+  across the sticker.
+- **Lines per sticker.** The server's `maxLines` follows the sticker height: 4 on 25 mm
+  (`38x25`, `50x25`), 6 on `38x38`, 8 on `100x50`. When the lines do not fit beside 38% bars,
+  `fitStackedSticker` shortens the bars (down to 7 mm) and only then shrinks the text (down to
+  6.5 pt). Layouts that already fit print exactly as before. Needs the matching inventory-api
+  change deployed, or Save rejects more than the old limits.
 - **Barcode position.** `TOP` (default) or `BOTTOM` applies to both templates. On Stacked, `BOTTOM`
   prints the field lines first, then the bars with the code under them.
 - **Copies of each sticker.** The Print barcode stickers popup asks how many copies of each

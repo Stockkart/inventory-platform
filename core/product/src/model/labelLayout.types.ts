@@ -252,10 +252,10 @@ export interface BarcodeLabelsResponse {
 }
 
 export const STICKER_SIZES: StickerSizeSpec[] = [
-  { size: '50x25', widthMm: 50, heightMm: 25, maxLines: 3 },
-  { size: '38x25', widthMm: 38, heightMm: 25, maxLines: 2 },
-  { size: '38x38', widthMm: 38, heightMm: 38, maxLines: 4 },
-  { size: '100x50', widthMm: 100, heightMm: 50, maxLines: 6 },
+  { size: '50x25', widthMm: 50, heightMm: 25, maxLines: 4 },
+  { size: '38x25', widthMm: 38, heightMm: 25, maxLines: 4 },
+  { size: '38x38', widthMm: 38, heightMm: 38, maxLines: 6 },
+  { size: '100x50', widthMm: 100, heightMm: 50, maxLines: 8 },
 ];
 
 export const DEFAULT_STICKER_SIZE: StickerSize = '50x25';
@@ -278,7 +278,7 @@ export const DEFAULT_LAYOUT: EffectiveLabelLayout = {
     { fieldKey: 'companyName', label: 'Company', valueType: 'text' },
   ],
   stickerSize: DEFAULT_STICKER_SIZE,
-  stickerSizeSpec: { size: '50x25', widthMm: 50, heightMm: 25, maxLines: 3 },
+  stickerSizeSpec: { size: '50x25', widthMm: 50, heightMm: 25, maxLines: 4 },
   showBarcodeText: true,
   showFieldLabels: false,
   blankValueBehavior: 'HIDE_LINE',

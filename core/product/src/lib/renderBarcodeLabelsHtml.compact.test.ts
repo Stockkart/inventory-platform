@@ -240,8 +240,9 @@ describe('renderBarcodeLabelsHtml COMPACT template', () => {
     expect(countOccurrences(html, 'class="col right"')).toBe(1);
     // Shared compact CSS is present in the ROLL style block.
     expect(html).toContain('.compact .body{display:flex;gap:1.5mm;flex:1;min-height:0}');
-    expect(html).toContain('.compact .left{flex:3}');
-    expect(html).toContain('.compact .right{flex:2;text-align:right}');
+    // The price column is as wide as its longest value, so "₹350.00" is not cut to "₹350…".
+    expect(html).toContain('.compact .left{flex:1 1 0}');
+    expect(html).toContain('.compact .right{flex:0 1 auto;max-width:60%;text-align:right}');
     expect(html).toContain('text-transform:uppercase');
     // The header line and the bars are centred across the sticker.
     expect(html).toContain('.compact .hdr .line{text-align:center}');
