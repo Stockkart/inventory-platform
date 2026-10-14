@@ -59,18 +59,31 @@ beforeEach(() => {
   api.settings.mockResolvedValue({ verificationEnabled: true, provider: 'gstinapi.in' });
 });
 
-describe('<VendorEditForm> with verification switched off', () => {
-  it('keeps the GSTIN as plain text, never looks it up, and needs no state', async () => {
+describe('<VendorEditForm> with no lookup provider', () => {
+  it('still checks the GSTIN offline and reads the state from it, but never calls out', async () => {
     api.settings.mockResolvedValue({ verificationEnabled: false, provider: 'none' });
     renderForm();
     await waitFor(() => expect(api.settings).toHaveBeenCalled());
-    fireEvent.change(screen.getByLabelText('GSTIN / UIN'), { target: { value: 'anything goes' } });
-    expect(current().gstinUin).toBe('anything goes');
-    expect(screen.queryByRole('alert')).toBeNull();
-    expect(screen.getByLabelText('State')).not.toBeDisabled();
-    expect(vendorIsPlaceable(current(), false)).toBe(true);
+    fireEvent.change(screen.getByLabelText('GSTIN / UIN'), {
+      target: { value: '27aapfu0939f1zv' },
+    });
+    expect(current().gstinUin).toBe('27AAPFU0939F1ZV');
+    expect(current().postalAddress?.stateCode).toBe('27');
+    expect(screen.getByLabelText('State')).toBeDisabled();
+    expect(screen.getByText(/Fill in the rest by hand/)).toBeTruthy();
     await new Promise((r) => setTimeout(r, 50));
     expect(api.lookup).not.toHaveBeenCalled();
+    expect(vendorIsPlaceable(current())).toBe(true);
+  });
+
+  it('flags a mistyped GSTIN without a provider too', async () => {
+    api.settings.mockResolvedValue({ verificationEnabled: false, provider: 'none' });
+    renderForm();
+    fireEvent.change(screen.getByLabelText('GSTIN / UIN'), {
+      target: { value: '27AAPFU0939F1ZW' },
+    });
+    expect(await screen.findByRole('alert')).toHaveTextContent(/check character/);
+    expect(vendorIsPlaceable(current())).toBe(false);
   });
 });
 
@@ -127,8 +140,8 @@ describe('<VendorEditForm> GSTIN first', () => {
     fireEvent.change(screen.getByLabelText('GSTIN / UIN'), {
       target: { value: '27AAPFU0939F1ZV' },
     });
-    await screen.findByText('Cancelled');
-    expect(screen.getByText(/can't be claimed/)).toBeTruthy();
+    await screen.findByText(/can't be claimed/);
+    expect(screen.getAllByText(/Cancelled/).length).toBeGreaterThan(0);
     expect(current().companyName).toBe('UNITED PHOSPHORUS LIMITED');
   });
 });

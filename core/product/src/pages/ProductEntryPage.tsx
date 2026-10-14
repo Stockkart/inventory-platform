@@ -20,6 +20,12 @@ import { PrintBarcodeLabelsModal } from '../ui/PrintBarcodeLabelsModal';
 import { openLocalBarcodeLabelPrint } from '../lib/printBarcodeLabels';
 import { vendorsApi } from '@inventory-platform/user/vendors';
 import {
+  VENDOR_PLACE_REQUIRED_MESSAGE,
+  VendorEditForm,
+  vendorIsPlaceable,
+} from '@inventory-platform/user/ui';
+import { gstinProblem, normalizeGstin } from '@inventory-platform/user/types';
+import {
   partyNameHasLetters,
   PARTY_NAME_LETTERS_MESSAGE,
 } from '@inventory-platform/user/customers';
@@ -113,7 +119,6 @@ import {
   Button,
   Card,
   CardBody,
-  FormField,
   Inline,
   Input,
   Label,
@@ -768,8 +773,6 @@ export function ProductEntryPage() {
     businessType: 'WHOLESALE',
     gstinUin: '',
   });
-  const [customBusinessType, setCustomBusinessType] = useState('');
-  const [showCustomBusinessType, setShowCustomBusinessType] = useState(false);
   // Link vendor to registered user
   const [linkedUser, setLinkedUser] = useState<LinkableUser | null>(null);
   const [isSearchingUser, setIsSearchingUser] = useState(false);
@@ -3183,8 +3186,6 @@ export function ProductEntryPage() {
 
   const handleCloseVendorModal = () => {
     setShowVendorModal(false);
-    setShowCustomBusinessType(false);
-    setCustomBusinessType('');
     setLinkedUser(null);
     setUserSearchMessage(null);
     setVendorFormData({
@@ -3243,8 +3244,13 @@ export function ProductEntryPage() {
         return;
       }
 
-      if (showCustomBusinessType && !customBusinessType.trim()) {
-        notifyError('Please enter a custom business type');
+      if (vendorFormData.gstinUin?.trim() && gstinProblem(vendorFormData.gstinUin)) {
+        notifyError(`GSTIN: ${gstinProblem(vendorFormData.gstinUin)}`);
+        setIsCreatingVendor(false);
+        return;
+      }
+      if (!vendorIsPlaceable(vendorFormData)) {
+        notifyError(VENDOR_PLACE_REQUIRED_MESSAGE);
         setIsCreatingVendor(false);
         return;
       }
@@ -3252,16 +3258,17 @@ export function ProductEntryPage() {
       const vendorPayload: CreateVendorDto = {
         name: vendorFormData.name,
         contactPhone: vendorFormData.contactPhone,
-        businessType: showCustomBusinessType
-          ? (customBusinessType.trim().toUpperCase() as VendorBusinessType)
-          : vendorFormData.businessType,
+        businessType: (vendorFormData.businessType || 'WHOLESALE') as VendorBusinessType,
         ...(vendorFormData.contactEmail && {
           contactEmail: vendorFormData.contactEmail,
         }),
+        ...(vendorFormData.companyName && { companyName: vendorFormData.companyName }),
         ...(vendorFormData.address && { address: vendorFormData.address }),
+        ...(vendorFormData.postalAddress && { postalAddress: vendorFormData.postalAddress }),
         ...(vendorFormData.gstinUin?.trim() && {
-          gstinUin: vendorFormData.gstinUin.trim(),
+          gstinUin: normalizeGstin(vendorFormData.gstinUin),
         }),
+        ...(vendorFormData.dlNo?.trim() && { dlNo: vendorFormData.dlNo.trim() }),
         ...(linkedUser && { userId: linkedUser.userId }),
       };
       const vendor = await vendorsApi.create(vendorPayload);
@@ -3301,8 +3308,6 @@ export function ProductEntryPage() {
       businessType: 'WHOLESALE',
       gstinUin: '',
     });
-    setShowCustomBusinessType(false);
-    setCustomBusinessType('');
   };
 
   // Convert ISO (UTC) → datetime-local (local time)
@@ -5114,174 +5119,60 @@ export function ProductEntryPage() {
         />
         <Modal.Body>
           <Stack gap="md">
-            <FormField label="Vendor Name" htmlFor="vendorName" required>
-              <Input
-                type="text"
-                id="vendorName"
-                placeholder="Enter vendor name"
-                value={vendorFormData.name}
-                onChange={(e) =>
-                  setVendorFormData((prev) => ({
-                    ...prev,
-                    name: e.target.value,
-                  }))
+            {/* One vendor form everywhere: GSTIN first, lookup + prefill, state from the GSTIN. */}
+            <VendorEditForm
+              value={vendorFormData}
+              onChange={(next) => {
+                setVendorFormData((prev) => ({
+                  ...prev,
+                  ...next,
+                  businessType: (next.businessType ?? prev.businessType) as VendorBusinessType,
+                }));
+                if (
+                  (linkedUser || userSearchMessage) &&
+                  next.contactEmail !== vendorFormData.contactEmail
+                ) {
+                  setLinkedUser(null);
+                  setUserSearchMessage(null);
                 }
-                disabled={isCreatingVendor}
-                required
-              />
-            </FormField>
-
-            <Box className={vendorStyles.modalFormGrid}>
-              <FormField label="Contact Phone" htmlFor="vendorContactPhone" required>
-                <Input
-                  type="tel"
-                  id="vendorContactPhone"
-                  placeholder="Enter contact phone"
-                  value={vendorFormData.contactPhone}
-                  onChange={(e) =>
-                    setVendorFormData((prev) => ({
-                      ...prev,
-                      contactPhone: e.target.value,
-                    }))
+              }}
+              disabled={isCreatingVendor}
+            />
+            <Box className={vendorStyles.linkStatus}>
+              <Inline gap="sm" align="center" flexWrap>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSearchUserForLink}
+                  disabled={
+                    isCreatingVendor || isSearchingUser || !vendorFormData.contactEmail?.trim()
                   }
-                  disabled={isCreatingVendor}
-                  required
-                />
-              </FormField>
-              <FormField label="Business Type" htmlFor="vendorBusinessType" required>
-                <Select
-                  id="vendorBusinessType"
-                  value={showCustomBusinessType ? 'OTHER' : vendorFormData.businessType}
-                  onChange={(e) => {
-                    if (e.target.value === 'OTHER') {
-                      setShowCustomBusinessType(true);
-                      setCustomBusinessType('');
-                    } else {
-                      setShowCustomBusinessType(false);
-                      setCustomBusinessType('');
-                      setVendorFormData((prev) => ({
-                        ...prev,
-                        businessType: e.target.value as VendorBusinessType,
-                      }));
-                    }
-                  }}
-                  disabled={isCreatingVendor}
-                  required
+                  loading={isSearchingUser}
                 >
-                  <option value="WHOLESALE">Wholesale</option>
-                  <option value="RETAIL">Retail</option>
-                  <option value="MANUFACTURER">Manufacturer</option>
-                  <option value="DISTRIBUTOR">Distributor</option>
-                  <option value="C&F">C&F</option>
-                  <option value="OTHER">Other</option>
-                </Select>
-              </FormField>
-            </Box>
-
-            {showCustomBusinessType ? (
-              <FormField label="Custom Business Type" htmlFor="customBusinessType" required>
-                <Input
-                  type="text"
-                  id="customBusinessType"
-                  placeholder="Enter custom business type"
-                  value={customBusinessType}
-                  onChange={(e) => setCustomBusinessType(e.target.value)}
-                  disabled={isCreatingVendor}
-                  required
-                />
-              </FormField>
-            ) : null}
-
-            <FormField
-              label="Contact Email"
-              htmlFor="vendorContactEmail"
-              hint="If this vendor is a registered user, check their email to link the account."
-            >
-              <Box className={vendorStyles.searchRow}>
-                <Input
-                  type="email"
-                  id="vendorContactEmail"
-                  placeholder="Enter contact email"
-                  value={vendorFormData.contactEmail}
-                  onChange={(e) => {
-                    setVendorFormData((prev) => ({
-                      ...prev,
-                      contactEmail: e.target.value,
-                    }));
-                    if (linkedUser || userSearchMessage) {
-                      setLinkedUser(null);
-                      setUserSearchMessage(null);
-                    }
-                  }}
-                  disabled={isCreatingVendor}
-                  className={productChrome.searchGrow}
-                />
-                <Box className={vendorStyles.searchActions}>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleSearchUserForLink}
-                    disabled={
-                      isCreatingVendor || isSearchingUser || !vendorFormData.contactEmail?.trim()
-                    }
-                    loading={isSearchingUser}
-                  >
-                    {isSearchingUser ? 'Checking…' : 'Check'}
-                  </Button>
-                  {linkedUser ? (
+                  {isSearchingUser ? 'Checking…' : 'Link to a registered user by email'}
+                </Button>
+                {linkedUser ? (
+                  <>
+                    <Badge variant="success">Linked</Badge>
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="ghost"
+                      size="sm"
                       onClick={handleUnlinkUser}
                       disabled={isCreatingVendor}
                     >
                       Unlink
                     </Button>
-                  ) : null}
-                </Box>
-              </Box>
-            </FormField>
-
-            {userSearchMessage ? (
-              <Box className={vendorStyles.linkStatus}>
-                {linkedUser ? <Badge variant="success">Linked</Badge> : null}
-                <Text variant="caption" color={linkedUser ? 'success' : 'secondary'}>
-                  {userSearchMessage}
-                </Text>
-              </Box>
-            ) : null}
-
-            <FormField label="Address" htmlFor="vendorAddress">
-              <Textarea
-                id="vendorAddress"
-                placeholder="Enter address"
-                value={vendorFormData.address}
-                onChange={(e) =>
-                  setVendorFormData((prev) => ({
-                    ...prev,
-                    address: e.target.value,
-                  }))
-                }
-                disabled={isCreatingVendor}
-                rows={2}
-              />
-            </FormField>
-
-            <FormField label="GSTIN / UIN" htmlFor="vendorGstinUin">
-              <Input
-                type="text"
-                id="vendorGstinUin"
-                placeholder="Enter GSTIN / UIN number"
-                value={vendorFormData.gstinUin ?? ''}
-                onChange={(e) =>
-                  setVendorFormData((prev) => ({
-                    ...prev,
-                    gstinUin: e.target.value,
-                  }))
-                }
-                disabled={isCreatingVendor}
-              />
-            </FormField>
+                  </>
+                ) : null}
+                {userSearchMessage ? (
+                  <Text variant="caption" color={linkedUser ? 'success' : 'secondary'}>
+                    {userSearchMessage}
+                  </Text>
+                ) : null}
+              </Inline>
+            </Box>
           </Stack>
         </Modal.Body>
         <Modal.Footer>

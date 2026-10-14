@@ -27,7 +27,6 @@ import { partyNameHasLetters, PARTY_NAME_LETTERS_MESSAGE } from '../api/customer
 import { vendorsApi } from '../api/vendors.api';
 import { VENDOR_PLACE_REQUIRED_MESSAGE, VendorEditForm, vendorIsPlaceable } from '../ui';
 import { gstinProblem, normalizeGstin } from '../model/gstin';
-import { useGstinVerificationEnabled } from '../queries/hooks';
 import { gstStateName } from '../model/gst-states';
 import type {
   VendorResponse,
@@ -51,8 +50,6 @@ function formatAddress(vendor: Pick<VendorResponse, 'address' | 'postalAddress'>
 
 export function VendorsPage() {
   const navigate = useNavigate();
-  // The stricter GSTIN rules apply only once online verification is switched on.
-  const strictGstin = useGstinVerificationEnabled();
   const [data, setData] = useState<VendorResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -146,11 +143,11 @@ export function VendorsPage() {
       setSaveError('Either phone or email is required');
       return;
     }
-    if (strictGstin && createForm.gstinUin?.trim() && gstinProblem(createForm.gstinUin)) {
+    if (createForm.gstinUin?.trim() && gstinProblem(createForm.gstinUin)) {
       setSaveError(`GSTIN: ${gstinProblem(createForm.gstinUin)}`);
       return;
     }
-    if (!vendorIsPlaceable(createForm, strictGstin)) {
+    if (!vendorIsPlaceable(createForm)) {
       setSaveError(VENDOR_PLACE_REQUIRED_MESSAGE);
       return;
     }
@@ -165,9 +162,7 @@ export function VendorsPage() {
         postalAddress: createForm.postalAddress,
         companyName: createForm.companyName?.trim() || undefined,
         businessType: createForm.businessType ?? 'RETAIL',
-        gstinUin:
-          (strictGstin ? normalizeGstin(createForm.gstinUin) : createForm.gstinUin?.trim()) ||
-          undefined,
+        gstinUin: normalizeGstin(createForm.gstinUin) || undefined,
         dlNo: createForm.dlNo?.trim() || undefined,
       });
       void load();
@@ -185,11 +180,11 @@ export function VendorsPage() {
       setSaveError(PARTY_NAME_LETTERS_MESSAGE);
       return;
     }
-    if (strictGstin && editForm.gstinUin?.trim() && gstinProblem(editForm.gstinUin)) {
+    if (editForm.gstinUin?.trim() && gstinProblem(editForm.gstinUin)) {
       setSaveError(`GSTIN: ${gstinProblem(editForm.gstinUin)}`);
       return;
     }
-    if (!vendorIsPlaceable(editForm, strictGstin)) {
+    if (!vendorIsPlaceable(editForm)) {
       setSaveError(VENDOR_PLACE_REQUIRED_MESSAGE);
       return;
     }
@@ -198,12 +193,7 @@ export function VendorsPage() {
     try {
       await vendorsApi.update(editModal.vendorId, {
         ...editForm,
-        gstinUin:
-          editForm.gstinUin === undefined
-            ? undefined
-            : strictGstin
-            ? normalizeGstin(editForm.gstinUin)
-            : editForm.gstinUin.trim(),
+        gstinUin: editForm.gstinUin === undefined ? undefined : normalizeGstin(editForm.gstinUin),
       });
       void load();
       handleCloseEdit();
