@@ -44,17 +44,18 @@ export function repeatLabels(labels: readonly LabelData[], copies = 1): LabelDat
  * The base `.sticker`, `.bars`, `.code` and `.line` rules still apply; these add the
  * header band, the two-column body and the condensed type scale. Left-column lines
  * wrap at word breaks to at most two lines instead of being cut with "…"; the header
- * and the right column (prices) stay on one line. The sticker never grows past its size.
- * The header line and the bars sit centred across the sticker; the body columns keep
- * their own left/right alignment.
+ * and the right column (prices) stay on one line. The right column is as wide as its
+ * longest value (up to 60%) so a price like "₹350.00" prints whole; the left column takes
+ * the rest. The sticker never grows past its size. The header line and the bars sit
+ * centred across the sticker; the body columns keep their own left/right alignment.
  */
 const COMPACT_CSS = `.compact{align-items:stretch;padding:1.5mm;font-family:"Arial Narrow","Roboto Condensed","Liberation Sans Narrow",system-ui,sans-serif}
     .compact .hdr{width:100%;font-size:9pt;font-weight:700;text-transform:uppercase}
     .compact .hdr .line{text-align:center}
     .compact .body{display:flex;gap:1.5mm;flex:1;min-height:0}
     .compact .col{display:flex;flex-direction:column;min-width:0}
-    .compact .left{flex:3}
-    .compact .right{flex:2;text-align:right}
+    .compact .left{flex:1 1 0}
+    .compact .right{flex:0 1 auto;max-width:60%;text-align:right}
     .compact .left .line{font-size:8pt;text-align:left;white-space:normal;overflow-wrap:break-word;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-height:1.15}
     .compact .right .line{font-size:9pt;font-weight:700;text-align:right}
     .compact .bars{height:30%;width:100%;align-self:center}
@@ -151,6 +152,59 @@ export function computeStickerLines(label: LabelData, layout: EffectiveLabelLayo
   return lines;
 }
 
+const PT_TO_MM = 25.4 / 72;
+/** Vertical padding of a stacked sticker (2 mm top + 2 mm bottom, from the sticker CSS). */
+const STACKED_PADDING_MM = 4;
+/** Share of the sticker height the bars take when every line fits as is (`.bars{height:38%}`). */
+const STACKED_BARS_SHARE = 0.38;
+/** Shortest bars printed; Code128 at this height still scans with a handheld scanner. */
+const STACKED_MIN_BARS_MM = 7;
+const STACKED_LINE_PT = 9;
+const STACKED_MIN_LINE_PT = 6.5;
+/** Line height of fitted text; the default `normal` is about 1.2. */
+const STACKED_LINE_HEIGHT = 1.15;
+const NORMAL_LINE_HEIGHT = 1.2;
+
+/** Bars height and text size that fit a stacked sticker's lines inside its height. */
+export type StackedFit = { barsMm: number; linePt: number };
+
+/**
+ * Fits `fieldLines` lines (plus the code line when `hasCodeLine`) into a stacked sticker
+ * `heightMm` tall. Returns `null` when the default CSS already fits (38% bars, 9 pt lines),
+ * so short layouts print exactly as before. Otherwise the bars shrink first, down to
+ * {@link STACKED_MIN_BARS_MM}, keeping 9 pt text; only when that is not enough does the
+ * text shrink, down to {@link STACKED_MIN_LINE_PT}. This lets a 38x38 sticker print 6
+ * lines and a 25 mm sticker 4, as the server's `maxLines` allows.
+ */
+export function fitStackedSticker(
+  heightMm: number,
+  fieldLines: number,
+  hasCodeLine: boolean,
+): StackedFit | null {
+  const textLines = fieldLines + (hasCodeLine ? 1 : 0);
+  const naturalLineMm = STACKED_LINE_PT * PT_TO_MM * NORMAL_LINE_HEIGHT;
+  const natural = STACKED_PADDING_MM + heightMm * STACKED_BARS_SHARE + textLines * naturalLineMm;
+  if (natural <= heightMm) return null;
+
+  const room = heightMm - STACKED_PADDING_MM;
+  const lineMm = STACKED_LINE_PT * PT_TO_MM * STACKED_LINE_HEIGHT;
+  const barsAtFullText = room - textLines * lineMm;
+  if (barsAtFullText >= STACKED_MIN_BARS_MM) {
+    return { barsMm: round1(barsAtFullText), linePt: STACKED_LINE_PT };
+  }
+  const perLineMm = (room - STACKED_MIN_BARS_MM) / Math.max(1, textLines);
+  const linePt = Math.max(
+    STACKED_MIN_LINE_PT,
+    round1(perLineMm / (PT_TO_MM * STACKED_LINE_HEIGHT)),
+  );
+  return { barsMm: STACKED_MIN_BARS_MM, linePt: Math.min(STACKED_LINE_PT, linePt) };
+}
+
+/** Rounds down to one decimal so a fitted size never overshoots the sticker. */
+function round1(value: number): number {
+  return Math.floor(value * 10) / 10;
+}
+
 /**
  * Renders one `STACKED` sticker: the bars with the code line under them, and the field
  * lines in one centred column. `barcodePosition: 'BOTTOM'` moves the bars and code below
@@ -160,15 +214,20 @@ function renderSticker(label: LabelData, layout: EffectiveLabelLayout, index: nu
   const { widthMm, heightMm } = resolveStickerSize(layout);
   const code = escapeHtml(label.code);
   const lines = computeStickerLines(label, layout);
-  const codeHtml = lines
-    .filter((line) => line.kind === 'code')
-    .map((line) => `<div class="code">${escapeHtml(line.text)}</div>`)
+  const codeLines = lines.filter((line) => line.kind === 'code');
+  const fieldLines = lines.filter((line) => line.kind !== 'code');
+  const fit = fitStackedSticker(heightMm, fieldLines.length, codeLines.length > 0);
+  const textStyle = fit
+    ? ` style="font-size:${fit.linePt}pt;line-height:${STACKED_LINE_HEIGHT}"`
+    : '';
+  const barsStyle = fit ? ` style="height:${fit.barsMm}mm"` : '';
+  const codeHtml = codeLines
+    .map((line) => `<div class="code"${textStyle}>${escapeHtml(line.text)}</div>`)
     .join('');
-  const fieldsHtml = lines
-    .filter((line) => line.kind !== 'code')
-    .map((line) => `<div class="line">${escapeHtml(line.text)}</div>`)
+  const fieldsHtml = fieldLines
+    .map((line) => `<div class="line"${textStyle}>${escapeHtml(line.text)}</div>`)
     .join('');
-  const bars = `<svg class="bars" data-idx="${index}" data-code="${code}"></svg>${codeHtml}`;
+  const bars = `<svg class="bars"${barsStyle} data-idx="${index}" data-code="${code}"></svg>${codeHtml}`;
   const body = layout.barcodePosition === 'BOTTOM' ? fieldsHtml + bars : bars + fieldsHtml;
   return `<div class="sticker" style="width:${widthMm}mm;height:${heightMm}mm">${body}</div>`;
 }
