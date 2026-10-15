@@ -29,6 +29,7 @@ Product Search and Scan & Sell call `POST /inventory/search` (`inventoryApi.sear
 - `search/searchUrl.ts` — the only code that reads or writes the URL (`?q=&f=field:op:payload&sort=&page=&size=&dump=`); property-tested round trip.
 - `search/useProductSearch.ts` — the page's state machine. Empty URL = **setting up** (filters accumulate, nothing requested until Search); a URL with a search = **refining** (filter ticks apply after 250 ms, sort/page at once, text waits for Search). The URL is the source of truth once searching.
 - `ui/search/` — `SearchFilterStrip` (one dropdown per filter under the search bar, sort at the right end), `ActiveFilterChips` (plain-English wording in `search/filterChips.ts`), `SortSelect`, `CompanyChips` (Scan & Sell; Alt+1…5 picks a chip).
+- **Product attributes in View Details.** The detail modal (`ui/InventoryAlertDetails.tsx`, also used by alerts, reminders and cafe manual stock) lists the shop vertical's own fields from the shop schema (`lib/verticalAttributeFields.ts`: extension fields shown at registration, e.g. sport, brand, model, size, warranty for sports). Edit shows them with `VerticalSchemaFieldInput`, gated per key by product-search access, and Save sends only the changed keys in `verticalFields`. `PUT /inventory/{id}` merges them into the vertical's extension record. Batch no. and expiry keep their own rows.
 
 ### Supplier bills: tax treatment, preview and corrections
 

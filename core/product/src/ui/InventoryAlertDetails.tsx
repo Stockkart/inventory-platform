@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, useCallback, type ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import { getShopAvailableDisplayCount } from '../lib/inventoryAvailability';
@@ -18,12 +18,22 @@ import {
   canEditProductSearchUiField,
   hasProductSearchEditAccess,
 } from '@inventory-platform/access';
-import { useNotify } from '@inventory-platform/session';
 import {
+  shopSchemaCacheKey,
+  useAuthStore,
+  useNotify,
+  useVerticalSchemaStore,
+} from '@inventory-platform/session';
+import {
+  VerticalSchemaFieldInput,
+  fieldLabel,
+  getVerticalFieldValue,
   itemUsesExtensionBag,
   getInventoryBatchNo,
   formatInventoryExpiryDate,
+  setVerticalFieldPatch,
 } from '@inventory-platform/schema';
+import { verticalAttributeFieldsOf, verticalFieldDisplay } from '../lib/verticalAttributeFields';
 import {
   Alert,
   Box,
@@ -71,6 +81,7 @@ import {
   Receipt,
   Ruler,
   ShoppingCart,
+  Shapes,
   Tag,
   Thermometer,
   User,
@@ -282,7 +293,23 @@ export function InventoryAlertDetails({
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingBarcode, setIsGeneratingBarcode] = useState(false);
   const [editForm, setEditForm] = useState<Record<string, string | number | null>>({});
+  // Draft values of the vertical's own fields, keyed by schema key, in input format.
+  const [verticalDraft, setVerticalDraft] = useState<Record<string, string>>({});
   const { success: notifySuccess, error: notifyError } = useNotify;
+
+  const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
+  const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
+  const shopSchema = useVerticalSchemaStore((s) =>
+    activeShopId ? s.shopSchemaByKey[shopSchemaCacheKey(activeShopId, 'regular')] ?? null : null,
+  );
+  const verticalAttributeFields = useMemo(
+    () => verticalAttributeFieldsOf(shopSchema),
+    [shopSchema],
+  );
+
+  useEffect(() => {
+    if (open && activeShopId) void fetchShopSchema('regular');
+  }, [open, activeShopId, fetchShopSchema]);
 
   const canEditField = (uiKey: string) => canEditProductSearchUiField(uiKey, productSearchAccess);
   const allowEditMode = editable && hasProductSearchEditAccess(productSearchAccess);
@@ -337,7 +364,12 @@ export function InventoryAlertDetails({
           : '',
       purchaseDate: d.purchaseDate ? d.purchaseDate.slice(0, 10) : '',
     });
-  }, [item]);
+    setVerticalDraft(
+      Object.fromEntries(
+        verticalAttributeFields.map((field) => [field.key, getVerticalFieldValue(d, field)]),
+      ),
+    );
+  }, [item, verticalAttributeFields]);
 
   useEffect(() => {
     if (open && item) {
@@ -373,6 +405,7 @@ export function InventoryAlertDetails({
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditForm({});
+    setVerticalDraft({});
   };
 
   const handleSave = async () => {
@@ -381,6 +414,18 @@ export function InventoryAlertDetails({
     const inventoryDocumentId = resolveInventoryDocumentId(currentItem);
     if (!inventoryDocumentId) {
       notifyError('Cannot save: missing inventory id');
+      return;
+    }
+    // A required vertical field may not be cleared; one that was already empty stays as is.
+    const clearedRequired = verticalAttributeFields.find(
+      (field) =>
+        field.required &&
+        verticalDraft[field.key] !== undefined &&
+        verticalDraft[field.key].trim() === '' &&
+        getVerticalFieldValue(item, field) !== '',
+    );
+    if (clearedRequired) {
+      notifyError(`${fieldLabel(clearedRequired)} is required`);
       return;
     }
     setIsSaving(true);
@@ -400,10 +445,18 @@ export function InventoryAlertDetails({
         payload.hsn = String(editForm.hsn) || undefined;
 
       const usesExtension = itemUsesExtensionBag(currentItem);
-      const verticalPatch: Record<string, unknown> = usesExtension
-        ? { ...(currentItem.verticalFields ?? {}) }
-        : {};
+      // Only the changed vertical keys are sent: the API merges them into the stored
+      // extension record, and the product-search permission check sees just these keys.
+      const verticalPatch: Record<string, unknown> = {};
       let verticalChanged = false;
+
+      for (const field of verticalAttributeFields) {
+        const draft = verticalDraft[field.key];
+        if (draft === undefined || draft === getVerticalFieldValue(currentItem, field)) continue;
+        const patch = setVerticalFieldPatch(field, draft).verticalFields as Record<string, unknown>;
+        verticalPatch[field.key] = patch[field.key];
+        verticalChanged = true;
+      }
 
       if (
         editForm.batchNo !== undefined &&
@@ -832,6 +885,35 @@ export function InventoryAlertDetails({
               </DetailField>
             </Grid>
           </Box>
+
+          {verticalAttributeFields.length > 0 ? (
+            <Box className={productChrome.detailSection}>
+              <SectionHeader icon={Shapes} title="Product attributes" />
+              <Grid columns={2} gap="sm">
+                {verticalAttributeFields.map((field) =>
+                  showEditor(field.key) ? (
+                    <Box key={field.key} className={productChrome.detailFieldRow}>
+                      <Box className={productChrome.detailFieldBody}>
+                        <VerticalSchemaFieldInput
+                          compact
+                          field={field}
+                          idPrefix="detail-vf"
+                          value={verticalDraft[field.key] ?? ''}
+                          onChange={(value) =>
+                            setVerticalDraft((prev) => ({ ...prev, [field.key]: value }))
+                          }
+                        />
+                      </Box>
+                    </Box>
+                  ) : (
+                    <DetailField key={field.key} icon={Tag} label={fieldLabel(field)}>
+                      <DetailValue>{verticalFieldDisplay(item, field)}</DetailValue>
+                    </DetailField>
+                  ),
+                )}
+              </Grid>
+            </Box>
+          ) : null}
 
           <Box className={productChrome.detailSection}>
             <SectionHeader icon={Package} title="Stock & packaging" />
