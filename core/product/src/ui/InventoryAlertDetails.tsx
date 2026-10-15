@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Link as RouterLink } from 'react-router';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import { getShopAvailableDisplayCount } from '../lib/inventoryAvailability';
@@ -24,6 +24,17 @@ import {
   getInventoryBatchNo,
   formatInventoryExpiryDate,
 } from '@inventory-platform/schema';
+import type { VerticalSchemaFieldDef } from '@inventory-platform/schema/types';
+import {
+  buildVerticalFieldsUpdate,
+  initVerticalDraft,
+  schemaOnlyFields,
+  verticalDisplayName,
+  type VerticalDraft,
+} from '../lib/verticalFieldsEdit';
+import { useInventoryVerticalFields } from '../vertical/useInventoryVerticalFields';
+import { DetailField, DetailValue, SectionHeader } from './productDetails/DetailPrimitives';
+import { VerticalFieldsSection } from './productDetails/VerticalFieldsSection';
 import {
   Alert,
   Box,
@@ -44,9 +55,7 @@ import {
   type SelectOptionDef,
   productChrome,
   surfaceChrome,
-  cn,
 } from '@inventory-platform/ui-kit';
-import type { LucideIcon } from 'lucide-react';
 import {
   AlertTriangle,
   Banknote,
@@ -94,60 +103,6 @@ const DISCOUNT_OPTIONS: readonly SelectOptionDef[] = [
   { value: 'SCHEME', label: 'Scheme' },
   { value: 'DISCOUNT_AND_SCHEME', label: 'Both' },
 ];
-
-function SectionHeader({ icon, title }: { icon: LucideIcon; title: string }) {
-  return (
-    <Box className={productChrome.detailSectionHeader}>
-      <Box className={productChrome.detailSectionIcon} aria-hidden>
-        <Icon icon={icon} size="sm" />
-      </Box>
-      <Text variant="heading4">{title}</Text>
-    </Box>
-  );
-}
-
-function DetailField({
-  icon,
-  label,
-  fullWidth,
-  children,
-}: {
-  icon?: LucideIcon;
-  label: string;
-  fullWidth?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <Box
-      className={cn(
-        productChrome.detailFieldRow,
-        fullWidth ? surfaceChrome.gridSpanFull : undefined,
-      )}
-    >
-      {icon ? (
-        <Box className={productChrome.detailFieldIcon} aria-hidden>
-          <Icon icon={icon} size="sm" />
-        </Box>
-      ) : null}
-      <Box className={productChrome.detailFieldBody}>
-        <Text variant="caption" color="secondary">
-          {label}
-        </Text>
-        {children}
-      </Box>
-    </Box>
-  );
-}
-
-function DetailValue({
-  children,
-  weight,
-}: {
-  children: ReactNode;
-  weight?: 'medium' | 'semibold' | 'bold';
-}) {
-  return <Text weight={weight}>{children}</Text>;
-}
 
 function formatSaleSchemeDisplay(item: InventoryItem): string {
   const st = item.schemeType ?? 'FIXED_UNITS';
@@ -282,7 +237,16 @@ export function InventoryAlertDetails({
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingBarcode, setIsGeneratingBarcode] = useState(false);
   const [editForm, setEditForm] = useState<Record<string, string | number | null>>({});
+  const [verticalDraft, setVerticalDraft] = useState<VerticalDraft>({});
   const { success: notifySuccess, error: notifyError } = useNotify;
+
+  // Vertical-owned fields the shop's schema declares for this product's billing mode. The ones
+  // this modal already renders by hand are left out; the rest get a generic schema-driven section.
+  const { fields: allVerticalFields, verticalId } = useInventoryVerticalFields(item?.billingMode);
+  const extraVerticalFields = useMemo(
+    () => schemaOnlyFields(allVerticalFields),
+    [allVerticalFields],
+  );
 
   const canEditField = (uiKey: string) => canEditProductSearchUiField(uiKey, productSearchAccess);
   const allowEditMode = editable && hasProductSearchEditAccess(productSearchAccess);
@@ -337,7 +301,8 @@ export function InventoryAlertDetails({
           : '',
       purchaseDate: d.purchaseDate ? d.purchaseDate.slice(0, 10) : '',
     });
-  }, [item]);
+    setVerticalDraft(initVerticalDraft(d, extraVerticalFields));
+  }, [item, extraVerticalFields]);
 
   useEffect(() => {
     if (open && item) {
@@ -373,6 +338,7 @@ export function InventoryAlertDetails({
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditForm({});
+    setVerticalDraft({});
   };
 
   const handleSave = async () => {
@@ -400,10 +366,21 @@ export function InventoryAlertDetails({
         payload.hsn = String(editForm.hsn) || undefined;
 
       const usesExtension = itemUsesExtensionBag(currentItem);
-      const verticalPatch: Record<string, unknown> = usesExtension
-        ? { ...(currentItem.verticalFields ?? {}) }
-        : {};
+      // Only the keys that changed: the server merges the bag with what it already holds, and
+      // per-field edit permissions are checked against exactly these keys.
+      const verticalPatch: Record<string, unknown> = {};
       let verticalChanged = false;
+
+      const schemaUpdate = buildVerticalFieldsUpdate(
+        currentItem,
+        extraVerticalFields,
+        verticalDraft,
+      );
+      Object.assign(payload as Record<string, unknown>, schemaUpdate.core);
+      if (Object.keys(schemaUpdate.extension).length > 0) {
+        Object.assign(verticalPatch, schemaUpdate.extension);
+        verticalChanged = true;
+      }
 
       if (
         editForm.batchNo !== undefined &&
@@ -632,6 +609,10 @@ export function InventoryAlertDetails({
     setEditForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const updateVerticalField = (field: VerticalSchemaFieldDef, value: string) => {
+    setVerticalDraft((prev) => ({ ...prev, [field.key]: value }));
+  };
+
   if (!open || !item) return null;
 
   return (
@@ -832,6 +813,16 @@ export function InventoryAlertDetails({
               </DetailField>
             </Grid>
           </Box>
+
+          <VerticalFieldsSection
+            title={`${verticalDisplayName(verticalId)} details`}
+            fields={extraVerticalFields}
+            item={item}
+            draft={verticalDraft}
+            isEditing={isEditing}
+            canEdit={canEditField}
+            onChange={updateVerticalField}
+          />
 
           <Box className={productChrome.detailSection}>
             <SectionHeader icon={Package} title="Stock & packaging" />
