@@ -199,15 +199,16 @@ describe('landing (empty URL)', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     renderAt('/search');
     await waitFor(() => expect(api.searchAdvanced).toHaveBeenCalledTimes(1));
-    // enum values are known from the catalog alone
+    // enum values are known from the catalog alone; adding the pill asks for its counts (R10.1)
     await openDropdown('Stock');
     expect(screen.getByLabelText('In stock')).toBeTruthy();
     fireEvent.click(screen.getByLabelText('Low stock'));
     await vi.advanceTimersByTimeAsync(300);
-    await waitFor(() => expect(api.searchAdvanced).toHaveBeenCalledTimes(2));
-    expect(lastRequest().filters).toEqual([
-      { field: 'stockState', op: 'in', values: ['LOW_STOCK'] },
-    ]);
+    await waitFor(() =>
+      expect(lastRequest().filters).toEqual([
+        { field: 'stockState', op: 'in', values: ['LOW_STOCK'] },
+      ]),
+    );
     expect(lastRequest().facets).toEqual(['stockState']);
     expect(screen.getByTestId('url').textContent).toContain('f=stockState');
     const chips = screen.getByLabelText('Active filters');
@@ -226,6 +227,7 @@ describe('landing (empty URL)', () => {
 
   it('the Any/All switch appears only with two or more filters', async () => {
     renderAt('/search');
+    await waitFor(() => expect(api.searchAdvanced).toHaveBeenCalled());
     await openDropdown('Stock');
     fireEvent.click(screen.getByLabelText('In stock'));
     expect(screen.queryByLabelText('How filters combine')).toBeNull();

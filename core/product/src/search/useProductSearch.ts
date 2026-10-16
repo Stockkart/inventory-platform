@@ -113,14 +113,17 @@ export function useProductSearch(): ProductSearchController {
   // keeps the previous data while loading, not after an error, so the last good answer is held here.
   const lastGood = useRef<SearchResponse | undefined>(undefined);
 
-  // URL changed (our write, back/forward, or a shared link): mirror it into the panel. Only an
-  // outside change (not our own write) overwrites what is being typed in the search box.
+  // URL changed. Our own write: the draft already holds what was written — or something newer the
+  // user ticked meanwhile — so leave it alone. An outside change (back/forward, a shared link):
+  // mirror it into the panel and the search box.
   useEffect(() => {
-    setDraft(committed);
-    if (lastWritten.current !== searchParams.toString()) {
-      setTextInput(committed.text);
+    if (lastWritten.current === searchParams.toString()) {
+      lastWritten.current = null;
+      return;
     }
     lastWritten.current = null;
+    setDraft(committed);
+    setTextInput(committed.text);
   }, [committed, searchParams]);
 
   const writeUrl = useCallback(
