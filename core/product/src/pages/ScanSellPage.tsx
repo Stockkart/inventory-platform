@@ -4797,7 +4797,6 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
             purchaseId={printId}
             invoiceNo={cartData?.estimateNo ?? undefined}
             documentLabel="Estimate"
-            documentKind="ESTIMATE"
             onError={(message) => notifyError(message)}
             onSuccess={(message) => notifySuccess(message)}
             onInfo={(message) => notifyInfo(message)}

@@ -4,8 +4,10 @@ import { FileText, Printer, Receipt } from 'lucide-react';
 import { creditNoteApi, type CreditNoteSource } from '../api/credit-note.api';
 import { invoiceSettingsApi } from '../api/invoice-settings.api';
 import type { PrinterType } from '../api/endpoints';
+import { openPdfPreview } from '../lib/printDocument';
+import { PrintBridgeNotice } from './PrintBridgeNotice';
+import { useDotMatrixPrint } from './useDotMatrixPrint';
 import {
-  Alert,
   Box,
   Button,
   Icon,
@@ -28,6 +30,10 @@ interface PrintCreditNoteModalProps {
   documentId: string;
   creditNoteNo?: string;
   onError?: (message: string) => void;
+  /** Called once the bridge confirms the note actually reached the printer. */
+  onSuccess?: (message: string) => void;
+  /** Called when the note was already on its way, or still printing when polling stopped. */
+  onInfo?: (message: string) => void;
 }
 
 const PRINTER_OPTIONS: Array<{
@@ -56,27 +62,6 @@ const PRINTER_OPTIONS: Array<{
   },
 ];
 
-function downloadBlob(blob: Blob, filename: string) {
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-}
-
-function openPdfPreview(blob: Blob, fallbackName: string) {
-  const url = window.URL.createObjectURL(blob);
-  const newWindow = window.open(url, '_blank');
-  if (!newWindow) {
-    downloadBlob(blob, fallbackName);
-  } else {
-    window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-  }
-}
-
 export function PrintCreditNoteModal({
   isOpen,
   onClose,
@@ -84,6 +69,8 @@ export function PrintCreditNoteModal({
   documentId,
   creditNoteNo,
   onError,
+  onSuccess,
+  onInfo,
 }: PrintCreditNoteModalProps) {
   const [printerType, setPrinterType] = useState<PrinterType>('NORMAL');
   const [shopDefault, setShopDefault] = useState<PrinterType | null>(null);
@@ -135,30 +122,19 @@ export function PrintCreditNoteModal({
     }
   };
 
-  const handleDownloadPrintFile = async () => {
-    setIsGenerating(true);
-    try {
-      const textBlob =
-        source === 'customer'
-          ? await creditNoteApi.getCustomerCreditNoteDotMatrixText(documentId)
-          : await creditNoteApi.getVendorCreditNoteDotMatrixText(documentId);
-      downloadBlob(textBlob, `${filePrefix}-${creditNoteNo || documentId}.txt`);
-      onClose();
-    } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : source === 'vendor'
-          ? 'Failed to download debit note print file'
-          : 'Failed to download credit note print file';
-      onError?.(message);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleClose = isGenerating ? undefined : onClose;
   const isDotMatrix = printerType === 'DOT_MATRIX';
+  const dotMatrix = useDotMatrixPrint({
+    enabled: isOpen && isDotMatrix,
+    source: source === 'vendor' ? 'VENDOR_RETURN' : 'REFUND',
+    documentId,
+    documentLabel: source === 'vendor' ? 'debit note' : 'credit note',
+    onClose,
+    onSuccess,
+    onInfo,
+    onError,
+  });
+  const isBusy = isGenerating || dotMatrix.isPrinting;
+  const handleClose = isBusy ? undefined : onClose;
   const modalTitle = source === 'vendor' ? 'Print Debit Note' : 'Print Credit Note';
   const modalHint =
     source === 'vendor'
@@ -172,7 +148,7 @@ export function PrintCreditNoteModal({
         <Stack gap="md">
           <Text color="secondary">{modalHint}</Text>
           <Box
-            className={cn(productChrome.printOptionList, isGenerating && surfaceChrome.busyDim)}
+            className={cn(productChrome.printOptionList, isBusy && surfaceChrome.busyDim)}
             role="radiogroup"
             aria-label="Printer type"
           >
@@ -188,13 +164,13 @@ export function PrintCreditNoteModal({
                   align="start"
                   role="radio"
                   aria-checked={selected}
-                  disabled={isGenerating}
+                  disabled={isBusy}
                   className={cn(
                     productChrome.printOption,
                     selected && productChrome.printOptionSelected,
                   )}
                   onClick={() => {
-                    if (!isGenerating) {
+                    if (!isBusy) {
                       setPrinterType(option.value);
                     }
                   }}
@@ -217,16 +193,12 @@ export function PrintCreditNoteModal({
             })}
           </Box>
           {isDotMatrix ? (
-            <Alert variant="info">
-              Print the .txt at 10 CPI (Pica). Standard 80-column printers only paint 8 inches; the
-              extra 10×12 paper beside the holes cannot be used. Do not print the PDF on the
-              dot-matrix.
-            </Alert>
+            <PrintBridgeNotice status={dotMatrix.status} checking={dotMatrix.checking} />
           ) : null}
         </Stack>
       </Modal.Body>
       <Modal.Footer>
-        <Button type="button" variant="outline" onClick={onClose} disabled={isGenerating}>
+        <Button type="button" variant="outline" onClick={onClose} disabled={isBusy}>
           Cancel
         </Button>
         {isDotMatrix ? (
@@ -234,7 +206,7 @@ export function PrintCreditNoteModal({
             type="button"
             variant="outline"
             onClick={() => void handlePreviewPdf()}
-            disabled={isGenerating || !documentId}
+            disabled={isBusy || !documentId}
           >
             {isGenerating ? (
               <Inline gap="sm" align="center">
@@ -249,16 +221,20 @@ export function PrintCreditNoteModal({
         <Button
           type="button"
           variant="solid"
-          onClick={() => void (isDotMatrix ? handleDownloadPrintFile() : handlePreviewPdf())}
-          disabled={isGenerating || !documentId}
+          onClick={() => void (isDotMatrix ? dotMatrix.print() : handlePreviewPdf())}
+          disabled={isBusy || !documentId || (isDotMatrix && dotMatrix.checking)}
         >
-          {isGenerating ? (
+          {isBusy ? (
             <Inline gap="sm" align="center">
               <Spinner size="sm" />
-              Generating…
+              {dotMatrix.isPrinting ? 'Printing…' : 'Generating…'}
             </Inline>
           ) : isDotMatrix ? (
-            'Download print file'
+            dotMatrix.printsThroughBridge ? (
+              'Print'
+            ) : (
+              'Download printer file'
+            )
           ) : (
             'Generate PDF'
           )}
