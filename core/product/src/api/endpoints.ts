@@ -128,6 +128,7 @@ export const INVOICE_ENDPOINTS = {
 
 /** Dot matrix print jobs and the local print bridge. */
 export const PRINT_ENDPOINTS = {
+  BRIDGE_CONNECTION: '/print-bridge/connection',
   BRIDGE_STATUS: '/print-bridge/status',
   JOBS: '/print-jobs',
   OUTCOME: (printJobId: string) => `/print-jobs/${printJobId}/outcome`,

@@ -7,20 +7,18 @@
  * result means. Here: probe the bridge, send the backend's payload unchanged, watch the
  * bridge's job history, and say what was seen.
  *
+ * Where the bridge listens and how long to wait on it come from the backend
+ * (`GET /print-bridge/connection`), passed in as `connection`; nothing here is hardcoded.
+ *
  * This file uses raw `fetch` on purpose. The bridge is a loopback app, not the StockKart
  * API, so `apiClient` (base URL, auth and shop headers) would be wrong here. See the
  * package README, "Dot matrix printing".
  */
-import type { PrintBridgeObservation, PrintObservation } from '@inventory-platform/product/types';
-
-/** Loopback origin the bridge listens on. Never a LAN address. */
-export const BRIDGE_ORIGIN = 'http://127.0.0.1:9110';
-
-/** Health probes must not stall the billing screen. */
-export const BRIDGE_HEALTH_TIMEOUT_MS = 1200;
-
-/** Printing is a local socket write; generous but still bounded. */
-export const BRIDGE_PRINT_TIMEOUT_MS = 8000;
+import type {
+  PrintBridgeConnection,
+  PrintBridgeObservation,
+  PrintObservation,
+} from '@inventory-platform/product/types';
 
 export interface BridgeHealth {
   name: string;
@@ -76,12 +74,10 @@ async function readError(response: Response): Promise<string> {
  * Probe the bridge. Resolves to its health, or null when it is unreachable for any
  * reason. Never throws, so callers can use it as a plain feature check.
  */
-export async function isBridgeUp(
-  timeoutMs: number = BRIDGE_HEALTH_TIMEOUT_MS,
-): Promise<BridgeHealth | null> {
-  const { signal, done } = withTimeout(timeoutMs);
+export async function isBridgeUp(connection: PrintBridgeConnection): Promise<BridgeHealth | null> {
+  const { signal, done } = withTimeout(connection.healthTimeoutMs);
   try {
-    const response = await fetch(`${BRIDGE_ORIGIN}/health`, { method: 'GET', signal });
+    const response = await fetch(`${connection.origin}/health`, { method: 'GET', signal });
     if (!response.ok) {
       return null;
     }
@@ -123,14 +119,14 @@ export function observeBridge(health: BridgeHealth | null): PrintBridgeObservati
  *     Never throws anything else, including a raw parse error.
  */
 export async function sendToBridge(
+  connection: PrintBridgeConnection,
   payload: unknown,
-  timeoutMs: number = BRIDGE_PRINT_TIMEOUT_MS,
 ): Promise<PrintJobAccepted> {
-  const { signal, done } = withTimeout(timeoutMs);
+  const { signal, done } = withTimeout(connection.printTimeoutMs);
   try {
     let response: Response;
     try {
-      response = await fetch(`${BRIDGE_ORIGIN}/print`, {
+      response = await fetch(`${connection.origin}/print`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -212,10 +208,10 @@ export interface BridgeJob {
  * throws - any failure (network, timeout, malformed body) resolves to an
  * empty list, so a poll loop can simply try again on the next interval.
  */
-export async function getJobs(timeoutMs: number = BRIDGE_HEALTH_TIMEOUT_MS): Promise<BridgeJob[]> {
-  const { signal, done } = withTimeout(timeoutMs);
+export async function getJobs(connection: PrintBridgeConnection): Promise<BridgeJob[]> {
+  const { signal, done } = withTimeout(connection.healthTimeoutMs);
   try {
-    const response = await fetch(`${BRIDGE_ORIGIN}/jobs`, { method: 'GET', signal });
+    const response = await fetch(`${connection.origin}/jobs`, { method: 'GET', signal });
     if (!response.ok) {
       return [];
     }
@@ -242,13 +238,14 @@ export interface PolledJob {
  * answering mid-poll runs out the budget, which is the honest answer.
  */
 export async function pollJobOutcome(
+  connection: PrintBridgeConnection,
   jobId: string,
   options: { budgetMs: number; intervalMs: number },
 ): Promise<PolledJob> {
   const deadline = Date.now() + options.budgetMs;
 
   const checkOnce = async (): Promise<PolledJob | null> => {
-    const jobs = await getJobs();
+    const jobs = await getJobs(connection);
     const job = jobs.find((candidate) => candidate.id === jobId);
     if (!job) {
       return null;

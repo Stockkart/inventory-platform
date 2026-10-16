@@ -11,6 +11,7 @@ import type {
   CartResponse,
   CreatePrintJobRequest,
   HsnGstRates,
+  PrintBridgeConnection,
   PrintJobPlan,
   PrintOutcomeResult,
   PurchaseTaxPreviewRequest,
@@ -25,6 +26,7 @@ import {
   observeBridge,
   observeSendFailure,
   pollJobOutcome,
+  PrintBridgeError,
   sendToBridge,
 } from '../lib/printBridge';
 import { printApi } from '../api/print.api';
@@ -148,16 +150,18 @@ export function useAmendVendorPurchaseInvoiceMutation() {
 /**
  * The print bridge on this computer, as the backend judges it: not detected, outdated or
  * connected, with the download link. Probing has to happen here - only a page on the shop PC
- * can reach the bridge - but the verdict is the backend's. Re-probed every time `enabled`
- * turns on (the print modal opening) and never retried: `isBridgeUp` already times out.
+ * can reach the bridge - but the verdict is the backend's, and so is where the bridge listens
+ * and how long to wait on it (`connection`). Re-probed every time `enabled` turns on (the print
+ * modal opening) and never retried: `isBridgeUp` already times out.
  */
 export function usePrintBridgeStatusQuery(enabled: boolean) {
   return useQuery({
     queryKey: productKeys.printBridgeStatus(),
     queryFn: async () => {
-      const observation = observeBridge(await isBridgeUp());
+      const connection = await printApi.bridgeConnection();
+      const observation = observeBridge(await isBridgeUp(connection));
       const status = await printApi.bridgeStatus(observation);
-      return { observation, status };
+      return { connection, observation, status };
     },
     enabled,
     staleTime: 0,
@@ -177,17 +181,25 @@ export function usePrintBridgeStatusQuery(enabled: boolean) {
 export function usePrintDocumentMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (
-      request: CreatePrintJobRequest,
-    ): Promise<{ plan: PrintJobPlan; outcome: PrintOutcomeResult | null }> => {
+    mutationFn: async ({
+      request,
+      connection,
+    }: {
+      request: CreatePrintJobRequest;
+      /** From the bridge status query; null when it has not loaded, which reads as unreachable. */
+      connection: PrintBridgeConnection | null;
+    }): Promise<{ plan: PrintJobPlan; outcome: PrintOutcomeResult | null }> => {
       const plan = await printApi.createJob(request);
       if (plan.action !== 'BRIDGE' || !plan.poll) {
         return { plan, outcome: null };
       }
       let report: ReportPrintOutcomeRequest;
       try {
-        const { jobId } = await sendToBridge(plan.bridgeRequest);
-        const polled = await pollJobOutcome(jobId, plan.poll);
+        if (!connection) {
+          throw new PrintBridgeError('Print bridge connection is not known yet', 'UNREACHABLE');
+        }
+        const { jobId } = await sendToBridge(connection, plan.bridgeRequest);
+        const polled = await pollJobOutcome(connection, jobId, plan.poll);
         report = { observation: polled.observation, bridgeJobId: jobId, error: polled.error };
       } catch (err) {
         const failure = observeSendFailure(err);

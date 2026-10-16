@@ -25,18 +25,22 @@ Inventory and sell flows: product registration, search, stock corrections, scan-
 
 Normal and thermal invoices print from a PDF the server renders. Dot matrix is the exception:
 the printer needs raw ESC/P bytes, which a browser cannot send, so it goes through the
-**print bridge**, a small app on the shop PC listening on `http://127.0.0.1:9110`.
+**print bridge**, a small app on the shop PC listening on loopback (`http://127.0.0.1:9110` by
+default). The address and the timeouts come from the backend (`GET /print-bridge/connection`),
+never from this package.
 
 **The backend decides; this package carries.** Every print decision lives in `inventory-api`
-(`POST /print-jobs`, `POST /print-jobs/{id}/outcome`, `POST /print-bridge/status`): whether a
+(`GET /print-bridge/connection`, `POST /print-jobs`, `POST /print-jobs/{id}/outcome`,
+`POST /print-bridge/status`): where the bridge listens and how long to wait on it, whether a
 bridge counts as present, whether to print or download, invoice or estimate, copies, the
 `.prn` filename, how long to watch the job and what a result means. Nothing here reads the
 bridge payload or decides an outcome.
 
 - `ui/useDotMatrixPrint.ts` is shared by `PrintInvoiceModal` (`SALE`) and
   `PrintCreditNoteModal` (`REFUND`, `VENDOR_RETURN`).
-- `queries/hooks.ts` `usePrintBridgeStatusQuery` probes the bridge when the dot matrix option
-  is chosen (1.2 s timeout, never retried) and asks the backend what it found:
+- `queries/hooks.ts` `usePrintBridgeStatusQuery` reads the connection, probes the bridge when
+  the dot matrix option is chosen (the backend's health timeout, never retried) and asks the
+  backend what it found:
   `NOT_DETECTED`, `OUTDATED` (still prints) or `CONNECTED`, with the download link.
   `ui/PrintBridgeNotice.tsx` shows Install, Update or Connected from that verdict.
 - `usePrintDocumentMutation` runs the four steps: ask the backend for a plan, send its

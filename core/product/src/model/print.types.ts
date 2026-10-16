@@ -1,7 +1,8 @@
 /**
  * Dot matrix print types. These mirror the backend DTOs in `inventory-api` `core/product`
  * (`CreatePrintJobRequest`, `PrintJobResponse`, `ReportPrintOutcomeRequest`,
- * `PrintOutcomeResponse`, `PrintBridgeObservation`, `PrintBridgeStatusResponse`).
+ * `PrintOutcomeResponse`, `PrintBridgeObservation`, `PrintBridgeStatusResponse`,
+ * `PrintBridgeConnectionResponse`).
  */
 
 /** Which record is printed: a sale, a customer refund or a return to a vendor. */
@@ -34,6 +35,16 @@ export type PrintOutcome =
   | 'BRIDGE_UNREACHABLE'
   | 'ALREADY_SENT'
   | 'BRIDGE_REJECTED';
+
+/** Where the bridge listens on the shop PC and how long to wait on it. Set by the backend. */
+export interface PrintBridgeConnection {
+  /** Loopback origin, e.g. `http://127.0.0.1:9110`. */
+  origin: string;
+  /** Timeout for `GET /health` and `GET /jobs`. */
+  healthTimeoutMs: number;
+  /** Timeout for `POST /print`. */
+  printTimeoutMs: number;
+}
 
 export interface PrintBridgeObservation {
   reachable: boolean;

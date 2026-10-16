@@ -59,9 +59,8 @@ export function useDotMatrixPrint({
     };
     try {
       const { plan, outcome } = await mutation.mutateAsync({
-        source,
-        documentId,
-        bridge: observation,
+        request: { source, documentId, bridge: observation },
+        connection: statusQuery.data?.connection ?? null,
       });
       announce(describePrint(plan, outcome, documentLabel));
     } catch (err) {
