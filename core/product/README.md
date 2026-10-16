@@ -19,7 +19,50 @@ Inventory and sell flows: product registration, search, stock corrections, scan-
 
 ## Layout
 
-`api/` · `queries/` · `pages/` · `ui/` · `vertical/` · `routes.ts` · `nav.ts`
+`api/` · `queries/` · `pages/` · `ui/` · `vertical/` · `lib/` · `routes.ts` · `nav.ts`
+
+### Dot matrix printing (local print bridge)
+
+Normal and thermal invoices print from a PDF the server renders. Dot matrix is the exception:
+the printer needs raw ESC/P bytes, which a browser cannot send, so it goes through the
+**print bridge**, a small app on the shop PC listening on loopback (`http://127.0.0.1:9110` by
+default). The address and the timeouts come from the backend (`GET /print-bridge/connection`),
+never from this package.
+
+**The backend decides; this package carries.** Every print decision lives in `inventory-api`
+(`GET /print-bridge/connection`, `POST /print-jobs`, `POST /print-jobs/outcome`,
+`POST /print-bridge/status`): where the bridge listens and how long to wait on it, whether a
+bridge counts as present, whether to print or download, invoice or estimate, copies, the
+`.prn` filename, how long to watch the job and what a result means. Nothing here reads the
+bridge payload or decides an outcome.
+
+- `ui/useDotMatrixPrint.ts` is shared by `PrintInvoiceModal` (`SALE`) and
+  `PrintCreditNoteModal` (`REFUND`, `VENDOR_RETURN`).
+- `queries/hooks.ts` `usePrintBridgeStatusQuery` reads the connection, probes the bridge when
+  the dot matrix option is chosen (the backend's health timeout, never retried) and asks the
+  backend what it found:
+  `NOT_DETECTED`, `OUTDATED` (still prints) or `CONNECTED`, with the download link.
+  `ui/PrintBridgeNotice.tsx` shows Install, Update or Connected from that verdict.
+- `usePrintDocumentMutation` runs the four steps: ask the backend for a plan, send its
+  `bridgeRequest` to the bridge unchanged, poll the bridge's job history for as long as the
+  plan says, and report what was seen. The backend's verdict comes back as a code;
+  `lib/printMessages.ts` words it. A refusal that may already have printed offers no file,
+  so one click cannot produce two physical invoices.
+- `lib/printJobCache.ts` keeps the jobs this browser sent and has not seen finish, in
+  `localStorage` per shop (`sk.printJobs.v1.<shopId>`), for the backend's `inFlightTtlMs`
+  (2 minutes). The backend stores nothing. A second print of the same document sends the
+  entry's age as `pendingAgeMs` and the backend answers `IN_PROGRESS`; a job still queued when
+  its modal closed is checked again the next time a print modal probes the bridge
+  (`useSettleCachedPrintJobsMutation`), reported, and shown as a toast such as
+  "Invoice T001148 printed" (`describeLatePrint`). One past its time without a result is
+  reported `EXPIRED` and shown as unconfirmed. Two tabs racing fall back to the bridge's own
+  409; two PCs are not deduplicated.
+- `lib/printBridge.ts` is the only raw `fetch` in this package, on purpose: the bridge is a
+  loopback app, not the StockKart API, so `apiClient`'s base URL and auth headers would be wrong
+  there. Everything that talks to the StockKart API goes through `api/print.api.ts`.
+- `lib/printDocument.ts` saves the printer file and opens PDF previews for both modals.
+- Open follow-up: the `.prn` fallback does not set the printer's pitch (the bridge adds that),
+  so without a bridge the operator sets it on the printer.
 
 ### Advanced product search (`search/`, `ui/search/`)
 

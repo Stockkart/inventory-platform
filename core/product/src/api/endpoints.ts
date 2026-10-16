@@ -126,6 +126,14 @@ export const INVOICE_ENDPOINTS = {
   DOT_MATRIX: (purchaseId: string) => `/invoices/${purchaseId}/dot-matrix`,
 } as const;
 
+/** Dot matrix print jobs and the local print bridge. */
+export const PRINT_ENDPOINTS = {
+  BRIDGE_CONNECTION: '/print-bridge/connection',
+  BRIDGE_STATUS: '/print-bridge/status',
+  JOBS: '/print-jobs',
+  OUTCOME: '/print-jobs/outcome',
+} as const;
+
 /** Purchase history paths. */
 export const PURCHASE_ENDPOINTS = {
   BASE: '/purchases',

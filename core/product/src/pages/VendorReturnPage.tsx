@@ -309,7 +309,7 @@ export function VendorReturnPage() {
   const location = useLocation();
   const state = location.state as { prefillVendor?: VendorResponse } | null;
 
-  const { success, error: notifyError } = useNotify;
+  const { success, error: notifyError, info: notifyInfo } = useNotify;
   const [activeTab, setActiveTab] = useState<'process' | 'history'>('process');
   const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
   const [printAfterCreate, setPrintAfterCreate] = useState<{
@@ -1129,6 +1129,8 @@ export function VendorReturnPage() {
         documentId={printAfterCreate?.returnId ?? ''}
         creditNoteNo={printAfterCreate?.creditNoteNo}
         onError={(message) => notifyError(message)}
+        onSuccess={(message) => success(message)}
+        onInfo={(message) => notifyInfo(message)}
       />
     </Stack>
   );
