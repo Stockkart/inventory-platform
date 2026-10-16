@@ -27,7 +27,7 @@ Product Search and Scan & Sell call `POST /inventory/search` (`inventoryApi.sear
 
 - `search/searchState.ts` — the page state and pure helpers (`toggleValue`, `setRange`, `clearFilters`, …); a group never has zero values.
 - `search/searchUrl.ts` — the only code that reads or writes the URL (`?q=&f=field:op:payload&sort=&page=&size=&dump=`); property-tested round trip.
-- `search/useProductSearch.ts` — the page's state machine. Empty URL = **setting up** (filters accumulate, nothing requested until Search); a URL with a search = **refining** (filter ticks apply after 250 ms, sort/page at once, text waits for Search). The URL is the source of truth once searching.
+- `search/useProductSearch.ts` — the page's state machine. An empty URL is the **default search** (everything in the shop, default sort, first page of 20), so the page opens on products rather than an empty form. Filter ticks apply after 250 ms, sort/page at once, text waits for Search; every change goes to the URL, which is the source of truth. Leaving the default search pushes a history entry (Back returns to it); refining replaces.
 - `ui/search/` — `SearchFilterStrip` (one dropdown per filter under the search bar, sort at the right end), `ActiveFilterChips` (plain-English wording in `search/filterChips.ts`), `SortSelect`, `CompanyChips` (Scan & Sell; Alt+1…5 picks a chip).
 
 ### Supplier bills: tax treatment, preview and corrections

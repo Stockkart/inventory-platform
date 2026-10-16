@@ -64,7 +64,7 @@ export function decodeSearchState(params: URLSearchParams): SearchState {
   };
 }
 
-/** True when the URL carries any search parameter at all (the page then starts in "refining"). */
+/** True when the URL carries any search parameter at all (a bare URL is the default search). */
 export function hasSearchParams(params: URLSearchParams): boolean {
   return Object.values(SEARCH_URL_KEYS).some((k) => params.has(k));
 }

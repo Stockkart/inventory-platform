@@ -1,14 +1,13 @@
 // Feature: advanced-product-search — the Product Search page's state machine (R6.3, R6.3a, R6.8, R6.10).
 //
-// Two modes:
-//   setting up — the URL has no search parameters. Filters and text accumulate locally; nothing is
-//                requested until Search (text may be empty).
-//   refining   — the URL carries the search. Filter / sort / match / page changes go to the URL
-//                (and so to the server) right away — filter ticks after a 250 ms pause so a quick
-//                run of ticks is one request — while text edits wait for Search.
+// The page always shows a search. An empty URL is the default search — everything in the shop,
+// default sort, the first page of 20 — so the first screen is products, not an empty form. Filter,
+// sort, match and page changes go to the URL (and so to the server) right away — filter ticks after
+// a 250 ms pause so a quick run of ticks is one request — while text edits wait for Search.
 //
-// The URL is the single source of truth once searching: back/forward and shared links reproduce
-// the view exactly.
+// The URL is the single source of truth: back/forward and shared links reproduce the view exactly.
+// The first change away from the default search pushes a history entry, so Back returns to it;
+// later changes replace, so refining does not pile up entries.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import type {
@@ -45,10 +44,7 @@ import {
 
 export const FILTER_DEBOUNCE_MS = 250;
 
-export type SearchMode = 'settingUp' | 'refining';
-
 export interface ProductSearchController {
-  mode: SearchMode;
   /** Fields whose pill is on the strip without a filter yet (filters in the URL imply a pill). */
   pinned: readonly string[];
   pin: (fieldKey: string) => void;
@@ -56,15 +52,15 @@ export interface ProductSearchController {
   fields: readonly SearchField[];
   fieldsLoading: boolean;
   defaultSort: string | null;
-  /** What the panel and chips show. In refining mode this mirrors the URL. */
+  /** What the panel and chips show; mirrors the URL. */
   state: SearchState;
   /** The search box, which may differ from `state.text` until Search is pressed. */
   textInput: string;
   setTextInput: (text: string) => void;
   textDirty: boolean;
-  /** Run the search with the current text and panel state (setting up → refining). */
+  /** Run the search with the current text and panel state. */
   submit: () => void;
-  /** Panel changes: applied now (refining) or kept until Search (setting up). */
+  /** Panel changes: applied after a short debounce so a run of ticks is one request. */
   applyPanel: (next: SearchState) => void;
   removeFilter: (group: FilterGroup) => void;
   clearAllFilters: () => void;
@@ -74,7 +70,7 @@ export interface ProductSearchController {
   changePageSize: (size: number) => void;
   changeIncludeZeroStock: (on: boolean) => void;
   changeTextMode: (mode: TextMode) => void;
-  /** Back to setting up with everything cleared. */
+  /** Back to the default search with everything cleared. */
   reset: () => void;
   /** The last answer (previous one while a new request loads). */
   result: SearchResponse | undefined;
@@ -92,22 +88,22 @@ export function useProductSearch(): ProductSearchController {
   const fields = catalog.data?.fields ?? EMPTY_FIELDS;
   const defaultSort = catalog.data?.defaultSort ?? null;
 
+  // A bare URL is the default search; otherwise the URL says exactly what to show.
+  const urlHasSearch = hasSearchParams(searchParams);
   const committed = useMemo(
-    () => (hasSearchParams(searchParams) ? decodeSearchState(searchParams) : null),
+    () => (hasSearchParams(searchParams) ? decodeSearchState(searchParams) : emptySearchState()),
     [searchParams],
   );
-  const mode: SearchMode = committed ? 'refining' : 'settingUp';
 
-  // The panel state. Starts from the URL; in setting-up mode it is the accumulating draft.
-  const [draft, setDraft] = useState<SearchState>(() => committed ?? emptySearchState());
-  const [textInput, setTextInput] = useState(() => committed?.text ?? '');
+  // The panel state; mirrors the URL and carries edits until they are written back.
+  const [draft, setDraft] = useState<SearchState>(() => committed);
+  const [textInput, setTextInput] = useState(() => committed.text);
   const lastWritten = useRef<string | null>(null);
   // Pills added through "+ Add filter" that hold no filter yet. Counts are requested for these and
   // for fields with a filter — never for the whole catalog (R10.1). Once the URL carries a filter
   // for a pinned field the pin is dropped: the filter itself keeps the pill.
   const [pinned, setPinned] = useState<string[]>([]);
   useEffect(() => {
-    if (!committed) return;
     setPinned((prev) => {
       const next = prev.filter((k) => !committed.filters.some((g) => g.field === k));
       return next.length === prev.length ? prev : next;
@@ -120,7 +116,6 @@ export function useProductSearch(): ProductSearchController {
   // URL changed (our write, back/forward, or a shared link): mirror it into the panel. Only an
   // outside change (not our own write) overwrites what is being typed in the search box.
   useEffect(() => {
-    if (!committed) return;
     setDraft(committed);
     if (lastWritten.current !== searchParams.toString()) {
       setTextInput(committed.text);
@@ -132,16 +127,15 @@ export function useProductSearch(): ProductSearchController {
     (next: SearchState) => {
       const params = stripSearchParams(searchParams);
       for (const [k, v] of encodeSearchState(next)) params.append(k, v);
-      // A search with nothing in it must still be a search (the "whole shop" view), so a marker
-      // page=0 is kept when nothing else would be present.
-      if (!hasSearchParams(params)) params.set('page', '0');
+      // Writing the default search back leaves the URL bare, which already means that search.
       lastWritten.current = params.toString();
-      setSearchParams(params, { replace: mode === 'refining' });
+      // Leaving the default search is a step Back should undo; refining a search is not.
+      setSearchParams(params, { replace: urlHasSearch });
     },
-    [searchParams, setSearchParams, mode],
+    [searchParams, setSearchParams, urlHasSearch],
   );
 
-  // Debounced application of panel changes in refining mode.
+  // Debounced application of panel changes.
   const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flush = useCallback(
     (next: SearchState) => {
@@ -173,16 +167,16 @@ export function useProductSearch(): ProductSearchController {
   const applyNow = useCallback(
     (next: SearchState) => {
       setDraft(next);
-      if (mode === 'refining') flush(next);
+      flush(next);
     },
-    [mode, flush],
+    [flush],
   );
   const applyPanel = useCallback(
     (next: SearchState) => {
       setDraft(next);
-      if (mode === 'refining') schedule(next);
+      schedule(next);
     },
-    [mode, schedule],
+    [schedule],
   );
 
   const submit = useCallback(() => {
@@ -205,7 +199,7 @@ export function useProductSearch(): ProductSearchController {
   // ---- the request -----------------------------------------------------------------------------
   const keys = useMemo(() => {
     const wanted = new Set<string>(pinned);
-    for (const g of committed?.filters ?? []) wanted.add(g.field);
+    for (const g of committed.filters) wanted.add(g.field);
     return facetKeys(fields).filter((k) => wanted.has(k));
   }, [fields, pinned, committed]);
   // The last counts we received and the criteria they belong to.
@@ -218,7 +212,7 @@ export function useProductSearch(): ProductSearchController {
   // facets, because the counts on screen are still right (R10.1).
   const keysSignature = keys.join('|');
   const request = useMemo(() => {
-    if (!committed || !catalog.data) return null;
+    if (!catalog.data) return null;
     const wanted = keysSignature ? keysSignature.split('|') : [];
     const cached = facetCache.current;
     const withFacets =
@@ -232,7 +226,7 @@ export function useProductSearch(): ProductSearchController {
   const query = useInventorySearchQuery(request);
 
   useEffect(() => {
-    if (!committed || !request || !query.data || query.isPlaceholderData) return;
+    if (!request || !query.data || query.isPlaceholderData) return;
     if (request.facets.length > 0) {
       facetCache.current = { criteria: committed, facets: query.data.facets };
     }
@@ -241,15 +235,12 @@ export function useProductSearch(): ProductSearchController {
   const facets =
     request && request.facets.length > 0 && query.data && !query.isPlaceholderData
       ? query.data.facets
-      : committed
-      ? facetCache.current?.facets
-      : undefined;
+      : facetCache.current?.facets;
 
   if (query.data) lastGood.current = query.data;
-  const result = query.data ?? (committed ? lastGood.current : undefined);
+  const result = query.data ?? lastGood.current;
 
   return {
-    mode,
     pinned,
     pin: (key) => setPinned((prev) => (prev.includes(key) ? prev : [...prev, key])),
     unpin: (key) =>
@@ -260,7 +251,7 @@ export function useProductSearch(): ProductSearchController {
     state: draft,
     textInput,
     setTextInput,
-    textDirty: textInput !== (committed?.text ?? draft.text),
+    textDirty: textInput !== committed.text,
     submit,
     applyPanel,
     removeFilter: (group) => applyNow(removeGroup(draft, group)),
@@ -273,12 +264,12 @@ export function useProductSearch(): ProductSearchController {
     changeTextMode: (textMode) => {
       const next = setTextMode(draft, textMode);
       setDraft(next);
-      if (mode === 'refining' && next.text.trim()) flush(next);
+      if (next.text.trim()) flush(next);
     },
     reset,
     result,
     facets,
-    isLoading: mode === 'refining' && query.isLoading,
+    isLoading: query.isLoading,
     isFetching: query.isFetching,
     error: (query.error as Error | null) ?? (catalog.error as Error | null) ?? null,
     retry: () => {
