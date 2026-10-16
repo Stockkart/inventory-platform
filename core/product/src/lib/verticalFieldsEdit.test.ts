@@ -15,6 +15,15 @@ const CAFE: VerticalSchemaFieldDef[] = [
   { key: 'sellDirect', type: 'enum', storage: 'extension', values: ['no', 'yes'] },
 ];
 
+const MEDICAL: VerticalSchemaFieldDef[] = [
+  { key: 'name', storage: 'core' },
+  { key: 'batchNo', storage: 'extension' },
+  { key: 'expiryDate', type: 'date', storage: 'extension' },
+  { key: 'companyName', storage: 'core' },
+  { key: 'itemType', type: 'enum', storage: 'core', values: ['NORMAL', 'COSTLY', 'DEGREE'] },
+  { key: 'itemTypeDegree', type: 'number', storage: 'core' },
+];
+
 const SPORTS: VerticalSchemaFieldDef[] = [
   { key: 'hsn', storage: 'core' },
   { key: 'brand', storage: 'extension' },
@@ -24,7 +33,8 @@ const SPORTS: VerticalSchemaFieldDef[] = [
 ];
 
 describe('schemaOnlyFields', () => {
-  it('drops the keys the modal renders by hand and keeps the rest in order', () => {
+  it('drops the core keys the modal renders itself and keeps the rest in order', () => {
+    expect(schemaOnlyFields(MEDICAL).map((f) => f.key)).toEqual(['batchNo', 'expiryDate']);
     expect(schemaOnlyFields(CAFE).map((f) => f.key)).toEqual([
       'ingredientType',
       'unitOfMeasure',

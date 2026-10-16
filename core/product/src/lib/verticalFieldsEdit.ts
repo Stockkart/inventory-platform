@@ -7,16 +7,14 @@ import {
 } from '@inventory-platform/schema';
 
 /**
- * Vertical schema keys the product details modal already renders with a purpose-built editor
- * (name, company, batch, expiry, item type, HSN, packaging). Every other field a vertical declares
- * for registration is rendered generically from the schema, so a new field in a vertical's seed
- * shows up in view-and-edit with no frontend change.
+ * Core product properties the details modal renders in its own sections (they exist on every
+ * product regardless of vertical). Every other field a vertical declares — batch, expiry, sport,
+ * brand, ingredient type, ... — is rendered generically from the schema in "Additional fields",
+ * so a new field in a vertical's seed shows up in view-and-edit with no frontend change.
  */
 export const HAND_RENDERED_VERTICAL_KEYS: ReadonlySet<string> = new Set([
   'name',
   'companyName',
-  'batchNo',
-  'expiryDate',
   'itemType',
   'itemTypeDegree',
   'hsn',

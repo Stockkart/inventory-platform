@@ -19,17 +19,11 @@ import {
   hasProductSearchEditAccess,
 } from '@inventory-platform/access';
 import { useNotify } from '@inventory-platform/session';
-import {
-  itemUsesExtensionBag,
-  getInventoryBatchNo,
-  formatInventoryExpiryDate,
-} from '@inventory-platform/schema';
 import type { VerticalSchemaFieldDef } from '@inventory-platform/schema/types';
 import {
   buildVerticalFieldsUpdate,
   initVerticalDraft,
   schemaOnlyFields,
-  verticalDisplayName,
   type VerticalDraft,
 } from '../lib/verticalFieldsEdit';
 import { useInventoryVerticalFields } from '../vertical/useInventoryVerticalFields';
@@ -62,7 +56,6 @@ import {
   Barcode,
   Building2,
   Calendar,
-  CalendarClock,
   ClipboardList,
   Factory,
   FileText,
@@ -242,7 +235,7 @@ export function InventoryAlertDetails({
 
   // Vertical-owned fields the shop's schema declares for this product's billing mode. The ones
   // this modal already renders by hand are left out; the rest get a generic schema-driven section.
-  const { fields: allVerticalFields, verticalId } = useInventoryVerticalFields(item?.billingMode);
+  const { fields: allVerticalFields } = useInventoryVerticalFields(item?.billingMode);
   const extraVerticalFields = useMemo(
     () => schemaOnlyFields(allVerticalFields),
     [allVerticalFields],
@@ -265,8 +258,6 @@ export function InventoryAlertDetails({
     const fmtNum = (n: number | null | undefined) =>
       n != null && !Number.isNaN(n) ? String(n) : '';
     const packFactor = d.unitConversions?.factor ?? d.unitsPerPack ?? null;
-    const batchFromBag = d.verticalFields?.batchNo;
-    const expiryFromBag = d.verticalFields?.expiryDate;
     setEditForm({
       name: d.name ?? '',
       barcode: d.barcode ?? '',
@@ -274,7 +265,6 @@ export function InventoryAlertDetails({
       companyName: d.companyName ?? '',
       location: d.location ?? '',
       hsn: d.hsn ?? '',
-      batchNo: batchFromBag != null && batchFromBag !== '' ? String(batchFromBag) : d.batchNo ?? '',
       maximumRetailPrice: fmtNum(d.maximumRetailPrice),
       costPrice: fmtNum(d.costPrice),
       priceToRetail: fmtNum(d.priceToRetail),
@@ -293,12 +283,6 @@ export function InventoryAlertDetails({
       itemTypeDegree: d.itemTypeDegree != null ? String(d.itemTypeDegree) : '',
       discountApplicable: d.discountApplicable ?? '',
       thresholdCount: d.thresholdCount ?? null,
-      expiryDate:
-        expiryFromBag != null && expiryFromBag !== ''
-          ? String(expiryFromBag).slice(0, 10)
-          : d.expiryDate
-          ? d.expiryDate.slice(0, 10)
-          : '',
       purchaseDate: d.purchaseDate ? d.purchaseDate.slice(0, 10) : '',
     });
     setVerticalDraft(initVerticalDraft(d, extraVerticalFields));
@@ -365,12 +349,9 @@ export function InventoryAlertDetails({
       if (editForm.hsn !== undefined && editForm.hsn !== currentItem.hsn)
         payload.hsn = String(editForm.hsn) || undefined;
 
-      const usesExtension = itemUsesExtensionBag(currentItem);
-      // Only the keys that changed: the server merges the bag with what it already holds, and
-      // per-field edit permissions are checked against exactly these keys.
-      const verticalPatch: Record<string, unknown> = {};
-      let verticalChanged = false;
-
+      // Vertical fields come from the schema-driven section. Only the keys that changed are
+      // sent: the server merges the bag with what it already holds, and per-field edit
+      // permissions are checked against exactly these keys.
       const schemaUpdate = buildVerticalFieldsUpdate(
         currentItem,
         extraVerticalFields,
@@ -378,22 +359,9 @@ export function InventoryAlertDetails({
       );
       Object.assign(payload as Record<string, unknown>, schemaUpdate.core);
       if (Object.keys(schemaUpdate.extension).length > 0) {
-        Object.assign(verticalPatch, schemaUpdate.extension);
-        verticalChanged = true;
+        payload.verticalFields = schemaUpdate.extension;
       }
 
-      if (
-        editForm.batchNo !== undefined &&
-        editForm.batchNo !==
-          (usesExtension ? String(currentItem.verticalFields?.batchNo ?? '') : currentItem.batchNo)
-      ) {
-        if (usesExtension) {
-          verticalPatch.batchNo = String(editForm.batchNo) || null;
-          verticalChanged = true;
-        } else {
-          payload.batchNo = String(editForm.batchNo) || undefined;
-        }
-      }
       const mrp =
         editForm.maximumRetailPrice != null && String(editForm.maximumRetailPrice).trim() !== ''
           ? parseFloat(String(editForm.maximumRetailPrice))
@@ -532,30 +500,6 @@ export function InventoryAlertDetails({
       const curDisc = currentItem.discountApplicable ?? '';
       if (editDisc !== curDisc) {
         payload.discountApplicable = editDisc === '' ? null : (editDisc as DiscountApplicable);
-      }
-
-      if (editForm.expiryDate) {
-        const d = String(editForm.expiryDate).trim();
-        const currentExp = usesExtension
-          ? currentItem.verticalFields?.expiryDate
-            ? String(currentItem.verticalFields.expiryDate).slice(0, 10)
-            : ''
-          : currentItem.expiryDate
-          ? currentItem.expiryDate.slice(0, 10)
-          : '';
-        if (d !== currentExp) {
-          const iso = d ? `${d}T00:00:00Z` : undefined;
-          if (usesExtension) {
-            verticalPatch.expiryDate = iso ?? null;
-            verticalChanged = true;
-          } else {
-            payload.expiryDate = iso;
-          }
-        }
-      }
-
-      if (verticalChanged) {
-        payload.verticalFields = verticalPatch;
       }
 
       if (Object.keys(payload).length === 0) {
@@ -774,18 +718,6 @@ export function InventoryAlertDetails({
                   <DetailValue>{item.sac}</DetailValue>
                 </DetailField>
               ) : null}
-              <DetailField icon={Factory} label="Batch No">
-                {isEditing ? (
-                  <Input
-                    type="text"
-                    value={String(editForm.batchNo ?? '')}
-                    onChange={(e) => updateEditField('batchNo', e.target.value)}
-                    placeholder="Batch No"
-                  />
-                ) : (
-                  <DetailValue>{getInventoryBatchNo(item)}</DetailValue>
-                )}
-              </DetailField>
               {item?.createdAt ? (
                 <DetailField icon={Calendar} label="Created At">
                   <DetailValue>
@@ -815,7 +747,7 @@ export function InventoryAlertDetails({
           </Box>
 
           <VerticalFieldsSection
-            title={`${verticalDisplayName(verticalId)} details`}
+            title="Additional fields"
             fields={extraVerticalFields}
             item={item}
             draft={verticalDraft}
@@ -866,17 +798,6 @@ export function InventoryAlertDetails({
                   </Inline>
                 ) : (
                   <DetailValue>{packagingFactorDisplay(item)}</DetailValue>
-                )}
-              </DetailField>
-              <DetailField icon={CalendarClock} label="Expiry date">
-                {isEditing ? (
-                  <Input
-                    type="date"
-                    value={String(editForm.expiryDate ?? '')}
-                    onChange={(e) => updateEditField('expiryDate', e.target.value)}
-                  />
-                ) : (
-                  <DetailValue>{formatInventoryExpiryDate(item)}</DetailValue>
                 )}
               </DetailField>
               <DetailField icon={ShoppingCart} label="Purchase date">
