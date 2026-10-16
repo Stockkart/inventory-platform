@@ -474,96 +474,80 @@ export function ProductSearchPage() {
         </Alert>
       ) : null}
 
-      {search.mode === 'settingUp' ? (
-        <Card>
-          <CardBody>
-            <EmptyState
-              title="Set up your search"
-              description="Pick filters above, type a name, or both — then press Search. Leave the box empty to browse everything that matches the filters."
-              action={
-                <Button variant="solid" onClick={search.submit}>
-                  Search
-                </Button>
-              }
-            />
-          </CardBody>
-        </Card>
-      ) : (
-        <Card>
-          <CardBody>
-            <Stack gap="md">
-              <Text variant="caption" color="secondary" aria-live="polite">
-                {search.isLoading
-                  ? 'Searching…'
-                  : totalItems === 0
-                  ? 'No results'
-                  : `Showing ${pageStart.toLocaleString()}–${pageEnd.toLocaleString()} of ${totalItems.toLocaleString()} ${
-                      totalItems === 1 ? 'result' : 'results'
-                    }${isLoading ? ' · updating…' : ''}`}
-              </Text>
+      <Card>
+        <CardBody>
+          <Stack gap="md">
+            <Text variant="caption" color="secondary" aria-live="polite">
+              {search.isLoading
+                ? 'Searching…'
+                : totalItems === 0
+                ? 'No results'
+                : `Showing ${pageStart.toLocaleString()}–${pageEnd.toLocaleString()} of ${totalItems.toLocaleString()} ${
+                    totalItems === 1 ? 'result' : 'results'
+                  }${isLoading ? ' · updating…' : ''}`}
+            </Text>
 
-              {search.isLoading && inventory.length === 0 ? (
-                <CenteredLoader label="Searching…" />
-              ) : inventory.length === 0 && !isLoading ? (
-                <EmptyState
-                  title="Nothing matches"
-                  description="Try fewer filters or a shorter word."
-                  action={
-                    <Inline gap="sm">
-                      {search.state.filters.length > 0 ? (
-                        <Button variant="outline" onClick={search.clearAllFilters}>
-                          Clear filters
-                        </Button>
-                      ) : null}
-                      <Button variant="ghost" onClick={search.reset}>
-                        Start over
+            {search.isLoading && inventory.length === 0 ? (
+              <CenteredLoader label="Searching…" />
+            ) : inventory.length === 0 && !isLoading ? (
+              <EmptyState
+                title="Nothing matches"
+                description="Try fewer filters or a shorter word."
+                action={
+                  <Inline gap="sm">
+                    {search.state.filters.length > 0 ? (
+                      <Button variant="outline" onClick={search.clearAllFilters}>
+                        Clear filters
                       </Button>
-                    </Inline>
-                  }
+                    ) : null}
+                    <Button variant="ghost" onClick={search.reset}>
+                      Start over
+                    </Button>
+                  </Inline>
+                }
+              />
+            ) : (
+              <>
+                <Box
+                  display="grid"
+                  gap="lg"
+                  width="full"
+                  className={cn(surfaceChrome.autoGrid280, isLoading && surfaceChrome.busyDim)}
+                  aria-busy={isLoading}
+                >
+                  {inventory.map((item) => {
+                    const inventoryId = resolveInventoryDocumentId(item);
+                    return (
+                      <ProductSearchCard
+                        key={item.id || item.lotId}
+                        item={item}
+                        layout={cardLayoutFor(item)}
+                        visibility={cardVisibility}
+                        isPageLoading={isLoading}
+                        isDetailLoading={detailLoadingId === inventoryId}
+                        isAddingToCart={addingToCart === inventoryId}
+                        onViewDetails={openProductDetails}
+                        onAddToCart={handleAddToCart}
+                      />
+                    );
+                  })}
+                </Box>
+                <PaginationBar
+                  page={search.state.page}
+                  totalPages={Math.max(totalPages, 1)}
+                  totalItems={totalItems}
+                  disabled={isLoading}
+                  onPageChange={search.changePage}
+                  pageSize={search.state.size}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                  onPageSizeChange={search.changePageSize}
+                  aria-label="Product search results pages"
                 />
-              ) : (
-                <>
-                  <Box
-                    display="grid"
-                    gap="lg"
-                    width="full"
-                    className={cn(surfaceChrome.autoGrid280, isLoading && surfaceChrome.busyDim)}
-                    aria-busy={isLoading}
-                  >
-                    {inventory.map((item) => {
-                      const inventoryId = resolveInventoryDocumentId(item);
-                      return (
-                        <ProductSearchCard
-                          key={item.id || item.lotId}
-                          item={item}
-                          layout={cardLayoutFor(item)}
-                          visibility={cardVisibility}
-                          isPageLoading={isLoading}
-                          isDetailLoading={detailLoadingId === inventoryId}
-                          isAddingToCart={addingToCart === inventoryId}
-                          onViewDetails={openProductDetails}
-                          onAddToCart={handleAddToCart}
-                        />
-                      );
-                    })}
-                  </Box>
-                  <PaginationBar
-                    page={search.state.page}
-                    totalPages={Math.max(totalPages, 1)}
-                    totalItems={totalItems}
-                    disabled={isLoading}
-                    onPageChange={search.changePage}
-                    pageSize={search.state.size}
-                    pageSizeOptions={PAGE_SIZE_OPTIONS}
-                    onPageSizeChange={search.changePageSize}
-                    aria-label="Product search results pages"
-                  />
-                </>
-              )}
-            </Stack>
-          </CardBody>
-        </Card>
-      )}
+              </>
+            )}
+          </Stack>
+        </CardBody>
+      </Card>
 
       <InventoryAlertDetails
         open={selectedItem !== null}
