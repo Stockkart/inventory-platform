@@ -1,7 +1,12 @@
+import { useEffect, useRef } from 'react';
 import type { PrintDocumentSource } from '@inventory-platform/product/types';
-import { describePrint, type PrintMessage } from '../lib/printMessages';
+import { describeLatePrint, describePrint, type PrintMessage } from '../lib/printMessages';
 import { downloadPrinterFile } from '../lib/printDocument';
-import { usePrintBridgeStatusQuery, usePrintDocumentMutation } from '../queries/hooks';
+import {
+  usePrintBridgeStatusQuery,
+  usePrintDocumentMutation,
+  useSettleCachedPrintJobsMutation,
+} from '../queries/hooks';
 
 interface UseDotMatrixPrintOptions {
   /** Probe the bridge only while the print modal is open on the dot matrix option. */
@@ -34,6 +39,35 @@ export function useDotMatrixPrint({
 }: UseDotMatrixPrintOptions) {
   const statusQuery = usePrintBridgeStatusQuery(enabled);
   const mutation = usePrintDocumentMutation();
+  const settle = useSettleCachedPrintJobsMutation();
+
+  // Each time the modal probes the bridge, settle what earlier prints left queued and tell the
+  // operator how they ended. Once per probe, not per render.
+  const settledFor = useRef<unknown>(null);
+  const connection = statusQuery.data?.connection;
+  useEffect(() => {
+    if (!connection || settledFor.current === statusQuery.data) {
+      return;
+    }
+    settledFor.current = statusQuery.data;
+    settle
+      .mutateAsync(connection)
+      .then((settled) => {
+        for (const { job, outcome } of settled) {
+          const late = describeLatePrint(job.documentKind, job.documentNumber, outcome);
+          if (late?.channel === 'success') {
+            onSuccess?.(late.message);
+          } else if (late?.channel === 'info') {
+            onInfo?.(late.message);
+          } else if (late) {
+            onError?.(late.message);
+          }
+        }
+      })
+      .catch(() => undefined);
+    // Keyed on the probe result alone; the callbacks and mutation object change every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusQuery.data]);
 
   const announce = (message: PrintMessage) => {
     if (message.download) {

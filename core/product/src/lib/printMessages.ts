@@ -4,6 +4,7 @@
  * only words it. Nothing here decides anything.
  */
 import type {
+  PrintDocumentKind,
   PrintDownload,
   PrintJobPlan,
   PrintOutcomeResult,
@@ -90,5 +91,50 @@ export function describePrint(
         shouldClose: close,
         download,
       };
+    case 'UNCONFIRMED':
+      return {
+        channel: 'info',
+        message: `Could not confirm the ${documentLabel} printed. Check the printer before printing it again.`,
+        shouldClose: close,
+        download,
+      };
+  }
+}
+
+const KIND_LABELS: Record<PrintDocumentKind, string> = {
+  INVOICE: 'Invoice',
+  ESTIMATE: 'Estimate',
+  CREDIT_NOTE: 'Credit note',
+  DEBIT_NOTE: 'Debit note',
+};
+
+/**
+ * Wording for a job sent earlier whose result arrived later, e.g. "Invoice T001148 printed".
+ * Shown as a toast only; it never closes or downloads anything. Null for outcomes a late check
+ * does not produce.
+ */
+export function describeLatePrint(
+  documentKind: PrintDocumentKind,
+  documentNumber: string | null,
+  outcome: PrintOutcomeResult,
+): Pick<PrintMessage, 'channel' | 'message'> | null {
+  const name = documentNumber
+    ? `${KIND_LABELS[documentKind]} ${documentNumber}`
+    : KIND_LABELS[documentKind];
+  switch (outcome.outcome) {
+    case 'PRINTED':
+      return { channel: 'success', message: `${name} printed.` };
+    case 'FAILED_PRINTER':
+      return {
+        channel: 'error',
+        message: `${name} did not print: ${outcome.error ?? 'the printer reported an error'}`,
+      };
+    case 'UNCONFIRMED':
+      return {
+        channel: 'info',
+        message: `Could not confirm ${name} printed. Check the printer before printing it again.`,
+      };
+    default:
+      return null;
   }
 }

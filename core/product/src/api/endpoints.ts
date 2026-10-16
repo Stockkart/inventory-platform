@@ -131,7 +131,7 @@ export const PRINT_ENDPOINTS = {
   BRIDGE_CONNECTION: '/print-bridge/connection',
   BRIDGE_STATUS: '/print-bridge/status',
   JOBS: '/print-jobs',
-  OUTCOME: (printJobId: string) => `/print-jobs/${printJobId}/outcome`,
+  OUTCOME: '/print-jobs/outcome',
 } as const;
 
 /** Purchase history paths. */

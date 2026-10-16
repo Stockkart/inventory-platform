@@ -30,7 +30,7 @@ default). The address and the timeouts come from the backend (`GET /print-bridge
 never from this package.
 
 **The backend decides; this package carries.** Every print decision lives in `inventory-api`
-(`GET /print-bridge/connection`, `POST /print-jobs`, `POST /print-jobs/{id}/outcome`,
+(`GET /print-bridge/connection`, `POST /print-jobs`, `POST /print-jobs/outcome`,
 `POST /print-bridge/status`): where the bridge listens and how long to wait on it, whether a
 bridge counts as present, whether to print or download, invoice or estimate, copies, the
 `.prn` filename, how long to watch the job and what a result means. Nothing here reads the
@@ -48,6 +48,15 @@ bridge payload or decides an outcome.
   plan says, and report what was seen. The backend's verdict comes back as a code;
   `lib/printMessages.ts` words it. A refusal that may already have printed offers no file,
   so one click cannot produce two physical invoices.
+- `lib/printJobCache.ts` keeps the jobs this browser sent and has not seen finish, in
+  `localStorage` per shop (`sk.printJobs.v1.<shopId>`), for the backend's `inFlightTtlMs`
+  (2 minutes). The backend stores nothing. A second print of the same document sends the
+  entry's age as `pendingAgeMs` and the backend answers `IN_PROGRESS`; a job still queued when
+  its modal closed is checked again the next time a print modal probes the bridge
+  (`useSettleCachedPrintJobsMutation`), reported, and shown as a toast such as
+  "Invoice T001148 printed" (`describeLatePrint`). One past its time without a result is
+  reported `EXPIRED` and shown as unconfirmed. Two tabs racing fall back to the bridge's own
+  409; two PCs are not deduplicated.
 - `lib/printBridge.ts` is the only raw `fetch` in this package, on purpose: the bridge is a
   loopback app, not the StockKart API, so `apiClient`'s base URL and auth headers would be wrong
   there. Everything that talks to the StockKart API goes through `api/print.api.ts`.

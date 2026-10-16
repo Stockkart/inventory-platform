@@ -25,7 +25,9 @@ export type PrintObservation =
   | 'STILL_QUEUED'
   | 'UNREACHABLE'
   | 'DUPLICATE'
-  | 'REJECTED';
+  | 'REJECTED'
+  /** This browser stopped tracking a queued job after its in-flight time without seeing it finish. */
+  | 'EXPIRED';
 
 /** What a reported print means, as the backend decided. */
 export type PrintOutcome =
@@ -34,7 +36,9 @@ export type PrintOutcome =
   | 'STILL_QUEUED'
   | 'BRIDGE_UNREACHABLE'
   | 'ALREADY_SENT'
-  | 'BRIDGE_REJECTED';
+  | 'BRIDGE_REJECTED'
+  /** Nobody saw the job finish. Unknown, not failed: it may well have printed. */
+  | 'UNCONFIRMED';
 
 /** Where the bridge listens on the shop PC and how long to wait on it. Set by the backend. */
 export interface PrintBridgeConnection {
@@ -65,6 +69,11 @@ export interface CreatePrintJobRequest {
   source: PrintDocumentSource;
   documentId: string;
   bridge: PrintBridgeObservation;
+  /**
+   * How long ago this browser sent the same document without seeing it finish, in ms; null
+   * when it has not. From `lib/printJobCache.ts`; the backend decides what it means.
+   */
+  pendingAgeMs: number | null;
 }
 
 export interface PrintDownload {
@@ -73,18 +82,22 @@ export interface PrintDownload {
 }
 
 export interface PrintJobPlan {
-  printJobId: string;
   action: PrintAction;
   reason: PrintActionReason | null;
   bridgeState: PrintBridgeState;
   documentKind: PrintDocumentKind;
+  /** The number on the document, e.g. T001148, for a message about it later. */
+  documentNumber: string | null;
   /** Sent to the bridge unchanged. Never read here. */
   bridgeRequest: unknown;
   download: PrintDownload | null;
   poll: { intervalMs: number; budgetMs: number } | null;
+  /** How long a sent job stays in `lib/printJobCache.ts` before it counts as unconfirmed. */
+  inFlightTtlMs: number;
 }
 
 export interface ReportPrintOutcomeRequest {
+  source: PrintDocumentSource;
   observation: PrintObservation;
   bridgeJobId: string | null;
   error: string | null;

@@ -36,12 +36,9 @@ export const printApi = {
   },
 
   /** Report what the bridge did with a job, and get back what it means. */
-  reportOutcome: async (
-    printJobId: string,
-    request: ReportPrintOutcomeRequest,
-  ): Promise<PrintOutcomeResult> => {
+  reportOutcome: async (request: ReportPrintOutcomeRequest): Promise<PrintOutcomeResult> => {
     const response = await apiClient.post<ApiResponse<PrintOutcomeResult>>(
-      PRINT_ENDPOINTS.OUTCOME(printJobId),
+      PRINT_ENDPOINTS.OUTCOME,
       request,
     );
     return response.data;

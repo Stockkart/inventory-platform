@@ -1,19 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import type { PrintJobPlan, PrintOutcomeResult } from '@inventory-platform/product/types';
-import { PRINTED_MESSAGE, describePrint } from './printMessages';
+import { PRINTED_MESSAGE, describeLatePrint, describePrint } from './printMessages';
 
 const FILE = { filename: 'invoice-T001148.prn', content: 'TEXT' };
 
 function plan(overrides: Partial<PrintJobPlan> = {}): PrintJobPlan {
   return {
-    printJobId: 'job-1',
     action: 'BRIDGE',
     reason: null,
     bridgeState: 'CONNECTED',
     documentKind: 'INVOICE',
+    documentNumber: 'T001148',
     bridgeRequest: {},
     download: FILE,
     poll: { intervalMs: 500, budgetMs: 5000 },
+    inFlightTtlMs: 120_000,
     ...overrides,
   };
 }
@@ -101,5 +102,37 @@ describe('describePrint', () => {
       shouldClose: true,
       download: null,
     });
+  });
+});
+
+describe('describeLatePrint', () => {
+  it('names the document by kind and number', () => {
+    expect(describeLatePrint('INVOICE', 'T001148', outcome({ outcome: 'PRINTED' }))).toEqual({
+      channel: 'success',
+      message: 'Invoice T001148 printed.',
+    });
+  });
+
+  it("carries the printer's error for a late failure", () => {
+    expect(
+      describeLatePrint(
+        'CREDIT_NOTE',
+        'CN-7',
+        outcome({ outcome: 'FAILED_PRINTER', error: 'Out of paper' }),
+      ),
+    ).toEqual({ channel: 'error', message: 'Credit note CN-7 did not print: Out of paper' });
+  });
+
+  it('says an unconfirmed job may have printed, without a number when there is none', () => {
+    expect(describeLatePrint('ESTIMATE', null, outcome({ outcome: 'UNCONFIRMED' }))).toEqual({
+      channel: 'info',
+      message: 'Could not confirm Estimate printed. Check the printer before printing it again.',
+    });
+  });
+
+  it('says nothing for outcomes a late check does not produce', () => {
+    expect(
+      describeLatePrint('INVOICE', 'T1', outcome({ outcome: 'BRIDGE_UNREACHABLE' })),
+    ).toBeNull();
   });
 });
