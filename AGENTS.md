@@ -40,7 +40,7 @@ Resolved versions from `pnpm-lock.yaml`; ranges in `package.json`.
 | `type:ui-kit`   | `ui-kit`                           | ui-kit only                    |
 
 - `type:journey` is declared in the config. No project carries it.
-- `apps/inventory` composes only through `@inventory-platform/plugin-registry/routes` (plus shell, query, session). A `no-restricted-imports` block in root `eslint.config.mjs` bans domain packages, `*/api`, `*/ui` and `*/pages/*` there. Example: `apps/inventory/app/routes.tsx`.
+- `apps/inventory` composes only through `@inventory-platform/plugin-registry/routes` (plus the `plugin-registry` barrel, `shell`, `query`, `session`, `routing`). A `no-restricted-imports` block in root `eslint.config.mjs` bans domain packages, `*/api`, `*/ui` and `*/pages/*` there. Example: `apps/inventory/app/routes.tsx`.
 - Team rule, stricter than lint: `platform/*` does not import `core/*` or `plugins/*`. Example: `platform/session/src/lib/useAuthStore.ts`.
   - Exception: `platform/shell/src/lib/DashboardLayout.tsx` imports `@inventory-platform/user/shops`.
 - Import another package only through its `package.json` `exports` (`.`, `/types`, `/nav`, `/routes/*`). Never import its `src/` paths. Example: `core/reminders/package.json`.
@@ -92,13 +92,13 @@ scripts/deploy/      Vercel deploy and verify scripts
 - Domain widgets are `core/<d>/src/ui/<Name>.tsx` in PascalCase, re-exported from `core/<d>/src/ui/index.ts`. Example: `core/user/src/ui/index.ts`.
   - Lower-case files: `core/accounting/src/ui/tabNav.tsx`, `core/analytics/src/ui/tabNav.tsx`, `core/taxation/src/ui/tabNav.tsx`.
   - No `core/<d>/src/ui/index.ts` barrel: `core/accounting`, `core/analytics`, `core/credit`, `core/mis`. Import by relative path there. Add the barrel only when the package exports a widget.
-- Components are named function declarations. Never `const X = () =>` or `React.FC`. All 166 page and ui files follow this. Example: `core/user/src/ui/RoleBadge.tsx`.
+- Components are named function declarations. Never `const X = () =>` or `React.FC`. All page and ui files follow this. Example: `core/user/src/ui/RoleBadge.tsx`.
 - Props are an `interface <Name>Props` above the component, destructured in the signature. Export it only if another file needs it. Example: `core/user/src/ui/RoleBadge.tsx`.
   - Exceptions, `type <Name>Props =`: `core/accounting/src/ui/JournalEntryEditor.tsx`, `core/product/src/pages/VendorInvoicesPage.tsx`, `core/product/src/ui/HistoryFiltersBar.tsx`, `core/product/src/ui/HistoryListSummary.tsx`, `core/product/src/ui/PackagingFactorInput.tsx`, `platform/routing/src/lib/FormKeyboardNavScope.tsx`, `platform/shell/src/lib/CommandPalette.tsx`, `platform/shell/src/lib/ContextualHelpPanel.tsx`, `platform/shell/src/lib/KeyboardShortcutsModal.tsx`, `platform/shell/src/lib/YouTubeHelpModal.tsx`.
   - Exceptions, bare `type Props =`: `core/accounting/src/ui/AccountPicker.tsx`, `core/accounting/src/ui/PartyLineFields.tsx`, `core/credit/src/ui/CreditAccountList.tsx`, `core/credit/src/ui/CreditEntriesTimeline.tsx`, `core/credit/src/ui/CreditManualChargeForm.tsx`, `core/credit/src/ui/CreditPartiesSidebar.tsx`, `core/credit/src/ui/CreditPartyActions.tsx`.
 - Hooks are `use<Name>.ts` next to the feature that owns them. Example: `core/product/src/search/useProductSearch.ts`. Server-state hooks go in queries (see State and data fetching).
 - Types live in `src/model/`, exported as `@inventory-platform/<d>/types`. Example: `core/reminders/package.json`.
-  - Inside a package, imports are mixed: 104 files use the `/types` self-alias, about 90 use relative `../model` (user, product, pricing, accounting, reminders). Match the file you edit.
+  - Inside a package, imports are mixed: about 100 files use the `/types` self-alias, about 90 use relative `../model` (user, product, pricing, accounting, reminders). Match the file you edit.
 - Use ui-kit primitives, never native tags. `bannedNativeHtmlTags` in root `eslint.config.mjs` bans `div span p button input select textarea table form label a ul ol li h1–h6` in domain, shell, schema, routing and plugin code. For semantics use `Text as="h2"` or `Box as="span"`. Example: `core/user/src/pages/ProfilePage.tsx`.
 - `Button` defaults to `variant="solid"` (`ui-kit/src/forms/Button.tsx`). Use `brand` for marketing only. Example: `core/plan/src/ui/Hero.tsx`.
   - Exceptions: the auth forms in `core/user/src/journey/auth/forms/` and `core/user/src/journey/ui/JourneyHeader.tsx`.
@@ -114,8 +114,8 @@ General:
 - Use the owning chrome map: `shellChrome`, `journeyChrome`, `chartChrome`, `productChrome`, `registrationChrome`, `accountingChrome`, `surfaceChrome`, `searchChrome`. Other class maps exported from `ui-kit/src/patterns/index.ts`: `pageStyles`, `accordionStyles`, `vendorStyles`, `uploadLayoutStyles`, `denseDataGrid`. Do not create a new global CSS system. Example: `core/analytics/src/ui/SalesByGroupChart.tsx`.
 - A class is usable only once its key is in the `as const` map. Add the CSS rule and the key in the same change. Keys equal class names. Example: `ui-kit/src/patterns/SurfaceChrome.tsx`.
 - Name view-specific keys `<view><Element>`, e.g. `invoiceSettingsHeader`. Example: `ui-kit/src/patterns/SurfaceChrome.tsx`.
-- Colours, spacing and radii use `var(--sk-*, <fallback>)`. In `ui-kit/src/patterns/SurfaceChrome.module.css` 276 lines use a fallback, 19 do not. Example: `.profileHeroTitle` in `ui-kit/src/patterns/SurfaceChrome.module.css`.
-  - Exceptions: 48 raw hex lines in the same file (e.g. the `.profileHeroIcon` colour). Do not add more.
+- Colours, spacing and radii use `var(--sk-*, <fallback>)`. In `ui-kit/src/patterns/SurfaceChrome.module.css` about 275 lines use a fallback, under 20 do not. Example: `.profileHeroTitle` in `ui-kit/src/patterns/SurfaceChrome.module.css`.
+  - Exceptions: about 45 raw hex lines in the same file (e.g. the `.profileHeroIcon` colour). Do not add more.
 - No inline `style={{}}`. The `cssModuleImportBan` lint message still suggests "inline styles"; the team rule overrides it. Example: `core/user/src/ui/InvoiceSeriesSection.tsx`.
   - Exceptions: `core/product/src/ui/cardLayout/CardLayoutPreview.tsx`, `core/product/src/pages/BarcodesPage.tsx`, `core/user/src/journey/onboarding/onboarding.tsx`, `platform/shell/src/lib/KeyboardShortcutsModal.tsx`.
 - Wrap Recharts in `chartChrome.plot`; `min-height` alone renders blank charts. Example: `core/analytics/src/ui/SalesByGroupChart.tsx`.
@@ -251,7 +251,7 @@ cp .env-example .env && docker-compose up          # frontend container only; fi
 - The `NODE_ENV` values here (`development`, `production`) are the only env values in this file. They are shell overrides for running tests, not configuration. With `NODE_ENV=production` vitest loads the production React build and render tests fail.
 - CI runs lint (`.github/workflows/eslint.yml`), format (`.github/workflows/format.yml`), test + build + typecheck (`.github/workflows/ci.yml`) and package tracking.
 
-Status, run in the task workspace on 2026-10-17 (pnpm 9.8.0, Node 20):
+Status, run in the task workspace on 2026-10-17 (pnpm 10.24.0, Node 20.20.2):
 
 | Command                                                | Result                                                                                                                     |
 | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
@@ -261,7 +261,7 @@ Status, run in the task workspace on 2026-10-17 (pnpm 9.8.0, Node 20):
 | `nx run-many -t test --all` with `NODE_ENV=production` | fail: `TypeError: React.act is not a function`; `core/user` 20/32 and `core/product` 27/218 fail, `platform/schema` passes |
 | `nx build inventory`                                   | pass                                                                                                                       |
 | `node .github/scripts/check-package-tracking.mjs`      | pass                                                                                                                       |
-| `pnpm run format:check`                                | STATUS_FMT                                                                                                                 |
+| `pnpm run format:check`                                | pass on tracked files; fails locally after `nx typecheck` (29 files in gitignored `out-tsc/`, not in `.prettierignore`)    |
 
 ## Do and Don't
 
