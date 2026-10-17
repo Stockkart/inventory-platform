@@ -69,9 +69,7 @@ export function ProductEntryGrid<Row>({
   const gridId = GRID_IDS.PRODUCT_ENTRY;
   const layoutQuery = useGridLayoutQuery(gridId);
   const changeMutation = useChangeGridLayoutMutation(gridId);
-  const resetMutation = useResetGridLayoutMutation(gridId);
   const [draftWidths, setDraftWidths] = useState<Record<string, number>>({});
-  const [managerOpen, setManagerOpen] = useState(false);
 
   const layout = layoutQuery.data;
   const canEdit = layout?.canEdit === true;
@@ -104,27 +102,14 @@ export function ProductEntryGrid<Row>({
     });
   };
 
-  const error = changeMutation.error ?? resetMutation.error;
-
   return (
     <>
-      {canEdit ? (
-        <Inline justify="between" gap="sm" mt="sm">
-          <Text variant="caption" color="secondary">
-            Column widths and order are shared with everyone in this shop. Drag a header edge to
-            resize, drag a header to move it.
-          </Text>
-          <Button type="button" variant="outline" size="sm" onClick={() => setManagerOpen(true)}>
-            <Icon icon={Columns3} size="sm" />
-            Columns
-          </Button>
-        </Inline>
-      ) : null}
-      {error ? (
-        <Alert variant="danger">
-          {error.message || 'Could not save the column layout. Please try again.'}
-        </Alert>
-      ) : null}
+      <ProductEntryColumnsBar
+        columns={columns}
+        caption="Column widths and order are shared with everyone in this shop. Drag a header edge to resize, drag a header to move it."
+        allowReorder
+      />
+      {changeMutation.error ? <LayoutSaveError error={changeMutation.error} /> : null}
       <Box className={denseDataGrid.wrap} {...wrapProps}>
         <Table
           key={tableKey}
@@ -197,24 +182,89 @@ export function ProductEntryGrid<Row>({
         </Table>
         {footer}
       </Box>
-      {canEdit ? (
-        <ColumnManager
-          open={managerOpen}
-          onClose={() => setManagerOpen(false)}
-          description="Changes apply to everyone in this shop. Columns with a lock are required and can be moved but not hidden."
-          columns={laidOut.map((col) => ({
-            key: col.key,
-            label: byKey.get(col.key)?.label ?? col.key,
-            hidden: col.hidden,
-            locked: !col.hideable,
-            movable: col.reorderable,
-          }))}
-          onMove={(key, direction) => send(stepMove(laidOut, key, direction))}
-          onToggleHidden={(key, hidden) => send({ type: 'SET_HIDDEN', key, hidden })}
-          onReset={() => resetMutation.mutate()}
-          resetting={resetMutation.isPending}
-        />
-      ) : null}
     </>
+  );
+}
+
+export interface ProductEntryColumnsBarProps {
+  /** Every column this mode has; only `key` and `label` are used. */
+  columns: Array<Pick<ProductEntryGridColumn<unknown>, 'key' | 'label'>>;
+  caption: string;
+  /** Grid view: the drawer can also reorder. List view keeps its own field order. */
+  allowReorder?: boolean;
+}
+
+/**
+ * The **Columns** button and drawer for the shop's shared layout. Shown only to owners and admins
+ * (`canEdit`); hiding a field here hides it for everyone, in grid and list view.
+ */
+export function ProductEntryColumnsBar({
+  columns,
+  caption,
+  allowReorder = false,
+}: ProductEntryColumnsBarProps) {
+  const gridId = GRID_IDS.PRODUCT_ENTRY;
+  const layoutQuery = useGridLayoutQuery(gridId);
+  const changeMutation = useChangeGridLayoutMutation(gridId);
+  const resetMutation = useResetGridLayoutMutation(gridId);
+  const [open, setOpen] = useState(false);
+
+  const layout = layoutQuery.data;
+  const labels = useMemo(() => new Map(columns.map((c) => [c.key, c.label])), [columns]);
+  const laidOut = useMemo(
+    () =>
+      layoutColumns(
+        columns.map((c) => c.key),
+        layout,
+      ),
+    [columns, layout],
+  );
+  if (layout?.canEdit !== true) {
+    return null;
+  }
+  const send = (change: GridLayoutChange | null) => {
+    if (change) {
+      changeMutation.mutate(change);
+    }
+  };
+  const error = changeMutation.error ?? resetMutation.error;
+
+  return (
+    <>
+      <Inline justify="between" gap="sm" mt="sm">
+        <Text variant="caption" color="secondary">
+          {caption}
+        </Text>
+        <Button type="button" variant="outline" size="sm" onClick={() => setOpen(true)}>
+          <Icon icon={Columns3} size="sm" />
+          Columns
+        </Button>
+      </Inline>
+      {error ? <LayoutSaveError error={error} /> : null}
+      <ColumnManager
+        open={open}
+        onClose={() => setOpen(false)}
+        description="Changes apply to everyone in this shop, in list and grid view. Columns with a lock are required and cannot be hidden."
+        columns={laidOut.map((col) => ({
+          key: col.key,
+          label: labels.get(col.key) ?? col.key,
+          hidden: col.hidden,
+          locked: !col.hideable,
+          movable: allowReorder && col.reorderable,
+        }))}
+        onMove={(key, direction) => send(stepMove(laidOut, key, direction))}
+        onToggleHidden={(key, hidden) => send({ type: 'SET_HIDDEN', key, hidden })}
+        onReset={() => resetMutation.mutate()}
+        resetting={resetMutation.isPending}
+      />
+    </>
+  );
+}
+
+function LayoutSaveError({ error }: { error: Error }) {
+  return (
+    <Alert variant="danger">
+      {error.message || 'Could not save the column layout. Please try again.'}
+    </Alert>
   );
 }

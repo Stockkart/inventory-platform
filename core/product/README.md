@@ -142,15 +142,18 @@ Product Search and Scan & Sell call `POST /inventory/search` (`inventoryApi.sear
   product entry **grid** view are one shared layout for the shop
   (`GET/PATCH/DELETE /shops/active-shop/grid-layouts/product-entry`, `useGridLayoutQuery`).
   Scroll position stays in the browser; columns keep their width on any screen and the grid
-  scrolls sideways instead of squeezing them. List view is unchanged.
+  scrolls sideways instead of squeezing them. List view follows the same **hidden** columns
+  (optional fields disappear from each product's form) but has no widths or order of its own.
 - **One column list.** `ProductEntryPage` builds `gridColumns` (key, header, fill-row control,
   row cell) once; `ProductEntryGrid` draws the header, the "Fill all" row and every row from it,
   so order and widths always line up. Keys match the backend `GridColumnCatalog`
   (`field:<schemaKey>` for vertical schema fields), so a vertical's own fields need no grid code.
 - **Rules from the server.** The catalog says which columns are `required` (to save), `hideable`,
-  `reorderable` and pinned `FIRST`/`LAST` (`#`, Actions). Only owners and admins (`canEdit`) see
-  the resize handles, header dragging and the **Columns** drawer; everyone else sees the shop's
-  layout read-only.
+  `reorderable` and pinned `FIRST`/`LAST` (`#`, Actions). Required fields (including Packaging,
+  which both views now check on save) cannot be hidden. Only owners and admins (`canEdit`) see
+  the resize handles, header dragging and the **Columns** drawer (`ProductEntryColumnsBar`, in
+  both views; list view's drawer shows/hides only); everyone else sees the shop's layout
+  read-only.
 - **One change per save.** A resize, move or show/hide is sent as one `PATCH` change; the cache
   updates first (`applyGridLayoutChange`) and the server's answer, which includes anything other
   members saved meanwhile, replaces it. Needs the matching inventory-api change deployed; until

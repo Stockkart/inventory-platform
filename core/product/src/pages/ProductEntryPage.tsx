@@ -103,9 +103,12 @@ import {
   gridRegistrationFields,
 } from '../vertical/VerticalRegistrationGridCells';
 import {
+  ProductEntryColumnsBar,
   ProductEntryGrid,
   type ProductEntryGridColumn,
 } from '../ui/productEntryGrid/ProductEntryGrid';
+import { useGridLayoutQuery } from '../queries/gridLayout.queries';
+import { GRID_IDS } from '../model/gridLayout.types';
 import {
   PackagingUnitInput,
   isSelfPackUnit,
@@ -1174,6 +1177,17 @@ export function ProductEntryPage() {
     sellDirectField,
     otherFields: verticalRegistrationFields,
   } = useMemo(() => partitionRegistrationFields(registrationFields), [registrationFields]);
+
+  /** The shop's shared column layout: grid widths/order, and which optional fields both views hide. */
+  const gridLayoutQuery = useGridLayoutQuery(GRID_IDS.PRODUCT_ENTRY);
+  const hiddenLayoutKeys = useMemo(
+    () => new Set((gridLayoutQuery.data?.columns ?? []).filter((c) => c.hidden).map((c) => c.key)),
+    [gridLayoutQuery.data],
+  );
+  const isHiddenInShopLayout = useCallback(
+    (columnKey: string) => hiddenLayoutKeys.has(columnKey),
+    [hiddenLayoutKeys],
+  );
 
   /**
    * The rows bulk stock-in sends, built once for both stock-in and the bill preview so the server
@@ -2726,43 +2740,39 @@ export function ProductEntryPage() {
           return;
         }
 
-        if (productViewMode !== 'grid') {
-          if (!product.baseUnit?.trim()) {
-            notifyError(
-              `Product "${
-                product.name || 'Unnamed'
-              }": packaging unit is required (e.g. 1 × 50 TBS)`,
-            );
-            setIsLoading(false);
-            return;
-          }
-          const baseUqcForValidation = resolvePackagingUqc(product.baseUnit, packagingUnits);
-          if (!baseUqcForValidation) {
-            notifyError(
-              `Product "${product.name || 'Unnamed'}": select a valid packaging unit from the list`,
-            );
-            setIsLoading(false);
-            return;
-          }
-          const unitDef = packagingUnits.find((u) => u.uqc === baseUqcForValidation);
-          const displayFactor = packagingFactorForDisplay(
-            product.unitsPerPack ?? product.conversionFactor,
+        if (!product.baseUnit?.trim()) {
+          notifyError(
+            `Product "${product.name || 'Unnamed'}": packaging unit is required (e.g. 1 × 50 TBS)`,
           );
-          const normalizedUnitsPerPack = packagingFactorToUnitsPerPack(displayFactor, unitDef);
-          if (
-            unitDef?.allowsUnitsPerPack &&
-            unitDef.sellUnitRule === 'PACK_ONLY' &&
-            !isSelfPackUnit(baseUqcForValidation, packagingUnits) &&
-            normalizedUnitsPerPack <= 0
-          ) {
-            notifyError(
-              `Product "${product.name || 'Unnamed'}": enter pack size after 1 × (e.g. 1 × 100 ${
-                unitDef.uqc
-              })`,
-            );
-            setIsLoading(false);
-            return;
-          }
+          setIsLoading(false);
+          return;
+        }
+        const baseUqcForValidation = resolvePackagingUqc(product.baseUnit, packagingUnits);
+        if (!baseUqcForValidation) {
+          notifyError(
+            `Product "${product.name || 'Unnamed'}": select a valid packaging unit from the list`,
+          );
+          setIsLoading(false);
+          return;
+        }
+        const unitDef = packagingUnits.find((u) => u.uqc === baseUqcForValidation);
+        const displayFactor = packagingFactorForDisplay(
+          product.unitsPerPack ?? product.conversionFactor,
+        );
+        const normalizedUnitsPerPack = packagingFactorToUnitsPerPack(displayFactor, unitDef);
+        if (
+          unitDef?.allowsUnitsPerPack &&
+          unitDef.sellUnitRule === 'PACK_ONLY' &&
+          !isSelfPackUnit(baseUqcForValidation, packagingUnits) &&
+          normalizedUnitsPerPack <= 0
+        ) {
+          notifyError(
+            `Product "${product.name || 'Unnamed'}": enter pack size after 1 × (e.g. 1 × 100 ${
+              unitDef.uqc
+            })`,
+          );
+          setIsLoading(false);
+          return;
         }
 
         const rowUnitsPerPack = Number(product.unitsPerPack ?? product.conversionFactor) || 0;
@@ -3549,7 +3559,7 @@ export function ProductEntryPage() {
     {
       key: 'packaging',
       label: 'Packaging',
-      header: 'Packaging',
+      header: 'Packaging *',
       headerClassName: denseDataGrid.tdPackaging,
       bulk: (
         <Input
@@ -3579,6 +3589,7 @@ export function ProductEntryPage() {
               handleProductChange(product.id, 'conversionFactor', upp);
             }}
             disabled={isLoading}
+            required
           />
         </TableCell>
       ),
@@ -5090,8 +5101,8 @@ export function ProductEntryPage() {
                         footer={
                           <Text className={denseDataGrid.footnote}>
                             Use the fill row above to copy the same value into every row (only
-                            columns you type in are updated). Packaging is optional in grid view
-                            (defaults to 1× on save). Columns marked * match required fields.
+                            columns you type in are updated). Columns marked * match required
+                            fields.
                             {isRetailPricing
                               ? ' Enter Rate and Selling Price (MRP/PTR set automatically). Schemes, item type, and discount-applicable are available. Use list view for reminders.'
                               : isSimplePricing
@@ -5105,6 +5116,10 @@ export function ProductEntryPage() {
                       />
                     ) : (
                       <Box className={accordionStyles.productsList}>
+                        <ProductEntryColumnsBar
+                          columns={gridColumns}
+                          caption="Fields you hide here are hidden for everyone in this shop, in list and grid view. Required fields cannot be hidden."
+                        />
                         {products.map((product, index) => (
                           <ProductAccordion
                             key={product.id}
@@ -5146,6 +5161,7 @@ export function ProductEntryPage() {
                             localDateTimeToIso={localDateTimeToIso}
                             onAddTax={estimateWorkspace ? () => void handleAddTax() : undefined}
                             addTaxBusy={isSavingEstimateDraft}
+                            isHidden={isHiddenInShopLayout}
                           />
                         ))}
                       </Box>
@@ -5603,13 +5619,18 @@ interface ProductAccordionProps {
   localDateTimeToIso: (local: string) => string;
   onAddTax?: () => void | Promise<void>;
   addTaxBusy?: boolean;
+  /**
+   * True for a field the shop hid in its column layout (grid column key, e.g. `barcode`,
+   * `field:expiryDate`). Required fields are never hidden by the server.
+   */
+  isHidden: (columnKey: string) => boolean;
 }
 
 function ProductAccordion({
   product,
-  companyField,
+  companyField: schemaCompanyField,
   sellDirectField,
-  schemaFields,
+  schemaFields: allSchemaFields,
   packagingUnits,
   billingMode,
   simplePricing,
@@ -5640,7 +5661,14 @@ function ProductAccordion({
   localDateTimeToIso,
   onAddTax,
   addTaxBusy,
+  isHidden,
 }: ProductAccordionProps) {
+  const companyField =
+    schemaCompanyField && !isHidden(`field:${schemaCompanyField.key}`) ? schemaCompanyField : null;
+  // Degree has no column of its own; it follows Item Type.
+  const schemaFields = allSchemaFields.filter(
+    (field) => !isHidden(`field:${field.key === 'itemTypeDegree' ? 'itemType' : field.key}`),
+  );
   const productNumber = index + 1;
   const productName = product.name?.trim() || null;
   const showExpiryReminder = schemaFields.some((field) => field.key === 'expiryDate');
@@ -5891,39 +5919,41 @@ function ProductAccordion({
           </Box>
 
           <Box className={accordionStyles.formRow}>
-            <Box className={pageStyles.formGroup}>
-              <Label htmlFor={`barcode-${product.id}`}>Barcode</Label>
-              <Inline gap="sm" align="center" width="full">
-                <Input
-                  type="text"
-                  id={`barcode-${product.id}`}
-                  placeholder="Enter barcode (optional)"
-                  value={product.barcode}
-                  onChange={(e) => onChange(product.id, 'barcode', e.target.value)}
-                  onBlur={(e) => onBarcodeBlur(e.target.value)}
-                  disabled={isLoading}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={isLoading || generatingBarcode}
-                  onClick={onGenerateBarcode}
-                >
-                  {generatingBarcode ? <Spinner size="sm" /> : 'Generate'}
-                </Button>
-                {product.barcode?.trim() ? (
+            {!isHidden('barcode') && (
+              <Box className={pageStyles.formGroup}>
+                <Label htmlFor={`barcode-${product.id}`}>Barcode</Label>
+                <Inline gap="sm" align="center" width="full">
+                  <Input
+                    type="text"
+                    id={`barcode-${product.id}`}
+                    placeholder="Enter barcode (optional)"
+                    value={product.barcode}
+                    onChange={(e) => onChange(product.id, 'barcode', e.target.value)}
+                    onBlur={(e) => onBarcodeBlur(e.target.value)}
+                    disabled={isLoading}
+                  />
                   <Button
                     type="button"
-                    variant="ghost"
-                    disabled={isLoading}
-                    onClick={onPrintBarcode}
-                    aria-label="Print barcode sticker"
+                    variant="outline"
+                    disabled={isLoading || generatingBarcode}
+                    onClick={onGenerateBarcode}
                   >
-                    <Icon icon={Printer} size="sm" />
+                    {generatingBarcode ? <Spinner size="sm" /> : 'Generate'}
                   </Button>
-                ) : null}
-              </Inline>
-            </Box>
+                  {product.barcode?.trim() ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      disabled={isLoading}
+                      onClick={onPrintBarcode}
+                      aria-label="Print barcode sticker"
+                    >
+                      <Icon icon={Printer} size="sm" />
+                    </Button>
+                  ) : null}
+                </Inline>
+              </Box>
+            )}
             {companyField ? (
               <VerticalSchemaFieldInput
                 field={companyField}
@@ -5991,69 +6021,108 @@ function ProductAccordion({
           {showCommercialTerms && (
             <>
               <Box className={accordionStyles.formRow}>
-                <Box className={pageStyles.formGroup}>
-                  <Label htmlFor={`schemeType-${product.id}`}>Sale scheme/deal type</Label>
-                  <Select
-                    id={`schemeType-${product.id}`}
-                    value={product.schemeType ?? 'FIXED_UNITS'}
-                    onChange={(e) => {
-                      const val = e.target.value as SchemeType;
-                      onChange(product.id, 'schemeType', val);
-                      if (val === 'PERCENTAGE') {
-                        onChange(product.id, 'scheme', null);
-                      } else {
-                        onChange(product.id, 'schemePercentage', null);
-                      }
-                    }}
-                    disabled={isLoading}
-                  >
-                    <option value="FIXED_UNITS">Free units</option>
-                    <option value="PERCENTAGE">Percentage</option>
-                  </Select>
-                </Box>
-                {(product.schemeType ?? 'FIXED_UNITS') === 'FIXED_UNITS' ? (
+                {!isHidden('saleDealType') && (
                   <Box className={pageStyles.formGroup}>
-                    <Label htmlFor={`scheme-fixed-${product.id}`}>Pay + free (e.g. 10 + 2)</Label>
-                    <Input
-                      type="text"
-                      id={`scheme-fixed-${product.id}`}
-                      placeholder="Optional, e.g. 10 + 2"
-                      value={schemeFixedDraft}
-                      onChange={(e) => setSchemeFixedDraft(e.target.value)}
-                      onFocus={() => setSchemeFixedFocused(true)}
-                      onBlur={() => {
-                        setSchemeFixedFocused(false);
-                        commitSchemeFixed();
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.currentTarget.blur();
+                    <Label htmlFor={`schemeType-${product.id}`}>Sale scheme/deal type</Label>
+                    <Select
+                      id={`schemeType-${product.id}`}
+                      value={product.schemeType ?? 'FIXED_UNITS'}
+                      onChange={(e) => {
+                        const val = e.target.value as SchemeType;
+                        onChange(product.id, 'schemeType', val);
+                        if (val === 'PERCENTAGE') {
+                          onChange(product.id, 'scheme', null);
+                        } else {
+                          onChange(product.id, 'schemePercentage', null);
                         }
                       }}
                       disabled={isLoading}
-                    />
+                    >
+                      <option value="FIXED_UNITS">Free units</option>
+                      <option value="PERCENTAGE">Percentage</option>
+                    </Select>
                   </Box>
-                ) : (
+                )}
+                {!isHidden('saleScheme') &&
+                  ((product.schemeType ?? 'FIXED_UNITS') === 'FIXED_UNITS' ? (
+                    <Box className={pageStyles.formGroup}>
+                      <Label htmlFor={`scheme-fixed-${product.id}`}>Pay + free (e.g. 10 + 2)</Label>
+                      <Input
+                        type="text"
+                        id={`scheme-fixed-${product.id}`}
+                        placeholder="Optional, e.g. 10 + 2"
+                        value={schemeFixedDraft}
+                        onChange={(e) => setSchemeFixedDraft(e.target.value)}
+                        onFocus={() => setSchemeFixedFocused(true)}
+                        onBlur={() => {
+                          setSchemeFixedFocused(false);
+                          commitSchemeFixed();
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        disabled={isLoading}
+                      />
+                    </Box>
+                  ) : (
+                    <Box className={pageStyles.formGroup}>
+                      <Label htmlFor={`schemePercentage-${product.id}`} required>
+                        Sale Scheme/Deal %
+                      </Label>
+                      <Input
+                        type="number"
+                        id={`schemePercentage-${product.id}`}
+                        placeholder="e.g. 10 or -5 for markup"
+                        min={-100}
+                        max={100}
+                        step={0.01}
+                        value={product.schemePercentage != null ? product.schemePercentage : ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '') {
+                            onChange(product.id, 'schemePercentage', null);
+                          } else {
+                            const num = parseFloat(val);
+                            if (!isNaN(num) && num >= -100 && num <= 100) {
+                              onChange(product.id, 'schemePercentage', num);
+                            }
+                          }
+                        }}
+                        disabled={isLoading}
+                      />
+                    </Box>
+                  ))}
+              </Box>
+
+              <Box className={accordionStyles.formRow}>
+                {!isHidden('saleDisc') && (
                   <Box className={pageStyles.formGroup}>
-                    <Label htmlFor={`schemePercentage-${product.id}`} required>
-                      Sale Scheme/Deal %
+                    <Label htmlFor={`saleAdditionalDiscount-${product.id}`}>
+                      Sale add. discount (%)
                     </Label>
                     <Input
                       type="number"
-                      id={`schemePercentage-${product.id}`}
-                      placeholder="e.g. 10 or -5 for markup"
+                      id={`saleAdditionalDiscount-${product.id}`}
+                      placeholder="Discount or negative markup"
+                      step="0.01"
                       min={-100}
                       max={100}
-                      step={0.01}
-                      value={product.schemePercentage != null ? product.schemePercentage : ''}
+                      value={
+                        product.saleAdditionalDiscount === null ||
+                        product.saleAdditionalDiscount === undefined
+                          ? ''
+                          : product.saleAdditionalDiscount
+                      }
                       onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '') {
-                          onChange(product.id, 'schemePercentage', null);
+                        const value = e.target.value;
+                        if (value === '') {
+                          onChange(product.id, 'saleAdditionalDiscount', null);
                         } else {
-                          const num = parseFloat(val);
-                          if (!isNaN(num) && num >= -100 && num <= 100) {
-                            onChange(product.id, 'schemePercentage', num);
+                          const numValue = parseFloat(value);
+                          if (!isNaN(numValue) && numValue >= -100 && numValue <= 100) {
+                            onChange(product.id, 'saleAdditionalDiscount', numValue);
                           }
                         }
                       }}
@@ -6061,225 +6130,198 @@ function ProductAccordion({
                     />
                   </Box>
                 )}
-              </Box>
-
-              <Box className={accordionStyles.formRow}>
-                <Box className={pageStyles.formGroup}>
-                  <Label htmlFor={`saleAdditionalDiscount-${product.id}`}>
-                    Sale add. discount (%)
-                  </Label>
-                  <Input
-                    type="number"
-                    id={`saleAdditionalDiscount-${product.id}`}
-                    placeholder="Discount or negative markup"
-                    step="0.01"
-                    min={-100}
-                    max={100}
-                    value={
-                      product.saleAdditionalDiscount === null ||
-                      product.saleAdditionalDiscount === undefined
-                        ? ''
-                        : product.saleAdditionalDiscount
-                    }
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === '') {
-                        onChange(product.id, 'saleAdditionalDiscount', null);
-                      } else {
-                        const numValue = parseFloat(value);
-                        if (!isNaN(numValue) && numValue >= -100 && numValue <= 100) {
-                          onChange(product.id, 'saleAdditionalDiscount', numValue);
-                        }
-                      }
-                    }}
-                    disabled={isLoading}
-                  />
-                </Box>
                 <FormRowEmpty />
               </Box>
 
               {/* Purchase (from vendor) - for comparison at sale */}
               <Box className={accordionStyles.formRow}>
-                <Box className={pageStyles.formGroup}>
-                  <Label htmlFor={`purchaseSchemeType-${product.id}`}>
-                    Purchase scheme/deal type
-                  </Label>
-                  <Select
-                    id={`purchaseSchemeType-${product.id}`}
-                    value={product.purchaseSchemeType ?? 'FIXED_UNITS'}
-                    onChange={(e) => {
-                      const val = e.target.value as PurchaseSchemeInputType;
-                      if (val === 'PERCENTAGE') {
-                        onApplyPurchasePatch(product.id, {
-                          purchaseSchemeType: 'PERCENTAGE',
-                          purchaseSchemePercentage: product.purchaseSchemePercentage ?? null,
-                          ...clearPurchaseSchemePatch(product),
-                        });
-                      } else if (val === 'FREE_QUANTITY') {
-                        const billable = billableCountForPurchaseFreeQty(product);
-                        onApplyPurchasePatch(product.id, {
-                          purchaseSchemeType: 'FREE_QUANTITY',
-                          purchaseSchemePayFor: null,
-                          purchaseSchemeFree: null,
-                          purchaseSchemePercentage: null,
-                          purchaseSchemeFreeQty: null,
-                          ...(product.purchaseSchemeFreeQty != null ? { count: billable } : {}),
-                        });
-                      } else {
-                        const billable = billableCountForPurchaseFreeQty(product);
-                        onApplyPurchasePatch(product.id, {
-                          purchaseSchemeType: 'FIXED_UNITS',
-                          purchaseSchemePercentage: null,
-                          purchaseSchemeFreeQty: null,
-                          ...(product.purchaseSchemeFreeQty != null ? { count: billable } : {}),
-                        });
-                      }
-                    }}
-                    disabled={isLoading}
-                  >
-                    <option value="FIXED_UNITS">Deal ratio</option>
-                    <option value="FREE_QUANTITY">Free quantity</option>
-                    <option value="PERCENTAGE">Percentage</option>
-                  </Select>
-                </Box>
-                {purchaseSchemeType === 'PERCENTAGE' ? (
+                {!isHidden('purchaseDealType') && (
                   <Box className={pageStyles.formGroup}>
-                    <Label htmlFor={`purchaseSchemePercentage-${product.id}`}>
-                      Purchase scheme %
+                    <Label htmlFor={`purchaseSchemeType-${product.id}`}>
+                      Purchase scheme/deal type
                     </Label>
-                    <Input
-                      type="number"
-                      id={`purchaseSchemePercentage-${product.id}`}
-                      placeholder="From vendor"
-                      min={0}
-                      max={100}
-                      step={0.01}
-                      value={
-                        product.purchaseSchemePercentage != null
-                          ? product.purchaseSchemePercentage
-                          : ''
-                      }
+                    <Select
+                      id={`purchaseSchemeType-${product.id}`}
+                      value={product.purchaseSchemeType ?? 'FIXED_UNITS'}
                       onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '') {
-                          onChange(product.id, 'purchaseSchemePercentage', null);
+                        const val = e.target.value as PurchaseSchemeInputType;
+                        if (val === 'PERCENTAGE') {
+                          onApplyPurchasePatch(product.id, {
+                            purchaseSchemeType: 'PERCENTAGE',
+                            purchaseSchemePercentage: product.purchaseSchemePercentage ?? null,
+                            ...clearPurchaseSchemePatch(product),
+                          });
+                        } else if (val === 'FREE_QUANTITY') {
+                          const billable = billableCountForPurchaseFreeQty(product);
+                          onApplyPurchasePatch(product.id, {
+                            purchaseSchemeType: 'FREE_QUANTITY',
+                            purchaseSchemePayFor: null,
+                            purchaseSchemeFree: null,
+                            purchaseSchemePercentage: null,
+                            purchaseSchemeFreeQty: null,
+                            ...(product.purchaseSchemeFreeQty != null ? { count: billable } : {}),
+                          });
                         } else {
-                          const num = parseFloat(val);
-                          if (!isNaN(num) && num >= 0 && num <= 100) {
-                            onChange(product.id, 'purchaseSchemePercentage', num);
-                          }
+                          const billable = billableCountForPurchaseFreeQty(product);
+                          onApplyPurchasePatch(product.id, {
+                            purchaseSchemeType: 'FIXED_UNITS',
+                            purchaseSchemePercentage: null,
+                            purchaseSchemeFreeQty: null,
+                            ...(product.purchaseSchemeFreeQty != null ? { count: billable } : {}),
+                          });
                         }
                       }}
                       disabled={isLoading}
-                    />
-                  </Box>
-                ) : (
-                  <Box className={pageStyles.formGroup}>
-                    <Label htmlFor={`purchase-scheme-fixed-${product.id}`}>
-                      {purchaseSchemeType === 'FREE_QUANTITY'
-                        ? 'Free quantity (e.g. 60 on 540 paid)'
-                        : 'Purchase scheme/deal'}
-                    </Label>
-                    <Input
-                      type="text"
-                      id={`purchase-scheme-fixed-${product.id}`}
-                      placeholder={
-                        purchaseSchemeType === 'FREE_QUANTITY'
-                          ? (Number(product.count) || 0) > 0
-                            ? 'e.g. 60'
-                            : 'e.g. 60 or 0 + 60'
-                          : 'e.g. 10 + 2 or 4 + 1'
-                      }
-                      value={purchaseSchemeFixedDraft}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setPurchaseSchemeFixedDraft(v);
-                        if (purchaseSchemeType !== 'FREE_QUANTITY') {
-                          const parsed = parsePurchaseSchemeDraft(v);
-                          if (parsed?.purchaseSchemeType === 'FIXED_UNITS' && v.includes('+')) {
-                            onApplyPurchasePatch(product.id, {
-                              ...parsed,
-                              purchaseSchemeFreeQty: null,
-                            });
-                          }
-                        }
-                      }}
-                      onFocus={() => setPurchaseSchemeFixedFocused(true)}
-                      onBlur={() => {
-                        setPurchaseSchemeFixedFocused(false);
-                        commitPurchaseSchemeFixed();
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.currentTarget.blur();
-                        }
-                      }}
-                      disabled={isLoading}
-                    />
-                    {purchaseSchemePaidFreeHint ? (
-                      <Text as="span" className={pageStyles.schemeHint}>
-                        {purchaseSchemePaidFreeHint}
-                      </Text>
-                    ) : null}
+                    >
+                      <option value="FIXED_UNITS">Deal ratio</option>
+                      <option value="FREE_QUANTITY">Free quantity</option>
+                      <option value="PERCENTAGE">Percentage</option>
+                    </Select>
                   </Box>
                 )}
+                {!isHidden('purchaseScheme') &&
+                  (purchaseSchemeType === 'PERCENTAGE' ? (
+                    <Box className={pageStyles.formGroup}>
+                      <Label htmlFor={`purchaseSchemePercentage-${product.id}`}>
+                        Purchase scheme %
+                      </Label>
+                      <Input
+                        type="number"
+                        id={`purchaseSchemePercentage-${product.id}`}
+                        placeholder="From vendor"
+                        min={0}
+                        max={100}
+                        step={0.01}
+                        value={
+                          product.purchaseSchemePercentage != null
+                            ? product.purchaseSchemePercentage
+                            : ''
+                        }
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '') {
+                            onChange(product.id, 'purchaseSchemePercentage', null);
+                          } else {
+                            const num = parseFloat(val);
+                            if (!isNaN(num) && num >= 0 && num <= 100) {
+                              onChange(product.id, 'purchaseSchemePercentage', num);
+                            }
+                          }
+                        }}
+                        disabled={isLoading}
+                      />
+                    </Box>
+                  ) : (
+                    <Box className={pageStyles.formGroup}>
+                      <Label htmlFor={`purchase-scheme-fixed-${product.id}`}>
+                        {purchaseSchemeType === 'FREE_QUANTITY'
+                          ? 'Free quantity (e.g. 60 on 540 paid)'
+                          : 'Purchase scheme/deal'}
+                      </Label>
+                      <Input
+                        type="text"
+                        id={`purchase-scheme-fixed-${product.id}`}
+                        placeholder={
+                          purchaseSchemeType === 'FREE_QUANTITY'
+                            ? (Number(product.count) || 0) > 0
+                              ? 'e.g. 60'
+                              : 'e.g. 60 or 0 + 60'
+                            : 'e.g. 10 + 2 or 4 + 1'
+                        }
+                        value={purchaseSchemeFixedDraft}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setPurchaseSchemeFixedDraft(v);
+                          if (purchaseSchemeType !== 'FREE_QUANTITY') {
+                            const parsed = parsePurchaseSchemeDraft(v);
+                            if (parsed?.purchaseSchemeType === 'FIXED_UNITS' && v.includes('+')) {
+                              onApplyPurchasePatch(product.id, {
+                                ...parsed,
+                                purchaseSchemeFreeQty: null,
+                              });
+                            }
+                          }
+                        }}
+                        onFocus={() => setPurchaseSchemeFixedFocused(true)}
+                        onBlur={() => {
+                          setPurchaseSchemeFixedFocused(false);
+                          commitPurchaseSchemeFixed();
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        disabled={isLoading}
+                      />
+                      {purchaseSchemePaidFreeHint ? (
+                        <Text as="span" className={pageStyles.schemeHint}>
+                          {purchaseSchemePaidFreeHint}
+                        </Text>
+                      ) : null}
+                    </Box>
+                  ))}
               </Box>
 
               <Box className={accordionStyles.formRow}>
-                <Box className={pageStyles.formGroup}>
-                  <Label htmlFor={`purchaseAdditionalDiscount-${product.id}`}>
-                    Purchase add. discount (%)
-                  </Label>
-                  <Input
-                    type="number"
-                    id={`purchaseAdditionalDiscount-${product.id}`}
-                    placeholder="From vendor"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    value={
-                      product.purchaseAdditionalDiscount === null ||
-                      product.purchaseAdditionalDiscount === undefined
-                        ? ''
-                        : product.purchaseAdditionalDiscount
-                    }
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === '') {
-                        onChange(product.id, 'purchaseAdditionalDiscount', null);
-                      } else {
-                        const numValue = parseFloat(value);
-                        if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
-                          onChange(product.id, 'purchaseAdditionalDiscount', numValue);
-                        }
+                {!isHidden('purchaseDisc') && (
+                  <Box className={pageStyles.formGroup}>
+                    <Label htmlFor={`purchaseAdditionalDiscount-${product.id}`}>
+                      Purchase add. discount (%)
+                    </Label>
+                    <Input
+                      type="number"
+                      id={`purchaseAdditionalDiscount-${product.id}`}
+                      placeholder="From vendor"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={
+                        product.purchaseAdditionalDiscount === null ||
+                        product.purchaseAdditionalDiscount === undefined
+                          ? ''
+                          : product.purchaseAdditionalDiscount
                       }
-                    }}
-                    disabled={isLoading}
-                  />
-                </Box>
-                <Box className={pageStyles.formGroup}>
-                  <Label htmlFor={`discountApplicable-${product.id}`}>Discount applicable</Label>
-                  <Select
-                    id={`discountApplicable-${product.id}`}
-                    value={product.discountApplicable ?? ''}
-                    onChange={(e) => {
-                      const val = e.target.value as DiscountApplicable | '';
-                      onChange(
-                        product.id,
-                        'discountApplicable',
-                        val === '' ? undefined : (val as DiscountApplicable),
-                      );
-                    }}
-                    disabled={isLoading}
-                  >
-                    <option value="">— Select —</option>
-                    <option value="DISCOUNT">Discount applicable</option>
-                    <option value="SCHEME">Scheme/Deal applicable</option>
-                    <option value="DISCOUNT_AND_SCHEME">
-                      Both discount and scheme/deal applicable
-                    </option>
-                  </Select>
-                </Box>
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          onChange(product.id, 'purchaseAdditionalDiscount', null);
+                        } else {
+                          const numValue = parseFloat(value);
+                          if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+                            onChange(product.id, 'purchaseAdditionalDiscount', numValue);
+                          }
+                        }
+                      }}
+                      disabled={isLoading}
+                    />
+                  </Box>
+                )}
+                {!isHidden('discApplicability') && (
+                  <Box className={pageStyles.formGroup}>
+                    <Label htmlFor={`discountApplicable-${product.id}`}>Discount applicable</Label>
+                    <Select
+                      id={`discountApplicable-${product.id}`}
+                      value={product.discountApplicable ?? ''}
+                      onChange={(e) => {
+                        const val = e.target.value as DiscountApplicable | '';
+                        onChange(
+                          product.id,
+                          'discountApplicable',
+                          val === '' ? undefined : (val as DiscountApplicable),
+                        );
+                      }}
+                      disabled={isLoading}
+                    >
+                      <option value="">— Select —</option>
+                      <option value="DISCOUNT">Discount applicable</option>
+                      <option value="SCHEME">Scheme/Deal applicable</option>
+                      <option value="DISCOUNT_AND_SCHEME">
+                        Both discount and scheme/deal applicable
+                      </option>
+                    </Select>
+                  </Box>
+                )}
               </Box>
             </>
           )}
@@ -6416,59 +6458,67 @@ function ProductAccordion({
                 Leave CGST/SGST empty to use the shop default.
               </Text>
               <Box className={accordionStyles.formRow}>
-                <Box className={pageStyles.formGroup}>
-                  <Label htmlFor={`hsn-${product.id}`}>HSN Code</Label>
-                  <Input
-                    type="text"
-                    id={`hsn-${product.id}`}
-                    placeholder="Enter the HSN code"
-                    value={product.hsn || ''}
-                    onChange={(e) => onChange(product.id, 'hsn', e.target.value)}
-                    disabled={isLoading}
-                  />
-                </Box>
-                <Box className={pageStyles.formGroup}>
-                  <Label htmlFor={`gst-rate-${product.id}`}>GST rate</Label>
-                  <HsnGstRateSelect
-                    id={`gst-rate-${product.id}`}
-                    hsn={product.hsn}
-                    cgst={product.cgst}
-                    sgst={product.sgst}
-                    onPick={(cgst, sgst) => {
-                      onChange(product.id, 'cgst', cgst);
-                      onChange(product.id, 'sgst', sgst);
-                    }}
-                    disabled={isLoading}
-                  />
-                </Box>
+                {!isHidden('hsn') && (
+                  <Box className={pageStyles.formGroup}>
+                    <Label htmlFor={`hsn-${product.id}`}>HSN Code</Label>
+                    <Input
+                      type="text"
+                      id={`hsn-${product.id}`}
+                      placeholder="Enter the HSN code"
+                      value={product.hsn || ''}
+                      onChange={(e) => onChange(product.id, 'hsn', e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </Box>
+                )}
+                {!isHidden('gstRate') && (
+                  <Box className={pageStyles.formGroup}>
+                    <Label htmlFor={`gst-rate-${product.id}`}>GST rate</Label>
+                    <HsnGstRateSelect
+                      id={`gst-rate-${product.id}`}
+                      hsn={product.hsn}
+                      cgst={product.cgst}
+                      sgst={product.sgst}
+                      onPick={(cgst, sgst) => {
+                        onChange(product.id, 'cgst', cgst);
+                        onChange(product.id, 'sgst', sgst);
+                      }}
+                      disabled={isLoading}
+                    />
+                  </Box>
+                )}
               </Box>
               <Box className={accordionStyles.formRow}>
-                <Box className={pageStyles.formGroup}>
-                  <Label htmlFor={`cgst-${product.id}`}>CGST (%)</Label>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    pattern="[0-9]*\.?[0-9]*"
-                    id={`cgst-${product.id}`}
-                    placeholder="Leave empty for shop default"
-                    value={product.cgst || ''}
-                    onChange={(e) => onChange(product.id, 'cgst', e.target.value)}
-                    disabled={isLoading}
-                  />
-                </Box>
-                <Box className={pageStyles.formGroup}>
-                  <Label htmlFor={`sgst-${product.id}`}>SGST (%)</Label>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    pattern="[0-9]*\.?[0-9]*"
-                    id={`sgst-${product.id}`}
-                    placeholder="Leave empty for shop default"
-                    value={product.sgst || ''}
-                    onChange={(e) => onChange(product.id, 'sgst', e.target.value)}
-                    disabled={isLoading}
-                  />
-                </Box>
+                {!isHidden('cgst') && (
+                  <Box className={pageStyles.formGroup}>
+                    <Label htmlFor={`cgst-${product.id}`}>CGST (%)</Label>
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      pattern="[0-9]*\.?[0-9]*"
+                      id={`cgst-${product.id}`}
+                      placeholder="Leave empty for shop default"
+                      value={product.cgst || ''}
+                      onChange={(e) => onChange(product.id, 'cgst', e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </Box>
+                )}
+                {!isHidden('sgst') && (
+                  <Box className={pageStyles.formGroup}>
+                    <Label htmlFor={`sgst-${product.id}`}>SGST (%)</Label>
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      pattern="[0-9]*\.?[0-9]*"
+                      id={`sgst-${product.id}`}
+                      placeholder="Leave empty for shop default"
+                      value={product.sgst || ''}
+                      onChange={(e) => onChange(product.id, 'sgst', e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </Box>
+                )}
               </Box>
             </Box>
           )}
