@@ -20,6 +20,8 @@ export type GridColumnPosition = 'FIRST' | 'ANY' | 'LAST';
  */
 export interface GridColumnDefinition {
   key: string;
+  /** Display name (the schema label for schema fields). */
+  label: string;
   required: boolean;
   hideable: boolean;
   reorderable: boolean;

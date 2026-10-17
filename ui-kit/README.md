@@ -39,7 +39,8 @@ Theme: wrap with `ThemeProvider`, or `@import '@inventory-platform/ui-kit/theme/
 
 Dense grids with shop-set column layouts use `GridColGroup` + `denseDataGrid.tableFixed` (fixed
 widths, sideways scroll), `ResizableHeaderCell` (drag or arrow-key resize, optional drag-to-reorder)
-and `ColumnManager` (drawer to reorder and show/hide columns; locked columns cannot be hidden).
+and `ColumnManager` (drawer to reorder and show/hide columns; locked columns cannot be hidden), whose
+rows are also exported as `ColumnList` (with optional px width fields) for settings pages.
 They are presentation only: the caller owns widths, order and saving.
 
 Domain widgets and pages stay in `core/*/ui` and `core/*/pages`.

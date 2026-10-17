@@ -3,6 +3,7 @@ import { applyGridLayoutChange, dropMove, layoutColumns, stepMove } from './grid
 
 const def = (key: string, overrides: Partial<GridColumnDefinition> = {}): GridColumnDefinition => ({
   key,
+  label: key,
   required: false,
   hideable: true,
   reorderable: true,

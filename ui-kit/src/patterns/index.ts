@@ -50,9 +50,11 @@ export {
 } from './AsideLayout';
 export { DenseDataGridWrap, denseDataGrid, type DenseDataGridWrapProps } from './DenseDataGrid';
 export {
+  ColumnList,
   ColumnManager,
   GridColGroup,
   ResizableHeaderCell,
+  type ColumnListProps,
   type ColumnManagerItem,
   type ColumnManagerProps,
   type GridColGroupProps,

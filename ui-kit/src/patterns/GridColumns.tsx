@@ -15,6 +15,7 @@ import { Text } from '../layout/Text';
 import { Button } from '../forms/Button';
 import { IconButton } from '../forms/IconButton';
 import { Checkbox } from '../forms/Label';
+import { Input } from '../forms/Input';
 import { Icon } from '../icons/Icon';
 import { Drawer } from '../overlay/Modal';
 import { TableHeaderCell } from '../data-display/Table';
@@ -210,7 +211,153 @@ export type ColumnManagerItem = {
   locked: boolean;
   /** False for columns pinned to the start or end. */
   movable: boolean;
+  /** Set (with `onWidthChange`) to show a width field. */
+  widthPx?: number;
+  minWidthPx?: number;
+  maxWidthPx?: number;
 };
+
+export type ColumnListProps = {
+  columns: ColumnManagerItem[];
+  onMove: (key: string, direction: -1 | 1) => void;
+  onToggleHidden: (key: string, hidden: boolean) => void;
+  /** When given, each column with a `widthPx` gets a width (px) field. */
+  onWidthChange?: (key: string, widthPx: number) => void;
+  disabled?: boolean;
+};
+
+/**
+ * Column rows: show/hide checkbox (locked columns show a lock), up/down for movable columns and,
+ * optionally, a width field. Used inside `ColumnManager` and on settings pages.
+ */
+export function ColumnList({
+  columns,
+  onMove,
+  onToggleHidden,
+  onWidthChange,
+  disabled = false,
+}: ColumnListProps) {
+  const movable = columns.filter((c) => c.movable);
+  return (
+    <Box as="ul" className={styles.managerList} flex="1" minHeight="0">
+      {columns.map((column) => {
+        const pos = movable.findIndex((c) => c.key === column.key);
+        return (
+          <Box as="li" key={column.key} className={styles.managerRow}>
+            <Inline justify="between" gap="sm">
+              <Inline gap="xs" minWidth="0">
+                <Checkbox
+                  id={`grid-col-${column.key}`}
+                  label={column.label}
+                  checked={!column.hidden}
+                  disabled={disabled || column.locked}
+                  onChange={(e) => onToggleHidden(column.key, !e.target.checked)}
+                />
+                {column.locked ? (
+                  <Box as="span" title="Required column — cannot be hidden">
+                    <Icon icon={Lock} size={14} aria-label="Required" />
+                  </Box>
+                ) : null}
+              </Inline>
+              <Inline gap="xs">
+                {onWidthChange && column.widthPx != null ? (
+                  <WidthField
+                    columnKey={column.key}
+                    label={column.label}
+                    widthPx={column.widthPx}
+                    minWidthPx={column.minWidthPx ?? 1}
+                    maxWidthPx={column.maxWidthPx ?? 2000}
+                    disabled={disabled}
+                    onCommit={(w) => onWidthChange(column.key, w)}
+                  />
+                ) : null}
+                {column.movable ? (
+                  <>
+                    <IconButton
+                      size="sm"
+                      label={`Move ${column.label} up`}
+                      disabled={disabled || pos <= 0}
+                      onClick={() => onMove(column.key, -1)}
+                    >
+                      <Icon icon={ArrowUp} size="sm" />
+                    </IconButton>
+                    <IconButton
+                      size="sm"
+                      label={`Move ${column.label} down`}
+                      disabled={disabled || pos < 0 || pos >= movable.length - 1}
+                      onClick={() => onMove(column.key, 1)}
+                    >
+                      <Icon icon={ArrowDown} size="sm" />
+                    </IconButton>
+                  </>
+                ) : null}
+              </Inline>
+            </Inline>
+          </Box>
+        );
+      })}
+    </Box>
+  );
+}
+
+/** Width in px; commits a clamped value on blur or Enter. */
+function WidthField({
+  columnKey,
+  label,
+  widthPx,
+  minWidthPx,
+  maxWidthPx,
+  disabled,
+  onCommit,
+}: {
+  columnKey: string;
+  label: string;
+  widthPx: number;
+  minWidthPx: number;
+  maxWidthPx: number;
+  disabled: boolean;
+  onCommit: (widthPx: number) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const commit = () => {
+    if (draft === null) {
+      return;
+    }
+    const n = Math.round(Number(draft));
+    setDraft(null);
+    if (Number.isFinite(n) && n > 0) {
+      const clamped = Math.max(minWidthPx, Math.min(maxWidthPx, n));
+      if (clamped !== widthPx) {
+        onCommit(clamped);
+      }
+    }
+  };
+  return (
+    <Inline gap="xs">
+      <Input
+        id={`grid-col-width-${columnKey}`}
+        type="number"
+        inputMode="numeric"
+        min={minWidthPx}
+        max={maxWidthPx}
+        aria-label={`${label} width in pixels`}
+        className={styles.widthInput}
+        value={draft ?? String(widthPx)}
+        disabled={disabled}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            commit();
+          }
+        }}
+      />
+      <Text variant="caption" color="secondary">
+        px
+      </Text>
+    </Inline>
+  );
+}
 
 export type ColumnManagerProps = {
   open: boolean;
@@ -239,7 +386,6 @@ export function ColumnManager({
   resetting = false,
   disabled = false,
 }: ColumnManagerProps) {
-  const movable = columns.filter((c) => c.movable);
   return (
     <Drawer open={open} side="right" onClose={onClose} labelledBy="grid-column-manager-title">
       <Stack gap="md" padding="lg" height="full" minHeight="0">
@@ -256,51 +402,12 @@ export function ColumnManager({
             {description}
           </Text>
         ) : null}
-        <Box as="ul" className={styles.managerList} flex="1" minHeight="0">
-          {columns.map((column) => {
-            const pos = movable.findIndex((c) => c.key === column.key);
-            return (
-              <Box as="li" key={column.key} className={styles.managerRow}>
-                <Inline justify="between" gap="sm">
-                  <Inline gap="xs" minWidth="0">
-                    <Checkbox
-                      id={`grid-col-${column.key}`}
-                      label={column.label}
-                      checked={!column.hidden}
-                      disabled={disabled || column.locked}
-                      onChange={(e) => onToggleHidden(column.key, !e.target.checked)}
-                    />
-                    {column.locked ? (
-                      <Box as="span" title="Required column — cannot be hidden">
-                        <Icon icon={Lock} size={14} aria-label="Required" />
-                      </Box>
-                    ) : null}
-                  </Inline>
-                  {column.movable ? (
-                    <Inline gap="xs">
-                      <IconButton
-                        size="sm"
-                        label={`Move ${column.label} up`}
-                        disabled={disabled || pos <= 0}
-                        onClick={() => onMove(column.key, -1)}
-                      >
-                        <Icon icon={ArrowUp} size="sm" />
-                      </IconButton>
-                      <IconButton
-                        size="sm"
-                        label={`Move ${column.label} down`}
-                        disabled={disabled || pos < 0 || pos >= movable.length - 1}
-                        onClick={() => onMove(column.key, 1)}
-                      >
-                        <Icon icon={ArrowDown} size="sm" />
-                      </IconButton>
-                    </Inline>
-                  ) : null}
-                </Inline>
-              </Box>
-            );
-          })}
-        </Box>
+        <ColumnList
+          columns={columns}
+          onMove={onMove}
+          onToggleHidden={onToggleHidden}
+          disabled={disabled}
+        />
         <Inline justify="end">
           <Button
             type="button"

@@ -98,6 +98,7 @@ export {
 export * from './ui/scanSellStyles';
 export { CardLayoutBody, type CardLayoutBodyProps } from './ui/cardLayout/CardLayoutBody';
 export { ProductCardLayoutSection } from './ui/cardLayout/ProductCardLayoutSection';
+export { ProductEntryColumnsSection } from './ui/productEntryGrid/ProductEntryColumnsSection';
 export { cardLayoutApi } from './api/cardLayout.api';
 export * from './queries/cardLayout.queries';
 export { gridLayoutApi } from './api/gridLayout.api';

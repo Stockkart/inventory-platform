@@ -154,6 +154,9 @@ Product Search and Scan & Sell call `POST /inventory/search` (`inventoryApi.sear
   the resize handles, header dragging and the **Columns** drawer (`ProductEntryColumnsBar`, in
   both views; list view's drawer shows/hides only); everyone else sees the shop's layout
   read-only.
+- **Profile → Product entry columns** (`ProductEntryColumnsSection`, registered in
+  `plugins/registry/src/profile-tabs.ts`) lists every catalog column with the server's `label`:
+  show/hide, move up/down and width in px, plus Reset to defaults. Read-only for non-admins.
 - **One change per save.** A resize, move or show/hide is sent as one `PATCH` change; the cache
   updates first (`applyGridLayoutChange`) and the server's answer, which includes anything other
   members saved meanwhile, replaces it. Needs the matching inventory-api change deployed; until

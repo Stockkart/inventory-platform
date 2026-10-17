@@ -60,3 +60,7 @@
   padding: 0.35rem 0;
   border-bottom: 1px solid var(--sk-color-border-default, var(--border-color));
 }
+
+.widthInput {
+  width: 5rem;
+}

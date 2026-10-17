@@ -1,6 +1,10 @@
 import { createElement } from 'react';
 import { registerProfileTab } from '@inventory-platform/user';
-import { BarcodeLabelLayoutSection, ProductCardLayoutSection } from '@inventory-platform/product';
+import {
+  BarcodeLabelLayoutSection,
+  ProductCardLayoutSection,
+  ProductEntryColumnsSection,
+} from '@inventory-platform/product';
 
 /**
  * Profile tabs contributed by domain packages that `core/user` must not import
@@ -9,6 +13,7 @@ import { BarcodeLabelLayoutSection, ProductCardLayoutSection } from '@inventory-
  */
 export const BARCODE_LABELS_PROFILE_TAB_ID = 'labels';
 export const PRODUCT_CARDS_PROFILE_TAB_ID = 'cards';
+export const PRODUCT_ENTRY_COLUMNS_PROFILE_TAB_ID = 'entry-columns';
 
 let registered = false;
 
@@ -19,7 +24,7 @@ let registered = false;
  * hydration of `/dashboard/profile` in sync).
  *
  * Extensions anchored on the same built-in tab keep registration order, so
- * "Product cards" lands directly after "Barcode labels".
+ * "Product cards" lands directly after "Barcode labels", then "Product entry columns".
  */
 export function registerComposedProfileTabs(): void {
   if (registered) return;
@@ -35,5 +40,11 @@ export function registerComposedProfileTabs(): void {
     label: 'Product cards',
     after: 'invoice',
     render: () => createElement(ProductCardLayoutSection),
+  });
+  registerProfileTab({
+    id: PRODUCT_ENTRY_COLUMNS_PROFILE_TAB_ID,
+    label: 'Product entry columns',
+    after: 'invoice',
+    render: () => createElement(ProductEntryColumnsSection),
   });
 }
