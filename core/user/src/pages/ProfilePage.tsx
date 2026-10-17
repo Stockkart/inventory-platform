@@ -251,7 +251,7 @@ export function ProfilePage() {
 
       {activeTab === 'shop' ? (
         !editing ? (
-          <Box className={surfaceChrome.profileCard}>
+          <Box className={cn(surfaceChrome.profileCard, surfaceChrome.profileShopCard)}>
             <Box className={surfaceChrome.profileHero}>
               <Box className={surfaceChrome.profileHeroTop}>
                 <Box className={surfaceChrome.profileHeroMain}>

@@ -259,6 +259,7 @@ export const surfaceChrome = {
   profileShellWide: styles.profileShellWide,
   profileCard: styles.profileCard,
   profileCardNarrow: styles.profileCardNarrow,
+  profileShopCard: styles.profileShopCard,
   profileHero: styles.profileHero,
   profileHeroTop: styles.profileHeroTop,
   profileHeroMain: styles.profileHeroMain,
