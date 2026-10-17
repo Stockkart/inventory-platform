@@ -3,7 +3,8 @@ import { registerProfileTab } from '@inventory-platform/user';
 import {
   BarcodeLabelLayoutSection,
   ProductCardLayoutSection,
-  ProductEntryColumnsSection,
+  GRID_IDS,
+  ShopLayoutColumnsSection,
 } from '@inventory-platform/product';
 
 /**
@@ -45,6 +46,12 @@ export function registerComposedProfileTabs(): void {
     id: PRODUCT_ENTRY_COLUMNS_PROFILE_TAB_ID,
     label: 'Product entry columns',
     after: 'invoice',
-    render: () => createElement(ProductEntryColumnsSection),
+    render: () =>
+      createElement(ShopLayoutColumnsSection, {
+        gridId: GRID_IDS.PRODUCT_ENTRY,
+        title: 'Product entry columns',
+        description:
+          'Choose the columns everyone in this shop sees on Product Entry. Hidden columns are hidden in grid and list view; order and width apply to grid view. Columns with a lock are required and cannot be hidden. Some columns only appear for certain billing or pricing modes.',
+      }),
   });
 }

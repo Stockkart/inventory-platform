@@ -18,7 +18,6 @@ import {
   Text,
   denseDataGrid,
 } from '@inventory-platform/ui-kit';
-import { GRID_IDS } from '../../model/gridLayout.types';
 import type { GridLayoutChange } from '../../model/gridLayout.types';
 import {
   useChangeGridLayoutMutation,
@@ -28,7 +27,7 @@ import {
 import { dropMove, layoutColumns, stepMove } from '../../lib/gridLayoutModel';
 
 /** One grid column: its key in the shop layout, header, fill-row control and row cell. */
-export interface ProductEntryGridColumn<Row> {
+export interface ShopLayoutGridColumn<Row> {
   key: string;
   /** Plain name for the Columns drawer and the resize handle. */
   label: string;
@@ -41,8 +40,10 @@ export interface ProductEntryGridColumn<Row> {
   cell: (row: Row, index: number) => ReactNode;
 }
 
-export interface ProductEntryGridProps<Row> {
-  columns: ProductEntryGridColumn<Row>[];
+export interface ShopLayoutGridProps<Row> {
+  /** Which shop layout (a `GRID_IDS` value) the grid reads and changes. */
+  gridId: string;
+  columns: ShopLayoutGridColumn<Row>[];
   rows: Row[];
   rowKey: (row: Row) => string;
   /** Remounts the table (e.g. on billing-mode change). */
@@ -50,23 +51,26 @@ export interface ProductEntryGridProps<Row> {
   /** Props for the scrolling wrap (keyboard navigation). */
   wrapProps?: HTMLAttributes<HTMLElement> & Record<`data-${string}`, string>;
   footer?: ReactNode;
+  /** Text under the Columns drawer title, e.g. which views the layout affects. */
+  drawerDescription?: string;
 }
 
 /**
- * The product entry grid with the shop's shared column layout: widths, order and hidden columns
- * come from the server and apply to every member; scroll position stays in this browser. Owners
- * and admins (`canEdit`) can resize and drag headers and open the Columns drawer. Until the
- * layout loads the grid renders with content-sized columns, as before.
+ * A dense data grid with the shop's shared column layout for `gridId`: widths, order and hidden
+ * columns come from the server and apply to every member; scroll position stays in this browser.
+ * Owners and admins (`canEdit`) can resize and drag headers and open the Columns drawer. Until the
+ * layout loads the grid renders with content-sized columns.
  */
-export function ProductEntryGrid<Row>({
+export function ShopLayoutGrid<Row>({
+  gridId,
   columns,
   rows,
   rowKey,
   tableKey,
   wrapProps,
   footer,
-}: ProductEntryGridProps<Row>) {
-  const gridId = GRID_IDS.PRODUCT_ENTRY;
+  drawerDescription,
+}: ShopLayoutGridProps<Row>) {
   const layoutQuery = useGridLayoutQuery(gridId);
   const changeMutation = useChangeGridLayoutMutation(gridId);
   const [draftWidths, setDraftWidths] = useState<Record<string, number>>({});
@@ -104,8 +108,10 @@ export function ProductEntryGrid<Row>({
 
   return (
     <>
-      <ProductEntryColumnsBar
+      <ShopLayoutColumnsBar
+        gridId={gridId}
         columns={columns}
+        drawerDescription={drawerDescription}
         caption="Column widths and order are shared with everyone in this shop. Drag a header edge to resize, drag a header to move it."
         allowReorder
       />
@@ -186,24 +192,31 @@ export function ProductEntryGrid<Row>({
   );
 }
 
-export interface ProductEntryColumnsBarProps {
+export interface ShopLayoutColumnsBarProps {
+  /** Which shop layout (a `GRID_IDS` value). */
+  gridId: string;
   /** Every column this mode has; only `key` and `label` are used. */
-  columns: Array<Pick<ProductEntryGridColumn<unknown>, 'key' | 'label'>>;
+  columns: Array<Pick<ShopLayoutGridColumn<unknown>, 'key' | 'label'>>;
   caption: string;
-  /** Grid view: the drawer can also reorder. List view keeps its own field order. */
+  /** Grid view: the drawer can also reorder. Form-style views keep their own field order. */
   allowReorder?: boolean;
+  drawerDescription?: string;
 }
 
+const DEFAULT_DRAWER_DESCRIPTION =
+  'Changes apply to everyone in this shop. Columns with a lock are required and cannot be hidden.';
+
 /**
- * The **Columns** button and drawer for the shop's shared layout. Shown only to owners and admins
- * (`canEdit`); hiding a field here hides it for everyone, in grid and list view.
+ * The **Columns** button and drawer for the shop's shared layout of `gridId`. Shown only to owners
+ * and admins (`canEdit`); a change applies to everyone in the shop.
  */
-export function ProductEntryColumnsBar({
+export function ShopLayoutColumnsBar({
+  gridId,
   columns,
   caption,
   allowReorder = false,
-}: ProductEntryColumnsBarProps) {
-  const gridId = GRID_IDS.PRODUCT_ENTRY;
+  drawerDescription = DEFAULT_DRAWER_DESCRIPTION,
+}: ShopLayoutColumnsBarProps) {
   const layoutQuery = useGridLayoutQuery(gridId);
   const changeMutation = useChangeGridLayoutMutation(gridId);
   const resetMutation = useResetGridLayoutMutation(gridId);
@@ -244,7 +257,7 @@ export function ProductEntryColumnsBar({
       <ColumnManager
         open={open}
         onClose={() => setOpen(false)}
-        description="Changes apply to everyone in this shop, in list and grid view. Columns with a lock are required and cannot be hidden."
+        description={drawerDescription}
         columns={laidOut.map((col) => ({
           key: col.key,
           label: labels.get(col.key) ?? col.key,

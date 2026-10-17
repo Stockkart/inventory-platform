@@ -10,7 +10,6 @@ import {
   Text,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
-import { GRID_IDS } from '../../model/gridLayout.types';
 import type { GridLayoutChange } from '../../model/gridLayout.types';
 import {
   useChangeGridLayoutMutation,
@@ -19,13 +18,23 @@ import {
 } from '../../queries/gridLayout.queries';
 import { stepMove, layoutColumns } from '../../lib/gridLayoutModel';
 
+export interface ShopLayoutColumnsSectionProps {
+  /** Which shop layout (a `GRID_IDS` value). */
+  gridId: string;
+  title: string;
+  description: string;
+}
+
 /**
- * Profile → Product entry columns: the shop's shared product entry layout, every column at once.
- * Show/hide applies to grid and list view; order and width apply to grid view. Each change saves
- * straight away, like the grid. Owners and admins edit; everyone else sees it read-only.
+ * A settings page section for one shop layout, every column at once: show/hide, move, width in px
+ * and reset. Each change saves straight away, like the grid. Owners and admins edit; everyone else
+ * sees it read-only.
  */
-export function ProductEntryColumnsSection() {
-  const gridId = GRID_IDS.PRODUCT_ENTRY;
+export function ShopLayoutColumnsSection({
+  gridId,
+  title,
+  description,
+}: ShopLayoutColumnsSectionProps) {
   const layoutQuery = useGridLayoutQuery(gridId);
   const changeMutation = useChangeGridLayoutMutation(gridId);
   const resetMutation = useResetGridLayoutMutation(gridId);
@@ -34,7 +43,7 @@ export function ProductEntryColumnsSection() {
     return (
       <Alert variant="danger">
         <Inline gap="sm" align="center" justify="between">
-          <Text as="span">Could not load the product entry columns.</Text>
+          <Text as="span">Could not load the {title.toLowerCase()} settings.</Text>
           <Button
             type="button"
             size="sm"
@@ -72,13 +81,10 @@ export function ProductEntryColumnsSection() {
       <Box className={surfaceChrome.invoiceSettingsHeader}>
         <Box className={surfaceChrome.invoiceSettingsHeaderText}>
           <Text as="h2" className={surfaceChrome.invoiceSettingsTitle}>
-            Product entry columns
+            {title}
           </Text>
           <Text as="p" className={surfaceChrome.invoiceSettingsSubtitle}>
-            Choose the columns everyone in this shop sees on Product Entry. Hidden columns are
-            hidden in grid and list view; order and width apply to grid view. Columns with a lock
-            are required and cannot be hidden. Some columns only appear for certain billing or
-            pricing modes.
+            {description}
           </Text>
         </Box>
         {canEdit ? (

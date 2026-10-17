@@ -103,10 +103,10 @@ import {
   gridRegistrationFields,
 } from '../vertical/VerticalRegistrationGridCells';
 import {
-  ProductEntryColumnsBar,
-  ProductEntryGrid,
-  type ProductEntryGridColumn,
-} from '../ui/productEntryGrid/ProductEntryGrid';
+  ShopLayoutColumnsBar,
+  ShopLayoutGrid,
+  type ShopLayoutGridColumn,
+} from '../ui/shopLayoutGrid/ShopLayoutGrid';
 import { useGridLayoutQuery } from '../queries/gridLayout.queries';
 import { GRID_IDS } from '../model/gridLayout.types';
 import {
@@ -687,6 +687,10 @@ function ProductsRegistrationSummaryBar({ summary }: { summary: ProductsRegistra
     </Box>
   );
 }
+
+/** Product entry's layout drives both views, so the drawer says so. */
+const PRODUCT_ENTRY_DRAWER_DESCRIPTION =
+  'Changes apply to everyone in this shop, in list and grid view. Columns with a lock are required and cannot be hidden.';
 
 export function ProductEntryPage() {
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
@@ -3409,7 +3413,7 @@ export function ProductEntryPage() {
   const schemaFieldColumn = (
     field: VerticalSchemaFieldDef,
     required = Boolean(field.required),
-  ): ProductEntryGridColumn<ProductFormData> => ({
+  ): ShopLayoutGridColumn<ProductFormData> => ({
     key: `field:${field.key}`,
     label: fieldLabel(field),
     header: `${fieldLabel(field)}${required ? ' *' : ''}`,
@@ -3430,7 +3434,7 @@ export function ProductEntryPage() {
    * Every column this billing mode and pricing shows, in default order. Keys match the backend
    * `GridColumnCatalog`; the shop's layout decides order, width and which optional ones are hidden.
    */
-  const gridColumns: ProductEntryGridColumn<ProductFormData>[] = [
+  const gridColumns: ShopLayoutGridColumn<ProductFormData>[] = [
     {
       key: 'rowNo',
       label: '#',
@@ -5084,7 +5088,9 @@ export function ProductEntryPage() {
                         </Text>
                       </Box>
                     ) : productViewMode === 'grid' ? (
-                      <ProductEntryGrid
+                      <ShopLayoutGrid
+                        gridId={GRID_IDS.PRODUCT_ENTRY}
+                        drawerDescription={PRODUCT_ENTRY_DRAWER_DESCRIPTION}
                         columns={gridColumns}
                         rows={products}
                         rowKey={(product) => product.id}
@@ -5116,8 +5122,10 @@ export function ProductEntryPage() {
                       />
                     ) : (
                       <Box className={accordionStyles.productsList}>
-                        <ProductEntryColumnsBar
+                        <ShopLayoutColumnsBar
+                          gridId={GRID_IDS.PRODUCT_ENTRY}
                           columns={gridColumns}
+                          drawerDescription={PRODUCT_ENTRY_DRAWER_DESCRIPTION}
                           caption="Fields you hide here are hidden for everyone in this shop, in list and grid view. Required fields cannot be hidden."
                         />
                         {products.map((product, index) => (
