@@ -251,38 +251,41 @@ export function ProfilePage() {
 
       {activeTab === 'shop' ? (
         !editing ? (
-          <Box className={surfaceChrome.profileCard}>
+          <Box className={cn(surfaceChrome.profileCard, surfaceChrome.profileShopCard)}>
             <Box className={surfaceChrome.profileHero}>
-              <Box className={surfaceChrome.profileHeroMain}>
-                <Box as="span" className={surfaceChrome.profileHeroIcon} aria-hidden>
-                  <Store size={20} strokeWidth={2.1} />
+              <Box className={surfaceChrome.profileHeroTop}>
+                <Box className={surfaceChrome.profileHeroMain}>
+                  <Box as="span" className={surfaceChrome.profileHeroIcon} aria-hidden>
+                    <Store size={22} strokeWidth={2.1} />
+                  </Box>
+                  <Box className={surfaceChrome.profileHeroText}>
+                    <Text as="h2" className={surfaceChrome.profileHeroTitle}>
+                      {shop.name}
+                    </Text>
+                    <Text as="p" className={surfaceChrome.profileHeroTagline}>
+                      {shop.tagline?.trim() || 'No tagline yet'}
+                    </Text>
+                  </Box>
                 </Box>
-                <Box className={surfaceChrome.profileHeroText}>
-                  <Text as="h2" className={surfaceChrome.profileHeroTitle}>
-                    {shop.name}
-                  </Text>
-                  <Text as="p" className={surfaceChrome.profileHeroTagline}>
-                    {shop.tagline?.trim() || 'No tagline yet'}
-                  </Text>
-                </Box>
+                <Button type="button" variant="solid" size="sm" onClick={handleStartEdit}>
+                  Edit profile
+                </Button>
               </Box>
-              <Button type="button" variant="solid" size="sm" onClick={handleStartEdit}>
-                Edit profile
-              </Button>
+              <Box className={surfaceChrome.profileStatStrip}>
+                {aboutFields.map((field) => (
+                  <Box key={field.label} className={surfaceChrome.profileStatCell}>
+                    <Text as="p" className={surfaceChrome.profileStatValue}>
+                      {field.value}
+                    </Text>
+                    <Text as="p" className={surfaceChrome.profileStatLabel}>
+                      {field.label}
+                    </Text>
+                  </Box>
+                ))}
+              </Box>
             </Box>
 
             <Box className={surfaceChrome.profileBody}>
-              <Box className={surfaceChrome.profileSection}>
-                <Text as="p" className={surfaceChrome.profileSectionLabel}>
-                  Shop
-                </Text>
-                <Box className={surfaceChrome.profileFieldGrid}>
-                  {aboutFields.map((field) => (
-                    <ProfileField key={field.label} label={field.label} value={field.value} />
-                  ))}
-                </Box>
-              </Box>
-
               <Box className={surfaceChrome.profileSection}>
                 <Text as="p" className={surfaceChrome.profileSectionLabel}>
                   Contact
