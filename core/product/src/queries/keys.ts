@@ -26,6 +26,7 @@ export const productKeys = {
   labelLayoutPreview: (request: unknown) => [...base.all, 'label-layout-preview', request] as const,
   cardLayouts: () => [...base.all, 'card-layouts'] as const,
   cardFieldCatalog: () => [...base.all, 'card-field-catalog'] as const,
+  gridLayout: (gridId: string) => [...base.all, 'grid-layout', gridId] as const,
   searchFields: () => [...base.all, 'search-fields'] as const,
   searches: () => [...base.all, 'search'] as const,
   search: (request: SearchRequest | null) => [...base.all, 'search', request] as const,

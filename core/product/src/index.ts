@@ -100,6 +100,9 @@ export { CardLayoutBody, type CardLayoutBodyProps } from './ui/cardLayout/CardLa
 export { ProductCardLayoutSection } from './ui/cardLayout/ProductCardLayoutSection';
 export { cardLayoutApi } from './api/cardLayout.api';
 export * from './queries/cardLayout.queries';
+export { gridLayoutApi } from './api/gridLayout.api';
+export * from './queries/gridLayout.queries';
+export * from './model/gridLayout.types';
 export {
   useSurfaceCardLayout,
   allowAll,

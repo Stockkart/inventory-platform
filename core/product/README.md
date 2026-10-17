@@ -136,6 +136,26 @@ Product Search and Scan & Sell call `POST /inventory/search` (`inventoryApi.sear
 - **Printer driver (TSC TE244).** Stock = full roll row (e.g. 3.11 × 1.50 in for 2-up 38x38 with a
   3 mm gap), Graphics → Dithering **None**, Direct Thermal, Chrome print scale 100 %.
 
+### Product entry grid columns (`ui/productEntryGrid/`, `lib/gridLayoutModel.ts`)
+
+- **Layout comes from the server, per shop.** Column order, widths and hidden columns in the
+  product entry **grid** view are one shared layout for the shop
+  (`GET/PATCH/DELETE /shops/active-shop/grid-layouts/product-entry`, `useGridLayoutQuery`).
+  Scroll position stays in the browser; columns keep their width on any screen and the grid
+  scrolls sideways instead of squeezing them. List view is unchanged.
+- **One column list.** `ProductEntryPage` builds `gridColumns` (key, header, fill-row control,
+  row cell) once; `ProductEntryGrid` draws the header, the "Fill all" row and every row from it,
+  so order and widths always line up. Keys match the backend `GridColumnCatalog`
+  (`field:<schemaKey>` for vertical schema fields), so a vertical's own fields need no grid code.
+- **Rules from the server.** The catalog says which columns are `required` (to save), `hideable`,
+  `reorderable` and pinned `FIRST`/`LAST` (`#`, Actions). Only owners and admins (`canEdit`) see
+  the resize handles, header dragging and the **Columns** drawer; everyone else sees the shop's
+  layout read-only.
+- **One change per save.** A resize, move or show/hide is sent as one `PATCH` change; the cache
+  updates first (`applyGridLayoutChange`) and the server's answer, which includes anything other
+  members saved meanwhile, replaces it. Needs the matching inventory-api change deployed; until
+  the layout loads the grid renders with content-sized columns as before.
+
 ## UI chrome
 
 Prefer `productChrome` / `registrationChrome` from ui-kit for Scan Sell, carts, and registration grids.

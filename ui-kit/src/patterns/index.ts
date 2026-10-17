@@ -49,6 +49,15 @@ export {
   type StickyBarProps,
 } from './AsideLayout';
 export { DenseDataGridWrap, denseDataGrid, type DenseDataGridWrapProps } from './DenseDataGrid';
+export {
+  ColumnManager,
+  GridColGroup,
+  ResizableHeaderCell,
+  type ColumnManagerItem,
+  type ColumnManagerProps,
+  type GridColGroupProps,
+  type ResizableHeaderCellProps,
+} from './GridColumns';
 export { AnchoredPortal, type AnchoredPortalProps } from './AnchoredPortal';
 export {
   FileDropzoneContainer,
