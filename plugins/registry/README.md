@@ -10,7 +10,7 @@ Composes dashboard **nav** and **routes** from core contributions + the active v
 - Composed nav (`COMPOSED_DASHBOARD_MENU_GROUPS`, role filters, merge helpers)
 - Composed dashboard routes / sell-surface helpers
 - Public routes module for journeys (login, marketing, onboarding entry)
-- Composed Profile tabs (`profile-tabs.ts`): Barcode labels, Product cards and Rate rules, registered into `core/user`'s tab registry after the Invoice tab in that order. The Rate rules tab renders `RateRulesSection` from `@inventory-platform/product`, which renders nothing for shops without rate rules.
+- Composed Profile tabs (`profile-tabs.ts`): Barcode labels, Product cards and Rate rules, registered into `core/user`'s tab registry after the Invoice tab in that order. The Rate rules tab renders `RateRulesSection` from `@inventory-platform/product`, which renders nothing when rate rules are disabled for the shop's vertical (`enabled: false`, e.g. cafe); the tab label still shows.
 
 ## Does not own
 

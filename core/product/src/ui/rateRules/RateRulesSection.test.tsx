@@ -100,6 +100,16 @@ describe('RateRulesSection', () => {
     expect(body.rules.map((r: { name: string }) => r.name)).toEqual(['Wholesale', 'Retail']);
   });
 
+  it('showsSkippedReasonInWords', async () => {
+    api.preview.mockResolvedValue({
+      ...PREVIEW,
+      skipped: [{ name: 'Retail', reason: 'BELOW_COST' }],
+    });
+    mount();
+    expect(await screen.findByText('Retail not generated: below cost')).toBeTruthy();
+    expect(screen.queryByText(/BELOW_COST/)).toBeNull();
+  });
+
   it('savesOrderedRules', async () => {
     mount();
     await screen.findAllByLabelText('Rate name');
