@@ -61,3 +61,20 @@ export function selectedRateName(
   }
   return rates.find((r) => !isRuleRate(r) && Math.abs(r.price - linePrice) < 0.01)?.name;
 }
+
+/**
+ * Keeps only the picked rule-rate names whose line is still in the cart, so a line that was
+ * removed, set to zero, checked out or left behind by a quotation switch does not carry its pick
+ * into a later add of the same lot. Returns the same map when nothing is dropped.
+ */
+export function prunePickedRateNames(
+  picked: Record<string, string>,
+  lineIds: Iterable<string>,
+): Record<string, string> {
+  const keep = new Set(lineIds);
+  const stale = Object.keys(picked).filter((id) => !keep.has(id));
+  if (stale.length === 0) return picked;
+  const next = { ...picked };
+  for (const id of stale) delete next[id];
+  return next;
+}

@@ -201,6 +201,7 @@ import { SchemeInput, type SchemeTypeCart } from '../ui/scheme';
 import { RatePicker } from '../ui/scanSell';
 import {
   clearDiscountOverride,
+  prunePickedRateNames,
   ratePickRequest,
   saleDiscountToSend,
   selectedRateName,
@@ -1012,6 +1013,16 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   >({});
   /** Rule rate picked per line, so the picker shows it (the line carries its base price). */
   const [pickedRateNames, setPickedRateNames] = useState<Record<string, string>>({});
+  // Whenever the cart lines change (merge, remove, qty 0, quotation switch, checkout), drop picks
+  // for lines that are gone so a later add of the same lot starts from price matching again.
+  useEffect(() => {
+    setPickedRateNames((prev) =>
+      prunePickedRateNames(
+        prev,
+        cartItems.map((item) => item.inventoryItem.id),
+      ),
+    );
+  }, [cartItems]);
   const [detailModalItem, setDetailModalItem] = useState<CartItem | null>(null);
   const [detailModalFullItem, setDetailModalFullItem] = useState<InventoryItem | null>(null);
   const [detailModalFullItemLoading, setDetailModalFullItemLoading] = useState(false);
@@ -3796,6 +3807,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                             />
                                             {showRateDropdown ? (
                                               <RatePicker
+                                                layout="grid"
                                                 className={denseTableClassNames.rateSelect}
                                                 rates={rateOpts}
                                                 value={selectedRateName(
@@ -4053,6 +4065,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                                 if (!showDropdown) return null;
                                                 return (
                                                   <RatePicker
+                                                    layout="list"
                                                     className={itemRateSelectStyle}
                                                     rates={rateOpts}
                                                     value={selectedRateName(

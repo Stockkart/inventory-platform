@@ -15,9 +15,9 @@ const RULE_RATE: PricingRate = {
 };
 const LEGACY_RATE: PricingRate = { name: 'Wholesale', price: 90 };
 
-function setup(rates: PricingRate[], value?: string) {
+function setup(rates: PricingRate[], value?: string, layout: 'list' | 'grid' = 'list') {
   const onPick = vi.fn();
-  render(<RatePicker rates={rates} value={value} onPick={onPick} />);
+  render(<RatePicker rates={rates} value={value} onPick={onPick} layout={layout} />);
   return { onPick, select: screen.getByRole('combobox') as HTMLSelectElement };
 }
 
@@ -49,9 +49,24 @@ describe('RatePicker', () => {
     expect(optionLabels(select)).toContain('Rate-A · 83.64/unit incl. GST · PTR less 8%, 10+1');
   });
 
-  it('legacyRateHasNoTermsText', () => {
-    const { select } = setup([LEGACY_RATE]);
-    expect(optionLabels(select)).toEqual(['Custom', 'Wholesale · 90.00/unit']);
+  it('legacyAndSystemOptionsKeepMainsListLabel', () => {
+    const { select } = setup([{ name: 'MRP', price: 120 }, LEGACY_RATE], undefined, 'list');
+    expect(optionLabels(select)).toEqual(['Custom', 'MRP · ₹120.00', 'Wholesale · ₹90.00']);
+  });
+
+  it('legacyAndSystemOptionsKeepMainsGridLabel', () => {
+    const { select } = setup([{ name: 'PTR', price: 100 }, LEGACY_RATE], undefined, 'grid');
+    expect(optionLabels(select)).toEqual(['Custom', 'PTR (₹100.00)', 'Wholesale (₹90.00)']);
+  });
+
+  it('ruleRateUsesTermsLabelInBothLayouts', () => {
+    const { select } = setup([RULE_RATE], undefined, 'grid');
+    expect(optionLabels(select)).toContain('Rate-A · 83.64/unit + GST · PTR less 8%, 10+1');
+  });
+
+  it('namesALegacySelectionAsMainDid', () => {
+    const { select } = setup([LEGACY_RATE], 'Wholesale');
+    expect(select.getAttribute('aria-label')).toBe('Rate: Wholesale, ₹90.00');
   });
 
   it('shows the given value and names it for screen readers', () => {

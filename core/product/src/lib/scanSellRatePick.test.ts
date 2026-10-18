@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { PricingRate } from '@inventory-platform/contracts';
 import {
   clearDiscountOverride,
+  prunePickedRateNames,
   ratePickRequest,
   saleDiscountToSend,
   selectedRateName,
@@ -92,5 +93,22 @@ describe('selectedRateName', () => {
 
   it('ignores a picked name the line no longer offers', () => {
     expect(selectedRateName([SYSTEM_PTR], 50, 'Rate-A')).toBeUndefined();
+  });
+});
+
+describe('prunePickedRateNames', () => {
+  it('drops picks for lines no longer in the cart', () => {
+    expect(prunePickedRateNames({ a: 'Rate-A', b: 'Rate-B' }, ['b', 'c'])).toEqual({
+      b: 'Rate-B',
+    });
+  });
+
+  it('clears every pick when the cart is empty (checkout, clear, quotation switch)', () => {
+    expect(prunePickedRateNames({ a: 'Rate-A' }, [])).toEqual({});
+  });
+
+  it('returns the same map when nothing is dropped', () => {
+    const picked = { a: 'Rate-A' };
+    expect(prunePickedRateNames(picked, ['a', 'b'])).toBe(picked);
   });
 });
