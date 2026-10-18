@@ -182,6 +182,29 @@ describe('RateRulesSection', () => {
     expect(screen.getByText(message)).toBeTruthy();
   });
 
+  it('keepsTheDraftWhenTheConflictReloadFails', async () => {
+    const message =
+      'Rate rules were changed by someone else at the same time. Reload and save again.';
+    api.update.mockRejectedValue(new ApiError(message, { status: 409 }));
+    mount();
+    await screen.findAllByLabelText('Rate name');
+    fireEvent.change(screen.getAllByLabelText('Rate name')[0], { target: { value: 'Mine' } });
+    api.get.mockRejectedValue(new ApiError('Network error', { status: 0 }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save rules' }));
+
+    expect(
+      await screen.findByText(
+        `${message} The latest rules could not be loaded; your changes are kept.`,
+      ),
+    ).toBeTruthy();
+    expect(api.get).toHaveBeenCalledTimes(2);
+    expect(
+      screen.getAllByLabelText('Rate name').map((el) => (el as HTMLInputElement).value),
+    ).toEqual(['Mine', 'Retail']);
+    expect(screen.getByText('Unsaved changes')).toBeTruthy();
+    expect(screen.queryByText('Could not load the rate rules.')).toBeNull();
+  });
+
   it('rendersNothingWhenDisabled', async () => {
     api.get.mockResolvedValue({ ...RULES, enabled: false, rules: [] });
     const { container } = mount();

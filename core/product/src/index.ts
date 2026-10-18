@@ -42,6 +42,7 @@ export {
   type SkippedRateRule,
 } from './ui/rateRules';
 export { isRuleRate } from './lib/pricingRate';
+export { sameRateTerms } from './lib/rateTerms';
 export {
   productEntryRoutes,
   importRoutes,

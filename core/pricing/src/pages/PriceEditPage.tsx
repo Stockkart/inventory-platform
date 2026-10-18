@@ -2,7 +2,12 @@ import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router';
 import { pricingApi } from '../api/pricing.api';
 import { useAuthStore, useNotify, useShopAccessStore } from '@inventory-platform/session';
-import { GeneratedRatesList, isRuleRate, type RateTermsEdit } from '@inventory-platform/product';
+import {
+  GeneratedRatesList,
+  isRuleRate,
+  sameRateTerms,
+  type RateTermsEdit,
+} from '@inventory-platform/product';
 import type { PricingRate, PricingRateWarning } from '@inventory-platform/pricing/types';
 import {
   Alert,
@@ -54,11 +59,6 @@ const SYSTEM_DEFAULT_RATE_LABELS: Record<string, string> = {
 
 /** Offered when the API gave no list (the page fell back to the navigation state). */
 const SYSTEM_DEFAULT_RATE_NAMES = Object.keys(SYSTEM_DEFAULT_RATE_LABELS);
-
-/** The terms an override changes, for telling an edited rate from its saved one. */
-function termsKey(rate: PricingRate | undefined): string {
-  return JSON.stringify([rate?.discountPercent ?? null, rate?.scheme ?? null]);
-}
 
 interface PageShellProps {
   children: ReactNode;
@@ -174,7 +174,10 @@ export function PriceEditPage() {
           (r) =>
             isRuleRate(r) &&
             !resetNames.includes(r.name) &&
-            termsKey(r) !== termsKey(savedRates.find((saved) => saved.name === r.name)),
+            !sameRateTerms(
+              r,
+              savedRates.find((saved) => saved.name === r.name),
+            ),
         )
         .map((r) => r.name),
     [rates, savedRates, resetNames],
