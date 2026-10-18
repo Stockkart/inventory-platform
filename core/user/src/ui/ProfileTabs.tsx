@@ -15,6 +15,13 @@ export type ProfileTabKey = ProfileTabId | (string & {});
 interface ProfileTabItem {
   id: ProfileTabKey;
   label: string;
+  useVisible?: () => boolean;
+}
+
+function toItem(ext: ProfileTabExtension): ProfileTabItem {
+  return ext.useVisible
+    ? { id: ext.id, label: ext.label, useVisible: ext.useVisible }
+    : { id: ext.id, label: ext.label };
 }
 
 /**
@@ -30,13 +37,45 @@ export function orderProfileTabs(extensions: readonly ProfileTabExtension[]): Pr
   for (const tab of PROFILE_TABS) {
     ordered.push({ id: tab.id, label: tab.label });
     for (const ext of extensions) {
-      if (ext.after === tab.id) ordered.push({ id: ext.id, label: ext.label });
+      if (ext.after === tab.id) ordered.push(toItem(ext));
     }
   }
   for (const ext of extensions) {
-    if (!ext.after || !builtInIds.has(ext.after)) trailing.push({ id: ext.id, label: ext.label });
+    if (!ext.after || !builtInIds.has(ext.after)) trailing.push(toItem(ext));
   }
   return [...ordered, ...trailing];
+}
+
+interface ProfileTabButtonProps {
+  tab: ProfileTabItem;
+  active: boolean;
+  onTabChange: (id: ProfileTabKey) => void;
+}
+
+function ProfileTabButton({ tab, active, onTabChange }: ProfileTabButtonProps) {
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      role="tab"
+      aria-selected={active}
+      className={cn(accountingChrome.navTab, active && accountingChrome.navTabActive)}
+      onClick={() => onTabChange(tab.id)}
+    >
+      {tab.label}
+    </Button>
+  );
+}
+
+interface GatedProfileTabButtonProps extends ProfileTabButtonProps {
+  useVisible: () => boolean;
+}
+
+/** An extension tab that asks its owner whether to show. */
+function GatedProfileTabButton({ useVisible, ...props }: GatedProfileTabButtonProps) {
+  const visible = useVisible();
+  return visible ? <ProfileTabButton {...props} /> : null;
 }
 
 export interface ProfileTabsProps {
@@ -56,23 +95,24 @@ export function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps) {
       className={accountingChrome.navTabBar}
     >
       <Inline gap="none">
-        {tabs.map((tab) => (
-          <Button
-            key={tab.id}
-            type="button"
-            size="sm"
-            variant="ghost"
-            role="tab"
-            aria-selected={activeTab === tab.id}
-            className={cn(
-              accountingChrome.navTab,
-              activeTab === tab.id && accountingChrome.navTabActive,
-            )}
-            onClick={() => onTabChange(tab.id)}
-          >
-            {tab.label}
-          </Button>
-        ))}
+        {tabs.map((tab) =>
+          tab.useVisible ? (
+            <GatedProfileTabButton
+              key={tab.id}
+              tab={tab}
+              active={activeTab === tab.id}
+              onTabChange={onTabChange}
+              useVisible={tab.useVisible}
+            />
+          ) : (
+            <ProfileTabButton
+              key={tab.id}
+              tab={tab}
+              active={activeTab === tab.id}
+              onTabChange={onTabChange}
+            />
+          ),
+        )}
       </Inline>
     </Box>
   );

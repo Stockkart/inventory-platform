@@ -9,10 +9,11 @@ import {
   toPreviewRules,
   toRules,
 } from './rateRulesDraft';
+import type { RateRule } from '../model/rateRules.types';
 
 describe('rateRulesDraft', () => {
   it('roundTripsRules', () => {
-    const rules = [
+    const rules: RateRule[] = [
       { name: 'A', base: 'sellingPrice', discountPercent: 2.5, scheme: null },
       { name: 'B', base: 'priceToRetail', discountPercent: null, scheme: null },
     ];
@@ -35,8 +36,8 @@ describe('rateRulesDraft', () => {
 
   it('detectsOrderChange', () => {
     const a = draftFromRules([
-      { name: 'A', base: 'x' },
-      { name: 'B', base: 'x' },
+      { name: 'A', base: 'priceToRetail' },
+      { name: 'B', base: 'priceToRetail' },
     ]);
     expect(draftsEqual(a, { rules: moveRule(a.rules, 0, 'down') })).toBe(false);
   });
@@ -58,6 +59,6 @@ describe('rateRulesDraft', () => {
 
   it('skippedReasonTextIsWords', () => {
     expect(skippedReasonText('BELOW_COST')).toBe('below cost');
-    expect(skippedReasonText('NO_BASE')).toBe('no base');
+    expect(skippedReasonText('REPLACED_BY_RULE')).toBe('replaced by rule');
   });
 });

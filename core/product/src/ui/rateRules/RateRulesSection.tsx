@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useBlocker } from 'react-router';
 import { ArrowDown, ArrowUp, Plus, X } from 'lucide-react';
-import { ApiError } from '@inventory-platform/api-client';
+import { ApiError, isApiError } from '@inventory-platform/api-client';
 import { useNotify } from '@inventory-platform/session';
 import {
   Alert,
@@ -25,6 +25,7 @@ import {
 } from '../../queries/rateRules.queries';
 import type {
   RateRule,
+  RateRuleBase,
   RateRuleScheme,
   RateRulesPreviewRequest,
   RateRulesResponse,
@@ -42,7 +43,7 @@ import {
   toRules,
   type RateRuleDraft,
   type RateRulesDraft,
-} from './rateRulesDraft';
+} from '../../lib/rateRulesDraft';
 
 const UNSAVED_PROMPT = 'You have unsaved rate rules changes. Leave without saving?';
 const PREVIEW_DEBOUNCE_MS = 400;
@@ -78,7 +79,11 @@ function useDebounced<T>(value: T, delayMs: number): T {
   return debounced;
 }
 
-function SectionHeader({ children }: { children?: React.ReactNode }) {
+interface SectionHeaderProps {
+  children?: ReactNode;
+}
+
+function SectionHeader({ children }: SectionHeaderProps) {
   return (
     <Box className={surfaceChrome.invoiceSettingsHeader}>
       <Box className={surfaceChrome.invoiceSettingsHeaderText}>
@@ -164,7 +169,7 @@ interface RuleRowProps {
   row: RateRuleDraft;
   index: number;
   count: number;
-  baseOptions: string[];
+  baseOptions: RateRuleBase[];
   onChange: (key: string, patch: Partial<RateRuleDraft>) => void;
   onMove: (index: number, dir: 'up' | 'down') => void;
   onRemove: (key: string) => void;
@@ -204,7 +209,7 @@ function RuleRow({
               value={row.base}
               disabled={disabled}
               options={options.map((value) => ({ value, label: baseLabel(value) }))}
-              onChange={(e) => onChange(row.key, { base: e.target.value })}
+              onChange={(e) => onChange(row.key, { base: e.target.value as RateRuleBase })}
             />
           </FormField>
         ) : null}
@@ -276,7 +281,11 @@ function RuleRow({
   );
 }
 
-function ReadOnlyRules({ rules }: { rules: RateRule[] }) {
+interface ReadOnlyRulesProps {
+  rules: RateRule[];
+}
+
+function ReadOnlyRules({ rules }: ReadOnlyRulesProps) {
   if (rules.length === 0) {
     return (
       <Text as="p" variant="caption" color="secondary">
@@ -325,7 +334,13 @@ function ReadOnlyRules({ rules }: { rules: RateRule[] }) {
   );
 }
 
-function RateRulesEditor({ data }: { data: RateRulesResponse }) {
+interface RateRulesEditorProps {
+  data: RateRulesResponse;
+  /** Refetches the saved rules; resolves to them, or undefined when the reload failed. */
+  onReload: () => Promise<RateRulesResponse | undefined>;
+}
+
+function RateRulesEditor({ data, onReload }: RateRulesEditorProps) {
   const readOnly = !data.canEdit;
   const [draft, setDraft] = useState<RateRulesDraft>(() => draftFromRules(data.rules));
   const [saved, setSaved] = useState<RateRulesDraft>(draft);
@@ -382,7 +397,18 @@ function RateRulesEditor({ data }: { data: RateRulesResponse }) {
           setDraft(next);
           useNotify.success('Rate rules saved');
         },
-        onError: (err) => setSaveError(saveErrorMessage(err)),
+        onError: (err) => {
+          setSaveError(saveErrorMessage(err));
+          // Someone else saved first: show their rules, keeping the server's message on screen.
+          if (isApiError(err) && err.status === 409) {
+            void onReload().then((fresh) => {
+              if (!fresh) return;
+              const next = draftFromRules(fresh.rules);
+              setSaved(next);
+              setDraft(next);
+            });
+          }
+        },
       },
     );
   };
@@ -392,20 +418,11 @@ function RateRulesEditor({ data }: { data: RateRulesResponse }) {
   return (
     <Box className={surfaceChrome.invoiceSettingsCard}>
       <SectionHeader>
-        {readOnly ? null : (
+        {dirty ? (
           <Box className={surfaceChrome.invoiceSettingsHeaderActions}>
-            {dirty ? <Badge variant="warning">Unsaved changes</Badge> : null}
-            <Button
-              type="button"
-              variant="solid"
-              onClick={handleSave}
-              disabled={busy || !dirty}
-              loading={busy}
-            >
-              Save
-            </Button>
+            <Badge variant="warning">Unsaved changes</Badge>
           </Box>
-        )}
+        ) : null}
       </SectionHeader>
 
       {readOnly ? (
@@ -476,8 +493,14 @@ function RateRulesEditor({ data }: { data: RateRulesResponse }) {
           <Text variant="caption" color="secondary">
             Changes apply to products registered after you save.
           </Text>
-          <Button type="button" variant="solid" onClick={handleSave} disabled={busy || !dirty}>
-            {busy ? 'Saving…' : 'Save rules'}
+          <Button
+            type="button"
+            variant="solid"
+            onClick={handleSave}
+            disabled={busy || !dirty}
+            loading={busy}
+          >
+            Save rules
           </Button>
         </Box>
       )}
@@ -487,8 +510,10 @@ function RateRulesEditor({ data }: { data: RateRulesResponse }) {
 
 /**
  * Profile → "Rate rules" tab. Renders nothing when rate rules are disabled for the
- * shop's vertical (`enabled: false`, e.g. cafe); read-only when the user lacks the edit grant. The base picker follows
- * the API's `baseOptions`, never the shop type.
+ * shop's vertical (`enabled: false`, e.g. cafe; the registry also hides the tab); read-only
+ * when the user lacks the edit grant. The base picker follows the API's `baseOptions`, never
+ * the shop type. A save refused with 403 reloads the rules (now read-only); one refused with
+ * 409 shows the server's message and loads the rules someone else saved.
  */
 export function RateRulesSection() {
   const query = useRateRulesQuery();
@@ -525,5 +550,7 @@ export function RateRulesSection() {
 
   if (!query.data.enabled) return null;
 
-  return <RateRulesEditor data={query.data} />;
+  const reload = async () => (await query.refetch()).data;
+
+  return <RateRulesEditor data={query.data} onReload={reload} />;
 }
