@@ -124,7 +124,7 @@ Product Search and Scan & Sell call `POST /inventory/search` (`inventoryApi.sear
 
 - `EntryRatePreview` is the Product Entry block: it fetches the preview itself (debounced `useRateRulesPreviewQuery` on the typed PTR / MRP / selling price / cost / GST, plus `costPriceIncludesTax` from the bill's server-resolved tax treatment; `lib/ratePreviewRequest.ts` builds the request) and shows the result read-only. Overrides cannot clear a discount or scheme (the server treats blank as unchanged), so the editor restores the saved value and points to "Reset to rule". Term overrides exist only on a saved batch, so a new batch has no edit action (the backend ignores terms on create).
 - On Product Entry the hand-typed "Rates (optional)" editor and "Default rate" select stay distributor-only. Any non-cafe shop whose backend flag `features.rateRules` is true (never by counting rules), retailers included, sees `EntryRatePreview` instead (`lib/entryRateFlags.ts`).
-- `core/pricing` imports `GeneratedRatesList` from the barrel for the price edit page; the Profile → Rate rules sample rows use it read-only too.
+- `core/pricing` imports `GeneratedRatesList` (and `isRuleRate`, exported from `lib/pricingRate.ts`) from the barrel for the price edit page; the Profile → Rate rules sample rows use it read-only too.
 
 ### Scan & Sell rate picker (`ui/scanSell/`, `lib/scanSellRatePick.ts`)
 

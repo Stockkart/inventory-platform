@@ -37,11 +37,11 @@ export { BarcodeLabelLayoutSection } from './ui/labelLayout/BarcodeLabelLayoutSe
 export {
   RateRulesSection,
   GeneratedRatesList,
-  isRuleRate,
   type GeneratedRatesListProps,
   type RateTermsEdit,
   type SkippedRateRule,
 } from './ui/rateRules';
+export { isRuleRate } from './lib/pricingRate';
 export {
   productEntryRoutes,
   importRoutes,

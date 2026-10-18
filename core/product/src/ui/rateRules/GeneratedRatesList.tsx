@@ -13,7 +13,7 @@ import {
 } from '@inventory-platform/ui-kit';
 import type { RateRuleScheme } from '../../model/rateRules.types';
 import { SchemeInput, type SchemeTypeCart } from '../scheme';
-import { isRuleRate, rateGstLabel } from '../../lib/pricingRate';
+import { rateGstLabel } from '../../lib/pricingRate';
 import { skippedReasonText } from '../../lib/rateRulesDraft';
 
 /** A rule that produced no rate, or a kept override left below cost. Server-owned shape. */
@@ -44,7 +44,6 @@ export interface GeneratedRatesListProps {
   onReset: (name: string) => void;
 }
 
-export { isRuleRate };
 
 /** A save warning in words. `BELOW_COST` and `REPLACED_BY_RULE` are the API's reasons. */
 function warningText(item: SkippedRateRule): string {
