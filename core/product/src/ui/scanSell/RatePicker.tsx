@@ -1,6 +1,7 @@
 import type { PricingRate } from '@inventory-platform/contracts';
 import { Select } from '@inventory-platform/ui-kit';
 import { isRuleRate, rateGstLabel } from '../../lib/pricingRate';
+import type { RateOption } from '../../lib/scanSellRatePick';
 
 const CUSTOM = '__custom__';
 
@@ -17,12 +18,12 @@ function formatInr(n: number): string {
 }
 
 interface RatePickerProps {
-  /** System options (MRP / PTR / Cost) and the batch's rates, as the API sent them. */
-  rates: PricingRate[];
-  /** Name of the option the line is on; Custom when absent. */
+  /** System options (MRP / PTR / Cost) and the batch's rates (`buildRateOptions`). */
+  options: RateOption[];
+  /** `value` of the option the line is on; Custom when absent. */
   value?: string;
-  /** Called with the picked option's name; the page decides what the pick sends. */
-  onPick: (rateName: string) => void;
+  /** Called with the picked option's `value`; the page decides what the pick sends. */
+  onPick: (value: string) => void;
   /** Grid (table) view labels `PTR (₹100.00)`, list (card) view `PTR · ₹100.00` (system and legacy options). */
   layout: RatePickerLayout;
   /** Called when the dropdown is opened, e.g. to load the batch's rates. */
@@ -56,7 +57,7 @@ function selectedAriaLabel(rate: PricingRate, layout: RatePickerLayout): string 
 
 /** Scan & Sell rate dropdown for one cart line. Displays the API's figures; does no arithmetic. */
 export function RatePicker({
-  rates,
+  options,
   value,
   onPick,
   layout,
@@ -65,26 +66,29 @@ export function RatePicker({
   loading,
   className,
 }: RatePickerProps) {
-  const selected = value != null ? rates.find((r) => r.name === value) : undefined;
+  const selected = value != null ? options.find((o) => o.value === value) : undefined;
   const ariaLabel = loading
     ? 'Loading rates'
     : selected
-    ? selectedAriaLabel(selected, layout)
+    ? selectedAriaLabel(selected.rate, layout)
     : 'Select selling rate';
   return (
     <Select
       className={className}
-      value={selected ? selected.name : CUSTOM}
+      value={selected ? selected.value : CUSTOM}
       onChange={(e) => {
-        const name = e.currentTarget.value;
-        if (name !== CUSTOM) onPick(name);
+        const picked = e.currentTarget.value;
+        if (picked !== CUSTOM) onPick(picked);
       }}
       onMouseDown={onOpen}
       disabled={disabled}
       aria-label={ariaLabel}
       options={[
         { value: CUSTOM, label: 'Custom' },
-        ...rates.map((rate) => ({ value: rate.name, label: rateOptionLabel(rate, layout) })),
+        ...options.map((option) => ({
+          value: option.value,
+          label: rateOptionLabel(option.rate, layout),
+        })),
       ]}
     />
   );

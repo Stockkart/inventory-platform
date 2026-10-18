@@ -107,7 +107,7 @@ import type {
   CheckoutItemResponse,
   QuotationSummary,
 } from '@inventory-platform/product/types';
-import type { PricingRate, PricingResponse } from '@inventory-platform/contracts';
+import type { PricingResponse } from '@inventory-platform/contracts';
 import type { CustomerResponse } from '@inventory-platform/user/types';
 import type { MenuItem, SellCatalog } from '@inventory-platform/product/types';
 import {
@@ -200,11 +200,14 @@ import { ScanSellQuotationStack } from '../ui/ScanSellQuotationStack';
 import { SchemeInput, type SchemeTypeCart } from '../ui/scheme';
 import { RatePicker } from '../ui/scanSell';
 import {
+  appliedRateNamesByLine,
+  buildRateOptions,
   clearDiscountOverride,
   prunePickedRateNames,
   ratePickRequest,
   saleDiscountToSend,
-  selectedRateName,
+  selectedRateValue,
+  type RateOption,
 } from '../lib/scanSellRatePick';
 import type { CustomerPartyType } from '@inventory-platform/user/types';
 import { GUEST_CUSTOMER_LABEL, isDefaultGuestCustomerName } from '../lib/customerDisplay';
@@ -232,24 +235,17 @@ function isMenuLine(line: CheckoutItemResponse): boolean {
 }
 
 /**
- * Rate options for the price selector: the system options (MRP / PTR / Cost, name and price only)
- * then the batch's rates as the API sent them (rule rates keep their terms and GST mode).
+ * Rate options for the price selector: MRP / PTR / Cost then the batch's rates as the API sent
+ * them (rule rates keep their terms and GST mode). Shown for every shop, rules or not: MRP / PTR /
+ * Cost picks send their system name, which also puts a line back on the batch's own terms.
  */
-function getRateOptions(item: InventoryItem, pricing?: PricingResponse | null): PricingRate[] {
-  const opts: PricingRate[] = [];
-  const mrp = pricing?.maximumRetailPrice ?? item.maximumRetailPrice;
-  const ptr = pricing?.priceToRetail ?? item.priceToRetail;
-  const cost = pricing?.costPrice ?? item.costPrice;
-  const rates = pricing?.rates ?? item.rates ?? [];
-  if (mrp != null) opts.push({ name: 'MRP', price: mrp });
-  if (ptr != null) opts.push({ name: 'PTR', price: ptr });
-  if (cost != null && cost > 0) opts.push({ name: 'Cost', price: cost });
-  rates.forEach((r) => {
-    if (r?.name?.trim() && r?.price != null) {
-      opts.push({ ...r, name: r.name.trim() });
-    }
+function getRateOptions(item: InventoryItem, pricing?: PricingResponse | null): RateOption[] {
+  return buildRateOptions({
+    maximumRetailPrice: pricing?.maximumRetailPrice ?? item.maximumRetailPrice,
+    priceToRetail: pricing?.priceToRetail ?? item.priceToRetail,
+    costPrice: pricing?.costPrice ?? item.costPrice,
+    rates: pricing?.rates ?? item.rates ?? [],
   });
-  return opts;
 }
 
 interface CartItem {
@@ -1011,7 +1007,10 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   const [additionalDiscountOverrides, setAdditionalDiscountOverrides] = useState<
     Record<string, number | null>
   >({});
-  /** Rule rate picked per line, so the picker shows it (the line carries its base price). */
+  /**
+   * Rate picked per line; only read when the cart response has no `appliedRateName` (an older
+   * API), so the picker can still show a picked rule rate (the line carries its base price).
+   */
   const [pickedRateNames, setPickedRateNames] = useState<Record<string, string>>({});
   // Whenever the cart lines change (merge, remove, qty 0, quotation switch, checkout), drop picks
   // for lines that are gone so a later add of the same lot starts from price matching again.
@@ -1023,6 +1022,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       ),
     );
   }, [cartItems]);
+  /** The rate each cart line is billed at, as the cart stored it (`appliedRateName`). */
+  const appliedRateNames = useMemo(() => appliedRateNamesByLine(cartData?.items), [cartData]);
   const [detailModalItem, setDetailModalItem] = useState<CartItem | null>(null);
   const [detailModalFullItem, setDetailModalFullItem] = useState<InventoryItem | null>(null);
   const [detailModalFullItemLoading, setDetailModalFullItemLoading] = useState(false);
@@ -2880,12 +2881,12 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   };
 
   /**
-   * A rule rate sends `rateName` only and takes price, disc and scheme from the cart response;
-   * the line's typed disc is dropped so the next sync does not resend it over the rate's.
-   * System options and legacy rates keep the price path.
+   * MRP / PTR / Cost send their system name and a rule rate its name (`rateName` only); the line
+   * takes price, disc and scheme from the cart response, and the line's typed disc is dropped so
+   * the next sync does not resend it over the new one. Legacy rates keep the price path.
    */
-  const handleRatePick = (inventoryId: string, rates: PricingRate[], name: string) => {
-    const request = ratePickRequest(rates, name);
+  const handleRatePick = (inventoryId: string, options: RateOption[], value: string) => {
+    const request = ratePickRequest(options, value);
     if (!request) return;
     if ('priceToRetail' in request) {
       handleSellingPriceChange(inventoryId, request.priceToRetail);
@@ -3809,17 +3810,18 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                               <RatePicker
                                                 layout="grid"
                                                 className={denseTableClassNames.rateSelect}
-                                                rates={rateOpts}
-                                                value={selectedRateName(
+                                                options={rateOpts}
+                                                value={selectedRateValue(
                                                   rateOpts,
                                                   cartItem.price,
+                                                  appliedRateNames[cartItem.inventoryItem.id],
                                                   pickedRateNames[cartItem.inventoryItem.id],
                                                 )}
-                                                onPick={(name) =>
+                                                onPick={(value) =>
                                                   handleRatePick(
                                                     cartItem.inventoryItem.id,
                                                     rateOpts,
-                                                    name,
+                                                    value,
                                                   )
                                                 }
                                                 onOpen={() =>
@@ -4067,14 +4069,15 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                                   <RatePicker
                                                     layout="list"
                                                     className={itemRateSelectStyle}
-                                                    rates={rateOpts}
-                                                    value={selectedRateName(
+                                                    options={rateOpts}
+                                                    value={selectedRateValue(
                                                       rateOpts,
                                                       cartItem.price,
+                                                      appliedRateNames[invId],
                                                       pickedRateNames[invId],
                                                     )}
-                                                    onPick={(name) =>
-                                                      handleRatePick(invId, rateOpts, name)
+                                                    onPick={(value) =>
+                                                      handleRatePick(invId, rateOpts, value)
                                                     }
                                                     onOpen={() => {
                                                       loadPricingOnDropdownClick(

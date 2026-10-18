@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { PricingRate } from '@inventory-platform/contracts';
+import type { CheckoutItemResponse } from '../model/types';
 import {
+  appliedRateNamesByLine,
+  buildRateOptions,
   clearDiscountOverride,
   prunePickedRateNames,
   ratePickRequest,
   saleDiscountToSend,
-  selectedRateName,
+  selectedRateValue,
 } from './scanSellRatePick';
 
 const RULE_RATE: PricingRate = {
@@ -19,7 +22,42 @@ const RULE_RATE: PricingRate = {
   termsText: 'PTR less 8%, 10+1',
 };
 const LEGACY_RATE: PricingRate = { name: 'Wholesale', price: 90 };
-const SYSTEM_PTR: PricingRate = { name: 'PTR', price: 100 };
+const OPTIONS = buildRateOptions({
+  maximumRetailPrice: 120,
+  priceToRetail: 100,
+  costPrice: 70,
+  rates: [RULE_RATE, LEGACY_RATE],
+});
+
+describe('buildRateOptions', () => {
+  it('gives system options values that cannot clash with rate names', () => {
+    const options = buildRateOptions({
+      priceToRetail: 100,
+      rates: [
+        { name: 'PTR', price: 95 },
+        { name: 'priceToRetail', price: 94 },
+      ],
+    });
+    expect(options.map((o) => o.value)).toEqual([
+      'system:priceToRetail',
+      'rate:PTR',
+      'rate:priceToRetail',
+    ]);
+    expect(new Set(options.map((o) => o.value)).size).toBe(3);
+    expect(options[0]).toMatchObject({
+      systemKey: 'priceToRetail',
+      rate: { name: 'PTR', price: 100 },
+    });
+    expect(options[1].systemKey).toBeNull();
+  });
+
+  it('lists MRP, PTR, Cost then the batch rates, and leaves out a zero cost', () => {
+    expect(OPTIONS.map((o) => o.rate.name)).toEqual(['MRP', 'PTR', 'Cost', 'Rate-A', 'Wholesale']);
+    expect(buildRateOptions({ priceToRetail: 100, costPrice: 0 }).map((o) => o.rate.name)).toEqual([
+      'PTR',
+    ]);
+  });
+});
 
 describe('clearDiscountOverride', () => {
   it('pickClearsStaleDiscountOverride', () => {
@@ -38,22 +76,49 @@ describe('clearDiscountOverride', () => {
 });
 
 describe('ratePickRequest', () => {
-  const rates = [SYSTEM_PTR, RULE_RATE, LEGACY_RATE];
-
   it('a rule rate sends its name only', () => {
-    expect(ratePickRequest(rates, 'Rate-A')).toEqual({ rateName: 'Rate-A' });
+    expect(ratePickRequest(OPTIONS, 'rate:Rate-A')).toEqual({ rateName: 'Rate-A' });
   });
 
   it('a legacy rate keeps the price path', () => {
-    expect(ratePickRequest(rates, 'Wholesale')).toEqual({ priceToRetail: 90 });
+    expect(ratePickRequest(OPTIONS, 'rate:Wholesale')).toEqual({ priceToRetail: 90 });
   });
 
-  it('a system option never sends rateName', () => {
-    expect(ratePickRequest(rates, 'PTR')).toEqual({ priceToRetail: 100 });
+  it('system options send their system name', () => {
+    expect(ratePickRequest(OPTIONS, 'system:priceToRetail')).toEqual({
+      rateName: 'priceToRetail',
+    });
+    expect(ratePickRequest(OPTIONS, 'system:maximumRetailPrice')).toEqual({
+      rateName: 'maximumRetailPrice',
+    });
+    expect(ratePickRequest(OPTIONS, 'system:costPrice')).toEqual({ rateName: 'costPrice' });
   });
 
-  it('an unknown name does nothing', () => {
-    expect(ratePickRequest(rates, 'Nope')).toBeNull();
+  it('pickRuleRateThenPtrSendsSystemName', () => {
+    expect(ratePickRequest(OPTIONS, 'rate:Rate-A')).toEqual({ rateName: 'Rate-A' });
+    expect(ratePickRequest(OPTIONS, 'system:priceToRetail')).toEqual({
+      rateName: 'priceToRetail',
+    });
+  });
+
+  it('an unknown value does nothing', () => {
+    expect(ratePickRequest(OPTIONS, 'rate:Nope')).toBeNull();
+    expect(ratePickRequest(OPTIONS, 'PTR')).toBeNull();
+  });
+});
+
+describe('appliedRateNamesByLine', () => {
+  it('maps lines that carry the field, null included, and skips lines without it', () => {
+    const line = (inventoryId: string, extra: Partial<CheckoutItemResponse>) =>
+      ({ inventoryId, ...extra } as CheckoutItemResponse);
+    expect(
+      appliedRateNamesByLine([
+        line('a', { appliedRateName: 'Rate-A' }),
+        line('b', { appliedRateName: null }),
+        line('c', {}),
+      ]),
+    ).toEqual({ a: 'Rate-A', b: null });
+    expect(appliedRateNamesByLine(null)).toEqual({});
   });
 });
 
@@ -75,24 +140,42 @@ describe('saleDiscountToSend', () => {
   });
 });
 
-describe('selectedRateName', () => {
-  const rates = [SYSTEM_PTR, RULE_RATE, LEGACY_RATE];
+describe('selectedRateValue', () => {
+  it('follows the cart line appliedRateName for a rule rate', () => {
+    expect(selectedRateValue(OPTIONS, 100, 'Rate-A')).toBe('rate:Rate-A');
+  });
 
-  it('shows the picked rule rate although the line carries its base price', () => {
-    expect(selectedRateName(rates, 100, 'Rate-A')).toBe('Rate-A');
+  it('shows PTR from appliedRateName on a line whose price is per tablet', () => {
+    // Rate-A then PTR on a strip-of-10 line: the cart bills 10.00 per tablet, not the pack's 100.
+    expect(selectedRateValue(OPTIONS, 10, 'priceToRetail', 'Rate-A')).toBe('system:priceToRetail');
+  });
+
+  it('prefers appliedRateName over a local pick', () => {
+    expect(selectedRateValue(OPTIONS, 100, 'priceToRetail', 'Rate-A')).toBe('system:priceToRetail');
+  });
+
+  it('a cleared appliedRateName (manual edit) falls back to price matching, not the local pick', () => {
+    expect(selectedRateValue(OPTIONS, 90, null, 'Rate-A')).toBe('rate:Wholesale');
+    expect(selectedRateValue(OPTIONS, 55, null, 'Rate-A')).toBeUndefined();
+  });
+
+  it('without appliedRateName (older API) shows the rule rate picked here', () => {
+    expect(selectedRateValue(OPTIONS, 100, undefined, 'Rate-A')).toBe('rate:Rate-A');
   });
 
   it('matches non-rule options by the line price', () => {
-    expect(selectedRateName(rates, 90, undefined)).toBe('Wholesale');
-    expect(selectedRateName(rates, 100, undefined)).toBe('PTR');
+    expect(selectedRateValue(OPTIONS, 90, undefined)).toBe('rate:Wholesale');
+    expect(selectedRateValue(OPTIONS, 100, undefined)).toBe('system:priceToRetail');
   });
 
   it('never matches a rule rate by its per-unit figure', () => {
-    expect(selectedRateName(rates, 83.64, undefined)).toBeUndefined();
+    expect(selectedRateValue(OPTIONS, 83.64, undefined)).toBeUndefined();
   });
 
-  it('ignores a picked name the line no longer offers', () => {
-    expect(selectedRateName([SYSTEM_PTR], 50, 'Rate-A')).toBeUndefined();
+  it('ignores an applied or picked name the line no longer offers', () => {
+    const ptrOnly = buildRateOptions({ priceToRetail: 100 });
+    expect(selectedRateValue(ptrOnly, 50, undefined, 'Rate-A')).toBeUndefined();
+    expect(selectedRateValue(ptrOnly, 50, 'Rate-A')).toBeUndefined();
   });
 });
 

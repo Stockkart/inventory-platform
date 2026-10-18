@@ -1,18 +1,91 @@
 import type { PricingRate } from '@inventory-platform/contracts';
+import type { CheckoutItemResponse } from '../model/types';
 import { isRuleRate } from './pricingRate';
 
+/** The batch fields the picker offers as MRP / PTR / Cost; the API's names for them. */
+export type SystemRateKey = 'maximumRetailPrice' | 'priceToRetail' | 'costPrice';
+
+const SYSTEM_RATE_LABELS: Record<SystemRateKey, string> = {
+  maximumRetailPrice: 'MRP',
+  priceToRetail: 'PTR',
+  costPrice: 'Cost',
+};
+
 /**
- * What a Scan & Sell rate pick sends for the line. A rule rate (one the server derived, with a
- * base) sends only its name: the cart puts the base, disc and scheme on the line. System options
- * (MRP / PTR / Cost) and legacy hand-typed rates keep the price path, so no system name is ever
- * sent as `rateName`.
+ * One option of the Scan & Sell rate picker. `value` is unique within the picker: system options
+ * are `system:<key>` and batch rates `rate:<name>`, so a rate named like a system option (the API
+ * reserves MRP / PTR / Cost for rules) can never be mistaken for it.
+ */
+export interface RateOption {
+  value: string;
+  /** What the option shows: a system option is named MRP / PTR / Cost with the batch's price. */
+  rate: PricingRate;
+  /** Set on MRP / PTR / Cost; null on the batch's rates. */
+  systemKey: SystemRateKey | null;
+}
+
+export interface RateOptionSource {
+  maximumRetailPrice?: number | null;
+  priceToRetail?: number | null;
+  costPrice?: number | null;
+  rates?: PricingRate[] | null;
+}
+
+/**
+ * The picker's options: MRP, PTR and Cost (cost only when above 0, as before rate rules) with the
+ * batch's prices, then the batch's rates as the API sent them (rule rates keep their terms).
+ */
+export function buildRateOptions(source: RateOptionSource): RateOption[] {
+  const options: RateOption[] = [];
+  const system = (key: SystemRateKey, price: number) =>
+    options.push({
+      value: `system:${key}`,
+      rate: { name: SYSTEM_RATE_LABELS[key], price },
+      systemKey: key,
+    });
+  if (source.maximumRetailPrice != null) system('maximumRetailPrice', source.maximumRetailPrice);
+  if (source.priceToRetail != null) system('priceToRetail', source.priceToRetail);
+  if (source.costPrice != null && source.costPrice > 0) system('costPrice', source.costPrice);
+  for (const rate of source.rates ?? []) {
+    const name = rate?.name?.trim();
+    if (name && rate.price != null) {
+      options.push({ value: `rate:${name}`, rate: { ...rate, name }, systemKey: null });
+    }
+  }
+  return options;
+}
+
+/**
+ * What a Scan & Sell rate pick sends for the line. MRP / PTR / Cost send their system name
+ * (`priceToRetail` …): the cart puts that batch field on the line, per sale unit, with the batch's
+ * own sale disc and scheme. A rule rate (one with a base) sends its name: the cart puts the base,
+ * disc and scheme on the line. A legacy hand-typed rate keeps the price path.
  */
 export type RatePickRequest = { rateName: string } | { priceToRetail: number };
 
-export function ratePickRequest(rates: PricingRate[], name: string): RatePickRequest | null {
-  const rate = rates.find((r) => r.name === name);
-  if (!rate) return null;
-  return isRuleRate(rate) ? { rateName: rate.name } : { priceToRetail: rate.price };
+export function ratePickRequest(options: RateOption[], value: string): RatePickRequest | null {
+  const option = options.find((o) => o.value === value);
+  if (!option) return null;
+  if (option.systemKey) return { rateName: option.systemKey };
+  return isRuleRate(option.rate)
+    ? { rateName: option.rate.name }
+    : { priceToRetail: option.rate.price };
+}
+
+/**
+ * Each line's `appliedRateName` from the cart response, by inventory id. Lines whose response has
+ * no such field (an API without it) are left out, so the picker can fall back for them.
+ */
+export function appliedRateNamesByLine(
+  items: readonly CheckoutItemResponse[] | null | undefined,
+): Record<string, string | null> {
+  const out: Record<string, string | null> = {};
+  for (const item of items ?? []) {
+    if (item.inventoryId && item.appliedRateName !== undefined) {
+      out[item.inventoryId] = item.appliedRateName;
+    }
+  }
+  return out;
 }
 
 /**
@@ -47,23 +120,36 @@ export function saleDiscountToSend(
 }
 
 /**
- * Which option the picker shows for a line. A picked rule rate is shown by name (the line carries
- * its base price, not its per-unit figure); otherwise a system or legacy option whose price is
- * the line's. Rule rates are never matched by price.
+ * Which option the picker shows for a line. The cart's `appliedRateName` decides when the API
+ * sent it: a system key shows MRP / PTR / Cost, a rate name shows that rate. Without it (an older
+ * API) a rule rate picked on this page is shown by name. Otherwise a system or legacy option
+ * whose price is the line's; rule rates are never matched by price (the line carries the base).
  */
-export function selectedRateName(
-  rates: PricingRate[],
+export function selectedRateValue(
+  options: RateOption[],
   linePrice: number,
-  pickedName: string | undefined,
+  appliedRateName: string | null | undefined,
+  pickedName?: string,
 ): string | undefined {
-  if (pickedName && rates.some((r) => r.name === pickedName && isRuleRate(r))) {
-    return pickedName;
+  if (appliedRateName) {
+    const applied = options.find((o) =>
+      o.systemKey ? o.systemKey === appliedRateName : o.rate.name === appliedRateName,
+    );
+    if (applied) return applied.value;
+  } else if (appliedRateName === undefined && pickedName) {
+    const picked = options.find(
+      (o) => !o.systemKey && o.rate.name === pickedName && isRuleRate(o.rate),
+    );
+    if (picked) return picked.value;
   }
-  return rates.find((r) => !isRuleRate(r) && Math.abs(r.price - linePrice) < 0.01)?.name;
+  return options.find(
+    (o) => (o.systemKey || !isRuleRate(o.rate)) && Math.abs(o.rate.price - linePrice) < 0.01,
+  )?.value;
 }
 
 /**
- * Keeps only the picked rule-rate names whose line is still in the cart, so a line that was
+ * Keeps only the picked rate names whose line is still in the cart (the fallback for an API
+ * without `appliedRateName`), so a line that was
  * removed, set to zero, checked out or left behind by a quotation switch does not carry its pick
  * into a later add of the same lot. Returns the same map when nothing is dropped.
  */
