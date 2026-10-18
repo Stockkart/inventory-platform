@@ -19,6 +19,7 @@ import {
 import { PrintBarcodeLabelsModal } from '../ui/PrintBarcodeLabelsModal';
 import { EntryRatePreview } from '../ui/rateRules';
 import { ratePreviewRequest } from '../lib/ratePreviewRequest';
+import { entryRateFlags } from '../lib/entryRateFlags';
 import { openLocalBarcodeLabelPrint } from '../lib/printBarcodeLabels';
 import { vendorsApi } from '@inventory-platform/user/vendors';
 import {
@@ -699,11 +700,13 @@ export function ProductEntryPage() {
   const isRetailPricing = shopCapabilities?.features?.retailPricing === true;
   // Cafe + retailer: cost + selling instead of PTS/PTR/MRP.
   const isCompactPriceUi = isSimplePricing || isRetailPricing;
-  // Cafe-only: hide schemes, item type, discount-applicable, rate tiers.
-  const showCommercialTerms = !isSimplePricing;
-  // Retailers see the rate tiers only when the shop has rate rules (a backend flag).
-  const hasRateRules = shopCapabilities?.features?.rateRules === true;
-  const showRateTiers = !isSimplePricing && (!isRetailPricing || hasRateRules);
+  // Cafe-only: hide schemes, item type, discount-applicable, rate tiers. Hand-typed rate tiers
+  // are distributor-only; any non-cafe shop with rate rules sees the generated rates instead.
+  const { showCommercialTerms, showRateTiers, showGeneratedRates } = entryRateFlags({
+    simplePricing: isSimplePricing,
+    retailPricing: isRetailPricing,
+    rateRules: shopCapabilities?.features?.rateRules === true,
+  });
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -4934,7 +4937,7 @@ export function ProductEntryPage() {
                             retailPricing={isRetailPricing}
                             showCommercialTerms={showCommercialTerms}
                             showRateTiers={showRateTiers}
-                            hasRateRules={hasRateRules}
+                            showGeneratedRates={showGeneratedRates}
                             costIncludesTax={purchaseTaxPreview?.taxTreatment === 'INCLUSIVE'}
                             index={index}
                             onToggle={() => handleToggleProduct(product.id)}
@@ -5753,10 +5756,10 @@ interface ProductAccordionProps {
   retailPricing: boolean;
   /** Sale/purchase schemes, item type, discount-applicable (retail + distributor). */
   showCommercialTerms: boolean;
-  /** Named rate tiers (distributors; retailers when the shop has rate rules). */
+  /** Hand-typed named rate tiers (distributor only). */
   showRateTiers: boolean;
-  /** Shop has rate rules: show the generated rates for the batch. */
-  hasRateRules: boolean;
+  /** Shop has rate rules: show the server's generated rates for the batch (read-only). */
+  showGeneratedRates: boolean;
   /** The bill's server-resolved tax treatment is INCLUSIVE, so cost carries GST. */
   costIncludesTax: boolean;
   index: number;
@@ -5801,7 +5804,7 @@ function ProductAccordion({
   retailPricing,
   showCommercialTerms,
   showRateTiers,
-  hasRateRules,
+  showGeneratedRates,
   costIncludesTax,
   index,
   onToggle,
@@ -6660,12 +6663,13 @@ function ProductAccordion({
             </Box>
           )}
 
+          {showGeneratedRates ? (
+            <EntryRatePreview request={ratePreviewRequest(product, costIncludesTax)} />
+          ) : null}
+
           {/* Rates (optional) - custom pricing tiers */}
           {showRateTiers && (
             <>
-              {hasRateRules ? (
-                <EntryRatePreview request={ratePreviewRequest(product, costIncludesTax)} />
-              ) : null}
               <Box className={accordionStyles.ratesSection}>
                 <Box className={accordionStyles.ratesHeader}>
                   <Text as="span" className={accordionStyles.ratesTitle}>

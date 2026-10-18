@@ -14,6 +14,7 @@ import {
 import type { RateRuleScheme } from '../../model/rateRules.types';
 import { SchemeInput, type SchemeTypeCart } from '../scheme';
 import { isRuleRate, rateGstLabel } from '../../lib/pricingRate';
+import { skippedReasonText } from './rateRulesDraft';
 
 /** A rule that produced no rate, or a kept override left below cost. Server-owned shape. */
 export interface SkippedRateRule {
@@ -42,11 +43,6 @@ export interface GeneratedRatesListProps {
 }
 
 export { isRuleRate };
-
-/** "BELOW_COST" -> "below cost". Wording only. */
-function reasonText(reason: string): string {
-  return reason.replace(/_/g, ' ').toLowerCase();
-}
 
 function RateTermsEditor({
   rate,
@@ -195,14 +191,14 @@ export function GeneratedRatesList({
       {skipped.map((item) => (
         <Box key={`skipped-${item.name}`} as="li" py="xs">
           <Text as="span" variant="caption" color="secondary">
-            {item.name} not generated: {reasonText(item.reason)}
+            {item.name} not generated: {skippedReasonText(item.reason)}
           </Text>
         </Box>
       ))}
       {warnings.map((item) => (
         <Box key={`warning-${item.name}`} as="li" py="xs">
           <Text as="span" variant="caption" color="danger">
-            {item.name} is {reasonText(item.reason)}
+            {item.name} is {skippedReasonText(item.reason)}
           </Text>
         </Box>
       ))}

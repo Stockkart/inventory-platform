@@ -30,6 +30,7 @@ import type {
   RateRulesResponse,
 } from '../../model/rateRules.types';
 import { SchemeInput, type SchemeTypeCart } from '../scheme';
+import { GeneratedRatesList } from './GeneratedRatesList';
 import {
   baseLabel,
   draftFromRules,
@@ -99,7 +100,11 @@ interface SampleRowsProps {
   enabled: boolean;
 }
 
-/** Sample rates exactly as the preview endpoint returns them. */
+function noop() {
+  /* sample rates are read-only */
+}
+
+/** Sample rates exactly as the preview endpoint returns them, in the shared rates list. */
 function SampleRows({ request, enabled }: SampleRowsProps) {
   const query = useRateRulesPreviewQuery(request, enabled);
   if (!enabled) return null;
@@ -117,44 +122,13 @@ function SampleRows({ request, enabled }: SampleRowsProps) {
           Could not load the sample rates.
         </Alert>
       ) : null}
-      <Box
-        as="ul"
-        className={surfaceChrome.listPlain}
-        aria-label="Sample rates"
-        padding="none"
-        margin="none"
-      >
-        {query.data?.rates.map((rate) => (
-          <Box
-            key={rate.name}
-            as="li"
-            display="flex"
-            align="center"
-            justify="between"
-            gap="sm"
-            py="xs"
-          >
-            <Stack gap="xs">
-              <Text as="span">{rate.name}</Text>
-              {rate.termsText ? (
-                <Text as="span" variant="caption" color="secondary">
-                  {rate.termsText}
-                </Text>
-              ) : null}
-            </Stack>
-            <Text as="span" className={surfaceChrome.tabularNums}>
-              {rate.price.toFixed(2)}
-            </Text>
-          </Box>
-        ))}
-        {query.data?.skipped.map((skipped) => (
-          <Box key={skipped.name} as="li" py="xs">
-            <Text as="span" variant="caption" color="secondary">
-              {skipped.name} not generated: {skipped.reason}
-            </Text>
-          </Box>
-        ))}
-      </Box>
+      <GeneratedRatesList
+        rates={query.data?.rates ?? []}
+        skipped={query.data?.skipped ?? []}
+        canEdit={false}
+        onEditTerms={noop}
+        onReset={noop}
+      />
     </Box>
   );
 }
@@ -485,8 +459,8 @@ function RateRulesEditor({ data }: { data: RateRulesResponse }) {
 }
 
 /**
- * Profile → "Rate rules" tab. Renders nothing when the shop has no rate rules
- * feature; read-only when the user lacks the edit grant. The base picker follows
+ * Profile → "Rate rules" tab. Renders nothing when rate rules are disabled for the
+ * shop's vertical (`enabled: false`, e.g. cafe); read-only when the user lacks the edit grant. The base picker follows
  * the API's `baseOptions`, never the shop type.
  */
 export function RateRulesSection() {

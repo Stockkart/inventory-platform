@@ -93,3 +93,8 @@ export function schemeText(scheme: RateRuleScheme | null | undefined): string {
   }
   return '';
 }
+
+/** A skipped or warned rate's server reason in words, e.g. "BELOW_COST" -> "below cost". Wording only. */
+export function skippedReasonText(reason: string): string {
+  return reason.replace(/_/g, ' ').toLowerCase();
+}

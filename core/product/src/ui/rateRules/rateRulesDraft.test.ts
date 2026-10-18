@@ -5,6 +5,7 @@ import {
   draftsEqual,
   moveRule,
   schemeText,
+  skippedReasonText,
   toPreviewRules,
   toRules,
 } from './rateRulesDraft';
@@ -53,5 +54,10 @@ describe('rateRulesDraft', () => {
     );
     expect(schemeText({ schemeType: 'PERCENTAGE', schemePercentage: 5 })).toBe('5%');
     expect(schemeText(null)).toBe('');
+  });
+
+  it('skippedReasonTextIsWords', () => {
+    expect(skippedReasonText('BELOW_COST')).toBe('below cost');
+    expect(skippedReasonText('NO_BASE')).toBe('no base');
   });
 });

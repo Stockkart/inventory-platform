@@ -108,10 +108,26 @@ Product Search and Scan & Sell call `POST /inventory/search` (`inventoryApi.sear
   `baseOptions` (the picker is hidden when there is one), never from the shop type. The sample
   rows show what `POST /rate-rules/preview` returns for the draft, price and `termsText` as sent;
   the screen does no rate, discount, scheme or tax arithmetic. A rule that cannot be generated
-  appears as "not generated" with the server's reason.
+  appears as "not generated" with the server's reason in words (`skippedReasonText`).
 - **Access.** The section renders nothing when `enabled` is false and is read-only (no inputs, no
   Save) when `canEdit` is false. The owner grants editing per person under Access Control
   ("Edit rate rules and rates", `rateRulesEdit`).
+
+### Rate rules display (`ui/rateRules/`)
+
+`GeneratedRatesList` shows rule-generated rates exactly as the API returns them: price, `termsText`, a GST label (`INCLUSIVE` "incl. GST", `EXCLUSIVE` "+ GST"), an "overridden" marker when `manual` is set, and rules skipped or left below cost (`BELOW_COST` is worded "below cost"). Given `canEdit` (the `rateRulesEdit` grant) a rule rate offers its discount % and scheme (`SchemeInput`), never its price, plus "Reset to rule" on an overridden rate. Nothing here works out a price.
+
+- `EntryRatePreview` is the Product Entry block: it fetches the preview itself (debounced `useRateRulesPreviewQuery` on the typed PTR / MRP / selling price / cost / GST, plus `costPriceIncludesTax` from the bill's server-resolved tax treatment; `lib/ratePreviewRequest.ts` builds the request) and shows the result read-only. Overrides cannot clear a discount or scheme (the server treats blank as unchanged), so the editor restores the saved value and points to "Reset to rule". Term overrides exist only on a saved batch, so a new batch has no edit action (the backend ignores terms on create).
+- On Product Entry the hand-typed "Rates (optional)" editor and "Default rate" select stay distributor-only. Any non-cafe shop whose backend flag `features.rateRules` is true (never by counting rules), retailers included, sees `EntryRatePreview` instead (`lib/entryRateFlags.ts`).
+- `core/pricing` imports `GeneratedRatesList` from the barrel for the price edit page; the Profile → Rate rules sample rows use it read-only too.
+
+### Scan & Sell rate picker (`ui/scanSell/`, `lib/scanSellRatePick.ts`)
+
+- `RatePicker` is the rate dropdown on each cart line (list and grid views). Options are MRP / PTR / Cost and the batch's rates, labelled `Rate-A · 83.64/unit + GST · PTR less 8%, 10+1` from the API's `price`, `gstMode` and `termsText`; a legacy rate or system option shows name and price only. Formatting only (`toFixed(2)`), no arithmetic.
+- **Picking a rule rate sends `{ id, unit, rateName }` and nothing else.** The cart puts the rate's base price, disc and scheme on the line and the page takes all three from the response (`ratePickRequest`). The line's typed disc is dropped (`clearDiscountOverride`) so the next quantity sync does not resend it over the rate's. The picker then shows the rate by name, since the line carries the base (PTR 100), not the per-unit figure (83.64); a later price, disc, scheme or unit edit returns it to price matching.
+- MRP / PTR / Cost and legacy rates keep the price path (`priceToRetail`); a system name is never sent as `rateName` (the API rejects it). `rateName` is never sent with a unit change (the API returns 400).
+- **First add of a lot** sends only a disc the user typed, never the batch's own (`saleDiscountToSend`), and no scheme, so the backend applies the batch's default rule rate (or, without one, the batch's own disc and scheme, as before). Lines already in the cart keep resending their disc as today.
+- Cart errors (400 / 404, such as an unknown rate, a unit switch under one whole unit or a lot missing from the cart) show the server's message in a toast and reload the cart.
 
 ### Barcode sticker printing (`lib/renderBarcodeLabelsHtml.ts`, `ui/labelLayout/`)
 
@@ -160,19 +176,3 @@ Prefer `productChrome` / `registrationChrome` from ui-kit for Scan Sell, carts, 
 - `@inventory-platform/schema` — vertical field inputs
 - `@inventory-platform/plugin-cafe` — cafe sell surface overlay
 - `@inventory-platform/pricing` — price edit
-
-### Rate rules display (`ui/rateRules/`)
-
-`GeneratedRatesList` shows rule-generated rates exactly as the API returns them: price, `termsText`, a GST label (`INCLUSIVE` "incl. GST", `EXCLUSIVE` "+ GST"), an "overridden" marker when `manual` is set, and rules skipped or left below cost (`BELOW_COST` is worded "below cost"). Given `canEdit` (the `rateRulesEdit` grant) a rule rate offers its discount % and scheme (`SchemeInput`), never its price, plus "Reset to rule" on an overridden rate. Nothing here works out a price.
-
-- `EntryRatePreview` is the Product Entry block: it fetches the preview itself (debounced `useRateRulesPreviewQuery` on the typed PTR / MRP / selling price / cost / GST, plus `costPriceIncludesTax` from the bill's server-resolved tax treatment; `lib/ratePreviewRequest.ts` builds the request) and shows the result read-only. Overrides cannot clear a discount or scheme (the server treats blank as unchanged), so the editor restores the saved value and points to "Reset to rule". Term overrides exist only on a saved batch, so a new batch has no edit action (the backend ignores terms on create).
-- Retailer shops show the rate tiers on Product Entry only when the backend flag `features.rateRules` is true, never by counting rules.
-- `core/pricing` imports `GeneratedRatesList` from the barrel for the price edit page.
-
-### Scan & Sell rate picker (`ui/scanSell/`, `lib/scanSellRatePick.ts`)
-
-- `RatePicker` is the rate dropdown on each cart line (list and grid views). Options are MRP / PTR / Cost and the batch's rates, labelled `Rate-A · 83.64/unit + GST · PTR less 8%, 10+1` from the API's `price`, `gstMode` and `termsText`; a legacy rate or system option shows name and price only. Formatting only (`toFixed(2)`), no arithmetic.
-- **Picking a rule rate sends `{ id, unit, rateName }` and nothing else.** The cart puts the rate's base price, disc and scheme on the line and the page takes all three from the response (`ratePickRequest`). The line's typed disc is dropped (`clearDiscountOverride`) so the next quantity sync does not resend it over the rate's. The picker then shows the rate by name, since the line carries the base (PTR 100), not the per-unit figure (83.64); a later price, disc, scheme or unit edit returns it to price matching.
-- MRP / PTR / Cost and legacy rates keep the price path (`priceToRetail`); a system name is never sent as `rateName` (the API rejects it). `rateName` is never sent with a unit change (the API returns 400).
-- **First add of a lot** sends only a disc the user typed, never the batch's own (`saleDiscountToSend`), and no scheme, so the backend applies the batch's default rule rate (or, without one, the batch's own disc and scheme, as before). Lines already in the cart keep resending their disc as today.
-- Cart errors (400 / 404, such as an unknown rate, a unit switch under one whole unit or a lot missing from the cart) show the server's message in a toast and reload the cart.
