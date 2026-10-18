@@ -336,7 +336,10 @@ function ReadOnlyRules({ rules }: ReadOnlyRulesProps) {
 
 interface RateRulesEditorProps {
   data: RateRulesResponse;
-  /** Refetches the saved rules; resolves to them, or undefined when the reload failed. */
+  /**
+   * Refetches the saved rules. Resolves to the fresh rules, or to undefined when the refetch
+   * failed (TanStack's refetch resolves with the old cached data on error, so it is checked).
+   */
   onReload: () => Promise<RateRulesResponse | undefined>;
 }
 
@@ -402,7 +405,15 @@ function RateRulesEditor({ data, onReload }: RateRulesEditorProps) {
           // Someone else saved first: show their rules, keeping the server's message on screen.
           if (isApiError(err) && err.status === 409) {
             void onReload().then((fresh) => {
-              if (!fresh) return;
+              if (!fresh) {
+                // Keep the user's edits: resetting to the cached rules would show stale ones.
+                setSaveError(
+                  `${saveErrorMessage(
+                    err,
+                  )} The latest rules could not be loaded; your changes are kept.`,
+                );
+                return;
+              }
               const next = draftFromRules(fresh.rules);
               setSaved(next);
               setDraft(next);
@@ -513,12 +524,14 @@ function RateRulesEditor({ data, onReload }: RateRulesEditorProps) {
  * shop's vertical (`enabled: false`, e.g. cafe; the registry also hides the tab); read-only
  * when the user lacks the edit grant. The base picker follows the API's `baseOptions`, never
  * the shop type. A save refused with 403 reloads the rules (now read-only); one refused with
- * 409 shows the server's message and loads the rules someone else saved.
+ * 409 shows the server's message and loads the rules someone else saved (if that reload fails,
+ * the draft is kept and the error says so).
  */
 export function RateRulesSection() {
   const query = useRateRulesQuery();
 
-  if (query.isError) {
+  // A failed refetch keeps the editor (and any unsaved edits) on the rules already loaded.
+  if (query.isError && !query.data) {
     return (
       <Box className={surfaceChrome.invoiceSettingsCard}>
         <SectionHeader />
@@ -550,7 +563,10 @@ export function RateRulesSection() {
 
   if (!query.data.enabled) return null;
 
-  const reload = async () => (await query.refetch()).data;
+  const reload = async () => {
+    const result = await query.refetch();
+    return result.isError ? undefined : result.data;
+  };
 
   return <RateRulesEditor data={query.data} onReload={reload} />;
 }
