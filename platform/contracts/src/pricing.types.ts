@@ -16,6 +16,12 @@ export interface PricingRate {
   termsText?: string | null;
 }
 
+/** A rate a save left below cost or did not generate; `reason` is a code such as BELOW_COST. */
+export interface PricingRateWarning {
+  name: string;
+  reason: string;
+}
+
 export interface PricingResponse {
   id: string;
   shopId?: string;
@@ -41,6 +47,8 @@ export interface PricingResponse {
   } | null;
   sgst?: string | null;
   cgst?: string | null;
+  /** Set by PATCH only: rates left below cost by this save. */
+  warnings?: PricingRateWarning[] | null;
   createdAt?: string;
   updatedAt?: string;
 }

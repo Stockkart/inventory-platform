@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router';
 import { pricingApi } from '../api/pricing.api';
-import { useNotify } from '@inventory-platform/session';
-import type { PricingRate } from '@inventory-platform/pricing/types';
+import { useAuthStore, useNotify, useShopAccessStore } from '@inventory-platform/session';
+import { GeneratedRatesList, isRuleRate, type RateTermsEdit } from '@inventory-platform/product';
+import type { PricingRate, PricingRateWarning } from '@inventory-platform/pricing/types';
 import {
   Alert,
   Box,
@@ -71,10 +72,18 @@ export function PriceEditPage() {
   const navigate = useNavigate();
   const state = location.state as LocationState | null;
   const { success: notifySuccess, error: notifyError } = useNotify;
+  const canEditRateRules = useShopAccessStore((s) => {
+    const shopId = useAuthStore.getState().user?.shopId;
+    return (shopId ? s.byShopId[shopId]?.modules?.rateRulesEdit : false) ?? false;
+  });
 
   const [priceToRetail, setPriceToRetail] = useState<string>('');
   const [maximumRetailPrice, setMaximumRetailPrice] = useState<string>('');
   const [rates, setRates] = useState<PricingRate[]>([]);
+  /** Rates as last loaded or saved; a reset puts a rate's terms back to these. */
+  const [savedRates, setSavedRates] = useState<PricingRate[]>([]);
+  const [resetNames, setResetNames] = useState<string[]>([]);
+  const [warnings, setWarnings] = useState<PricingRateWarning[]>([]);
   const [defaultRate, setDefaultRate] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -100,6 +109,7 @@ export function PriceEditPage() {
           setMaximumRetailPrice(String(pricing.maximumRetailPrice));
         }
         setRates(pricing.rates ?? []);
+        setSavedRates(pricing.rates ?? []);
         setDefaultRate(normalizeDefaultRate(pricing.defaultRate ?? ''));
       })
       .catch(() => {
@@ -122,8 +132,9 @@ export function PriceEditPage() {
   }, [pricingId]);
 
   const defaultRateOptions = useMemo((): SelectOptionDef[] => {
+    // A rate based on selling price cannot be the default: the server falls back and resets SP.
     const custom = rates
-      .filter((r) => r.name.trim())
+      .filter((r) => r.name.trim() && r.base !== 'sellingPrice')
       .map((r) => ({ value: r.name, label: r.name }));
     return [...SYSTEM_DEFAULT_RATE_OPTIONS, ...custom];
   }, [rates]);
@@ -142,6 +153,28 @@ export function PriceEditPage() {
       }
       return next;
     });
+  };
+
+  const editRateTerms = (name: string, terms: RateTermsEdit) => {
+    setRates((prev) =>
+      prev.map((r) =>
+        r.name === name
+          ? { ...r, discountPercent: terms.discountPercent, scheme: terms.scheme }
+          : r,
+      ),
+    );
+  };
+
+  const resetRateToRule = (name: string) => {
+    const saved = savedRates.find((r) => r.name === name);
+    setRates((prev) =>
+      prev.map((r) =>
+        r.name === name
+          ? { ...r, discountPercent: saved?.discountPercent, scheme: saved?.scheme }
+          : r,
+      ),
+    );
+    setResetNames((prev) => (prev.includes(name) ? prev : [...prev, name]));
   };
 
   const removeRate = (index: number) => {
@@ -192,20 +225,29 @@ export function PriceEditPage() {
       maximumRetailPrice?: number;
       rates?: PricingRate[];
       defaultRate?: string;
+      resetRates?: string[];
     } = {};
     if (ptr !== undefined) payload.priceToRetail = ptr;
     if (mrp !== undefined) payload.maximumRetailPrice = mrp;
     if (hasRates || loadedFromApi) {
       payload.rates = rates
         .filter((r) => r.name.trim())
-        .map((r) => ({ name: r.name.trim(), price: r.price }));
+        // A rule rate goes back as it is (current price, new terms); the server reprices it.
+        .map((r) => (isRuleRate(r) ? r : { name: r.name.trim(), price: r.price }));
     }
     if (defaultRate.trim()) payload.defaultRate = defaultRate.trim();
+    if (resetNames.length > 0) payload.resetRates = resetNames;
 
     setSaving(true);
     setError(null);
     try {
-      await pricingApi.update(pricingId, payload);
+      const saved = await pricingApi.update(pricingId, payload);
+      if (saved.rates) {
+        setRates(saved.rates);
+        setSavedRates(saved.rates);
+      }
+      setResetNames([]);
+      setWarnings(saved.warnings ?? []);
       notifySuccess('Pricing updated successfully');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to update pricing';
@@ -239,6 +281,8 @@ export function PriceEditPage() {
     );
   }
 
+  const ruleRates = rates.filter(isRuleRate);
+  const legacyRateCount = rates.length - ruleRates.length;
   const productTitle = state?.productName?.trim() || null;
 
   return (
@@ -301,46 +345,59 @@ export function PriceEditPage() {
                 Saving replaces the full rate list—keep every rate you still need.
               </Text>
 
+              {ruleRates.length > 0 ? (
+                <GeneratedRatesList
+                  rates={ruleRates}
+                  warnings={warnings}
+                  canEdit={canEditRateRules}
+                  pendingReset={resetNames}
+                  onEditTerms={editRateTerms}
+                  onReset={resetRateToRule}
+                />
+              ) : null}
+
               {rates.length === 0 ? (
                 <Box className={surfaceChrome.priceEditEmptyRates}>
                   No custom rates yet. Add one if this product uses named price tiers.
                 </Box>
-              ) : (
+              ) : legacyRateCount === 0 ? null : (
                 <Stack gap="sm">
                   <Box className={surfaceChrome.priceEditRateHead} aria-hidden>
                     <Text as="span">Name</Text>
                     <Text as="span">Price</Text>
                     <Box as="span" />
                   </Box>
-                  {rates.map((rate, i) => (
-                    <Box key={i} className={surfaceChrome.priceEditRateRow}>
-                      <Input
-                        type="text"
-                        value={rate.name}
-                        onChange={(e) => updateRate(i, 'name', e.target.value)}
-                        placeholder="e.g. RATE-A"
-                        aria-label={`Rate ${i + 1} name`}
-                      />
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={rate.price || ''}
-                        onChange={(e) => updateRate(i, 'price', e.target.value)}
-                        className={surfaceChrome.priceEditRatePrice}
-                        placeholder="0.00"
-                        aria-label={`Rate ${i + 1} price`}
-                      />
-                      <IconButton
-                        type="button"
-                        size="sm"
-                        onClick={() => removeRate(i)}
-                        label={`Remove rate ${rate.name || i + 1}`}
-                      >
-                        ×
-                      </IconButton>
-                    </Box>
-                  ))}
+                  {rates.map((rate, i) =>
+                    isRuleRate(rate) ? null : (
+                      <Box key={i} className={surfaceChrome.priceEditRateRow}>
+                        <Input
+                          type="text"
+                          value={rate.name}
+                          onChange={(e) => updateRate(i, 'name', e.target.value)}
+                          placeholder="e.g. RATE-A"
+                          aria-label={`Rate ${i + 1} name`}
+                        />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={rate.price || ''}
+                          onChange={(e) => updateRate(i, 'price', e.target.value)}
+                          className={surfaceChrome.priceEditRatePrice}
+                          placeholder="0.00"
+                          aria-label={`Rate ${i + 1} price`}
+                        />
+                        <IconButton
+                          type="button"
+                          size="sm"
+                          onClick={() => removeRate(i)}
+                          label={`Remove rate ${rate.name || i + 1}`}
+                        >
+                          ×
+                        </IconButton>
+                      </Box>
+                    ),
+                  )}
                 </Stack>
               )}
             </Box>

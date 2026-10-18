@@ -160,3 +160,11 @@ Prefer `productChrome` / `registrationChrome` from ui-kit for Scan Sell, carts, 
 - `@inventory-platform/schema` — vertical field inputs
 - `@inventory-platform/plugin-cafe` — cafe sell surface overlay
 - `@inventory-platform/pricing` — price edit
+
+### Rate rules display (`ui/rateRules/`)
+
+`GeneratedRatesList` shows rule-generated rates exactly as the API returns them: price, `termsText`, a GST label (`INCLUSIVE` "incl. GST", `EXCLUSIVE` "+ GST"), an "overridden" marker when `manual` is set, and rules skipped or left below cost (`BELOW_COST` is worded "below cost"). Given `canEdit` (the `rateRulesEdit` grant) a rule rate offers its discount % and scheme (`SchemeInput`), never its price, plus "Reset to rule" on an overridden rate. Nothing here works out a price.
+
+- `EntryRatePreview` is the Product Entry block: it debounces the typed PTR / MRP / selling price / cost / GST, asks `useRateRulesPreviewQuery`, and shows the result read-only. Term overrides exist only on a saved batch, so a new batch has no edit action (the backend ignores terms on create).
+- Retailer shops show the rate tiers on Product Entry only when the backend flag `features.rateRules` is true, never by counting rules.
+- `core/pricing` imports `GeneratedRatesList` from the barrel for the price edit page.

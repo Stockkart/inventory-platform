@@ -17,6 +17,8 @@ import {
   type ProductEntryDraftScope,
 } from '../lib/productEntryDraft';
 import { PrintBarcodeLabelsModal } from '../ui/PrintBarcodeLabelsModal';
+import { EntryRatePreview } from '../ui/rateRules';
+import type { RateRulesPreviewRequest } from '../model/rateRules.types';
 import { openLocalBarcodeLabelPrint } from '../lib/printBarcodeLabels';
 import { vendorsApi } from '@inventory-platform/user/vendors';
 import {
@@ -368,6 +370,35 @@ interface ProductFormData
   thresholdCount?: number | null;
 }
 
+/**
+ * Raw form values for the rate preview. The server works out every rate; this only reads the
+ * numbers the user typed and passes the purchase terms through.
+ */
+function ratePreviewRequest(product: ProductFormData): RateRulesPreviewRequest {
+  const percentage = (product.purchaseSchemeType ?? 'FIXED_UNITS') === 'PERCENTAGE';
+  const hasScheme = percentage
+    ? product.purchaseSchemePercentage != null
+    : product.purchaseSchemePayFor != null || product.purchaseSchemeFree != null;
+  return {
+    sellingPrice: numericProductMoney(product.sellingPrice),
+    priceToRetail: numericProductMoney(product.priceToRetail),
+    maximumRetailPrice: numericProductMoney(product.maximumRetailPrice),
+    costPrice: numericProductMoney(product.costPrice),
+    purchaseAdditionalDiscount: product.purchaseAdditionalDiscount ?? null,
+    purchaseScheme: hasScheme
+      ? percentage
+        ? { schemeType: 'PERCENTAGE', schemePercentage: product.purchaseSchemePercentage }
+        : {
+            schemeType: 'FIXED_UNITS',
+            schemePayFor: product.purchaseSchemePayFor,
+            schemeFree: product.purchaseSchemeFree,
+          }
+      : null,
+    sgst: product.sgst?.trim() || null,
+    cgst: product.cgst?.trim() || null,
+  };
+}
+
 /** FREE_QUANTITY is UI-only; the API persists it as FIXED_UNITS (same as Register). */
 function toApiPurchaseSchemeType(t: PurchaseSchemeInputType | null | undefined): SchemeType | null {
   if (t == null) return null;
@@ -699,7 +730,9 @@ export function ProductEntryPage() {
   const isCompactPriceUi = isSimplePricing || isRetailPricing;
   // Cafe-only: hide schemes, item type, discount-applicable, rate tiers.
   const showCommercialTerms = !isSimplePricing;
-  const showRateTiers = !isSimplePricing && !isRetailPricing;
+  // Retailers see the rate tiers only when the shop has rate rules (a backend flag).
+  const hasRateRules = shopCapabilities?.features?.rateRules === true;
+  const showRateTiers = !isSimplePricing && (!isRetailPricing || hasRateRules);
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -4930,6 +4963,7 @@ export function ProductEntryPage() {
                             retailPricing={isRetailPricing}
                             showCommercialTerms={showCommercialTerms}
                             showRateTiers={showRateTiers}
+                            hasRateRules={hasRateRules}
                             index={index}
                             onToggle={() => handleToggleProduct(product.id)}
                             onRemove={() => handleRemoveProduct(product.id)}
@@ -5747,8 +5781,10 @@ interface ProductAccordionProps {
   retailPricing: boolean;
   /** Sale/purchase schemes, item type, discount-applicable (retail + distributor). */
   showCommercialTerms: boolean;
-  /** Named rate tiers (distributor only). */
+  /** Named rate tiers (distributors; retailers when the shop has rate rules). */
   showRateTiers: boolean;
+  /** Shop has rate rules: show the generated rates for the batch. */
+  hasRateRules: boolean;
   index: number;
   onToggle: () => void;
   onRemove: () => void;
@@ -5791,6 +5827,7 @@ function ProductAccordion({
   retailPricing,
   showCommercialTerms,
   showRateTiers,
+  hasRateRules,
   index,
   onToggle,
   onRemove,
@@ -6651,6 +6688,7 @@ function ProductAccordion({
           {/* Rates (optional) - custom pricing tiers */}
           {showRateTiers && (
             <>
+              {hasRateRules ? <EntryRatePreview request={ratePreviewRequest(product)} /> : null}
               <Box className={accordionStyles.ratesSection}>
                 <Box className={accordionStyles.ratesHeader}>
                   <Text as="span" className={accordionStyles.ratesTitle}>

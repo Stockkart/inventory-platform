@@ -34,7 +34,14 @@ export * from './queries/hooks';
 export * from './queries/labelLayout.queries';
 export * from './queries/rateRules.queries';
 export { BarcodeLabelLayoutSection } from './ui/labelLayout/BarcodeLabelLayoutSection';
-export { RateRulesSection } from './ui/rateRules';
+export {
+  RateRulesSection,
+  GeneratedRatesList,
+  isRuleRate,
+  type GeneratedRatesListProps,
+  type RateTermsEdit,
+  type SkippedRateRule,
+} from './ui/rateRules';
 export {
   productEntryRoutes,
   importRoutes,
