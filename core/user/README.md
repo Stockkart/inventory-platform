@@ -43,3 +43,7 @@ Auth / onboarding: `journeyChrome` from ui-kit. Profile and lists: `surfaceChrom
 ### Vendor form: GSTIN first
 
 `VendorEditForm` starts with the GSTIN. As soon as 15 valid characters are typed (offline check in `model/gstin.ts`, same algorithm as the backend) it calls `GET /taxation/gstin/{gstin}` through `useGstinLookupQuery`, shows the registration status, and fills the empty fields (company name, address, city, state, pincode) from the record — never overwriting what was typed; "Use these details" does. The State dropdown (`model/gst-states.ts`) is locked to the GSTIN's state; without a GSTIN it is required, because the backend needs a valid GSTIN or `postalAddress.stateCode` to decide IGST vs CGST/SGST (`vendorIsPlaceable`).
+
+### Access control: "Edit rate rules and rates"
+
+Each member's module toggles include `rateRulesEdit` ("Edit rate rules and rates"), next to the other module grants. The Access control page shows it as a toggle; it lets that member edit the shop's rate rules and change a rule rate's discount % or scheme (the server enforces it). `lib/memberModules.ts` (`modulesFromMember`) builds the toggle state from a member: the stored grant where one is set, otherwise the effective access the server reports. Add any new module permission there as well as to the toggle list.
