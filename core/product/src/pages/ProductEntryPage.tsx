@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router';
 import { QRCodeSVG } from 'qrcode.react';
 import { uploadApi } from '@inventory-platform/product/api';
@@ -97,11 +98,17 @@ import {
 } from '@inventory-platform/session';
 import type { VerticalSchemaFieldDef } from '@inventory-platform/schema/types';
 import {
-  VerticalRegistrationGridCells,
-  VerticalRegistrationGridCompanyCell,
-  VerticalRegistrationGridCompanyHeader,
-  VerticalRegistrationGridHeaders,
+  VerticalRegistrationGridCell,
+  findDegreeField,
+  gridRegistrationFields,
 } from '../vertical/VerticalRegistrationGridCells';
+import {
+  ShopLayoutColumnsBar,
+  ShopLayoutGrid,
+  type ShopLayoutGridColumn,
+} from '../ui/shopLayoutGrid/ShopLayoutGrid';
+import { useGridLayoutQuery } from '../queries/gridLayout.queries';
+import { GRID_IDS } from '../model/gridLayout.types';
 import {
   PackagingUnitInput,
   isSelfPackUnit,
@@ -128,12 +135,7 @@ import {
   Select,
   Spinner,
   Stack,
-  Table,
-  TableBody,
   TableCell,
-  TableHead,
-  TableHeaderCell,
-  TableRow,
   Text,
   Textarea,
   denseDataGrid,
@@ -686,6 +688,10 @@ function ProductsRegistrationSummaryBar({ summary }: { summary: ProductsRegistra
   );
 }
 
+/** Product entry's layout drives both views, so the drawer says so. */
+const PRODUCT_ENTRY_DRAWER_DESCRIPTION =
+  'Changes apply to everyone in this shop, in list and grid view. Columns with a lock are required and cannot be hidden.';
+
 export function ProductEntryPage() {
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null) ?? apiClient.getShopId();
@@ -1175,6 +1181,17 @@ export function ProductEntryPage() {
     sellDirectField,
     otherFields: verticalRegistrationFields,
   } = useMemo(() => partitionRegistrationFields(registrationFields), [registrationFields]);
+
+  /** The shop's shared column layout: grid widths/order, and which optional fields both views hide. */
+  const gridLayoutQuery = useGridLayoutQuery(GRID_IDS.PRODUCT_ENTRY);
+  const hiddenLayoutKeys = useMemo(
+    () => new Set((gridLayoutQuery.data?.columns ?? []).filter((c) => c.hidden).map((c) => c.key)),
+    [gridLayoutQuery.data],
+  );
+  const isHiddenInShopLayout = useCallback(
+    (columnKey: string) => hiddenLayoutKeys.has(columnKey),
+    [hiddenLayoutKeys],
+  );
 
   /**
    * The rows bulk stock-in sends, built once for both stock-in and the bill preview so the server
@@ -2727,43 +2744,39 @@ export function ProductEntryPage() {
           return;
         }
 
-        if (productViewMode !== 'grid') {
-          if (!product.baseUnit?.trim()) {
-            notifyError(
-              `Product "${
-                product.name || 'Unnamed'
-              }": packaging unit is required (e.g. 1 × 50 TBS)`,
-            );
-            setIsLoading(false);
-            return;
-          }
-          const baseUqcForValidation = resolvePackagingUqc(product.baseUnit, packagingUnits);
-          if (!baseUqcForValidation) {
-            notifyError(
-              `Product "${product.name || 'Unnamed'}": select a valid packaging unit from the list`,
-            );
-            setIsLoading(false);
-            return;
-          }
-          const unitDef = packagingUnits.find((u) => u.uqc === baseUqcForValidation);
-          const displayFactor = packagingFactorForDisplay(
-            product.unitsPerPack ?? product.conversionFactor,
+        if (!product.baseUnit?.trim()) {
+          notifyError(
+            `Product "${product.name || 'Unnamed'}": packaging unit is required (e.g. 1 × 50 TBS)`,
           );
-          const normalizedUnitsPerPack = packagingFactorToUnitsPerPack(displayFactor, unitDef);
-          if (
-            unitDef?.allowsUnitsPerPack &&
-            unitDef.sellUnitRule === 'PACK_ONLY' &&
-            !isSelfPackUnit(baseUqcForValidation, packagingUnits) &&
-            normalizedUnitsPerPack <= 0
-          ) {
-            notifyError(
-              `Product "${product.name || 'Unnamed'}": enter pack size after 1 × (e.g. 1 × 100 ${
-                unitDef.uqc
-              })`,
-            );
-            setIsLoading(false);
-            return;
-          }
+          setIsLoading(false);
+          return;
+        }
+        const baseUqcForValidation = resolvePackagingUqc(product.baseUnit, packagingUnits);
+        if (!baseUqcForValidation) {
+          notifyError(
+            `Product "${product.name || 'Unnamed'}": select a valid packaging unit from the list`,
+          );
+          setIsLoading(false);
+          return;
+        }
+        const unitDef = packagingUnits.find((u) => u.uqc === baseUqcForValidation);
+        const displayFactor = packagingFactorForDisplay(
+          product.unitsPerPack ?? product.conversionFactor,
+        );
+        const normalizedUnitsPerPack = packagingFactorToUnitsPerPack(displayFactor, unitDef);
+        if (
+          unitDef?.allowsUnitsPerPack &&
+          unitDef.sellUnitRule === 'PACK_ONLY' &&
+          !isSelfPackUnit(baseUqcForValidation, packagingUnits) &&
+          normalizedUnitsPerPack <= 0
+        ) {
+          notifyError(
+            `Product "${product.name || 'Unnamed'}": enter pack size after 1 × (e.g. 1 × 100 ${
+              unitDef.uqc
+            })`,
+          );
+          setIsLoading(false);
+          return;
         }
 
         const rowUnitsPerPack = Number(product.unitsPerPack ?? product.conversionFactor) || 0;
@@ -3321,6 +3334,1030 @@ export function ProductEntryPage() {
   const localDateTimeToIso = (local: string) => {
     return new Date(local).toISOString();
   };
+
+  const gridDegreeField = findDegreeField(verticalRegistrationFields);
+
+  const bulkDash = (title: string) => (
+    <Text as="span" className={denseDataGrid.bulkDisabled} title={title}>
+      —
+    </Text>
+  );
+
+  /** Fill-row control for one schema field (company, sell-direct and the shop's own fields). */
+  const schemaFieldBulk = (field: VerticalSchemaFieldDef): ReactNode => {
+    if (field.key === 'batchNo') {
+      return bulkDash('Batch number must be set per row');
+    }
+    if (field.key === 'sellDirect') {
+      return (
+        <Select
+          className={denseDataGrid.input}
+          value={gridBulkFill.verticalBulk?.[field.key] ?? ''}
+          onChange={(e) => handleVerticalBulkChange(field.key, e.target.value)}
+          disabled={isLoading}
+        >
+          <option value="">—</option>
+          <option value="no">No</option>
+          <option value="yes">Yes</option>
+        </Select>
+      );
+    }
+    if (field.key === 'companyName') {
+      return (
+        <Input
+          type="text"
+          className={denseDataGrid.input}
+          placeholder="Company"
+          value={gridBulkFill.verticalBulk?.[field.key] ?? gridBulkFill.companyName ?? ''}
+          onChange={(e) => handleVerticalBulkChange(field.key, e.target.value)}
+          disabled={isLoading}
+        />
+      );
+    }
+    if (field.type === 'enum' && field.values?.length) {
+      return (
+        <Select
+          className={denseDataGrid.select}
+          value={gridBulkFill.verticalBulk?.[field.key] ?? ''}
+          onChange={(e) => handleVerticalBulkChange(field.key, e.target.value)}
+          disabled={isLoading}
+          aria-label={field.label ?? field.key}
+        >
+          <option value="">—</option>
+          {field.values.map((v) => (
+            <option key={v} value={v}>
+              {v === 'NORMAL'
+                ? 'Normal'
+                : v === 'COSTLY'
+                ? 'Costly'
+                : v === 'DEGREE'
+                ? 'Temperature for the item'
+                : v}
+            </option>
+          ))}
+        </Select>
+      );
+    }
+    return (
+      <Input
+        type={field.type === 'date' ? 'date' : 'text'}
+        className={field.type === 'date' ? denseDataGrid.inputDate : denseDataGrid.input}
+        placeholder={field.label ?? field.key}
+        value={gridBulkFill.verticalBulk?.[field.key] ?? ''}
+        onChange={(e) => handleVerticalBulkChange(field.key, e.target.value)}
+        disabled={isLoading}
+      />
+    );
+  };
+
+  const schemaFieldColumn = (
+    field: VerticalSchemaFieldDef,
+    required = Boolean(field.required),
+  ): ShopLayoutGridColumn<ProductFormData> => ({
+    key: `field:${field.key}`,
+    label: fieldLabel(field),
+    header: `${fieldLabel(field)}${required ? ' *' : ''}`,
+    bulk: schemaFieldBulk(field),
+    cell: (product) => (
+      <VerticalRegistrationGridCell
+        field={field}
+        degreeField={gridDegreeField}
+        product={product}
+        productId={product.id}
+        disabled={isLoading}
+        onFieldChange={(f, value) => applyVerticalFieldChange(product.id, f, value)}
+      />
+    ),
+  });
+
+  /**
+   * Every column this billing mode and pricing shows, in default order. Keys match the backend
+   * `GridColumnCatalog`; the shop's layout decides order, width and which optional ones are hidden.
+   */
+  const gridColumns: ShopLayoutGridColumn<ProductFormData>[] = [
+    {
+      key: 'rowNo',
+      label: '#',
+      header: '#',
+      bulk: (
+        <>
+          <Text as="span" className={denseDataGrid.bulkLabel}>
+            Fill all
+          </Text>
+          <Button
+            type="button"
+            className={denseDataGrid.bulkApplyBtn}
+            onClick={handleApplyGridBulkFill}
+            disabled={isLoading}
+            title="Apply filled values to every product row"
+          >
+            Apply to all
+          </Button>
+        </>
+      ),
+      cell: (_product, idx) => <TableCell className={denseDataGrid.td}>{idx + 1}</TableCell>,
+    },
+    {
+      key: 'barcode',
+      label: 'Barcode',
+      header: 'Barcode',
+      bulk: bulkDash('Barcode must be set per row'),
+      cell: (product) => (
+        <TableCell className={denseDataGrid.td}>
+          <Inline gap="xs" align="center">
+            <Input
+              type="text"
+              className={denseDataGrid.input}
+              placeholder="Barcode"
+              value={product.barcode}
+              onChange={(e) => handleProductChange(product.id, 'barcode', e.target.value)}
+              onBlur={(e) => void handleBarcodeBlur(product.id, e.target.value)}
+              disabled={isLoading}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-label="Generate barcode"
+              title="Generate barcode"
+              disabled={isLoading || generatingBarcodeId === product.id}
+              onClick={() => void handleGenerateBarcode(product.id)}
+            >
+              {generatingBarcodeId === product.id ? (
+                <Spinner size="sm" />
+              ) : (
+                <Icon icon={Wand2} size="sm" />
+              )}
+            </Button>
+            {product.barcode?.trim() ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label="Print barcode sticker"
+                title="Print sticker"
+                disabled={isLoading}
+                onClick={() => handlePrintRowBarcode(product)}
+              >
+                <Icon icon={Printer} size="sm" />
+              </Button>
+            ) : null}
+          </Inline>
+        </TableCell>
+      ),
+    },
+    ...(companyField ? [schemaFieldColumn(companyField)] : []),
+    {
+      key: 'product',
+      label: 'Product',
+      header: 'Product *',
+      bulk: bulkDash('Product name must be set per row'),
+      cell: (product) => (
+        <TableCell className={denseDataGrid.td}>
+          <GridProductNameCell
+            rowId={product.id}
+            value={product.name}
+            disabled={isLoading}
+            open={suggestionRowId === product.id && productSuggestions.length > 0}
+            suggestions={productSuggestions}
+            onChange={handleNameChange}
+            onBlur={handleNameBlur}
+            onApply={applyProductPrefill}
+            onAddAsNew={suggestionSource === 'barcode' ? clearProductSuggestions : undefined}
+          />
+        </TableCell>
+      ),
+    },
+    ...gridRegistrationFields(verticalRegistrationFields).map((field) => schemaFieldColumn(field)),
+    {
+      key: 'qty',
+      label: 'Qty',
+      header: 'Qty *',
+      bulk: (
+        <Input
+          type="text"
+          inputMode="numeric"
+          className={denseDataGrid.inputNarrow}
+          placeholder="Qty"
+          value={gridBulkFill.count ?? ''}
+          onChange={(e) => handleGridBulkFillChange('count', e.target.value)}
+          disabled={isLoading}
+        />
+      ),
+      cell: (product) => (
+        <TableCell className={denseDataGrid.td}>
+          <Input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            className={denseDataGrid.inputNarrow}
+            placeholder="0"
+            value={product.count === 0 ? '' : product.count}
+            onChange={(e) => handleIntegerChange(product.id, 'count', e.target.value)}
+            disabled={isLoading}
+            required
+          />
+        </TableCell>
+      ),
+    },
+    {
+      key: 'packaging',
+      label: 'Packaging',
+      header: 'Packaging *',
+      headerClassName: denseDataGrid.tdPackaging,
+      bulk: (
+        <Input
+          type="text"
+          inputMode="text"
+          className={denseDataGrid.inputNarrow}
+          placeholder="1x10"
+          title="Packaging factor: 10 or 1x10 → 1 × 10 (unit stays per row)"
+          value={gridBulkFill.conversionFactor ?? ''}
+          onChange={(e) => handleGridBulkFillChange('conversionFactor', e.target.value)}
+          disabled={isLoading}
+        />
+      ),
+      cell: (product) => (
+        <TableCell className={denseDataGrid.tdPackaging}>
+          <PackagingUnitInput
+            label=""
+            compact
+            baseUnit={product.baseUnit ?? ''}
+            factor={packagingFactorForDisplay(product.unitsPerPack ?? product.conversionFactor)}
+            packagingUnits={packagingUnits}
+            onChange={(uqc, f) => {
+              const def = packagingUnits.find((u) => u.uqc === uqc);
+              const upp = packagingFactorToUnitsPerPack(f, def);
+              handleProductChange(product.id, 'baseUnit', uqc);
+              handleProductChange(product.id, 'unitsPerPack', upp);
+              handleProductChange(product.id, 'conversionFactor', upp);
+            }}
+            disabled={isLoading}
+            required
+          />
+        </TableCell>
+      ),
+    },
+    {
+      key: 'location',
+      label: 'Location',
+      header: 'Location *',
+      bulk: (
+        <Input
+          type="text"
+          className={denseDataGrid.input}
+          placeholder="Location"
+          value={gridBulkFill.location ?? ''}
+          onChange={(e) => handleGridBulkFillChange('location', e.target.value)}
+          disabled={isLoading}
+        />
+      ),
+      cell: (product) => (
+        <TableCell className={denseDataGrid.td}>
+          <Input
+            type="text"
+            className={denseDataGrid.input}
+            placeholder="Location"
+            value={product.location}
+            onChange={(e) => handleProductChange(product.id, 'location', e.target.value)}
+            disabled={isLoading}
+            required
+          />
+        </TableCell>
+      ),
+    },
+    ...(sellDirectField
+      ? [
+          {
+            ...schemaFieldColumn(sellDirectField, true),
+            cell: (product: ProductFormData) => (
+              <TableCell className={denseDataGrid.td}>
+                <Select
+                  className={denseDataGrid.input}
+                  value={getVerticalFieldValue(product, sellDirectField) || 'no'}
+                  onChange={(e) =>
+                    applyVerticalFieldChange(product.id, sellDirectField, e.target.value)
+                  }
+                  disabled={isLoading}
+                  required
+                >
+                  <option value="no">No</option>
+                  <option value="yes">Yes</option>
+                </Select>
+              </TableCell>
+            ),
+          },
+        ]
+      : []),
+    ...(isCompactPriceUi
+      ? [
+          {
+            key: 'rate',
+            label: 'Rate',
+            header: 'Rate *',
+            bulk: (
+              <Input
+                type="text"
+                inputMode="decimal"
+                className={denseDataGrid.inputNarrow}
+                placeholder="Rate"
+                value={gridBulkFill.costPrice ?? ''}
+                onChange={(e) => handleGridBulkFillChange('costPrice', e.target.value)}
+                disabled={isLoading}
+              />
+            ),
+            cell: (product: ProductFormData) => (
+              <TableCell className={denseDataGrid.td}>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
+                  className={denseDataGrid.inputNarrow}
+                  placeholder="Rate"
+                  value={product.costPrice === 0 ? '' : product.costPrice}
+                  onChange={(e) => handleDecimalChange(product.id, 'costPrice', e.target.value)}
+                  disabled={isLoading}
+                  required
+                />
+              </TableCell>
+            ),
+          },
+          {
+            key: 'sellPrice',
+            label: isRetailPricing ? 'Selling Price' : 'Sell price',
+            header: isRetailPricing ? 'Selling Price *' : 'Sell price',
+            bulk: (
+              <Input
+                type="text"
+                inputMode="decimal"
+                className={denseDataGrid.inputNarrow}
+                placeholder="Sell"
+                value={gridBulkFill.sellingPrice ?? ''}
+                onChange={(e) => handleGridBulkFillChange('sellingPrice', e.target.value)}
+                disabled={isLoading}
+              />
+            ),
+            cell: (product: ProductFormData) => (
+              <TableCell className={denseDataGrid.td}>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
+                  className={denseDataGrid.inputNarrow}
+                  placeholder={isRetailPricing ? 'Selling Price' : 'Optional'}
+                  value={
+                    product.sellingPrice === 0 || product.sellingPrice == null
+                      ? ''
+                      : product.sellingPrice
+                  }
+                  onChange={(e) => handleDecimalChange(product.id, 'sellingPrice', e.target.value)}
+                  disabled={isLoading}
+                  required={isRetailPricing}
+                />
+              </TableCell>
+            ),
+          },
+        ]
+      : [
+          {
+            key: 'pts',
+            label: 'PTS',
+            header: 'PTS *',
+            bulk: bulkDash('PTS must be set per row'),
+            cell: (product: ProductFormData) => (
+              <TableCell className={denseDataGrid.td}>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
+                  className={denseDataGrid.inputNarrow}
+                  placeholder="PTS"
+                  value={product.costPrice === 0 ? '' : product.costPrice}
+                  onChange={(e) => handleDecimalChange(product.id, 'costPrice', e.target.value)}
+                  disabled={isLoading}
+                  required
+                />
+              </TableCell>
+            ),
+          },
+          {
+            key: 'ptr',
+            label: 'PTR',
+            header: 'PTR *',
+            bulk: bulkDash('PTR must be set per row'),
+            cell: (product: ProductFormData) => (
+              <TableCell className={denseDataGrid.td}>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
+                  className={denseDataGrid.inputNarrow}
+                  placeholder="PTR"
+                  value={product.priceToRetail === 0 ? '' : product.priceToRetail}
+                  onChange={(e) => handleDecimalChange(product.id, 'priceToRetail', e.target.value)}
+                  disabled={isLoading}
+                  required
+                />
+              </TableCell>
+            ),
+          },
+          {
+            key: 'mrp',
+            label: 'MRP',
+            header: 'MRP *',
+            bulk: bulkDash('MRP must be set per row'),
+            cell: (product: ProductFormData) => (
+              <TableCell className={denseDataGrid.td}>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
+                  className={denseDataGrid.inputNarrow}
+                  placeholder="MRP"
+                  value={product.maximumRetailPrice === 0 ? '' : product.maximumRetailPrice}
+                  onChange={(e) =>
+                    handleDecimalChange(product.id, 'maximumRetailPrice', e.target.value)
+                  }
+                  disabled={isLoading}
+                  required
+                />
+              </TableCell>
+            ),
+          },
+        ]),
+    ...(showCommercialTerms
+      ? [
+          {
+            key: 'saleDealType',
+            label: 'Sale deal type',
+            header: 'Sale deal type',
+            bulk: (
+              <Select
+                className={denseDataGrid.select}
+                value={gridBulkFill.schemeType ?? ''}
+                onChange={(e) =>
+                  handleGridBulkFillChange('schemeType', e.target.value as SchemeType | '')
+                }
+                disabled={isLoading}
+              >
+                <option value="">—</option>
+                <option value="FIXED_UNITS">Free units</option>
+                <option value="PERCENTAGE">Percentage</option>
+              </Select>
+            ),
+            cell: (product: ProductFormData) => (
+              <TableCell className={denseDataGrid.td}>
+                <Label className={denseDataGrid.srOnly} htmlFor={`grid-scheme-type-${product.id}`}>
+                  Sale scheme deal type
+                </Label>
+                <Select
+                  id={`grid-scheme-type-${product.id}`}
+                  className={denseDataGrid.select}
+                  value={product.schemeType ?? 'FIXED_UNITS'}
+                  onChange={(e) => {
+                    const val = e.target.value as SchemeType;
+                    handleProductChange(product.id, 'schemeType', val);
+                    if (val === 'PERCENTAGE') {
+                      handleProductChange(product.id, 'scheme', null);
+                    } else {
+                      handleProductChange(product.id, 'schemePercentage', null);
+                    }
+                  }}
+                  disabled={isLoading}
+                >
+                  <option value="FIXED_UNITS">Free units</option>
+                  <option value="PERCENTAGE">Percentage</option>
+                </Select>
+              </TableCell>
+            ),
+          },
+          {
+            key: 'saleScheme',
+            label: 'Sale scheme',
+            header: 'Sale scheme',
+            headerTitle: 'When deal type is Percentage, scheme % is required.',
+            bulk: (
+              <Input
+                type="text"
+                className={denseDataGrid.inputNarrow}
+                placeholder="e.g. 10+2"
+                value={gridBulkFill.saleScheme ?? ''}
+                onChange={(e) => handleGridBulkFillChange('saleScheme', e.target.value)}
+                disabled={isLoading}
+              />
+            ),
+            cell: (product: ProductFormData) => (
+              <TableCell className={denseDataGrid.td}>
+                <Label className={denseDataGrid.srOnly} htmlFor={`grid-sale-scheme-${product.id}`}>
+                  Sale scheme (e.g. 10+2 or 10%; required when deal type is Percentage)
+                </Label>
+                <Input
+                  id={`grid-sale-scheme-${product.id}`}
+                  type="text"
+                  className={denseDataGrid.inputNarrow}
+                  placeholder="e.g. 10+2"
+                  value={
+                    gridSchemeDrafts[product.id]?.sale ??
+                    ((product.schemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
+                      ? product.schemePercentage != null
+                        ? `${product.schemePercentage}%`
+                        : ''
+                      : product.schemePayFor != null || product.schemeFree != null
+                      ? `${product.schemePayFor ?? 0}+${product.schemeFree ?? 0}`
+                      : '')
+                  }
+                  required={(product.schemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setGridSchemeDrafts((prev) => ({
+                      ...prev,
+                      [product.id]: {
+                        ...prev[product.id],
+                        sale: v,
+                      },
+                    }));
+                  }}
+                  onBlur={() => {
+                    const raw = (gridSchemeDrafts[product.id]?.sale ?? '').trim();
+                    setGridSchemeDrafts((prev) => {
+                      const next = { ...prev };
+                      const cur = next[product.id];
+                      if (cur) {
+                        const { sale: _, ...rest } = cur;
+                        if (Object.keys(rest).length) {
+                          next[product.id] = rest;
+                        } else {
+                          delete next[product.id];
+                        }
+                      }
+                      return next;
+                    });
+                    if (raw === '') {
+                      handleProductChange(product.id, 'schemePayFor', null);
+                      handleProductChange(product.id, 'schemeFree', null);
+                      handleProductChange(product.id, 'schemePercentage', null);
+                      return;
+                    }
+                    if (raw.endsWith('%')) {
+                      const num = parseFloat(raw.slice(0, -1));
+                      if (!isNaN(num) && num >= -100 && num <= 100) {
+                        handleProductChange(product.id, 'schemeType', 'PERCENTAGE');
+                        handleProductChange(product.id, 'schemePercentage', num);
+                        handleProductChange(product.id, 'schemePayFor', null);
+                        handleProductChange(product.id, 'schemeFree', null);
+                      }
+                      return;
+                    }
+                    const plusIdx = raw.indexOf('+');
+                    if (plusIdx >= 0) {
+                      const left = parseInt(raw.slice(0, plusIdx).trim(), 10);
+                      const right = parseInt(raw.slice(plusIdx + 1).trim(), 10);
+                      if (!isNaN(left) && !isNaN(right) && left >= 0 && right >= 0) {
+                        handleProductChange(product.id, 'schemeType', 'FIXED_UNITS');
+                        handleProductChange(product.id, 'schemePayFor', left);
+                        handleProductChange(product.id, 'schemeFree', right);
+                        handleProductChange(product.id, 'schemePercentage', null);
+                      }
+                    }
+                  }}
+                  disabled={isLoading}
+                />
+              </TableCell>
+            ),
+          },
+          {
+            key: 'saleDisc',
+            label: 'Sale disc %',
+            header: 'Sale disc %',
+            bulk: (
+              <Input
+                type="number"
+                className={denseDataGrid.inputNarrow}
+                placeholder="—"
+                step="0.01"
+                min={-100}
+                max={100}
+                value={gridBulkFill.saleAdditionalDiscount ?? ''}
+                onChange={(e) => handleGridBulkFillChange('saleAdditionalDiscount', e.target.value)}
+                disabled={isLoading}
+              />
+            ),
+            cell: (product: ProductFormData) => (
+              <TableCell className={denseDataGrid.td}>
+                <Input
+                  type="number"
+                  className={denseDataGrid.inputNarrow}
+                  placeholder="—"
+                  step="0.01"
+                  min={-100}
+                  max={100}
+                  value={
+                    product.saleAdditionalDiscount === null ||
+                    product.saleAdditionalDiscount === undefined
+                      ? ''
+                      : product.saleAdditionalDiscount
+                  }
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === '') {
+                      handleProductChange(product.id, 'saleAdditionalDiscount', null);
+                    } else {
+                      const n = parseFloat(v);
+                      if (!isNaN(n) && n >= -100 && n <= 100) {
+                        handleProductChange(product.id, 'saleAdditionalDiscount', n);
+                      }
+                    }
+                  }}
+                  disabled={isLoading}
+                />
+              </TableCell>
+            ),
+          },
+          {
+            key: 'purchaseDealType',
+            label: 'Purchase deal type',
+            header: 'Purchase deal type',
+            bulk: (
+              <Select
+                className={denseDataGrid.select}
+                value={gridBulkFill.purchaseSchemeType ?? ''}
+                onChange={(e) =>
+                  handleGridBulkFillChange('purchaseSchemeType', e.target.value as SchemeType | '')
+                }
+                disabled={isLoading}
+              >
+                <option value="">—</option>
+                <option value="FIXED_UNITS">Free units</option>
+                <option value="PERCENTAGE">Percentage</option>
+              </Select>
+            ),
+            cell: (product: ProductFormData) => (
+              <TableCell className={denseDataGrid.td}>
+                <Label
+                  className={denseDataGrid.srOnly}
+                  htmlFor={`grid-purchase-scheme-type-${product.id}`}
+                >
+                  Purchase scheme deal type
+                </Label>
+                <Select
+                  id={`grid-purchase-scheme-type-${product.id}`}
+                  className={denseDataGrid.select}
+                  value={product.purchaseSchemeType ?? 'FIXED_UNITS'}
+                  onChange={(e) => {
+                    const val = e.target.value as PurchaseSchemeInputType;
+                    if (val === 'PERCENTAGE') {
+                      handleApplyPurchasePatch(product.id, {
+                        purchaseSchemeType: 'PERCENTAGE',
+                        purchaseSchemePercentage: product.purchaseSchemePercentage ?? null,
+                        ...clearPurchaseSchemePatch(product),
+                      });
+                    } else if (val === 'FREE_QUANTITY') {
+                      const billable = billableCountForPurchaseFreeQty(product);
+                      handleApplyPurchasePatch(product.id, {
+                        purchaseSchemeType: 'FREE_QUANTITY',
+                        purchaseSchemePayFor: null,
+                        purchaseSchemeFree: null,
+                        purchaseSchemePercentage: null,
+                        purchaseSchemeFreeQty: null,
+                        ...(product.purchaseSchemeFreeQty != null ? { count: billable } : {}),
+                      });
+                    } else {
+                      const billable = billableCountForPurchaseFreeQty(product);
+                      handleApplyPurchasePatch(product.id, {
+                        purchaseSchemeType: 'FIXED_UNITS',
+                        purchaseSchemePercentage: null,
+                        purchaseSchemeFreeQty: null,
+                        ...(product.purchaseSchemeFreeQty != null ? { count: billable } : {}),
+                      });
+                    }
+                  }}
+                  disabled={isLoading}
+                >
+                  <option value="FIXED_UNITS">Deal ratio</option>
+                  <option value="FREE_QUANTITY">Free quantity</option>
+                  <option value="PERCENTAGE">Percentage</option>
+                </Select>
+              </TableCell>
+            ),
+          },
+          {
+            key: 'purchaseScheme',
+            label: 'Purchase scheme',
+            header: 'Purchase scheme',
+            bulk: (
+              <Input
+                type="text"
+                className={denseDataGrid.inputNarrow}
+                placeholder="e.g. 10+2"
+                value={gridBulkFill.purchaseScheme ?? ''}
+                onChange={(e) => handleGridBulkFillChange('purchaseScheme', e.target.value)}
+                disabled={isLoading}
+              />
+            ),
+            cell: (product: ProductFormData) => (
+              <TableCell className={denseDataGrid.td}>
+                <Input
+                  type="text"
+                  className={denseDataGrid.inputNarrow}
+                  placeholder={
+                    (product.purchaseSchemeType ?? 'FIXED_UNITS') === 'FREE_QUANTITY'
+                      ? (Number(product.count) || 0) > 0
+                        ? 'e.g. 60'
+                        : 'e.g. 60 or 0 + 60'
+                      : 'e.g. 10 + 2 or 4 + 1'
+                  }
+                  value={
+                    gridSchemeDrafts[product.id]?.purchase ??
+                    ((product.purchaseSchemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
+                      ? product.purchaseSchemePercentage != null
+                        ? `${product.purchaseSchemePercentage}%`
+                        : ''
+                      : formatPurchaseSchemeDealForDisplay(product))
+                  }
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setGridSchemeDrafts((prev) => ({
+                      ...prev,
+                      [product.id]: {
+                        ...prev[product.id],
+                        purchase: v,
+                      },
+                    }));
+                  }}
+                  onBlur={() => {
+                    const raw = (gridSchemeDrafts[product.id]?.purchase ?? '').trim();
+                    setGridSchemeDrafts((prev) => {
+                      const next = { ...prev };
+                      const cur = next[product.id];
+                      if (cur) {
+                        const { purchase: _, ...rest } = cur;
+                        if (Object.keys(rest).length) {
+                          next[product.id] = rest;
+                        } else {
+                          delete next[product.id];
+                        }
+                      }
+                      return next;
+                    });
+                    if (raw === '') {
+                      handleApplyPurchasePatch(product.id, clearPurchaseSchemePatch(product));
+                      return;
+                    }
+                    if ((product.purchaseSchemeType ?? 'FIXED_UNITS') === 'FREE_QUANTITY') {
+                      const patch = applyPurchaseFreeQuantityFromRaw(product, raw);
+                      if (patch) {
+                        handleApplyPurchasePatch(product.id, patch);
+                      }
+                      return;
+                    }
+                    const parsed = parsePurchaseSchemeDraft(raw);
+                    if (!parsed) return;
+                    handleApplyPurchasePatch(product.id, {
+                      ...parsed,
+                      purchaseSchemeFreeQty: null,
+                    });
+                  }}
+                  disabled={isLoading}
+                />
+              </TableCell>
+            ),
+          },
+          {
+            key: 'purchaseDisc',
+            label: 'Purchase disc %',
+            header: 'Purchase disc %',
+            bulk: (
+              <Input
+                type="number"
+                className={denseDataGrid.inputNarrow}
+                placeholder="—"
+                step="0.01"
+                min={0}
+                max={100}
+                value={gridBulkFill.purchaseAdditionalDiscount ?? ''}
+                onChange={(e) =>
+                  handleGridBulkFillChange('purchaseAdditionalDiscount', e.target.value)
+                }
+                disabled={isLoading}
+              />
+            ),
+            cell: (product: ProductFormData) => (
+              <TableCell className={denseDataGrid.td}>
+                <Input
+                  type="number"
+                  className={denseDataGrid.inputNarrow}
+                  placeholder="—"
+                  step="0.01"
+                  min={0}
+                  max={100}
+                  value={
+                    product.purchaseAdditionalDiscount === null ||
+                    product.purchaseAdditionalDiscount === undefined
+                      ? ''
+                      : product.purchaseAdditionalDiscount
+                  }
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === '') {
+                      handleProductChange(product.id, 'purchaseAdditionalDiscount', null);
+                    } else {
+                      const n = parseFloat(v);
+                      if (!isNaN(n) && n >= 0 && n <= 100) {
+                        handleProductChange(product.id, 'purchaseAdditionalDiscount', n);
+                      }
+                    }
+                  }}
+                  disabled={isLoading}
+                />
+              </TableCell>
+            ),
+          },
+          {
+            key: 'discApplicability',
+            label: 'Disc appl.',
+            header: 'Disc appl.',
+            bulk: (
+              <Select
+                className={denseDataGrid.select}
+                value={gridBulkFill.discountApplicable ?? ''}
+                onChange={(e) =>
+                  handleGridBulkFillChange(
+                    'discountApplicable',
+                    e.target.value as DiscountApplicable | '',
+                  )
+                }
+                disabled={isLoading}
+              >
+                <option value="">—</option>
+                <option value="DISCOUNT">Discount</option>
+                <option value="SCHEME">Scheme</option>
+                <option value="DISCOUNT_AND_SCHEME">Both</option>
+              </Select>
+            ),
+            cell: (product: ProductFormData) => (
+              <TableCell className={denseDataGrid.td}>
+                <Label
+                  className={denseDataGrid.srOnly}
+                  htmlFor={`grid-discount-applicable-${product.id}`}
+                >
+                  Discount applicable
+                </Label>
+                <Select
+                  id={`grid-discount-applicable-${product.id}`}
+                  className={denseDataGrid.select}
+                  value={product.discountApplicable ?? ''}
+                  onChange={(e) => {
+                    const val = e.target.value as DiscountApplicable | '';
+                    handleProductChange(
+                      product.id,
+                      'discountApplicable',
+                      val === '' ? undefined : (val as DiscountApplicable),
+                    );
+                  }}
+                  disabled={isLoading}
+                >
+                  <option value="">—</option>
+                  <option value="DISCOUNT">Discount</option>
+                  <option value="SCHEME">Scheme</option>
+                  <option value="DISCOUNT_AND_SCHEME">Both</option>
+                </Select>
+              </TableCell>
+            ),
+          },
+        ]
+      : []),
+    ...(billingMode === 'REGULAR'
+      ? [
+          {
+            key: 'hsn',
+            label: 'HSN',
+            header: 'HSN',
+            headerTitle: 'Tax section',
+            bulk: bulkDash('HSN must be set per row'),
+            cell: (product: ProductFormData) => (
+              <TableCell className={denseDataGrid.td}>
+                <Input
+                  type="text"
+                  className={denseDataGrid.input}
+                  placeholder="HSN"
+                  aria-label="HSN (tax)"
+                  value={product.hsn || ''}
+                  onChange={(e) => handleProductChange(product.id, 'hsn', e.target.value)}
+                  disabled={isLoading}
+                />
+              </TableCell>
+            ),
+          },
+          {
+            key: 'gstRate',
+            label: 'GST',
+            header: 'GST',
+            headerTitle: 'GST rates allowed for this HSN',
+            bulk: bulkDash('GST rate is picked per row from its HSN'),
+            cell: (product: ProductFormData) => (
+              <TableCell className={denseDataGrid.td}>
+                <HsnGstRateSelect
+                  className={denseDataGrid.inputNarrow}
+                  hsn={product.hsn}
+                  cgst={product.cgst}
+                  sgst={product.sgst}
+                  onPick={(cgst, sgst) => {
+                    handleProductChange(product.id, 'cgst', cgst);
+                    handleProductChange(product.id, 'sgst', sgst);
+                  }}
+                  disabled={isLoading}
+                />
+              </TableCell>
+            ),
+          },
+          {
+            key: 'cgst',
+            label: 'CGST %',
+            header: 'CGST %',
+            headerTitle: 'Tax section',
+            bulk: (
+              <Input
+                type="text"
+                inputMode="decimal"
+                className={denseDataGrid.inputNarrow}
+                placeholder="CGST"
+                aria-label="Fill CGST %"
+                value={gridBulkFill.cgst ?? ''}
+                onChange={(e) => handleGridBulkFillChange('cgst', e.target.value)}
+                disabled={isLoading}
+              />
+            ),
+            cell: (product: ProductFormData) => (
+              <TableCell className={denseDataGrid.td}>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  className={denseDataGrid.inputNarrow}
+                  placeholder="CGST"
+                  aria-label="CGST % (tax)"
+                  value={product.cgst || ''}
+                  onChange={(e) => handleProductChange(product.id, 'cgst', e.target.value)}
+                  disabled={isLoading}
+                />
+              </TableCell>
+            ),
+          },
+          {
+            key: 'sgst',
+            label: 'SGST %',
+            header: 'SGST %',
+            headerTitle: 'Tax section',
+            bulk: (
+              <Input
+                type="text"
+                inputMode="decimal"
+                className={denseDataGrid.inputNarrow}
+                placeholder="SGST"
+                aria-label="Fill SGST %"
+                value={gridBulkFill.sgst ?? ''}
+                onChange={(e) => handleGridBulkFillChange('sgst', e.target.value)}
+                disabled={isLoading}
+              />
+            ),
+            cell: (product: ProductFormData) => (
+              <TableCell className={denseDataGrid.td}>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  className={denseDataGrid.inputNarrow}
+                  placeholder="SGST"
+                  aria-label="SGST % (tax)"
+                  value={product.sgst || ''}
+                  onChange={(e) => handleProductChange(product.id, 'sgst', e.target.value)}
+                  disabled={isLoading}
+                />
+              </TableCell>
+            ),
+          },
+        ]
+      : []),
+    {
+      key: 'actions',
+      label: 'Actions',
+      header: 'Actions',
+      bulk: bulkDash('Actions are per row'),
+      cell: (product) => (
+        <TableCell className={denseDataGrid.td}>
+          <IconButton
+            type="button"
+            size="sm"
+            className={productChrome.rowRemoveButton}
+            onClick={() => handleRemoveProduct(product.id)}
+            disabled={isLoading}
+            label="Remove product"
+            title="Remove"
+          >
+            <Icon icon={Trash2} size="sm" />
+          </IconButton>
+        </TableCell>
+      ),
+    },
+  ];
 
   return (
     <Stack gap="md" maxWidth="xl" mx="auto">
@@ -4051,872 +5088,46 @@ export function ProductEntryPage() {
                         </Text>
                       </Box>
                     ) : productViewMode === 'grid' ? (
-                      <Box
-                        className={denseDataGrid.wrap}
-                        {...{ 'data-keyboard-nav': KEYBOARD_NAV_GRID }}
-                        onKeyDownCapture={(e: React.KeyboardEvent<HTMLElement>) => {
-                          if (shouldSkipNestedFormKeyboardNav(document.activeElement)) {
-                            return;
-                          }
-                          runFormKeyboardNavigation(e, e.currentTarget, 'grid');
+                      <ShopLayoutGrid
+                        gridId={GRID_IDS.PRODUCT_ENTRY}
+                        drawerDescription={PRODUCT_ENTRY_DRAWER_DESCRIPTION}
+                        columns={gridColumns}
+                        rows={products}
+                        rowKey={(product) => product.id}
+                        tableKey={schemaModeForBilling(billingMode)}
+                        wrapProps={{
+                          'data-keyboard-nav': KEYBOARD_NAV_GRID,
+                          onKeyDownCapture: (e: React.KeyboardEvent<HTMLElement>) => {
+                            if (shouldSkipNestedFormKeyboardNav(document.activeElement)) {
+                              return;
+                            }
+                            runFormKeyboardNavigation(e, e.currentTarget, 'grid');
+                          },
                         }}
-                      >
-                        <Table
-                          key={schemaModeForBilling(billingMode)}
-                          className={denseDataGrid.table}
-                        >
-                          <TableHead>
-                            <TableRow>
-                              <TableHeaderCell className={denseDataGrid.th}>#</TableHeaderCell>
-                              <TableHeaderCell className={denseDataGrid.th}>
-                                Barcode
-                              </TableHeaderCell>
-                              <VerticalRegistrationGridCompanyHeader field={companyField} />
-                              <TableHeaderCell className={denseDataGrid.th}>
-                                Product *
-                              </TableHeaderCell>
-                              <VerticalRegistrationGridHeaders
-                                fields={verticalRegistrationFields}
-                              />
-                              <TableHeaderCell className={denseDataGrid.th}>Qty *</TableHeaderCell>
-                              <TableHeaderCell
-                                className={`${denseDataGrid.th} ${denseDataGrid.tdPackaging}`}
-                              >
-                                Packaging
-                              </TableHeaderCell>
-                              <TableHeaderCell className={denseDataGrid.th}>
-                                Location *
-                              </TableHeaderCell>
-                              {sellDirectField && (
-                                <TableHeaderCell className={denseDataGrid.th}>
-                                  {fieldLabel(sellDirectField)} *
-                                </TableHeaderCell>
-                              )}
-                              {isCompactPriceUi ? (
-                                <>
-                                  <TableHeaderCell className={denseDataGrid.th}>
-                                    Rate *
-                                  </TableHeaderCell>
-                                  <TableHeaderCell className={denseDataGrid.th}>
-                                    {isRetailPricing ? 'Selling Price *' : 'Sell price'}
-                                  </TableHeaderCell>
-                                </>
-                              ) : (
-                                <>
-                                  <TableHeaderCell className={denseDataGrid.th}>
-                                    PTS *
-                                  </TableHeaderCell>
-                                  <TableHeaderCell className={denseDataGrid.th}>
-                                    PTR *
-                                  </TableHeaderCell>
-                                  <TableHeaderCell className={denseDataGrid.th}>
-                                    MRP *
-                                  </TableHeaderCell>
-                                </>
-                              )}
-                              {showCommercialTerms ? (
-                                <>
-                                  <TableHeaderCell className={denseDataGrid.th}>
-                                    Sale deal type
-                                  </TableHeaderCell>
-                                  <TableHeaderCell
-                                    className={denseDataGrid.th}
-                                    title="When deal type is Percentage, scheme % is required."
-                                  >
-                                    Sale scheme
-                                  </TableHeaderCell>
-                                  <TableHeaderCell className={denseDataGrid.th}>
-                                    Sale disc %
-                                  </TableHeaderCell>
-                                  <TableHeaderCell className={denseDataGrid.th}>
-                                    Purchase deal type
-                                  </TableHeaderCell>
-                                  <TableHeaderCell className={denseDataGrid.th}>
-                                    Purchase scheme
-                                  </TableHeaderCell>
-                                  <TableHeaderCell className={denseDataGrid.th}>
-                                    Purchase disc %
-                                  </TableHeaderCell>
-                                  <TableHeaderCell className={denseDataGrid.th}>
-                                    Disc appl.
-                                  </TableHeaderCell>
-                                </>
-                              ) : null}
-                              {billingMode === 'REGULAR' && (
-                                <>
-                                  <TableHeaderCell className={denseDataGrid.th} title="Tax section">
-                                    HSN
-                                  </TableHeaderCell>
-                                  <TableHeaderCell
-                                    className={denseDataGrid.th}
-                                    title="GST rates allowed for this HSN"
-                                  >
-                                    GST
-                                  </TableHeaderCell>
-                                  <TableHeaderCell className={denseDataGrid.th} title="Tax section">
-                                    CGST %
-                                  </TableHeaderCell>
-                                  <TableHeaderCell className={denseDataGrid.th} title="Tax section">
-                                    SGST %
-                                  </TableHeaderCell>
-                                </>
-                              )}
-                              <TableHeaderCell className={denseDataGrid.th}>
-                                Actions
-                              </TableHeaderCell>
-                            </TableRow>
-                            <GridBulkFillRow
-                              bulk={gridBulkFill}
-                              billingMode={billingMode}
-                              compactPriceUi={isCompactPriceUi}
-                              showCommercialTerms={showCommercialTerms}
-                              companyField={companyField}
-                              sellDirectField={sellDirectField}
-                              schemaFields={verticalRegistrationFields}
-                              isLoading={isLoading}
-                              onBulkChange={handleGridBulkFillChange}
-                              onVerticalBulkChange={handleVerticalBulkChange}
-                              onApply={handleApplyGridBulkFill}
-                            />
-                          </TableHead>
-                          <TableBody>
-                            {products.map((product, idx) => (
-                              <TableRow key={product.id} className={denseDataGrid.tr}>
-                                <TableCell className={denseDataGrid.td}>{idx + 1}</TableCell>
-                                <TableCell className={denseDataGrid.td}>
-                                  <Inline gap="xs" align="center">
-                                    <Input
-                                      type="text"
-                                      className={denseDataGrid.input}
-                                      placeholder="Barcode"
-                                      value={product.barcode}
-                                      onChange={(e) =>
-                                        handleProductChange(product.id, 'barcode', e.target.value)
-                                      }
-                                      onBlur={(e) =>
-                                        void handleBarcodeBlur(product.id, e.target.value)
-                                      }
-                                      disabled={isLoading}
-                                    />
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      aria-label="Generate barcode"
-                                      title="Generate barcode"
-                                      disabled={isLoading || generatingBarcodeId === product.id}
-                                      onClick={() => void handleGenerateBarcode(product.id)}
-                                    >
-                                      {generatingBarcodeId === product.id ? (
-                                        <Spinner size="sm" />
-                                      ) : (
-                                        <Icon icon={Wand2} size="sm" />
-                                      )}
-                                    </Button>
-                                    {product.barcode?.trim() ? (
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        aria-label="Print barcode sticker"
-                                        title="Print sticker"
-                                        disabled={isLoading}
-                                        onClick={() => handlePrintRowBarcode(product)}
-                                      >
-                                        <Icon icon={Printer} size="sm" />
-                                      </Button>
-                                    ) : null}
-                                  </Inline>
-                                </TableCell>
-                                <VerticalRegistrationGridCompanyCell
-                                  field={companyField}
-                                  product={product}
-                                  productId={product.id}
-                                  disabled={isLoading}
-                                  onFieldChange={(field, value) =>
-                                    applyVerticalFieldChange(product.id, field, value)
-                                  }
-                                />
-                                <TableCell className={denseDataGrid.td}>
-                                  <GridProductNameCell
-                                    rowId={product.id}
-                                    value={product.name}
-                                    disabled={isLoading}
-                                    open={
-                                      suggestionRowId === product.id &&
-                                      productSuggestions.length > 0
-                                    }
-                                    suggestions={productSuggestions}
-                                    onChange={handleNameChange}
-                                    onBlur={handleNameBlur}
-                                    onApply={applyProductPrefill}
-                                    onAddAsNew={
-                                      suggestionSource === 'barcode'
-                                        ? clearProductSuggestions
-                                        : undefined
-                                    }
-                                  />
-                                </TableCell>
-                                <VerticalRegistrationGridCells
-                                  fields={verticalRegistrationFields}
-                                  product={product}
-                                  productId={product.id}
-                                  disabled={isLoading}
-                                  onFieldChange={(field, value) =>
-                                    applyVerticalFieldChange(product.id, field, value)
-                                  }
-                                />
-                                <TableCell className={denseDataGrid.td}>
-                                  <Input
-                                    type="text"
-                                    inputMode="numeric"
-                                    pattern="[0-9]*"
-                                    className={denseDataGrid.inputNarrow}
-                                    placeholder="0"
-                                    value={product.count === 0 ? '' : product.count}
-                                    onChange={(e) =>
-                                      handleIntegerChange(product.id, 'count', e.target.value)
-                                    }
-                                    disabled={isLoading}
-                                    required
-                                  />
-                                </TableCell>
-                                <TableCell className={denseDataGrid.tdPackaging}>
-                                  <PackagingUnitInput
-                                    label=""
-                                    compact
-                                    baseUnit={product.baseUnit ?? ''}
-                                    factor={packagingFactorForDisplay(
-                                      product.unitsPerPack ?? product.conversionFactor,
-                                    )}
-                                    packagingUnits={packagingUnits}
-                                    onChange={(uqc, f) => {
-                                      const def = packagingUnits.find((u) => u.uqc === uqc);
-                                      const upp = packagingFactorToUnitsPerPack(f, def);
-                                      handleProductChange(product.id, 'baseUnit', uqc);
-                                      handleProductChange(product.id, 'unitsPerPack', upp);
-                                      handleProductChange(product.id, 'conversionFactor', upp);
-                                    }}
-                                    disabled={isLoading}
-                                  />
-                                </TableCell>
-                                <TableCell className={denseDataGrid.td}>
-                                  <Input
-                                    type="text"
-                                    className={denseDataGrid.input}
-                                    placeholder="Location"
-                                    value={product.location}
-                                    onChange={(e) =>
-                                      handleProductChange(product.id, 'location', e.target.value)
-                                    }
-                                    disabled={isLoading}
-                                    required
-                                  />
-                                </TableCell>
-                                {sellDirectField && (
-                                  <TableCell className={denseDataGrid.td}>
-                                    <Select
-                                      className={denseDataGrid.input}
-                                      value={
-                                        getVerticalFieldValue(product, sellDirectField) || 'no'
-                                      }
-                                      onChange={(e) =>
-                                        applyVerticalFieldChange(
-                                          product.id,
-                                          sellDirectField,
-                                          e.target.value,
-                                        )
-                                      }
-                                      disabled={isLoading}
-                                      required
-                                    >
-                                      <option value="no">No</option>
-                                      <option value="yes">Yes</option>
-                                    </Select>
-                                  </TableCell>
-                                )}
-                                {isCompactPriceUi ? (
-                                  <>
-                                    <TableCell className={denseDataGrid.td}>
-                                      <Input
-                                        type="text"
-                                        inputMode="decimal"
-                                        pattern="[0-9]*\.?[0-9]*"
-                                        className={denseDataGrid.inputNarrow}
-                                        placeholder="Rate"
-                                        value={product.costPrice === 0 ? '' : product.costPrice}
-                                        onChange={(e) =>
-                                          handleDecimalChange(
-                                            product.id,
-                                            'costPrice',
-                                            e.target.value,
-                                          )
-                                        }
-                                        disabled={isLoading}
-                                        required
-                                      />
-                                    </TableCell>
-                                    <TableCell className={denseDataGrid.td}>
-                                      <Input
-                                        type="text"
-                                        inputMode="decimal"
-                                        pattern="[0-9]*\.?[0-9]*"
-                                        className={denseDataGrid.inputNarrow}
-                                        placeholder={isRetailPricing ? 'Selling Price' : 'Optional'}
-                                        value={
-                                          product.sellingPrice === 0 || product.sellingPrice == null
-                                            ? ''
-                                            : product.sellingPrice
-                                        }
-                                        onChange={(e) =>
-                                          handleDecimalChange(
-                                            product.id,
-                                            'sellingPrice',
-                                            e.target.value,
-                                          )
-                                        }
-                                        disabled={isLoading}
-                                        required={isRetailPricing}
-                                      />
-                                    </TableCell>
-                                  </>
-                                ) : (
-                                  <>
-                                    <TableCell className={denseDataGrid.td}>
-                                      <Input
-                                        type="text"
-                                        inputMode="decimal"
-                                        pattern="[0-9]*\.?[0-9]*"
-                                        className={denseDataGrid.inputNarrow}
-                                        placeholder="PTS"
-                                        value={product.costPrice === 0 ? '' : product.costPrice}
-                                        onChange={(e) =>
-                                          handleDecimalChange(
-                                            product.id,
-                                            'costPrice',
-                                            e.target.value,
-                                          )
-                                        }
-                                        disabled={isLoading}
-                                        required
-                                      />
-                                    </TableCell>
-                                    <TableCell className={denseDataGrid.td}>
-                                      <Input
-                                        type="text"
-                                        inputMode="decimal"
-                                        pattern="[0-9]*\.?[0-9]*"
-                                        className={denseDataGrid.inputNarrow}
-                                        placeholder="PTR"
-                                        value={
-                                          product.priceToRetail === 0 ? '' : product.priceToRetail
-                                        }
-                                        onChange={(e) =>
-                                          handleDecimalChange(
-                                            product.id,
-                                            'priceToRetail',
-                                            e.target.value,
-                                          )
-                                        }
-                                        disabled={isLoading}
-                                        required
-                                      />
-                                    </TableCell>
-                                    <TableCell className={denseDataGrid.td}>
-                                      <Input
-                                        type="text"
-                                        inputMode="decimal"
-                                        pattern="[0-9]*\.?[0-9]*"
-                                        className={denseDataGrid.inputNarrow}
-                                        placeholder="MRP"
-                                        value={
-                                          product.maximumRetailPrice === 0
-                                            ? ''
-                                            : product.maximumRetailPrice
-                                        }
-                                        onChange={(e) =>
-                                          handleDecimalChange(
-                                            product.id,
-                                            'maximumRetailPrice',
-                                            e.target.value,
-                                          )
-                                        }
-                                        disabled={isLoading}
-                                        required
-                                      />
-                                    </TableCell>
-                                  </>
-                                )}
-                                {showCommercialTerms ? (
-                                  <>
-                                    <TableCell className={denseDataGrid.td}>
-                                      <Label
-                                        className={denseDataGrid.srOnly}
-                                        htmlFor={`grid-scheme-type-${product.id}`}
-                                      >
-                                        Sale scheme deal type
-                                      </Label>
-                                      <Select
-                                        id={`grid-scheme-type-${product.id}`}
-                                        className={denseDataGrid.select}
-                                        value={product.schemeType ?? 'FIXED_UNITS'}
-                                        onChange={(e) => {
-                                          const val = e.target.value as SchemeType;
-                                          handleProductChange(product.id, 'schemeType', val);
-                                          if (val === 'PERCENTAGE') {
-                                            handleProductChange(product.id, 'scheme', null);
-                                          } else {
-                                            handleProductChange(
-                                              product.id,
-                                              'schemePercentage',
-                                              null,
-                                            );
-                                          }
-                                        }}
-                                        disabled={isLoading}
-                                      >
-                                        <option value="FIXED_UNITS">Free units</option>
-                                        <option value="PERCENTAGE">Percentage</option>
-                                      </Select>
-                                    </TableCell>
-                                    <TableCell className={denseDataGrid.td}>
-                                      <Label
-                                        className={denseDataGrid.srOnly}
-                                        htmlFor={`grid-sale-scheme-${product.id}`}
-                                      >
-                                        Sale scheme (e.g. 10+2 or 10%; required when deal type is
-                                        Percentage)
-                                      </Label>
-                                      <Input
-                                        id={`grid-sale-scheme-${product.id}`}
-                                        type="text"
-                                        className={denseDataGrid.inputNarrow}
-                                        placeholder="e.g. 10+2"
-                                        value={
-                                          gridSchemeDrafts[product.id]?.sale ??
-                                          ((product.schemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
-                                            ? product.schemePercentage != null
-                                              ? `${product.schemePercentage}%`
-                                              : ''
-                                            : product.schemePayFor != null ||
-                                              product.schemeFree != null
-                                            ? `${product.schemePayFor ?? 0}+${
-                                                product.schemeFree ?? 0
-                                              }`
-                                            : '')
-                                        }
-                                        required={
-                                          (product.schemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
-                                        }
-                                        onChange={(e) => {
-                                          const v = e.target.value;
-                                          setGridSchemeDrafts((prev) => ({
-                                            ...prev,
-                                            [product.id]: {
-                                              ...prev[product.id],
-                                              sale: v,
-                                            },
-                                          }));
-                                        }}
-                                        onBlur={() => {
-                                          const raw = (
-                                            gridSchemeDrafts[product.id]?.sale ?? ''
-                                          ).trim();
-                                          setGridSchemeDrafts((prev) => {
-                                            const next = { ...prev };
-                                            const cur = next[product.id];
-                                            if (cur) {
-                                              const { sale: _, ...rest } = cur;
-                                              if (Object.keys(rest).length) {
-                                                next[product.id] = rest;
-                                              } else {
-                                                delete next[product.id];
-                                              }
-                                            }
-                                            return next;
-                                          });
-                                          if (raw === '') {
-                                            handleProductChange(product.id, 'schemePayFor', null);
-                                            handleProductChange(product.id, 'schemeFree', null);
-                                            handleProductChange(
-                                              product.id,
-                                              'schemePercentage',
-                                              null,
-                                            );
-                                            return;
-                                          }
-                                          if (raw.endsWith('%')) {
-                                            const num = parseFloat(raw.slice(0, -1));
-                                            if (!isNaN(num) && num >= -100 && num <= 100) {
-                                              handleProductChange(
-                                                product.id,
-                                                'schemeType',
-                                                'PERCENTAGE',
-                                              );
-                                              handleProductChange(
-                                                product.id,
-                                                'schemePercentage',
-                                                num,
-                                              );
-                                              handleProductChange(product.id, 'schemePayFor', null);
-                                              handleProductChange(product.id, 'schemeFree', null);
-                                            }
-                                            return;
-                                          }
-                                          const plusIdx = raw.indexOf('+');
-                                          if (plusIdx >= 0) {
-                                            const left = parseInt(raw.slice(0, plusIdx).trim(), 10);
-                                            const right = parseInt(
-                                              raw.slice(plusIdx + 1).trim(),
-                                              10,
-                                            );
-                                            if (
-                                              !isNaN(left) &&
-                                              !isNaN(right) &&
-                                              left >= 0 &&
-                                              right >= 0
-                                            ) {
-                                              handleProductChange(
-                                                product.id,
-                                                'schemeType',
-                                                'FIXED_UNITS',
-                                              );
-                                              handleProductChange(product.id, 'schemePayFor', left);
-                                              handleProductChange(product.id, 'schemeFree', right);
-                                              handleProductChange(
-                                                product.id,
-                                                'schemePercentage',
-                                                null,
-                                              );
-                                            }
-                                          }
-                                        }}
-                                        disabled={isLoading}
-                                      />
-                                    </TableCell>
-                                    <TableCell className={denseDataGrid.td}>
-                                      <Input
-                                        type="number"
-                                        className={denseDataGrid.inputNarrow}
-                                        placeholder="—"
-                                        step="0.01"
-                                        min={-100}
-                                        max={100}
-                                        value={
-                                          product.saleAdditionalDiscount === null ||
-                                          product.saleAdditionalDiscount === undefined
-                                            ? ''
-                                            : product.saleAdditionalDiscount
-                                        }
-                                        onChange={(e) => {
-                                          const v = e.target.value;
-                                          if (v === '') {
-                                            handleProductChange(
-                                              product.id,
-                                              'saleAdditionalDiscount',
-                                              null,
-                                            );
-                                          } else {
-                                            const n = parseFloat(v);
-                                            if (!isNaN(n) && n >= -100 && n <= 100) {
-                                              handleProductChange(
-                                                product.id,
-                                                'saleAdditionalDiscount',
-                                                n,
-                                              );
-                                            }
-                                          }
-                                        }}
-                                        disabled={isLoading}
-                                      />
-                                    </TableCell>
-                                    <TableCell className={denseDataGrid.td}>
-                                      <Label
-                                        className={denseDataGrid.srOnly}
-                                        htmlFor={`grid-purchase-scheme-type-${product.id}`}
-                                      >
-                                        Purchase scheme deal type
-                                      </Label>
-                                      <Select
-                                        id={`grid-purchase-scheme-type-${product.id}`}
-                                        className={denseDataGrid.select}
-                                        value={product.purchaseSchemeType ?? 'FIXED_UNITS'}
-                                        onChange={(e) => {
-                                          const val = e.target.value as PurchaseSchemeInputType;
-                                          if (val === 'PERCENTAGE') {
-                                            handleApplyPurchasePatch(product.id, {
-                                              purchaseSchemeType: 'PERCENTAGE',
-                                              purchaseSchemePercentage:
-                                                product.purchaseSchemePercentage ?? null,
-                                              ...clearPurchaseSchemePatch(product),
-                                            });
-                                          } else if (val === 'FREE_QUANTITY') {
-                                            const billable =
-                                              billableCountForPurchaseFreeQty(product);
-                                            handleApplyPurchasePatch(product.id, {
-                                              purchaseSchemeType: 'FREE_QUANTITY',
-                                              purchaseSchemePayFor: null,
-                                              purchaseSchemeFree: null,
-                                              purchaseSchemePercentage: null,
-                                              purchaseSchemeFreeQty: null,
-                                              ...(product.purchaseSchemeFreeQty != null
-                                                ? { count: billable }
-                                                : {}),
-                                            });
-                                          } else {
-                                            const billable =
-                                              billableCountForPurchaseFreeQty(product);
-                                            handleApplyPurchasePatch(product.id, {
-                                              purchaseSchemeType: 'FIXED_UNITS',
-                                              purchaseSchemePercentage: null,
-                                              purchaseSchemeFreeQty: null,
-                                              ...(product.purchaseSchemeFreeQty != null
-                                                ? { count: billable }
-                                                : {}),
-                                            });
-                                          }
-                                        }}
-                                        disabled={isLoading}
-                                      >
-                                        <option value="FIXED_UNITS">Deal ratio</option>
-                                        <option value="FREE_QUANTITY">Free quantity</option>
-                                        <option value="PERCENTAGE">Percentage</option>
-                                      </Select>
-                                    </TableCell>
-                                    <TableCell className={denseDataGrid.td}>
-                                      <Input
-                                        type="text"
-                                        className={denseDataGrid.inputNarrow}
-                                        placeholder={
-                                          (product.purchaseSchemeType ?? 'FIXED_UNITS') ===
-                                          'FREE_QUANTITY'
-                                            ? (Number(product.count) || 0) > 0
-                                              ? 'e.g. 60'
-                                              : 'e.g. 60 or 0 + 60'
-                                            : 'e.g. 10 + 2 or 4 + 1'
-                                        }
-                                        value={
-                                          gridSchemeDrafts[product.id]?.purchase ??
-                                          ((product.purchaseSchemeType ?? 'FIXED_UNITS') ===
-                                          'PERCENTAGE'
-                                            ? product.purchaseSchemePercentage != null
-                                              ? `${product.purchaseSchemePercentage}%`
-                                              : ''
-                                            : formatPurchaseSchemeDealForDisplay(product))
-                                        }
-                                        onChange={(e) => {
-                                          const v = e.target.value;
-                                          setGridSchemeDrafts((prev) => ({
-                                            ...prev,
-                                            [product.id]: {
-                                              ...prev[product.id],
-                                              purchase: v,
-                                            },
-                                          }));
-                                        }}
-                                        onBlur={() => {
-                                          const raw = (
-                                            gridSchemeDrafts[product.id]?.purchase ?? ''
-                                          ).trim();
-                                          setGridSchemeDrafts((prev) => {
-                                            const next = { ...prev };
-                                            const cur = next[product.id];
-                                            if (cur) {
-                                              const { purchase: _, ...rest } = cur;
-                                              if (Object.keys(rest).length) {
-                                                next[product.id] = rest;
-                                              } else {
-                                                delete next[product.id];
-                                              }
-                                            }
-                                            return next;
-                                          });
-                                          if (raw === '') {
-                                            handleApplyPurchasePatch(
-                                              product.id,
-                                              clearPurchaseSchemePatch(product),
-                                            );
-                                            return;
-                                          }
-                                          if (
-                                            (product.purchaseSchemeType ?? 'FIXED_UNITS') ===
-                                            'FREE_QUANTITY'
-                                          ) {
-                                            const patch = applyPurchaseFreeQuantityFromRaw(
-                                              product,
-                                              raw,
-                                            );
-                                            if (patch) {
-                                              handleApplyPurchasePatch(product.id, patch);
-                                            }
-                                            return;
-                                          }
-                                          const parsed = parsePurchaseSchemeDraft(raw);
-                                          if (!parsed) return;
-                                          handleApplyPurchasePatch(product.id, {
-                                            ...parsed,
-                                            purchaseSchemeFreeQty: null,
-                                          });
-                                        }}
-                                        disabled={isLoading}
-                                      />
-                                    </TableCell>
-                                    <TableCell className={denseDataGrid.td}>
-                                      <Input
-                                        type="number"
-                                        className={denseDataGrid.inputNarrow}
-                                        placeholder="—"
-                                        step="0.01"
-                                        min={0}
-                                        max={100}
-                                        value={
-                                          product.purchaseAdditionalDiscount === null ||
-                                          product.purchaseAdditionalDiscount === undefined
-                                            ? ''
-                                            : product.purchaseAdditionalDiscount
-                                        }
-                                        onChange={(e) => {
-                                          const v = e.target.value;
-                                          if (v === '') {
-                                            handleProductChange(
-                                              product.id,
-                                              'purchaseAdditionalDiscount',
-                                              null,
-                                            );
-                                          } else {
-                                            const n = parseFloat(v);
-                                            if (!isNaN(n) && n >= 0 && n <= 100) {
-                                              handleProductChange(
-                                                product.id,
-                                                'purchaseAdditionalDiscount',
-                                                n,
-                                              );
-                                            }
-                                          }
-                                        }}
-                                        disabled={isLoading}
-                                      />
-                                    </TableCell>
-                                    <TableCell className={denseDataGrid.td}>
-                                      <Label
-                                        className={denseDataGrid.srOnly}
-                                        htmlFor={`grid-discount-applicable-${product.id}`}
-                                      >
-                                        Discount applicable
-                                      </Label>
-                                      <Select
-                                        id={`grid-discount-applicable-${product.id}`}
-                                        className={denseDataGrid.select}
-                                        value={product.discountApplicable ?? ''}
-                                        onChange={(e) => {
-                                          const val = e.target.value as DiscountApplicable | '';
-                                          handleProductChange(
-                                            product.id,
-                                            'discountApplicable',
-                                            val === '' ? undefined : (val as DiscountApplicable),
-                                          );
-                                        }}
-                                        disabled={isLoading}
-                                      >
-                                        <option value="">—</option>
-                                        <option value="DISCOUNT">Discount</option>
-                                        <option value="SCHEME">Scheme</option>
-                                        <option value="DISCOUNT_AND_SCHEME">Both</option>
-                                      </Select>
-                                    </TableCell>
-                                  </>
-                                ) : null}
-                                {billingMode === 'REGULAR' && (
-                                  <>
-                                    <TableCell className={denseDataGrid.td}>
-                                      <Input
-                                        type="text"
-                                        className={denseDataGrid.input}
-                                        placeholder="HSN"
-                                        aria-label="HSN (tax)"
-                                        value={product.hsn || ''}
-                                        onChange={(e) =>
-                                          handleProductChange(product.id, 'hsn', e.target.value)
-                                        }
-                                        disabled={isLoading}
-                                      />
-                                    </TableCell>
-                                    <TableCell className={denseDataGrid.td}>
-                                      <HsnGstRateSelect
-                                        className={denseDataGrid.inputNarrow}
-                                        hsn={product.hsn}
-                                        cgst={product.cgst}
-                                        sgst={product.sgst}
-                                        onPick={(cgst, sgst) => {
-                                          handleProductChange(product.id, 'cgst', cgst);
-                                          handleProductChange(product.id, 'sgst', sgst);
-                                        }}
-                                        disabled={isLoading}
-                                      />
-                                    </TableCell>
-                                    <TableCell className={denseDataGrid.td}>
-                                      <Input
-                                        type="text"
-                                        inputMode="decimal"
-                                        className={denseDataGrid.inputNarrow}
-                                        placeholder="CGST"
-                                        aria-label="CGST % (tax)"
-                                        value={product.cgst || ''}
-                                        onChange={(e) =>
-                                          handleProductChange(product.id, 'cgst', e.target.value)
-                                        }
-                                        disabled={isLoading}
-                                      />
-                                    </TableCell>
-                                    <TableCell className={denseDataGrid.td}>
-                                      <Input
-                                        type="text"
-                                        inputMode="decimal"
-                                        className={denseDataGrid.inputNarrow}
-                                        placeholder="SGST"
-                                        aria-label="SGST % (tax)"
-                                        value={product.sgst || ''}
-                                        onChange={(e) =>
-                                          handleProductChange(product.id, 'sgst', e.target.value)
-                                        }
-                                        disabled={isLoading}
-                                      />
-                                    </TableCell>
-                                  </>
-                                )}
-                                <TableCell className={denseDataGrid.td}>
-                                  <IconButton
-                                    type="button"
-                                    size="sm"
-                                    className={productChrome.rowRemoveButton}
-                                    onClick={() => handleRemoveProduct(product.id)}
-                                    disabled={isLoading}
-                                    label="Remove product"
-                                    title="Remove"
-                                  >
-                                    <Icon icon={Trash2} size="sm" />
-                                  </IconButton>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                        <Text className={denseDataGrid.footnote}>
-                          Use the fill row above to copy the same value into every row (only columns
-                          you type in are updated). Packaging is optional in grid view (defaults to
-                          1× on save). Columns marked * match required fields.
-                          {isRetailPricing
-                            ? ' Enter Rate and Selling Price (MRP/PTR set automatically). Schemes, item type, and discount-applicable are available. Use list view for reminders.'
-                            : isSimplePricing
-                            ? ' Customer price is set on the Menu; sell price here is optional reference only. Use list view for custom reminders.'
-                            : ' Use list view for rate tiers, description, and reminders.'}
-                          {billingMode === 'REGULAR'
-                            ? ' Tax columns (HSN, CGST %, SGST %) are grouped at the end of each row.'
-                            : ''}
-                        </Text>
-                      </Box>
+                        footer={
+                          <Text className={denseDataGrid.footnote}>
+                            Use the fill row above to copy the same value into every row (only
+                            columns you type in are updated). Columns marked * match required
+                            fields.
+                            {isRetailPricing
+                              ? ' Enter Rate and Selling Price (MRP/PTR set automatically). Schemes, item type, and discount-applicable are available. Use list view for reminders.'
+                              : isSimplePricing
+                              ? ' Customer price is set on the Menu; sell price here is optional reference only. Use list view for custom reminders.'
+                              : ' Use list view for rate tiers, description, and reminders.'}
+                            {billingMode === 'REGULAR'
+                              ? ' Tax columns (HSN, CGST %, SGST %) are grouped at the end of each row.'
+                              : ''}
+                          </Text>
+                        }
+                      />
                     ) : (
                       <Box className={accordionStyles.productsList}>
+                        <ShopLayoutColumnsBar
+                          gridId={GRID_IDS.PRODUCT_ENTRY}
+                          columns={gridColumns}
+                          drawerDescription={PRODUCT_ENTRY_DRAWER_DESCRIPTION}
+                          caption="Fields you hide here are hidden for everyone in this shop, in list and grid view. Required fields cannot be hidden."
+                        />
                         {products.map((product, index) => (
                           <ProductAccordion
                             key={product.id}
@@ -4958,6 +5169,7 @@ export function ProductEntryPage() {
                             localDateTimeToIso={localDateTimeToIso}
                             onAddTax={estimateWorkspace ? () => void handleAddTax() : undefined}
                             addTaxBusy={isSavingEstimateDraft}
+                            isHidden={isHiddenInShopLayout}
                           />
                         ))}
                       </Box>
@@ -5287,369 +5499,6 @@ export function ProductEntryPage() {
   );
 }
 
-interface GridBulkFillRowProps {
-  bulk: GridBulkFillDraft;
-  billingMode: BillingMode;
-  compactPriceUi: boolean;
-  showCommercialTerms: boolean;
-  companyField: VerticalSchemaFieldDef | null;
-  sellDirectField: VerticalSchemaFieldDef | null;
-  schemaFields: VerticalSchemaFieldDef[];
-  isLoading: boolean;
-  onBulkChange: (
-    field: keyof GridBulkFillDraft,
-    value: GridBulkFillDraft[keyof GridBulkFillDraft],
-  ) => void;
-  onVerticalBulkChange: (key: string, value: string) => void;
-  onApply: () => void;
-}
-
-function GridBulkFillRow({
-  bulk,
-  billingMode,
-  compactPriceUi,
-  showCommercialTerms,
-  companyField,
-  sellDirectField,
-  schemaFields,
-  isLoading,
-  onBulkChange,
-  onVerticalBulkChange,
-  onApply,
-}: GridBulkFillRowProps) {
-  return (
-    <TableRow className={denseDataGrid.bulkRow}>
-      <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-        <Text as="span" className={denseDataGrid.bulkLabel}>
-          Fill all
-        </Text>
-        <Button
-          type="button"
-          className={denseDataGrid.bulkApplyBtn}
-          onClick={onApply}
-          disabled={isLoading}
-          title="Apply filled values to every product row"
-        >
-          Apply to all
-        </Button>
-      </TableHeaderCell>
-      <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-        <Text as="span" className={denseDataGrid.bulkDisabled} title="Barcode must be set per row">
-          —
-        </Text>
-      </TableHeaderCell>
-      {companyField && (
-        <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-          <Input
-            type="text"
-            className={denseDataGrid.input}
-            placeholder="Company"
-            value={bulk.verticalBulk?.[companyField.key] ?? bulk.companyName ?? ''}
-            onChange={(e) => onVerticalBulkChange(companyField.key, e.target.value)}
-            disabled={isLoading}
-          />
-        </TableHeaderCell>
-      )}
-      <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-        <Text
-          as="span"
-          className={denseDataGrid.bulkDisabled}
-          title="Product name must be set per row"
-        >
-          —
-        </Text>
-      </TableHeaderCell>
-      {schemaFields.map((field) => {
-        // Degree has no grid column — it appears inline on the row when Item Type is Temperature.
-        if (field.key === 'itemTypeDegree') {
-          return null;
-        }
-        const perRowOnly = field.key === 'batchNo';
-        if (perRowOnly) {
-          return (
-            <TableHeaderCell
-              key={field.key}
-              className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}
-            >
-              <Text
-                as="span"
-                className={denseDataGrid.bulkDisabled}
-                title="Batch number must be set per row"
-              >
-                —
-              </Text>
-            </TableHeaderCell>
-          );
-        }
-        if (field.type === 'enum' && field.values?.length) {
-          return (
-            <TableHeaderCell
-              key={field.key}
-              className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}
-            >
-              <Select
-                className={denseDataGrid.select}
-                value={bulk.verticalBulk?.[field.key] ?? ''}
-                onChange={(e) => onVerticalBulkChange(field.key, e.target.value)}
-                disabled={isLoading}
-                aria-label={field.label ?? field.key}
-              >
-                <option value="">—</option>
-                {field.values.map((v) => (
-                  <option key={v} value={v}>
-                    {v === 'NORMAL'
-                      ? 'Normal'
-                      : v === 'COSTLY'
-                      ? 'Costly'
-                      : v === 'DEGREE'
-                      ? 'Temperature for the item'
-                      : v}
-                  </option>
-                ))}
-              </Select>
-            </TableHeaderCell>
-          );
-        }
-        return (
-          <TableHeaderCell
-            key={field.key}
-            className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}
-          >
-            <Input
-              type={field.type === 'date' ? 'date' : 'text'}
-              className={field.type === 'date' ? denseDataGrid.inputDate : denseDataGrid.input}
-              placeholder={field.label ?? field.key}
-              value={bulk.verticalBulk?.[field.key] ?? ''}
-              onChange={(e) => onVerticalBulkChange(field.key, e.target.value)}
-              disabled={isLoading}
-            />
-          </TableHeaderCell>
-        );
-      })}
-      <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-        <Input
-          type="text"
-          inputMode="numeric"
-          className={denseDataGrid.inputNarrow}
-          placeholder="Qty"
-          value={bulk.count ?? ''}
-          onChange={(e) => onBulkChange('count', e.target.value)}
-          disabled={isLoading}
-        />
-      </TableHeaderCell>
-      <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-        <Input
-          type="text"
-          inputMode="text"
-          className={denseDataGrid.inputNarrow}
-          placeholder="1x10"
-          title="Packaging factor: 10 or 1x10 → 1 × 10 (unit stays per row)"
-          value={bulk.conversionFactor ?? ''}
-          onChange={(e) => onBulkChange('conversionFactor', e.target.value)}
-          disabled={isLoading}
-        />
-      </TableHeaderCell>
-      <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-        <Input
-          type="text"
-          className={denseDataGrid.input}
-          placeholder="Location"
-          value={bulk.location ?? ''}
-          onChange={(e) => onBulkChange('location', e.target.value)}
-          disabled={isLoading}
-        />
-      </TableHeaderCell>
-      {sellDirectField && (
-        <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-          <Select
-            className={denseDataGrid.input}
-            value={bulk.verticalBulk?.[sellDirectField.key] ?? ''}
-            onChange={(e) => onVerticalBulkChange(sellDirectField.key, e.target.value)}
-            disabled={isLoading}
-          >
-            <option value="">—</option>
-            <option value="no">No</option>
-            <option value="yes">Yes</option>
-          </Select>
-        </TableHeaderCell>
-      )}
-      {compactPriceUi ? (
-        <>
-          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-            <Input
-              type="text"
-              inputMode="decimal"
-              className={denseDataGrid.inputNarrow}
-              placeholder="Rate"
-              value={bulk.costPrice ?? ''}
-              onChange={(e) => onBulkChange('costPrice', e.target.value)}
-              disabled={isLoading}
-            />
-          </TableHeaderCell>
-          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-            <Input
-              type="text"
-              inputMode="decimal"
-              className={denseDataGrid.inputNarrow}
-              placeholder="Sell"
-              value={bulk.sellingPrice ?? ''}
-              onChange={(e) => onBulkChange('sellingPrice', e.target.value)}
-              disabled={isLoading}
-            />
-          </TableHeaderCell>
-        </>
-      ) : (
-        <>
-          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-            <Text as="span" className={denseDataGrid.bulkDisabled} title="PTS must be set per row">
-              —
-            </Text>
-          </TableHeaderCell>
-          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-            <Text as="span" className={denseDataGrid.bulkDisabled} title="PTR must be set per row">
-              —
-            </Text>
-          </TableHeaderCell>
-          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-            <Text as="span" className={denseDataGrid.bulkDisabled} title="MRP must be set per row">
-              —
-            </Text>
-          </TableHeaderCell>
-        </>
-      )}
-      {showCommercialTerms ? (
-        <>
-          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-            <Select
-              className={denseDataGrid.select}
-              value={bulk.schemeType ?? ''}
-              onChange={(e) => onBulkChange('schemeType', e.target.value as SchemeType | '')}
-              disabled={isLoading}
-            >
-              <option value="">—</option>
-              <option value="FIXED_UNITS">Free units</option>
-              <option value="PERCENTAGE">Percentage</option>
-            </Select>
-          </TableHeaderCell>
-          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-            <Input
-              type="text"
-              className={denseDataGrid.inputNarrow}
-              placeholder="e.g. 10+2"
-              value={bulk.saleScheme ?? ''}
-              onChange={(e) => onBulkChange('saleScheme', e.target.value)}
-              disabled={isLoading}
-            />
-          </TableHeaderCell>
-          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-            <Input
-              type="number"
-              className={denseDataGrid.inputNarrow}
-              placeholder="—"
-              step="0.01"
-              min={-100}
-              max={100}
-              value={bulk.saleAdditionalDiscount ?? ''}
-              onChange={(e) => onBulkChange('saleAdditionalDiscount', e.target.value)}
-              disabled={isLoading}
-            />
-          </TableHeaderCell>
-          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-            <Select
-              className={denseDataGrid.select}
-              value={bulk.purchaseSchemeType ?? ''}
-              onChange={(e) =>
-                onBulkChange('purchaseSchemeType', e.target.value as SchemeType | '')
-              }
-              disabled={isLoading}
-            >
-              <option value="">—</option>
-              <option value="FIXED_UNITS">Free units</option>
-              <option value="PERCENTAGE">Percentage</option>
-            </Select>
-          </TableHeaderCell>
-          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-            <Input
-              type="text"
-              className={denseDataGrid.inputNarrow}
-              placeholder="e.g. 10+2"
-              value={bulk.purchaseScheme ?? ''}
-              onChange={(e) => onBulkChange('purchaseScheme', e.target.value)}
-              disabled={isLoading}
-            />
-          </TableHeaderCell>
-          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-            <Input
-              type="number"
-              className={denseDataGrid.inputNarrow}
-              placeholder="—"
-              step="0.01"
-              min={0}
-              max={100}
-              value={bulk.purchaseAdditionalDiscount ?? ''}
-              onChange={(e) => onBulkChange('purchaseAdditionalDiscount', e.target.value)}
-              disabled={isLoading}
-            />
-          </TableHeaderCell>
-          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-            <Select
-              className={denseDataGrid.select}
-              value={bulk.discountApplicable ?? ''}
-              onChange={(e) =>
-                onBulkChange('discountApplicable', e.target.value as DiscountApplicable | '')
-              }
-              disabled={isLoading}
-            >
-              <option value="">—</option>
-              <option value="DISCOUNT">Discount</option>
-              <option value="SCHEME">Scheme</option>
-              <option value="DISCOUNT_AND_SCHEME">Both</option>
-            </Select>
-          </TableHeaderCell>
-        </>
-      ) : null}
-      {billingMode === 'REGULAR' && (
-        <>
-          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-            <Text as="span" className={denseDataGrid.bulkDisabled} title="HSN must be set per row">
-              —
-            </Text>
-          </TableHeaderCell>
-          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-            <Input
-              type="text"
-              inputMode="decimal"
-              className={denseDataGrid.inputNarrow}
-              placeholder="CGST"
-              aria-label="Fill CGST %"
-              value={bulk.cgst ?? ''}
-              onChange={(e) => onBulkChange('cgst', e.target.value)}
-              disabled={isLoading}
-            />
-          </TableHeaderCell>
-          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-            <Input
-              type="text"
-              inputMode="decimal"
-              className={denseDataGrid.inputNarrow}
-              placeholder="SGST"
-              aria-label="Fill SGST %"
-              value={bulk.sgst ?? ''}
-              onChange={(e) => onBulkChange('sgst', e.target.value)}
-              disabled={isLoading}
-            />
-          </TableHeaderCell>
-        </>
-      )}
-      <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-        <Text as="span" className={denseDataGrid.bulkDisabled} title="Actions are per row">
-          —
-        </Text>
-      </TableHeaderCell>
-    </TableRow>
-  );
-}
-
 /** Empty grid cell that still reserves label+control height (pair with a real field). */
 function FormRowSpacer() {
   return (
@@ -5778,13 +5627,18 @@ interface ProductAccordionProps {
   localDateTimeToIso: (local: string) => string;
   onAddTax?: () => void | Promise<void>;
   addTaxBusy?: boolean;
+  /**
+   * True for a field the shop hid in its column layout (grid column key, e.g. `barcode`,
+   * `field:expiryDate`). Required fields are never hidden by the server.
+   */
+  isHidden: (columnKey: string) => boolean;
 }
 
 function ProductAccordion({
   product,
-  companyField,
+  companyField: schemaCompanyField,
   sellDirectField,
-  schemaFields,
+  schemaFields: allSchemaFields,
   packagingUnits,
   billingMode,
   simplePricing,
@@ -5815,7 +5669,14 @@ function ProductAccordion({
   localDateTimeToIso,
   onAddTax,
   addTaxBusy,
+  isHidden,
 }: ProductAccordionProps) {
+  const companyField =
+    schemaCompanyField && !isHidden(`field:${schemaCompanyField.key}`) ? schemaCompanyField : null;
+  // Degree has no column of its own; it follows Item Type.
+  const schemaFields = allSchemaFields.filter(
+    (field) => !isHidden(`field:${field.key === 'itemTypeDegree' ? 'itemType' : field.key}`),
+  );
   const productNumber = index + 1;
   const productName = product.name?.trim() || null;
   const showExpiryReminder = schemaFields.some((field) => field.key === 'expiryDate');
@@ -6066,39 +5927,41 @@ function ProductAccordion({
           </Box>
 
           <Box className={accordionStyles.formRow}>
-            <Box className={pageStyles.formGroup}>
-              <Label htmlFor={`barcode-${product.id}`}>Barcode</Label>
-              <Inline gap="sm" align="center" width="full">
-                <Input
-                  type="text"
-                  id={`barcode-${product.id}`}
-                  placeholder="Enter barcode (optional)"
-                  value={product.barcode}
-                  onChange={(e) => onChange(product.id, 'barcode', e.target.value)}
-                  onBlur={(e) => onBarcodeBlur(e.target.value)}
-                  disabled={isLoading}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={isLoading || generatingBarcode}
-                  onClick={onGenerateBarcode}
-                >
-                  {generatingBarcode ? <Spinner size="sm" /> : 'Generate'}
-                </Button>
-                {product.barcode?.trim() ? (
+            {!isHidden('barcode') && (
+              <Box className={pageStyles.formGroup}>
+                <Label htmlFor={`barcode-${product.id}`}>Barcode</Label>
+                <Inline gap="sm" align="center" width="full">
+                  <Input
+                    type="text"
+                    id={`barcode-${product.id}`}
+                    placeholder="Enter barcode (optional)"
+                    value={product.barcode}
+                    onChange={(e) => onChange(product.id, 'barcode', e.target.value)}
+                    onBlur={(e) => onBarcodeBlur(e.target.value)}
+                    disabled={isLoading}
+                  />
                   <Button
                     type="button"
-                    variant="ghost"
-                    disabled={isLoading}
-                    onClick={onPrintBarcode}
-                    aria-label="Print barcode sticker"
+                    variant="outline"
+                    disabled={isLoading || generatingBarcode}
+                    onClick={onGenerateBarcode}
                   >
-                    <Icon icon={Printer} size="sm" />
+                    {generatingBarcode ? <Spinner size="sm" /> : 'Generate'}
                   </Button>
-                ) : null}
-              </Inline>
-            </Box>
+                  {product.barcode?.trim() ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      disabled={isLoading}
+                      onClick={onPrintBarcode}
+                      aria-label="Print barcode sticker"
+                    >
+                      <Icon icon={Printer} size="sm" />
+                    </Button>
+                  ) : null}
+                </Inline>
+              </Box>
+            )}
             {companyField ? (
               <VerticalSchemaFieldInput
                 field={companyField}
@@ -6166,69 +6029,108 @@ function ProductAccordion({
           {showCommercialTerms && (
             <>
               <Box className={accordionStyles.formRow}>
-                <Box className={pageStyles.formGroup}>
-                  <Label htmlFor={`schemeType-${product.id}`}>Sale scheme/deal type</Label>
-                  <Select
-                    id={`schemeType-${product.id}`}
-                    value={product.schemeType ?? 'FIXED_UNITS'}
-                    onChange={(e) => {
-                      const val = e.target.value as SchemeType;
-                      onChange(product.id, 'schemeType', val);
-                      if (val === 'PERCENTAGE') {
-                        onChange(product.id, 'scheme', null);
-                      } else {
-                        onChange(product.id, 'schemePercentage', null);
-                      }
-                    }}
-                    disabled={isLoading}
-                  >
-                    <option value="FIXED_UNITS">Free units</option>
-                    <option value="PERCENTAGE">Percentage</option>
-                  </Select>
-                </Box>
-                {(product.schemeType ?? 'FIXED_UNITS') === 'FIXED_UNITS' ? (
+                {!isHidden('saleDealType') && (
                   <Box className={pageStyles.formGroup}>
-                    <Label htmlFor={`scheme-fixed-${product.id}`}>Pay + free (e.g. 10 + 2)</Label>
-                    <Input
-                      type="text"
-                      id={`scheme-fixed-${product.id}`}
-                      placeholder="Optional, e.g. 10 + 2"
-                      value={schemeFixedDraft}
-                      onChange={(e) => setSchemeFixedDraft(e.target.value)}
-                      onFocus={() => setSchemeFixedFocused(true)}
-                      onBlur={() => {
-                        setSchemeFixedFocused(false);
-                        commitSchemeFixed();
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.currentTarget.blur();
+                    <Label htmlFor={`schemeType-${product.id}`}>Sale scheme/deal type</Label>
+                    <Select
+                      id={`schemeType-${product.id}`}
+                      value={product.schemeType ?? 'FIXED_UNITS'}
+                      onChange={(e) => {
+                        const val = e.target.value as SchemeType;
+                        onChange(product.id, 'schemeType', val);
+                        if (val === 'PERCENTAGE') {
+                          onChange(product.id, 'scheme', null);
+                        } else {
+                          onChange(product.id, 'schemePercentage', null);
                         }
                       }}
                       disabled={isLoading}
-                    />
+                    >
+                      <option value="FIXED_UNITS">Free units</option>
+                      <option value="PERCENTAGE">Percentage</option>
+                    </Select>
                   </Box>
-                ) : (
+                )}
+                {!isHidden('saleScheme') &&
+                  ((product.schemeType ?? 'FIXED_UNITS') === 'FIXED_UNITS' ? (
+                    <Box className={pageStyles.formGroup}>
+                      <Label htmlFor={`scheme-fixed-${product.id}`}>Pay + free (e.g. 10 + 2)</Label>
+                      <Input
+                        type="text"
+                        id={`scheme-fixed-${product.id}`}
+                        placeholder="Optional, e.g. 10 + 2"
+                        value={schemeFixedDraft}
+                        onChange={(e) => setSchemeFixedDraft(e.target.value)}
+                        onFocus={() => setSchemeFixedFocused(true)}
+                        onBlur={() => {
+                          setSchemeFixedFocused(false);
+                          commitSchemeFixed();
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        disabled={isLoading}
+                      />
+                    </Box>
+                  ) : (
+                    <Box className={pageStyles.formGroup}>
+                      <Label htmlFor={`schemePercentage-${product.id}`} required>
+                        Sale Scheme/Deal %
+                      </Label>
+                      <Input
+                        type="number"
+                        id={`schemePercentage-${product.id}`}
+                        placeholder="e.g. 10 or -5 for markup"
+                        min={-100}
+                        max={100}
+                        step={0.01}
+                        value={product.schemePercentage != null ? product.schemePercentage : ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '') {
+                            onChange(product.id, 'schemePercentage', null);
+                          } else {
+                            const num = parseFloat(val);
+                            if (!isNaN(num) && num >= -100 && num <= 100) {
+                              onChange(product.id, 'schemePercentage', num);
+                            }
+                          }
+                        }}
+                        disabled={isLoading}
+                      />
+                    </Box>
+                  ))}
+              </Box>
+
+              <Box className={accordionStyles.formRow}>
+                {!isHidden('saleDisc') && (
                   <Box className={pageStyles.formGroup}>
-                    <Label htmlFor={`schemePercentage-${product.id}`} required>
-                      Sale Scheme/Deal %
+                    <Label htmlFor={`saleAdditionalDiscount-${product.id}`}>
+                      Sale add. discount (%)
                     </Label>
                     <Input
                       type="number"
-                      id={`schemePercentage-${product.id}`}
-                      placeholder="e.g. 10 or -5 for markup"
+                      id={`saleAdditionalDiscount-${product.id}`}
+                      placeholder="Discount or negative markup"
+                      step="0.01"
                       min={-100}
                       max={100}
-                      step={0.01}
-                      value={product.schemePercentage != null ? product.schemePercentage : ''}
+                      value={
+                        product.saleAdditionalDiscount === null ||
+                        product.saleAdditionalDiscount === undefined
+                          ? ''
+                          : product.saleAdditionalDiscount
+                      }
                       onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '') {
-                          onChange(product.id, 'schemePercentage', null);
+                        const value = e.target.value;
+                        if (value === '') {
+                          onChange(product.id, 'saleAdditionalDiscount', null);
                         } else {
-                          const num = parseFloat(val);
-                          if (!isNaN(num) && num >= -100 && num <= 100) {
-                            onChange(product.id, 'schemePercentage', num);
+                          const numValue = parseFloat(value);
+                          if (!isNaN(numValue) && numValue >= -100 && numValue <= 100) {
+                            onChange(product.id, 'saleAdditionalDiscount', numValue);
                           }
                         }
                       }}
@@ -6236,225 +6138,198 @@ function ProductAccordion({
                     />
                   </Box>
                 )}
-              </Box>
-
-              <Box className={accordionStyles.formRow}>
-                <Box className={pageStyles.formGroup}>
-                  <Label htmlFor={`saleAdditionalDiscount-${product.id}`}>
-                    Sale add. discount (%)
-                  </Label>
-                  <Input
-                    type="number"
-                    id={`saleAdditionalDiscount-${product.id}`}
-                    placeholder="Discount or negative markup"
-                    step="0.01"
-                    min={-100}
-                    max={100}
-                    value={
-                      product.saleAdditionalDiscount === null ||
-                      product.saleAdditionalDiscount === undefined
-                        ? ''
-                        : product.saleAdditionalDiscount
-                    }
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === '') {
-                        onChange(product.id, 'saleAdditionalDiscount', null);
-                      } else {
-                        const numValue = parseFloat(value);
-                        if (!isNaN(numValue) && numValue >= -100 && numValue <= 100) {
-                          onChange(product.id, 'saleAdditionalDiscount', numValue);
-                        }
-                      }
-                    }}
-                    disabled={isLoading}
-                  />
-                </Box>
                 <FormRowEmpty />
               </Box>
 
               {/* Purchase (from vendor) - for comparison at sale */}
               <Box className={accordionStyles.formRow}>
-                <Box className={pageStyles.formGroup}>
-                  <Label htmlFor={`purchaseSchemeType-${product.id}`}>
-                    Purchase scheme/deal type
-                  </Label>
-                  <Select
-                    id={`purchaseSchemeType-${product.id}`}
-                    value={product.purchaseSchemeType ?? 'FIXED_UNITS'}
-                    onChange={(e) => {
-                      const val = e.target.value as PurchaseSchemeInputType;
-                      if (val === 'PERCENTAGE') {
-                        onApplyPurchasePatch(product.id, {
-                          purchaseSchemeType: 'PERCENTAGE',
-                          purchaseSchemePercentage: product.purchaseSchemePercentage ?? null,
-                          ...clearPurchaseSchemePatch(product),
-                        });
-                      } else if (val === 'FREE_QUANTITY') {
-                        const billable = billableCountForPurchaseFreeQty(product);
-                        onApplyPurchasePatch(product.id, {
-                          purchaseSchemeType: 'FREE_QUANTITY',
-                          purchaseSchemePayFor: null,
-                          purchaseSchemeFree: null,
-                          purchaseSchemePercentage: null,
-                          purchaseSchemeFreeQty: null,
-                          ...(product.purchaseSchemeFreeQty != null ? { count: billable } : {}),
-                        });
-                      } else {
-                        const billable = billableCountForPurchaseFreeQty(product);
-                        onApplyPurchasePatch(product.id, {
-                          purchaseSchemeType: 'FIXED_UNITS',
-                          purchaseSchemePercentage: null,
-                          purchaseSchemeFreeQty: null,
-                          ...(product.purchaseSchemeFreeQty != null ? { count: billable } : {}),
-                        });
-                      }
-                    }}
-                    disabled={isLoading}
-                  >
-                    <option value="FIXED_UNITS">Deal ratio</option>
-                    <option value="FREE_QUANTITY">Free quantity</option>
-                    <option value="PERCENTAGE">Percentage</option>
-                  </Select>
-                </Box>
-                {purchaseSchemeType === 'PERCENTAGE' ? (
+                {!isHidden('purchaseDealType') && (
                   <Box className={pageStyles.formGroup}>
-                    <Label htmlFor={`purchaseSchemePercentage-${product.id}`}>
-                      Purchase scheme %
+                    <Label htmlFor={`purchaseSchemeType-${product.id}`}>
+                      Purchase scheme/deal type
                     </Label>
-                    <Input
-                      type="number"
-                      id={`purchaseSchemePercentage-${product.id}`}
-                      placeholder="From vendor"
-                      min={0}
-                      max={100}
-                      step={0.01}
-                      value={
-                        product.purchaseSchemePercentage != null
-                          ? product.purchaseSchemePercentage
-                          : ''
-                      }
+                    <Select
+                      id={`purchaseSchemeType-${product.id}`}
+                      value={product.purchaseSchemeType ?? 'FIXED_UNITS'}
                       onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '') {
-                          onChange(product.id, 'purchaseSchemePercentage', null);
+                        const val = e.target.value as PurchaseSchemeInputType;
+                        if (val === 'PERCENTAGE') {
+                          onApplyPurchasePatch(product.id, {
+                            purchaseSchemeType: 'PERCENTAGE',
+                            purchaseSchemePercentage: product.purchaseSchemePercentage ?? null,
+                            ...clearPurchaseSchemePatch(product),
+                          });
+                        } else if (val === 'FREE_QUANTITY') {
+                          const billable = billableCountForPurchaseFreeQty(product);
+                          onApplyPurchasePatch(product.id, {
+                            purchaseSchemeType: 'FREE_QUANTITY',
+                            purchaseSchemePayFor: null,
+                            purchaseSchemeFree: null,
+                            purchaseSchemePercentage: null,
+                            purchaseSchemeFreeQty: null,
+                            ...(product.purchaseSchemeFreeQty != null ? { count: billable } : {}),
+                          });
                         } else {
-                          const num = parseFloat(val);
-                          if (!isNaN(num) && num >= 0 && num <= 100) {
-                            onChange(product.id, 'purchaseSchemePercentage', num);
-                          }
+                          const billable = billableCountForPurchaseFreeQty(product);
+                          onApplyPurchasePatch(product.id, {
+                            purchaseSchemeType: 'FIXED_UNITS',
+                            purchaseSchemePercentage: null,
+                            purchaseSchemeFreeQty: null,
+                            ...(product.purchaseSchemeFreeQty != null ? { count: billable } : {}),
+                          });
                         }
                       }}
                       disabled={isLoading}
-                    />
-                  </Box>
-                ) : (
-                  <Box className={pageStyles.formGroup}>
-                    <Label htmlFor={`purchase-scheme-fixed-${product.id}`}>
-                      {purchaseSchemeType === 'FREE_QUANTITY'
-                        ? 'Free quantity (e.g. 60 on 540 paid)'
-                        : 'Purchase scheme/deal'}
-                    </Label>
-                    <Input
-                      type="text"
-                      id={`purchase-scheme-fixed-${product.id}`}
-                      placeholder={
-                        purchaseSchemeType === 'FREE_QUANTITY'
-                          ? (Number(product.count) || 0) > 0
-                            ? 'e.g. 60'
-                            : 'e.g. 60 or 0 + 60'
-                          : 'e.g. 10 + 2 or 4 + 1'
-                      }
-                      value={purchaseSchemeFixedDraft}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setPurchaseSchemeFixedDraft(v);
-                        if (purchaseSchemeType !== 'FREE_QUANTITY') {
-                          const parsed = parsePurchaseSchemeDraft(v);
-                          if (parsed?.purchaseSchemeType === 'FIXED_UNITS' && v.includes('+')) {
-                            onApplyPurchasePatch(product.id, {
-                              ...parsed,
-                              purchaseSchemeFreeQty: null,
-                            });
-                          }
-                        }
-                      }}
-                      onFocus={() => setPurchaseSchemeFixedFocused(true)}
-                      onBlur={() => {
-                        setPurchaseSchemeFixedFocused(false);
-                        commitPurchaseSchemeFixed();
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.currentTarget.blur();
-                        }
-                      }}
-                      disabled={isLoading}
-                    />
-                    {purchaseSchemePaidFreeHint ? (
-                      <Text as="span" className={pageStyles.schemeHint}>
-                        {purchaseSchemePaidFreeHint}
-                      </Text>
-                    ) : null}
+                    >
+                      <option value="FIXED_UNITS">Deal ratio</option>
+                      <option value="FREE_QUANTITY">Free quantity</option>
+                      <option value="PERCENTAGE">Percentage</option>
+                    </Select>
                   </Box>
                 )}
+                {!isHidden('purchaseScheme') &&
+                  (purchaseSchemeType === 'PERCENTAGE' ? (
+                    <Box className={pageStyles.formGroup}>
+                      <Label htmlFor={`purchaseSchemePercentage-${product.id}`}>
+                        Purchase scheme %
+                      </Label>
+                      <Input
+                        type="number"
+                        id={`purchaseSchemePercentage-${product.id}`}
+                        placeholder="From vendor"
+                        min={0}
+                        max={100}
+                        step={0.01}
+                        value={
+                          product.purchaseSchemePercentage != null
+                            ? product.purchaseSchemePercentage
+                            : ''
+                        }
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '') {
+                            onChange(product.id, 'purchaseSchemePercentage', null);
+                          } else {
+                            const num = parseFloat(val);
+                            if (!isNaN(num) && num >= 0 && num <= 100) {
+                              onChange(product.id, 'purchaseSchemePercentage', num);
+                            }
+                          }
+                        }}
+                        disabled={isLoading}
+                      />
+                    </Box>
+                  ) : (
+                    <Box className={pageStyles.formGroup}>
+                      <Label htmlFor={`purchase-scheme-fixed-${product.id}`}>
+                        {purchaseSchemeType === 'FREE_QUANTITY'
+                          ? 'Free quantity (e.g. 60 on 540 paid)'
+                          : 'Purchase scheme/deal'}
+                      </Label>
+                      <Input
+                        type="text"
+                        id={`purchase-scheme-fixed-${product.id}`}
+                        placeholder={
+                          purchaseSchemeType === 'FREE_QUANTITY'
+                            ? (Number(product.count) || 0) > 0
+                              ? 'e.g. 60'
+                              : 'e.g. 60 or 0 + 60'
+                            : 'e.g. 10 + 2 or 4 + 1'
+                        }
+                        value={purchaseSchemeFixedDraft}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setPurchaseSchemeFixedDraft(v);
+                          if (purchaseSchemeType !== 'FREE_QUANTITY') {
+                            const parsed = parsePurchaseSchemeDraft(v);
+                            if (parsed?.purchaseSchemeType === 'FIXED_UNITS' && v.includes('+')) {
+                              onApplyPurchasePatch(product.id, {
+                                ...parsed,
+                                purchaseSchemeFreeQty: null,
+                              });
+                            }
+                          }
+                        }}
+                        onFocus={() => setPurchaseSchemeFixedFocused(true)}
+                        onBlur={() => {
+                          setPurchaseSchemeFixedFocused(false);
+                          commitPurchaseSchemeFixed();
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        disabled={isLoading}
+                      />
+                      {purchaseSchemePaidFreeHint ? (
+                        <Text as="span" className={pageStyles.schemeHint}>
+                          {purchaseSchemePaidFreeHint}
+                        </Text>
+                      ) : null}
+                    </Box>
+                  ))}
               </Box>
 
               <Box className={accordionStyles.formRow}>
-                <Box className={pageStyles.formGroup}>
-                  <Label htmlFor={`purchaseAdditionalDiscount-${product.id}`}>
-                    Purchase add. discount (%)
-                  </Label>
-                  <Input
-                    type="number"
-                    id={`purchaseAdditionalDiscount-${product.id}`}
-                    placeholder="From vendor"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    value={
-                      product.purchaseAdditionalDiscount === null ||
-                      product.purchaseAdditionalDiscount === undefined
-                        ? ''
-                        : product.purchaseAdditionalDiscount
-                    }
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === '') {
-                        onChange(product.id, 'purchaseAdditionalDiscount', null);
-                      } else {
-                        const numValue = parseFloat(value);
-                        if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
-                          onChange(product.id, 'purchaseAdditionalDiscount', numValue);
-                        }
+                {!isHidden('purchaseDisc') && (
+                  <Box className={pageStyles.formGroup}>
+                    <Label htmlFor={`purchaseAdditionalDiscount-${product.id}`}>
+                      Purchase add. discount (%)
+                    </Label>
+                    <Input
+                      type="number"
+                      id={`purchaseAdditionalDiscount-${product.id}`}
+                      placeholder="From vendor"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={
+                        product.purchaseAdditionalDiscount === null ||
+                        product.purchaseAdditionalDiscount === undefined
+                          ? ''
+                          : product.purchaseAdditionalDiscount
                       }
-                    }}
-                    disabled={isLoading}
-                  />
-                </Box>
-                <Box className={pageStyles.formGroup}>
-                  <Label htmlFor={`discountApplicable-${product.id}`}>Discount applicable</Label>
-                  <Select
-                    id={`discountApplicable-${product.id}`}
-                    value={product.discountApplicable ?? ''}
-                    onChange={(e) => {
-                      const val = e.target.value as DiscountApplicable | '';
-                      onChange(
-                        product.id,
-                        'discountApplicable',
-                        val === '' ? undefined : (val as DiscountApplicable),
-                      );
-                    }}
-                    disabled={isLoading}
-                  >
-                    <option value="">— Select —</option>
-                    <option value="DISCOUNT">Discount applicable</option>
-                    <option value="SCHEME">Scheme/Deal applicable</option>
-                    <option value="DISCOUNT_AND_SCHEME">
-                      Both discount and scheme/deal applicable
-                    </option>
-                  </Select>
-                </Box>
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          onChange(product.id, 'purchaseAdditionalDiscount', null);
+                        } else {
+                          const numValue = parseFloat(value);
+                          if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+                            onChange(product.id, 'purchaseAdditionalDiscount', numValue);
+                          }
+                        }
+                      }}
+                      disabled={isLoading}
+                    />
+                  </Box>
+                )}
+                {!isHidden('discApplicability') && (
+                  <Box className={pageStyles.formGroup}>
+                    <Label htmlFor={`discountApplicable-${product.id}`}>Discount applicable</Label>
+                    <Select
+                      id={`discountApplicable-${product.id}`}
+                      value={product.discountApplicable ?? ''}
+                      onChange={(e) => {
+                        const val = e.target.value as DiscountApplicable | '';
+                        onChange(
+                          product.id,
+                          'discountApplicable',
+                          val === '' ? undefined : (val as DiscountApplicable),
+                        );
+                      }}
+                      disabled={isLoading}
+                    >
+                      <option value="">— Select —</option>
+                      <option value="DISCOUNT">Discount applicable</option>
+                      <option value="SCHEME">Scheme/Deal applicable</option>
+                      <option value="DISCOUNT_AND_SCHEME">
+                        Both discount and scheme/deal applicable
+                      </option>
+                    </Select>
+                  </Box>
+                )}
               </Box>
             </>
           )}
@@ -6591,59 +6466,67 @@ function ProductAccordion({
                 Leave CGST/SGST empty to use the shop default.
               </Text>
               <Box className={accordionStyles.formRow}>
-                <Box className={pageStyles.formGroup}>
-                  <Label htmlFor={`hsn-${product.id}`}>HSN Code</Label>
-                  <Input
-                    type="text"
-                    id={`hsn-${product.id}`}
-                    placeholder="Enter the HSN code"
-                    value={product.hsn || ''}
-                    onChange={(e) => onChange(product.id, 'hsn', e.target.value)}
-                    disabled={isLoading}
-                  />
-                </Box>
-                <Box className={pageStyles.formGroup}>
-                  <Label htmlFor={`gst-rate-${product.id}`}>GST rate</Label>
-                  <HsnGstRateSelect
-                    id={`gst-rate-${product.id}`}
-                    hsn={product.hsn}
-                    cgst={product.cgst}
-                    sgst={product.sgst}
-                    onPick={(cgst, sgst) => {
-                      onChange(product.id, 'cgst', cgst);
-                      onChange(product.id, 'sgst', sgst);
-                    }}
-                    disabled={isLoading}
-                  />
-                </Box>
+                {!isHidden('hsn') && (
+                  <Box className={pageStyles.formGroup}>
+                    <Label htmlFor={`hsn-${product.id}`}>HSN Code</Label>
+                    <Input
+                      type="text"
+                      id={`hsn-${product.id}`}
+                      placeholder="Enter the HSN code"
+                      value={product.hsn || ''}
+                      onChange={(e) => onChange(product.id, 'hsn', e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </Box>
+                )}
+                {!isHidden('gstRate') && (
+                  <Box className={pageStyles.formGroup}>
+                    <Label htmlFor={`gst-rate-${product.id}`}>GST rate</Label>
+                    <HsnGstRateSelect
+                      id={`gst-rate-${product.id}`}
+                      hsn={product.hsn}
+                      cgst={product.cgst}
+                      sgst={product.sgst}
+                      onPick={(cgst, sgst) => {
+                        onChange(product.id, 'cgst', cgst);
+                        onChange(product.id, 'sgst', sgst);
+                      }}
+                      disabled={isLoading}
+                    />
+                  </Box>
+                )}
               </Box>
               <Box className={accordionStyles.formRow}>
-                <Box className={pageStyles.formGroup}>
-                  <Label htmlFor={`cgst-${product.id}`}>CGST (%)</Label>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    pattern="[0-9]*\.?[0-9]*"
-                    id={`cgst-${product.id}`}
-                    placeholder="Leave empty for shop default"
-                    value={product.cgst || ''}
-                    onChange={(e) => onChange(product.id, 'cgst', e.target.value)}
-                    disabled={isLoading}
-                  />
-                </Box>
-                <Box className={pageStyles.formGroup}>
-                  <Label htmlFor={`sgst-${product.id}`}>SGST (%)</Label>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    pattern="[0-9]*\.?[0-9]*"
-                    id={`sgst-${product.id}`}
-                    placeholder="Leave empty for shop default"
-                    value={product.sgst || ''}
-                    onChange={(e) => onChange(product.id, 'sgst', e.target.value)}
-                    disabled={isLoading}
-                  />
-                </Box>
+                {!isHidden('cgst') && (
+                  <Box className={pageStyles.formGroup}>
+                    <Label htmlFor={`cgst-${product.id}`}>CGST (%)</Label>
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      pattern="[0-9]*\.?[0-9]*"
+                      id={`cgst-${product.id}`}
+                      placeholder="Leave empty for shop default"
+                      value={product.cgst || ''}
+                      onChange={(e) => onChange(product.id, 'cgst', e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </Box>
+                )}
+                {!isHidden('sgst') && (
+                  <Box className={pageStyles.formGroup}>
+                    <Label htmlFor={`sgst-${product.id}`}>SGST (%)</Label>
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      pattern="[0-9]*\.?[0-9]*"
+                      id={`sgst-${product.id}`}
+                      placeholder="Leave empty for shop default"
+                      value={product.sgst || ''}
+                      onChange={(e) => onChange(product.id, 'sgst', e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </Box>
+                )}
               </Box>
             </Box>
           )}
