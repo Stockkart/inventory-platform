@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router';
+import { ApiError } from '@inventory-platform/api-client';
 import { RateRulesSection } from './RateRulesSection';
 import type {
   RateRulesPreviewResponse,
@@ -131,6 +132,54 @@ describe('RateRulesSection', () => {
         { name: 'Wholesale', base: 'priceToRetail', discountPercent: 5, scheme: null },
       ],
     });
+  });
+
+  it('hasOneSaveButton', async () => {
+    mount();
+    await screen.findAllByLabelText('Rate name');
+    expect(screen.getAllByRole('button', { name: /save/i })).toHaveLength(1);
+  });
+
+  it('turnsReadOnlyWhenSaveIsForbidden', async () => {
+    api.update.mockRejectedValue(
+      new ApiError('You cannot edit rate rules', { status: 403, code: 'ACCESS_DENIED' }),
+    );
+    mount();
+    await screen.findAllByLabelText('Rate name');
+    fireEvent.change(screen.getAllByLabelText('Discount %')[0], { target: { value: '7' } });
+    api.get.mockResolvedValue({ ...RULES, canEdit: false });
+    fireEvent.click(screen.getByRole('button', { name: 'Save rules' }));
+
+    expect(
+      await screen.findByText('You can view the rate rules but not change them.'),
+    ).toBeTruthy();
+    expect(api.get).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Save rules' })).toBeNull();
+  });
+
+  it('showsServerMessageAndLoadsTheirRulesOnConflict', async () => {
+    const message =
+      'Rate rules were changed by someone else at the same time. Reload and save again.';
+    api.update.mockRejectedValue(new ApiError(message, { status: 409 }));
+    mount();
+    await screen.findAllByLabelText('Rate name');
+    fireEvent.change(screen.getAllByLabelText('Rate name')[0], { target: { value: 'Mine' } });
+    api.get.mockResolvedValue({
+      ...RULES,
+      rules: [{ name: 'Theirs', base: 'priceToRetail', discountPercent: 3, scheme: null }],
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save rules' }));
+
+    expect(await screen.findByText(message)).toBeTruthy();
+    await waitFor(() =>
+      expect(
+        screen.getAllByLabelText('Rate name').map((el) => (el as HTMLInputElement).value),
+      ).toEqual(['Theirs']),
+    );
+    expect(api.get).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText('Unsaved changes')).toBeNull();
+    expect(screen.getByText(message)).toBeTruthy();
   });
 
   it('rendersNothingWhenDisabled', async () => {

@@ -1,12 +1,18 @@
+/** The price a rate rule starts from, as the API names it. */
+export type RateRuleBase = 'sellingPrice' | 'priceToRetail' | 'maximumRetailPrice';
+
+/** Scheme kinds the API sends on a rate: fixed free units (10+1) or a percentage. */
+export type RateSchemeType = 'FIXED_UNITS' | 'PERCENTAGE';
+
 export interface PricingRate {
   name: string;
   price: number;
   /** Rule-derived rate fields; absent on legacy hand-typed rates. All computed by the API. */
-  base?: string | null;
+  base?: RateRuleBase | null;
   baseValue?: number | null;
   discountPercent?: number | null;
   scheme?: {
-    schemeType?: string | null;
+    schemeType?: RateSchemeType | null;
     schemePayFor?: number | null;
     schemeFree?: number | null;
     schemePercentage?: number | null;
@@ -30,6 +36,11 @@ export interface PricingResponse {
   costPrice?: number;
   rates?: PricingRate[];
   defaultRate?: string;
+  /**
+   * Names `defaultRate` may take, in display order: priceToRetail, maximumRetailPrice,
+   * costPrice, then the eligible rates. Decided by the API.
+   */
+  defaultRateOptions?: string[] | null;
   sellingPrice?: number;
   saleAdditionalDiscount?: number | null;
   purchaseAdditionalDiscount?: number | null;

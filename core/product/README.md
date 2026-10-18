@@ -102,14 +102,19 @@ Product Search and Scan & Sell call `POST /inventory/search` (`inventoryApi.sear
 
 - **Profile → Rate rules** (`RateRulesSection`, registered by `plugins/registry`) edits the shop's
   ordered rate rules: name, base, discount % and scheme (`SchemeInput`, shared with Scan & Sell).
-  Rows reorder with up/down buttons; Save sends `PUT /shops/active-shop/rate-rules` and then
-  refreshes the rules and the shop capabilities (`features.rateRules`).
+  Rows reorder with up/down buttons; "Save rules" (the only save button) sends
+  `PUT /shops/active-shop/rate-rules` and then refetches the rules and reloads this shop's
+  capabilities (`features.rateRules`) in place, keeping the old value until the new one arrives
+  (`fetchCapabilities({ force: true })`). A 403 reloads the rules, so the section turns
+  read-only; a 409 (`RATE_RULES_CONFLICT`, someone else saved first) shows the server's message
+  and loads the rules now saved. The draft helpers live in `lib/rateRulesDraft.ts`.
 - **The backend decides; this package carries.** Base choices come only from the API's
   `baseOptions` (the picker is hidden when there is one), never from the shop type. The sample
   rows show what `POST /rate-rules/preview` returns for the draft, price and `termsText` as sent;
   the screen does no rate, discount, scheme or tax arithmetic. A rule that cannot be generated
   appears as "not generated" with the server's reason in words (`skippedReasonText`).
-- **Access.** The section renders nothing when `enabled` is false and is read-only (no inputs, no
+- **Access.** When `enabled` is false (cafe) the registry hides the Profile tab
+  (`useRateRulesAvailable`) and the section renders nothing; it is read-only (no inputs, no
   Save) when `canEdit` is false. The owner grants editing per person under Access Control
   ("Edit rate rules and rates", `rateRulesEdit`).
 

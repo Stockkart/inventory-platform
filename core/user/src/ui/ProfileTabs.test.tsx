@@ -100,6 +100,23 @@ describe('ProfileTabs with a registered extension', () => {
     );
   });
 
+  it('hides an extension tab whose useVisible says no', () => {
+    registerProfileTab({ ...ext('labels', 'Barcode labels', 'invoice'), useVisible: () => false });
+
+    render(<ProfileTabs activeTab="shop" onTabChange={vi.fn()} />);
+
+    expect(screen.queryByRole('tab', { name: 'Barcode labels' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('tab')).toHaveLength(PROFILE_TABS.length);
+  });
+
+  it('shows an extension tab whose useVisible says yes', () => {
+    registerProfileTab({ ...ext('labels', 'Barcode labels', 'invoice'), useVisible: () => true });
+
+    render(<ProfileTabs activeTab="shop" onTabChange={vi.fn()} />);
+
+    expect(screen.getByRole('tab', { name: 'Barcode labels' })).toBeInTheDocument();
+  });
+
   it('re-renders when an extension is registered after mount', () => {
     render(<ProfileTabs activeTab="shop" onTabChange={vi.fn()} />);
     expect(screen.queryByRole('tab', { name: 'Barcode labels' })).not.toBeInTheDocument();
