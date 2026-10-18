@@ -44,7 +44,6 @@ export interface GeneratedRatesListProps {
   onReset: (name: string) => void;
 }
 
-
 /** A save warning in words. `BELOW_COST` and `REPLACED_BY_RULE` are the API's reasons. */
 function warningText(item: SkippedRateRule): string {
   if (item.reason === 'REPLACED_BY_RULE') {
