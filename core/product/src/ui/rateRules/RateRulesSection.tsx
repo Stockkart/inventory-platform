@@ -37,6 +37,7 @@ import {
   emptyRule,
   moveRule,
   schemeText,
+  skippedReasonText,
   toPreviewRules,
   toRules,
   type RateRuleDraft,
@@ -150,7 +151,7 @@ function SampleRows({ request, enabled }: SampleRowsProps) {
         {query.data?.skipped.map((skipped) => (
           <Box key={skipped.name} as="li" py="xs">
             <Text as="span" variant="caption" color="secondary">
-              {skipped.name} not generated: {skipped.reason}
+              {skipped.name} not generated: {skippedReasonText(skipped.reason)}
             </Text>
           </Box>
         ))}
@@ -485,8 +486,8 @@ function RateRulesEditor({ data }: { data: RateRulesResponse }) {
 }
 
 /**
- * Profile → "Rate rules" tab. Renders nothing when the shop has no rate rules
- * feature; read-only when the user lacks the edit grant. The base picker follows
+ * Profile → "Rate rules" tab. Renders nothing when rate rules are disabled for the
+ * shop's vertical (`enabled: false`, e.g. cafe); read-only when the user lacks the edit grant. The base picker follows
  * the API's `baseOptions`, never the shop type.
  */
 export function RateRulesSection() {
