@@ -93,4 +93,25 @@ describe('GeneratedRatesList', () => {
     setup();
     expect(screen.queryByRole('button', { name: /Reset/ })).toBeNull();
   });
+
+  it('refuses to clear a scheme and says so', () => {
+    const { onEditTerms } = setup({}, [
+      { ...RULE_RATE, scheme: { schemeType: 'PERCENTAGE', schemePercentage: 2 } },
+    ]);
+    expect(screen.getByText(/can.t be removed by override/)).toBeTruthy();
+    const input = screen.getByLabelText('Scheme') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '' } });
+    fireEvent.blur(input);
+    expect(onEditTerms).not.toHaveBeenCalled();
+    expect((screen.getByLabelText('Scheme') as HTMLInputElement).value).toBe('2%');
+  });
+
+  it('refuses to clear the discount', () => {
+    const { onEditTerms } = setup();
+    const discount = screen.getByLabelText('Discount %') as HTMLInputElement;
+    fireEvent.change(discount, { target: { value: '' } });
+    fireEvent.blur(discount);
+    expect(onEditTerms).not.toHaveBeenCalled();
+    expect(discount.value).toBe('5');
+  });
 });

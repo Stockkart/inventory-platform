@@ -72,9 +72,10 @@ export function PriceEditPage() {
   const navigate = useNavigate();
   const state = location.state as LocationState | null;
   const { success: notifySuccess, error: notifyError } = useNotify;
+  const { user } = useAuthStore();
   const canEditRateRules = useShopAccessStore((s) => {
-    const shopId = useAuthStore.getState().user?.shopId;
-    return (shopId ? s.byShopId[shopId]?.modules?.rateRulesEdit : false) ?? false;
+    const access = user?.shopId ? s.byShopId[user.shopId] : undefined;
+    return access?.modules?.rateRulesEdit ?? false;
   });
 
   const [priceToRetail, setPriceToRetail] = useState<string>('');

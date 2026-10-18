@@ -67,12 +67,14 @@ function RateTermsEditor({
   const [discount, setDiscount] = useState(serverDiscount);
   useEffect(() => setDiscount(serverDiscount), [serverDiscount]);
   const scheme = rate.scheme ?? null;
+  const [schemeKey, setSchemeKey] = useState(0);
   const idBase = `rate-terms-${rate.name}`;
 
   const commitDiscount = () => {
     const trimmed = discount.trim();
-    const parsed = trimmed === '' ? null : Number(trimmed);
-    if (parsed != null && (Number.isNaN(parsed) || parsed < 0 || parsed > 100)) {
+    const parsed = Number(trimmed);
+    // The server treats a blank term as unchanged, so a blank or bad entry goes back to the saved one.
+    if (trimmed === '' || Number.isNaN(parsed) || parsed < 0 || parsed > 100) {
       setDiscount(serverDiscount);
       return;
     }
@@ -80,8 +82,11 @@ function RateTermsEditor({
     onEditTerms(rate.name, { discountPercent: parsed, scheme });
   };
 
-  const commitScheme = (next: RateRuleScheme | null) =>
+  const commitScheme = (next: RateRuleScheme) =>
     onEditTerms(rate.name, { discountPercent: rate.discountPercent ?? null, scheme: next });
+
+  // Clearing is refused (the server would keep the old scheme): show the saved scheme again.
+  const refuseClear = () => setSchemeKey((k) => k + 1);
 
   return (
     <Inline gap="sm" align="end">
@@ -100,27 +105,27 @@ function RateTermsEditor({
       </FormField>
       <FormField label="Scheme" htmlFor={`${idBase}-scheme`}>
         <SchemeInput
+          key={schemeKey}
           id={`${idBase}-scheme`}
           schemeType={(scheme?.schemeType as SchemeTypeCart | null | undefined) ?? null}
           payFor={scheme?.schemePayFor ?? null}
           free={scheme?.schemeFree ?? null}
           percentage={scheme?.schemePercentage ?? null}
-          onCommitUnits={(payFor, free) =>
-            commitScheme(
-              payFor == null && free == null
-                ? null
-                : { schemeType: 'FIXED_UNITS', schemePayFor: payFor, schemeFree: free },
-            )
-          }
-          onCommitPercentage={(percentage) =>
-            commitScheme(
-              percentage == null
-                ? null
-                : { schemeType: 'PERCENTAGE', schemePercentage: percentage },
-            )
-          }
+          onCommitUnits={(payFor, free) => {
+            if (payFor == null && free == null) return refuseClear();
+            commitScheme({ schemeType: 'FIXED_UNITS', schemePayFor: payFor, schemeFree: free });
+          }}
+          onCommitPercentage={(percentage) => {
+            if (percentage == null) return refuseClear();
+            commitScheme({ schemeType: 'PERCENTAGE', schemePercentage: percentage });
+          }}
           disabled={false}
         />
+        {scheme ? (
+          <Text as="span" variant="caption" color="secondary">
+            Schemes can&apos;t be removed by override; reset to rule instead.
+          </Text>
+        ) : null}
       </FormField>
     </Inline>
   );
