@@ -13,6 +13,7 @@ import {
 } from '@inventory-platform/ui-kit';
 import type { RateRuleScheme } from '../../model/rateRules.types';
 import { SchemeInput, type SchemeTypeCart } from '../scheme';
+import { isRuleRate, rateGstLabel } from '../../lib/pricingRate';
 
 /** A rule that produced no rate, or a kept override left below cost. Server-owned shape. */
 export interface SkippedRateRule {
@@ -40,16 +41,7 @@ export interface GeneratedRatesListProps {
   onReset: (name: string) => void;
 }
 
-/** True for a rate the server derived from a rule (legacy hand-typed rates have no base). */
-export function isRuleRate(rate: PricingRate): boolean {
-  return rate.base != null;
-}
-
-function gstLabel(gstMode: string | null | undefined): string | null {
-  if (gstMode === 'INCLUSIVE') return 'incl. GST';
-  if (gstMode === 'EXCLUSIVE') return '+ GST';
-  return null;
-}
+export { isRuleRate };
 
 /** "BELOW_COST" -> "below cost". Wording only. */
 function reasonText(reason: string): string {
@@ -154,7 +146,7 @@ export function GeneratedRatesList({
       margin="none"
     >
       {rates.map((rate) => {
-        const label = gstLabel(rate.gstMode);
+        const label = rateGstLabel(rate.gstMode);
         return (
           <Box key={rate.name} as="li" py="xs">
             <Stack gap="xs">
