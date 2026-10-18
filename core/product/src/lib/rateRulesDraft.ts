@@ -1,10 +1,10 @@
-import type { RateRule, RateRuleScheme } from '../../model/rateRules.types';
+import type { RateRule, RateRuleBase, RateRuleScheme } from '../model/rateRules.types';
 
 /** One editable row. `key` is a client-only id so rows keep their identity while reordered. */
 export interface RateRuleDraft {
   key: string;
   name: string;
-  base: string;
+  base: RateRuleBase;
   /** Text as typed; empty means no discount. Parsed to a number only when saving. */
   discount: string;
   scheme: RateRuleScheme | null;
@@ -43,7 +43,7 @@ export function draftFromRules(rules: readonly RateRule[]): RateRulesDraft {
   };
 }
 
-export function emptyRule(base: string): RateRuleDraft {
+export function emptyRule(base: RateRuleBase): RateRuleDraft {
   return { key: newRuleKey(), name: '', base, discount: '', scheme: null };
 }
 

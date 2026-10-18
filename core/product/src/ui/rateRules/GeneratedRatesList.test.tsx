@@ -114,4 +114,31 @@ describe('GeneratedRatesList', () => {
     expect(onEditTerms).not.toHaveBeenCalled();
     expect(discount.value).toBe('5');
   });
+
+  it('marksRatesEditedButNotSaved', () => {
+    setup({ pendingEdit: ['Rate-B'] }, [RULE_RATE, { ...RULE_RATE, name: 'Rate-B' }]);
+    expect(screen.getAllByText('unsaved')).toHaveLength(1);
+    const rateB = screen.getByText('Rate-B').closest('li') as HTMLElement;
+    expect(rateB.textContent).toContain('unsaved');
+  });
+
+  it('wordsReplacedByRuleWarning', () => {
+    setup({ warnings: [{ name: 'Rate-A', reason: 'REPLACED_BY_RULE' }] }, []);
+    expect(
+      screen.getByText('Rate-A was typed by hand; the rule of that name now sets it'),
+    ).toBeTruthy();
+    expect(screen.queryByText(/REPLACED_BY_RULE|replaced by rule/)).toBeNull();
+  });
+
+  it('buildsSafeUniqueIdsFromAnyRateName', () => {
+    setup({}, [
+      { ...RULE_RATE, name: 'Rate A / 10%' },
+      { ...RULE_RATE, name: 'Rate "B"' },
+    ]);
+    const inputs = screen.getAllByLabelText('Discount %');
+    expect(inputs).toHaveLength(2);
+    const ids = inputs.map((el) => el.id);
+    expect(new Set(ids).size).toBe(2);
+    for (const id of ids) expect(id).toMatch(/^[A-Za-z0-9_-]+$/);
+  });
 });

@@ -43,12 +43,26 @@ function normalizeDefaultRate(value: string): string {
   return PASCAL_TO_CAMEL[value] ?? value;
 }
 
-const SYSTEM_DEFAULT_RATE_OPTIONS: readonly SelectOptionDef[] = [
-  { value: '', label: '— None —' },
-  { value: 'priceToRetail', label: 'PTR (Price to Retailer)' },
-  { value: 'maximumRetailPrice', label: 'MRP (Maximum Retail Price)' },
-  { value: 'costPrice', label: 'Cost price' },
-];
+const NO_DEFAULT_RATE: SelectOptionDef = { value: '', label: '— None —' };
+
+/** Labels for the built-in default-rate names; other names show as they are. */
+const SYSTEM_DEFAULT_RATE_LABELS: Record<string, string> = {
+  priceToRetail: 'PTR (Price to Retailer)',
+  maximumRetailPrice: 'MRP (Maximum Retail Price)',
+  costPrice: 'Cost price',
+};
+
+/** Offered when the API gave no list (the page fell back to the navigation state). */
+const SYSTEM_DEFAULT_RATE_NAMES = Object.keys(SYSTEM_DEFAULT_RATE_LABELS);
+
+/** The terms an override changes, for telling an edited rate from its saved one. */
+function termsKey(rate: PricingRate | undefined): string {
+  return JSON.stringify([rate?.discountPercent ?? null, rate?.scheme ?? null]);
+}
+
+interface PageShellProps {
+  children: ReactNode;
+}
 
 interface LocationState {
   priceToRetail?: number | null;
@@ -58,7 +72,7 @@ interface LocationState {
   defaultRate?: string | null;
 }
 
-function PageShell({ children }: { children: ReactNode }) {
+function PageShell({ children }: PageShellProps) {
   return (
     <Stack gap="md" width="full" maxWidth="sm" mx="auto">
       {children}
@@ -86,6 +100,8 @@ export function PriceEditPage() {
   const [resetNames, setResetNames] = useState<string[]>([]);
   const [warnings, setWarnings] = useState<PricingRateWarning[]>([]);
   const [defaultRate, setDefaultRate] = useState<string>('');
+  /** Names the API says `defaultRate` may take (`defaultRateOptions`); null until loaded. */
+  const [defaultRateNames, setDefaultRateNames] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,6 +128,7 @@ export function PriceEditPage() {
         setRates(pricing.rates ?? []);
         setSavedRates(pricing.rates ?? []);
         setDefaultRate(normalizeDefaultRate(pricing.defaultRate ?? ''));
+        setDefaultRateNames(pricing.defaultRateOptions ?? null);
       })
       .catch(() => {
         if (cancelled) return;
@@ -132,13 +149,36 @@ export function PriceEditPage() {
     };
   }, [pricingId]);
 
-  const defaultRateOptions = useMemo((): SelectOptionDef[] => {
-    // A rate based on selling price cannot be the default: the server falls back and resets SP.
-    const custom = rates
-      .filter((r) => r.name.trim() && r.base !== 'sellingPrice')
-      .map((r) => ({ value: r.name, label: r.name }));
-    return [...SYSTEM_DEFAULT_RATE_OPTIONS, ...custom];
-  }, [rates]);
+  // Which rates may be the default is the server's call (`defaultRateOptions`); a rate added
+  // here is offered once saved. The current value stays listed so it is not silently rewritten.
+  const allowedDefaultRates = useMemo(() => {
+    const names = defaultRateNames ?? SYSTEM_DEFAULT_RATE_NAMES;
+    return defaultRate && !names.includes(defaultRate) ? [...names, defaultRate] : names;
+  }, [defaultRateNames, defaultRate]);
+  const defaultRateOptions = useMemo(
+    (): SelectOptionDef[] => [
+      NO_DEFAULT_RATE,
+      ...allowedDefaultRates.map((name) => ({
+        value: name,
+        label: SYSTEM_DEFAULT_RATE_LABELS[name] ?? name,
+      })),
+    ],
+    [allowedDefaultRates],
+  );
+
+  // Rule rates whose terms were changed here and not saved yet.
+  const pendingEdit = useMemo(
+    () =>
+      rates
+        .filter(
+          (r) =>
+            isRuleRate(r) &&
+            !resetNames.includes(r.name) &&
+            termsKey(r) !== termsKey(savedRates.find((saved) => saved.name === r.name)),
+        )
+        .map((r) => r.name),
+    [rates, savedRates, resetNames],
+  );
 
   const addRate = () => {
     setRates((prev) => [...prev, { name: '', price: 0 }]);
@@ -191,11 +231,7 @@ export function PriceEditPage() {
     const hasRates = rates.length > 0;
     const ratesValid =
       !hasRates || rates.every((r) => r.name.trim() && !isNaN(r.price) && r.price >= 0);
-    const systemRates = ['maximumRetailPrice', 'priceToRetail', 'costPrice'];
-    const defaultRateValid =
-      !defaultRate.trim() ||
-      systemRates.includes(defaultRate.trim()) ||
-      rates.some((r) => r.name.trim() === defaultRate.trim());
+    const defaultRateValid = !defaultRate.trim() || allowedDefaultRates.includes(defaultRate);
 
     const sendingRates = hasRates || loadedFromApi;
     if (ptr === undefined && mrp === undefined && !sendingRates && !defaultRate.trim()) {
@@ -215,9 +251,7 @@ export function PriceEditPage() {
       return;
     }
     if (!defaultRateValid) {
-      setError(
-        'Default rate must be maximumRetailPrice, priceToRetail, costPrice, or a custom rate name',
-      );
+      setError('Choose a default rate from the list');
       return;
     }
 
@@ -247,6 +281,8 @@ export function PriceEditPage() {
         setRates(saved.rates);
         setSavedRates(saved.rates);
       }
+      if (saved.defaultRateOptions) setDefaultRateNames(saved.defaultRateOptions);
+      if (saved.defaultRate != null) setDefaultRate(normalizeDefaultRate(saved.defaultRate));
       setResetNames([]);
       setWarnings(saved.warnings ?? []);
       notifySuccess('Pricing updated successfully');
@@ -352,6 +388,7 @@ export function PriceEditPage() {
                   warnings={warnings}
                   canEdit={canEditRateRules}
                   pendingReset={resetNames}
+                  pendingEdit={pendingEdit}
                   onEditTerms={editRateTerms}
                   onReset={resetRateToRule}
                 />
@@ -412,7 +449,7 @@ export function PriceEditPage() {
               <FormField
                 label="Applied by default"
                 htmlFor="defaultRate"
-                hint="Choose PTR, MRP, cost, or a custom rate name above."
+                hint="Choose PTR, MRP, cost, or a saved rate. A rate added above is offered after you save."
               >
                 <Select
                   id="defaultRate"

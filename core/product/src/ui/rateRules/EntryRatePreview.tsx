@@ -23,7 +23,11 @@ function hasBase(request: RateRulesPreviewRequest): boolean {
  * Rates the shop's rules will generate for the batch being entered, straight from the preview
  * endpoint. Read-only: terms can only be overridden on a saved batch (price edit page).
  */
-export function EntryRatePreview({ request }: { request: RateRulesPreviewRequest }) {
+interface EntryRatePreviewProps {
+  request: RateRulesPreviewRequest;
+}
+
+export function EntryRatePreview({ request }: EntryRatePreviewProps) {
   const key = JSON.stringify(request);
   const [debounced, setDebounced] = useState(request);
   useEffect(() => {
@@ -41,7 +45,12 @@ export function EntryRatePreview({ request }: { request: RateRulesPreviewRequest
       <Text as="span" weight="semibold">
         Generated rates
       </Text>
-      <Text as="p" variant="caption" color="secondary" className={surfaceChrome.priceEditHint}>
+      <Text
+        as="p"
+        variant="caption"
+        color="secondary"
+        className={surfaceChrome.entryRatePreviewHint}
+      >
         Worked out by the server from the prices above when the batch is saved.
       </Text>
       {query.isError ? (

@@ -1,8 +1,10 @@
-import type { PricingRate } from '@inventory-platform/contracts';
+import type { PricingRate, RateRuleBase, RateSchemeType } from '@inventory-platform/contracts';
+
+export type { RateRuleBase };
 
 /** Scheme a rate rule applies on top of its base value. Server-owned shape. */
 export interface RateRuleScheme {
-  schemeType?: string | null;
+  schemeType?: RateSchemeType | null;
   schemePayFor?: number | null;
   schemeFree?: number | null;
   schemePercentage?: number | null;
@@ -11,7 +13,7 @@ export interface RateRuleScheme {
 /** One shop rate rule: a named rate derived from a base price by the backend. */
 export interface RateRule {
   name: string;
-  base: string;
+  base: RateRuleBase;
   discountPercent?: number | null;
   scheme?: RateRuleScheme | null;
 }
@@ -20,7 +22,7 @@ export interface RateRule {
 export interface RateRulesResponse {
   enabled: boolean;
   canEdit: boolean;
-  baseOptions: string[];
+  baseOptions: RateRuleBase[];
   rules: RateRule[];
 }
 

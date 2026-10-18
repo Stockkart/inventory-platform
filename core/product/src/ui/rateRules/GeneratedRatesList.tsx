@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import type { PricingRate } from '@inventory-platform/contracts';
 import {
   Badge,
@@ -14,7 +14,7 @@ import {
 import type { RateRuleScheme } from '../../model/rateRules.types';
 import { SchemeInput, type SchemeTypeCart } from '../scheme';
 import { isRuleRate, rateGstLabel } from '../../lib/pricingRate';
-import { skippedReasonText } from './rateRulesDraft';
+import { skippedReasonText } from '../../lib/rateRulesDraft';
 
 /** A rule that produced no rate, or a kept override left below cost. Server-owned shape. */
 export interface SkippedRateRule {
@@ -32,31 +32,41 @@ export interface GeneratedRatesListProps {
   rates: PricingRate[];
   /** Rules that made no rate (preview / create). */
   skipped?: SkippedRateRule[];
-  /** Rates left below cost by a save (PATCH response). */
+  /** Rates a save left below cost, or that a rule took over from a hand-typed rate (PATCH response). */
   warnings?: SkippedRateRule[];
   /** From `rateRulesEdit`. Without it the list is read-only. */
   canEdit: boolean;
   /** Names queued to reset to their rule on the next save. */
   pendingReset?: string[];
+  /** Names whose discount % or scheme was changed here and not saved yet. */
+  pendingEdit?: string[];
   onEditTerms: (name: string, terms: RateTermsEdit) => void;
   onReset: (name: string) => void;
 }
 
 export { isRuleRate };
 
-function RateTermsEditor({
-  rate,
-  onEditTerms,
-}: {
+/** A save warning in words. `BELOW_COST` and `REPLACED_BY_RULE` are the API's reasons. */
+function warningText(item: SkippedRateRule): string {
+  if (item.reason === 'REPLACED_BY_RULE') {
+    return `${item.name} was typed by hand; the rule of that name now sets it`;
+  }
+  return `${item.name} is ${skippedReasonText(item.reason)}`;
+}
+
+interface RateTermsEditorProps {
   rate: PricingRate;
   onEditTerms: GeneratedRatesListProps['onEditTerms'];
-}) {
+}
+
+function RateTermsEditor({ rate, onEditTerms }: RateTermsEditorProps) {
   const serverDiscount = rate.discountPercent == null ? '' : String(rate.discountPercent);
   const [discount, setDiscount] = useState(serverDiscount);
   useEffect(() => setDiscount(serverDiscount), [serverDiscount]);
   const scheme = rate.scheme ?? null;
   const [schemeKey, setSchemeKey] = useState(0);
-  const idBase = `rate-terms-${rate.name}`;
+  // Rate names may hold spaces or symbols, so ids come from React rather than the name.
+  const idBase = `rate-terms-${useId().replace(/[^A-Za-z0-9_-]/g, '')}`;
 
   const commitDiscount = () => {
     const trimmed = discount.trim();
@@ -130,6 +140,7 @@ export function GeneratedRatesList({
   warnings = [],
   canEdit,
   pendingReset = [],
+  pendingEdit = [],
   onEditTerms,
   onReset,
 }: GeneratedRatesListProps) {
@@ -152,6 +163,7 @@ export function GeneratedRatesList({
                     {rate.name}
                   </Text>
                   {rate.manual ? <Badge variant="warning">overridden</Badge> : null}
+                  {pendingEdit.includes(rate.name) ? <Badge variant="info">unsaved</Badge> : null}
                 </Inline>
                 <Text as="span" className={surfaceChrome.tabularNums}>
                   {rate.price.toFixed(2)}
@@ -197,8 +209,12 @@ export function GeneratedRatesList({
       ))}
       {warnings.map((item) => (
         <Box key={`warning-${item.name}`} as="li" py="xs">
-          <Text as="span" variant="caption" color="danger">
-            {item.name} is {skippedReasonText(item.reason)}
+          <Text
+            as="span"
+            variant="caption"
+            color={item.reason === 'BELOW_COST' ? 'danger' : 'secondary'}
+          >
+            {warningText(item)}
           </Text>
         </Box>
       ))}

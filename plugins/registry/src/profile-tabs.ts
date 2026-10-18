@@ -4,6 +4,7 @@ import {
   BarcodeLabelLayoutSection,
   ProductCardLayoutSection,
   RateRulesSection,
+  useRateRulesAvailable,
 } from '@inventory-platform/product';
 
 /**
@@ -46,5 +47,7 @@ export function registerComposedProfileTabs(): void {
     label: 'Rate rules',
     after: 'invoice',
     render: () => createElement(RateRulesSection),
+    // Hidden where the API says rate rules are off for the shop's vertical (cafe).
+    useVisible: useRateRulesAvailable,
   });
 }
