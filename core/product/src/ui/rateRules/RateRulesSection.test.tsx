@@ -94,8 +94,11 @@ describe('RateRulesSection', () => {
 
   it('showsPreviewTermsAndPriceFromApi', async () => {
     mount();
-    expect(await screen.findByText('83.64')).toBeTruthy();
+    expect(await screen.findByText('83.64 + GST')).toBeTruthy();
     expect(screen.getByText('PTR less 5% plus GST')).toBeTruthy();
+    // The shared, read-only generated rates list: no terms editor in the sample.
+    expect(screen.getByRole('list', { name: 'Generated rates' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Reset .* to rule/ })).toBeNull();
     const body = api.preview.mock.calls[0][0];
     expect(body.rules.map((r: { name: string }) => r.name)).toEqual(['Wholesale', 'Retail']);
   });

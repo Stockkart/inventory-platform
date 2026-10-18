@@ -13,6 +13,7 @@ import {
 } from '@inventory-platform/ui-kit';
 import type { RateRuleScheme } from '../../model/rateRules.types';
 import { SchemeInput, type SchemeTypeCart } from '../scheme';
+import { skippedReasonText } from './rateRulesDraft';
 
 /** A rule that produced no rate, or a kept override left below cost. Server-owned shape. */
 export interface SkippedRateRule {
@@ -49,11 +50,6 @@ function gstLabel(gstMode: string | null | undefined): string | null {
   if (gstMode === 'INCLUSIVE') return 'incl. GST';
   if (gstMode === 'EXCLUSIVE') return '+ GST';
   return null;
-}
-
-/** "BELOW_COST" -> "below cost". Wording only. */
-function reasonText(reason: string): string {
-  return reason.replace(/_/g, ' ').toLowerCase();
 }
 
 function RateTermsEditor({
@@ -203,14 +199,14 @@ export function GeneratedRatesList({
       {skipped.map((item) => (
         <Box key={`skipped-${item.name}`} as="li" py="xs">
           <Text as="span" variant="caption" color="secondary">
-            {item.name} not generated: {reasonText(item.reason)}
+            {item.name} not generated: {skippedReasonText(item.reason)}
           </Text>
         </Box>
       ))}
       {warnings.map((item) => (
         <Box key={`warning-${item.name}`} as="li" py="xs">
           <Text as="span" variant="caption" color="danger">
-            {item.name} is {reasonText(item.reason)}
+            {item.name} is {skippedReasonText(item.reason)}
           </Text>
         </Box>
       ))}
