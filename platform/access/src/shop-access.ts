@@ -9,6 +9,7 @@ export interface ShopAccessModules {
   marketing: boolean;
   paymentPlan: boolean;
   productSearchEdit: boolean;
+  rateRulesEdit: boolean;
 }
 
 export interface ShopStockCorrectionAccess {
@@ -51,6 +52,7 @@ export interface MemberModulePermissions {
   marketing?: boolean;
   paymentPlan?: boolean;
   productSearchEdit?: boolean;
+  rateRulesEdit?: boolean;
 }
 
 export interface MemberPermissions {

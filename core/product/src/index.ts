@@ -32,6 +32,7 @@ export {
 export { productKeys, PRODUCT_MODULE_VERSION } from './queries/keys';
 export * from './queries/hooks';
 export * from './queries/labelLayout.queries';
+export * from './queries/rateRules.queries';
 export { BarcodeLabelLayoutSection } from './ui/labelLayout/BarcodeLabelLayoutSection';
 export {
   productEntryRoutes,

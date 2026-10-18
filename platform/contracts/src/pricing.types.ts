@@ -1,6 +1,19 @@
 export interface PricingRate {
   name: string;
   price: number;
+  /** Rule-derived rate fields; absent on legacy hand-typed rates. All computed by the API. */
+  base?: string | null;
+  baseValue?: number | null;
+  discountPercent?: number | null;
+  scheme?: {
+    schemeType?: string | null;
+    schemePayFor?: number | null;
+    schemeFree?: number | null;
+    schemePercentage?: number | null;
+  } | null;
+  manual?: boolean | null;
+  gstMode?: string | null;
+  termsText?: string | null;
 }
 
 export interface PricingResponse {

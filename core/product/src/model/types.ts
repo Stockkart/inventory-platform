@@ -277,7 +277,7 @@ export interface BulkCreateInventoryItem {
   unitsPerPack?: number | null;
   unitConversions?: UnitConversion | null;
   /** Optional. Array of custom rates { name, price }. */
-  rates?: Array<{ name: string; price: number }> | null;
+  rates?: PricingRate[] | null;
   /** Optional. Must be empty/null or one of: rates[].name, "priceToRetail", "maximumRetailPrice", "costPrice". */
   defaultRate?: string | null;
   /** Extension vertical fields (sport, brand, model, storageTemp, …). */
@@ -695,7 +695,7 @@ export interface ParseInvoiceItem {
   baseUnit?: string | null;
   unitsPerPack?: number | null;
   unitConversions?: UnitConversion | null;
-  rates?: Array<{ name: string; price: number }> | null;
+  rates?: PricingRate[] | null;
   defaultRate?: string | null;
 }
 
@@ -888,6 +888,8 @@ export interface CheckoutItem {
   /** @deprecated use {@code sellableRef} with {@code menu:…} prefix */
   menuItemId?: string;
   unit?: string;
+  /** Named shop rate to bill at; never a system rate such as priceToRetail. Not combinable with a unit change. */
+  rateName?: string;
   quantity?: number;
   baseQuantity?: number;
   priceToRetail?: number;
