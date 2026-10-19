@@ -106,6 +106,19 @@ describe('GeneratedRatesList', () => {
     expect((screen.getByLabelText('Scheme') as HTMLInputElement).value).toBe('2%');
   });
 
+  it('putsTheSchemeNoteUnderTheRowNotInsideTheSchemeField', () => {
+    setup({}, [
+      { ...RULE_RATE, manual: true, scheme: { schemeType: 'PERCENTAGE', schemePercentage: 2 } },
+    ]);
+    const note = screen.getByText(/can.t be removed by override/);
+    const schemeField = screen.getByText('Scheme', { selector: 'label' }).parentElement;
+    expect(schemeField?.contains(note)).toBe(false);
+    // Reset sits at the end of the discount / scheme row.
+    const row = schemeField?.parentElement;
+    expect(row?.contains(screen.getByRole('button', { name: 'Reset Rate-A to rule' }))).toBe(true);
+    expect(row?.contains(note)).toBe(false);
+  });
+
   it('refuses to clear the discount', () => {
     const { onEditTerms } = setup();
     const discount = screen.getByLabelText('Discount %') as HTMLInputElement;

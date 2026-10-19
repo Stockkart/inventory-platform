@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Box, Button, Inline, accountingChrome, cn } from '@inventory-platform/ui-kit';
 import { useProfileTabExtensions, type ProfileTabExtension } from './profileTabRegistry';
 
@@ -76,6 +77,43 @@ interface GatedProfileTabButtonProps extends ProfileTabButtonProps {
 function GatedProfileTabButton({ useVisible, ...props }: GatedProfileTabButtonProps) {
   const visible = useVisible();
   return visible ? <ProfileTabButton {...props} /> : null;
+}
+
+interface GatedProfileTabPanelProps {
+  extension: ProfileTabExtension;
+  useVisible: () => boolean;
+  onHidden: () => void;
+}
+
+/** A gated extension's content: when its owner hides the tab, the page is told to move off it. */
+function GatedProfileTabPanel({ extension, useVisible, onHidden }: GatedProfileTabPanelProps) {
+  const visible = useVisible();
+  useEffect(() => {
+    if (!visible) onHidden();
+  }, [visible, onHidden]);
+  return visible ? <>{extension.render()}</> : null;
+}
+
+export interface ProfileTabPanelProps {
+  extension: ProfileTabExtension;
+  /** Called when the extension's `useVisible` says the tab is hidden (e.g. `?tab=` deep link). */
+  onHidden: () => void;
+}
+
+/**
+ * The active extension tab's content. A tab hidden by its `useVisible` (rate rules on a cafe)
+ * renders nothing and calls `onHidden`, so a deep link to it falls back to another tab.
+ */
+export function ProfileTabPanel({ extension, onHidden }: ProfileTabPanelProps) {
+  return extension.useVisible ? (
+    <GatedProfileTabPanel
+      extension={extension}
+      useVisible={extension.useVisible}
+      onHidden={onHidden}
+    />
+  ) : (
+    <>{extension.render()}</>
+  );
 }
 
 export interface ProfileTabsProps {

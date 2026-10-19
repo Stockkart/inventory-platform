@@ -22,7 +22,10 @@ export interface PricingRate {
   termsText?: string | null;
 }
 
-/** A rate a save left below cost or did not generate; `reason` is a code such as BELOW_COST. */
+/**
+ * A rate a save left below cost (`BELOW_COST`) or a hand-typed rate a rule now sets
+ * (`REPLACED_BY_RULE`); `reason` is the API's code.
+ */
 export interface PricingRateWarning {
   name: string;
   reason: string;
@@ -58,7 +61,10 @@ export interface PricingResponse {
   } | null;
   sgst?: string | null;
   cgst?: string | null;
-  /** Set by PATCH only: rates left below cost by this save. */
+  /**
+   * Set by PATCH `/pricing/{id}` only: rates this save left below cost (`BELOW_COST`) and
+   * hand-typed rates a rule took over (`REPLACED_BY_RULE`). Null when there are none.
+   */
   warnings?: PricingRateWarning[] | null;
   createdAt?: string;
   updatedAt?: string;

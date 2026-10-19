@@ -1,11 +1,17 @@
-import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
-import { PROFILE_TABS, ProfileTabs, orderProfileTabs } from './ProfileTabs';
+import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
+import type { ShopDetailResponse } from '../model/shop.types';
+import { ProfilePage } from '../pages/ProfilePage';
+import { PROFILE_TABS, ProfileTabPanel, ProfileTabs, orderProfileTabs } from './ProfileTabs';
 import {
   registerProfileTab,
   unregisterProfileTab,
   useProfileTabExtensions,
   type ProfileTabExtension,
 } from './profileTabRegistry';
+
+const shopsApiMock = vi.hoisted(() => ({ getActiveShop: vi.fn(), updateActiveShop: vi.fn() }));
+vi.mock('../api/shops.api', () => ({ shopsApi: shopsApiMock }));
 
 // Feature: barcode-label-layout, Requirement 5.1: "Barcode labels" tab sits right after "Invoice layout"
 
@@ -160,5 +166,61 @@ describe('useProfileTabExtensions', () => {
     const matches = result.current.filter((e) => e.id === 'labels');
     expect(matches).toHaveLength(1);
     expect(matches[0]?.label).toBe('Second');
+  });
+});
+
+describe('ProfileTabPanel', () => {
+  it('renders an ungated extension', () => {
+    render(
+      <ProfileTabPanel
+        extension={{ id: 'labels', label: 'Barcode labels', render: () => 'Labels body' }}
+        onHidden={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Labels body')).toBeInTheDocument();
+  });
+
+  it('renders nothing and calls onHidden when useVisible says no', () => {
+    const onHidden = vi.fn();
+    const body = vi.fn(() => 'Rules body');
+    render(
+      <ProfileTabPanel
+        extension={{ id: 'rate-rules', label: 'Rate rules', render: body, useVisible: () => false }}
+        onHidden={onHidden}
+      />,
+    );
+    expect(screen.queryByText('Rules body')).not.toBeInTheDocument();
+    expect(body).not.toHaveBeenCalled();
+    expect(onHidden).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ProfilePage deep link to a hidden tab', () => {
+  afterEach(() => {
+    act(() => unregisterProfileTab('rate-rules'));
+  });
+
+  it('?tab=rate-rules on a shop where the tab is hidden (cafe) falls back to the Shop tab', async () => {
+    const shop: ShopDetailResponse = { shopId: 'shop-1', name: 'Cafe One', verticalId: 'cafe' };
+    shopsApiMock.getActiveShop.mockResolvedValue(shop);
+    registerProfileTab({
+      id: 'rate-rules',
+      label: 'Rate rules',
+      after: 'invoice',
+      render: () => 'Rate rules body',
+      useVisible: () => false,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/dashboard/profile?tab=rate-rules']}>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+
+    const shopTab = await screen.findByRole('tab', { name: 'Shop' });
+    await waitFor(() => expect(shopTab).toHaveAttribute('aria-selected', 'true'));
+    expect(screen.getByText('Cafe One')).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Rate rules' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Rate rules body')).not.toBeInTheDocument();
   });
 });
