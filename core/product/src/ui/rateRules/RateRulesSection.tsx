@@ -110,7 +110,7 @@ function SampleRows({ request, enabled }: SampleRowsProps) {
   const query = useRateRulesPreviewQuery(request, enabled);
   if (!enabled) return null;
   return (
-    <Box className={surfaceChrome.invoiceSettingsBlock}>
+    <Box className={surfaceChrome.rateRulesBlock}>
       <Text as="p" className={surfaceChrome.profileSectionLabel}>
         Sample
       </Text>
@@ -118,11 +118,7 @@ function SampleRows({ request, enabled }: SampleRowsProps) {
         For a product with MRP {SAMPLE_INPUTS.maximumRetailPrice}, PTR {SAMPLE_INPUTS.priceToRetail}
         , selling price {SAMPLE_INPUTS.sellingPrice} and cost {SAMPLE_INPUTS.costPrice}.
       </Text>
-      {query.isError ? (
-        <Alert variant="warning" className={surfaceChrome.invoiceSettingsAlert}>
-          Could not load the sample rates.
-        </Alert>
-      ) : null}
+      {query.isError ? <Alert variant="warning">Could not load the sample rates.</Alert> : null}
       <Box
         as="ul"
         className={surfaceChrome.listPlain}
@@ -192,7 +188,15 @@ function RuleRow({
   const options = baseOptions.includes(row.base) ? baseOptions : [row.base, ...baseOptions];
   const setScheme = (next: RateRuleScheme | null) => onChange(row.key, { scheme: next });
   return (
-    <Box as="li" display="flex" align="end" justify="between" gap="sm" py="xs" flexWrap>
+    <Box
+      as="li"
+      className={surfaceChrome.rateRulesRow}
+      display="flex"
+      align="end"
+      justify="between"
+      gap="sm"
+      flexWrap
+    >
       <Inline gap="sm" align="end" flexWrap>
         <FormField label="Rate name" required htmlFor={`${row.key}-name`}>
           <Input
@@ -288,9 +292,9 @@ interface ReadOnlyRulesProps {
 function ReadOnlyRules({ rules }: ReadOnlyRulesProps) {
   if (rules.length === 0) {
     return (
-      <Text as="p" variant="caption" color="secondary">
-        No rate rules are set up.
-      </Text>
+      <Box className={surfaceChrome.rateRulesEmpty}>
+        <Text weight="medium">No rate rules are set up</Text>
+      </Box>
     );
   }
   return (
@@ -436,71 +440,70 @@ function RateRulesEditor({ data, onReload }: RateRulesEditorProps) {
         ) : null}
       </SectionHeader>
 
-      {readOnly ? (
-        <Alert variant="info" className={surfaceChrome.invoiceSettingsAlert}>
-          You can view the rate rules but not change them.
-        </Alert>
-      ) : null}
-      {saveError ? (
-        <Alert variant="danger" className={surfaceChrome.invoiceSettingsAlert}>
-          {saveError}
-        </Alert>
-      ) : null}
-
-      <Box className={surfaceChrome.invoiceSettingsBlock}>
-        <Text as="p" className={surfaceChrome.profileSectionLabel}>
-          Rates in order
-        </Text>
+      <Box className={surfaceChrome.rateRulesBody}>
         {readOnly ? (
-          <ReadOnlyRules rules={data.rules} />
-        ) : (
-          <Stack gap="sm">
-            {draft.rules.length === 0 ? (
-              <Text as="p" variant="caption" color="secondary">
-                No rate rules yet. Add one to start.
-              </Text>
-            ) : (
-              <Box
-                as="ol"
-                className={surfaceChrome.listPlain}
-                aria-label="Rate rules in order"
-                padding="none"
-                margin="none"
-              >
-                {draft.rules.map((row, index) => (
-                  <RuleRow
-                    key={row.key}
-                    row={row}
-                    index={index}
-                    count={draft.rules.length}
-                    baseOptions={data.baseOptions}
-                    onChange={updateRow}
-                    onMove={moveRow}
-                    onRemove={removeRow}
-                    disabled={busy}
-                  />
-                ))}
-              </Box>
-            )}
-            <Inline gap="sm">
-              <Button
-                type="button"
-                variant="outline"
-                leftIcon={<Plus size={14} />}
-                onClick={addRow}
-                disabled={busy}
-              >
-                Add rule
-              </Button>
-            </Inline>
-          </Stack>
-        )}
+          <Alert variant="info">You can view the rate rules but not change them.</Alert>
+        ) : null}
+        {saveError ? <Alert variant="danger">{saveError}</Alert> : null}
+
+        <Box className={surfaceChrome.rateRulesBlock}>
+          <Text as="p" className={surfaceChrome.profileSectionLabel}>
+            Rates in order
+          </Text>
+          {readOnly ? (
+            <ReadOnlyRules rules={data.rules} />
+          ) : (
+            <Stack gap="sm">
+              {draft.rules.length === 0 ? (
+                <Box className={surfaceChrome.rateRulesEmpty}>
+                  <Text weight="medium">No rate rules yet</Text>
+                  <Text variant="caption" color="secondary">
+                    Add a rule to give each batch registered after you save a named rate.
+                  </Text>
+                </Box>
+              ) : (
+                <Box
+                  as="ol"
+                  className={surfaceChrome.rateRulesList}
+                  aria-label="Rate rules in order"
+                  padding="none"
+                  margin="none"
+                >
+                  {draft.rules.map((row, index) => (
+                    <RuleRow
+                      key={row.key}
+                      row={row}
+                      index={index}
+                      count={draft.rules.length}
+                      baseOptions={data.baseOptions}
+                      onChange={updateRow}
+                      onMove={moveRow}
+                      onRemove={removeRow}
+                      disabled={busy}
+                    />
+                  ))}
+                </Box>
+              )}
+              <Inline gap="sm">
+                <Button
+                  type="button"
+                  variant="outline"
+                  leftIcon={<Plus size={14} />}
+                  onClick={addRow}
+                  disabled={busy}
+                >
+                  Add rule
+                </Button>
+              </Inline>
+            </Stack>
+          )}
+        </Box>
+
+        <SampleRows request={debouncedRequest} enabled={hasRules} />
       </Box>
 
-      <SampleRows request={debouncedRequest} enabled={hasRules} />
-
       {readOnly ? null : (
-        <Box className={surfaceChrome.invoiceSettingsFooterBar}>
+        <Box className={surfaceChrome.rateRulesFooter}>
           <Text variant="caption" color="secondary">
             Changes apply to products registered after you save.
           </Text>
@@ -535,20 +538,22 @@ export function RateRulesSection() {
     return (
       <Box className={surfaceChrome.invoiceSettingsCard}>
         <SectionHeader />
-        <Alert variant="danger" className={surfaceChrome.invoiceSettingsAlert}>
-          <Inline gap="sm" align="center" justify="between">
-            <Text as="span">Could not load the rate rules.</Text>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => void query.refetch()}
-              loading={query.isFetching}
-            >
-              Retry
-            </Button>
-          </Inline>
-        </Alert>
+        <Box className={surfaceChrome.rateRulesBody}>
+          <Alert variant="danger">
+            <Inline gap="sm" align="center" justify="between">
+              <Text as="span">Could not load the rate rules.</Text>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => void query.refetch()}
+                loading={query.isFetching}
+              >
+                Retry
+              </Button>
+            </Inline>
+          </Alert>
+        </Box>
       </Box>
     );
   }
