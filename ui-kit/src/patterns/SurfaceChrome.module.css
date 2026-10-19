@@ -2796,6 +2796,67 @@
   padding-top: 0.85rem;
 }
 
+/* Profile → Rate rules: padded body, one bordered box per rule, dashed empty state, card footer. */
+.rateRulesBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.15rem 1.35rem 1.35rem;
+}
+
+.rateRulesBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.rateRulesList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rateRulesRow {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+  border-radius: 12px;
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 45%,
+    var(--sk-color-bg-elevated, #fff)
+  );
+}
+
+.rateRulesEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem 1rem;
+  border: 1px dashed color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 95%, transparent);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.rateRulesFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1.35rem;
+  border-top: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 40%,
+    var(--sk-color-bg-elevated, #fff)
+  );
+}
+
 @media (max-width: 960px) {
   .invoiceSettingsLayout {
     grid-template-columns: 1fr;

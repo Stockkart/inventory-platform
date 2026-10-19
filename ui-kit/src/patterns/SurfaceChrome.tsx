@@ -329,6 +329,12 @@ export const surfaceChrome = {
   invoicePreviewShortcutVisible: styles.invoicePreviewShortcutVisible,
   invoiceSettingsFooterBar: styles.invoiceSettingsFooterBar,
   invoiceSettingsAlert: styles.invoiceSettingsAlert,
+  rateRulesBody: styles.rateRulesBody,
+  rateRulesBlock: styles.rateRulesBlock,
+  rateRulesList: styles.rateRulesList,
+  rateRulesRow: styles.rateRulesRow,
+  rateRulesEmpty: styles.rateRulesEmpty,
+  rateRulesFooter: styles.rateRulesFooter,
   // Product card layout builder (Profile → Product cards)
   cardBuilderToolbar: styles.cardBuilderToolbar,
   cardBuilderToolbarGroup: styles.cardBuilderToolbarGroup,
