@@ -170,7 +170,7 @@ function RuleRow({
       gap="sm"
       flexWrap
     >
-      <Inline gap="sm" align="end" flexWrap>
+      <Inline gap="sm" align="start" flexWrap>
         <FormField label="Rate name" required htmlFor={`${row.key}-name`}>
           <Input
             id={`${row.key}-name`}
