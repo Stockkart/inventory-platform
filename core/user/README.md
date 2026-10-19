@@ -9,6 +9,7 @@ Identity, shops, CRM contacts, team collaboration, and public/auth **journeys** 
 ### Dashboard
 
 - Customers, vendors, shops, profile
+- Profile tabs: built-ins plus tabs other packages register (`registerProfileTab`, `ui/profileTabRegistry.ts`); `?tab=<id>` opens one. A registered tab may pass `useVisible`; when it says no the tab button is hidden and its content (`ProfileTabPanel`) renders nothing and sends the page back to the Shop tab, so a deep link to a hidden tab (Rate rules on a cafe) lands on Shop.
 - Invitations, my-invitations, join-requests, shop-users, access-control
 - WhatsApp marketing
 - Nav groups: Overview, Contact, Team & Collaboration, Marketing
