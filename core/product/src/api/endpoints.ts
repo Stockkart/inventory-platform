@@ -164,3 +164,9 @@ export const UPLOAD_ENDPOINTS = {
   STATUS: (token: string) => `/upload/status?token=${token}`,
   PARSED_ITEMS: (token: string) => `/upload/parsed-items?token=${token}`,
 } as const;
+
+/** Shop rate rules (active-shop scoped) paths. */
+export const RATE_RULES_ENDPOINTS = {
+  BASE: '/shops/active-shop/rate-rules',
+  PREVIEW: '/shops/active-shop/rate-rules/preview',
+} as const;

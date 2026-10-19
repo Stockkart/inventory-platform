@@ -1,6 +1,7 @@
 export { barcodesApi } from './barcodes.api';
 export { barcodeLabelLayoutApi } from './barcodeLabelLayout.api';
 export { inventoryApi, resolveInventoryDocumentId } from './inventory.api';
+export { rateRulesApi } from './rateRules.api';
 export { cartApi } from './cart.api';
 export { estimatesApi } from './estimates.api';
 export { checkoutApi } from './checkout.api';
@@ -16,6 +17,7 @@ export {
   INVENTORY_ENDPOINTS,
   BARCODE_ENDPOINTS,
   BARCODE_LABEL_LAYOUT_ENDPOINTS,
+  RATE_RULES_ENDPOINTS,
   VENDOR_PURCHASE_INVOICES_ENDPOINTS,
   VENDOR_PURCHASE_RETURNS_ENDPOINTS,
   INVENTORY_CORRECTIONS_ENDPOINTS,
