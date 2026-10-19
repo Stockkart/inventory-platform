@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import type { PricingRate } from '@inventory-platform/contracts';
 import {
   Badge,
@@ -65,9 +65,15 @@ function warningText(item: SkippedRateRule): string {
 interface RateTermsEditorProps {
   rate: PricingRate;
   onEditTerms: GeneratedRatesListProps['onEditTerms'];
+  /** Shown at the end of the fields row (the rate's "Reset to rule"). */
+  action?: ReactNode;
 }
 
-function RateTermsEditor({ rate, onEditTerms }: RateTermsEditorProps) {
+/**
+ * Discount % and scheme on one row that wraps on a narrow screen, with the rate's action at its
+ * end; the scheme note goes under the row at full width rather than inside the scheme field.
+ */
+function RateTermsEditor({ rate, onEditTerms, action }: RateTermsEditorProps) {
   const serverDiscount = rate.discountPercent == null ? '' : String(rate.discountPercent);
   const [discount, setDiscount] = useState(serverDiscount);
   useEffect(() => setDiscount(serverDiscount), [serverDiscount]);
@@ -95,45 +101,48 @@ function RateTermsEditor({ rate, onEditTerms }: RateTermsEditorProps) {
   const refuseClear = () => setSchemeKey((k) => k + 1);
 
   return (
-    <Inline gap="sm" align="end">
-      <FormField label="Discount %" htmlFor={`${idBase}-discount`}>
-        <Input
-          id={`${idBase}-discount`}
-          type="number"
-          inputMode="decimal"
-          min={0}
-          max={100}
-          step="any"
-          value={discount}
-          onChange={(e) => setDiscount(e.target.value)}
-          onBlur={commitDiscount}
-        />
-      </FormField>
-      <FormField label="Scheme" htmlFor={`${idBase}-scheme`}>
-        <SchemeInput
-          key={schemeKey}
-          id={`${idBase}-scheme`}
-          schemeType={(scheme?.schemeType as SchemeTypeCart | null | undefined) ?? null}
-          payFor={scheme?.schemePayFor ?? null}
-          free={scheme?.schemeFree ?? null}
-          percentage={scheme?.schemePercentage ?? null}
-          onCommitUnits={(payFor, free) => {
-            if (payFor == null && free == null) return refuseClear();
-            commitScheme({ schemeType: 'FIXED_UNITS', schemePayFor: payFor, schemeFree: free });
-          }}
-          onCommitPercentage={(percentage) => {
-            if (percentage == null) return refuseClear();
-            commitScheme({ schemeType: 'PERCENTAGE', schemePercentage: percentage });
-          }}
-          disabled={false}
-        />
-        {scheme ? (
-          <Text as="span" variant="caption" color="secondary">
-            Schemes can&apos;t be removed by override; reset to rule instead.
-          </Text>
-        ) : null}
-      </FormField>
-    </Inline>
+    <Stack gap="xs">
+      <Inline gap="md" align="end" flexWrap>
+        <FormField label="Discount %" htmlFor={`${idBase}-discount`}>
+          <Input
+            id={`${idBase}-discount`}
+            type="number"
+            inputMode="decimal"
+            min={0}
+            max={100}
+            step="any"
+            value={discount}
+            onChange={(e) => setDiscount(e.target.value)}
+            onBlur={commitDiscount}
+          />
+        </FormField>
+        <FormField label="Scheme" htmlFor={`${idBase}-scheme`}>
+          <SchemeInput
+            key={schemeKey}
+            id={`${idBase}-scheme`}
+            schemeType={(scheme?.schemeType as SchemeTypeCart | null | undefined) ?? null}
+            payFor={scheme?.schemePayFor ?? null}
+            free={scheme?.schemeFree ?? null}
+            percentage={scheme?.schemePercentage ?? null}
+            onCommitUnits={(payFor, free) => {
+              if (payFor == null && free == null) return refuseClear();
+              commitScheme({ schemeType: 'FIXED_UNITS', schemePayFor: payFor, schemeFree: free });
+            }}
+            onCommitPercentage={(percentage) => {
+              if (percentage == null) return refuseClear();
+              commitScheme({ schemeType: 'PERCENTAGE', schemePercentage: percentage });
+            }}
+            disabled={false}
+          />
+        </FormField>
+        {action}
+      </Inline>
+      {scheme ? (
+        <Text as="span" variant="caption" color="secondary">
+          Schemes can&apos;t be removed by override; reset to rule instead.
+        </Text>
+      ) : null}
+    </Stack>
   );
 }
 
@@ -184,20 +193,23 @@ export function GeneratedRatesList({
                 </Text>
               ) : null}
               {canEdit ? (
-                <Inline gap="sm" align="end">
-                  <RateTermsEditor rate={rate} onEditTerms={onEditTerms} />
-                  {rate.manual ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      aria-label={`Reset ${rate.name} to rule`}
-                      onClick={() => onReset(rate.name)}
-                    >
-                      Reset to rule
-                    </Button>
-                  ) : null}
-                </Inline>
+                <RateTermsEditor
+                  rate={rate}
+                  onEditTerms={onEditTerms}
+                  action={
+                    rate.manual ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        aria-label={`Reset ${rate.name} to rule`}
+                        onClick={() => onReset(rate.name)}
+                      >
+                        Reset to rule
+                      </Button>
+                    ) : null
+                  }
+                />
               ) : null}
               {pendingReset.includes(rate.name) ? (
                 <Text as="span" variant="caption" color="secondary">
