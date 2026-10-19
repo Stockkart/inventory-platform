@@ -57,8 +57,9 @@ export function buildRateOptions(source: RateOptionSource): RateOption[] {
 
 /**
  * What a Scan & Sell rate pick sends for the line. MRP / PTR / Cost send their system name
- * (`priceToRetail` …): the cart puts that batch field on the line, per sale unit, with the batch's
- * own sale disc and scheme. A rule rate (one with a base) sends its name: the cart puts the base,
+ * (`priceToRetail` …): the cart puts that batch field on the line, per sale unit; a line at a rule
+ * rate goes back to the batch's own sale disc and scheme, any other line keeps its own. A rule
+ * rate (one with a base) sends its name: the cart puts the base,
  * disc and scheme on the line. A legacy hand-typed rate keeps the price path.
  */
 export type RatePickRequest = { rateName: string } | { priceToRetail: number };
