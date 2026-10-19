@@ -46,7 +46,10 @@ interface PickHarnessProps {
   sent: RatePickRequest[];
 }
 
-/** The page's pick loop: picker -> request -> cart response -> picker value from appliedRateName. */
+/**
+ * The page's pick loop on a shop with rate rules on: picker -> request -> cart response -> picker
+ * value from appliedRateName.
+ */
 function PickHarness({ source, cart, sent }: PickHarnessProps) {
   const options = buildRateOptions(source);
   const [line, setLine] = useState<CartLine>({ price: 0, discount: null, appliedRateName: null });
@@ -57,7 +60,7 @@ function PickHarness({ source, cart, sent }: PickHarnessProps) {
         options={options}
         value={selectedRateValue(options, line.price, line.appliedRateName)}
         onPick={(value) => {
-          const request = ratePickRequest(options, value);
+          const request = ratePickRequest(options, value, true);
           if (!request) return;
           sent.push(request);
           setLine(cart(request));
