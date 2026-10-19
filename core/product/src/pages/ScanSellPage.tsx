@@ -177,7 +177,12 @@ import {
 import { CafeSellCatalogPanel } from '../ui/CafeSellCatalogPanel';
 import { ScanSellMenuCartLine } from '../ui/ScanSellMenuCartLine';
 import { ScanSellCafeStockLine } from '../ui/ScanSellCafeStockLine';
-import { useNotify, useAuthStore, useVerticalSchemaStore } from '@inventory-platform/session';
+import {
+  useNotify,
+  useAuthStore,
+  useShopCapabilitiesStore,
+  useVerticalSchemaStore,
+} from '@inventory-platform/session';
 import {
   isScanSellHidePurchaseKey,
   shouldSkipScanSellHidePurchaseKey,
@@ -203,6 +208,7 @@ import {
   appliedRateNamesByLine,
   buildRateOptions,
   clearDiscountOverride,
+  pickedRuleRateName,
   prunePickedRateNames,
   ratePickRequest,
   saleDiscountToSend,
@@ -945,6 +951,14 @@ function CustomerSectionBlock({
 export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?: boolean }) {
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
+  const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
+  /** Rate rules on (`features.rateRules`): MRP / PTR / Cost picks send their system name. */
+  const rateRulesOn = useShopCapabilitiesStore((s) =>
+    activeShopId ? s.byShopId[activeShopId]?.features?.rateRules === true : false,
+  );
+  useEffect(() => {
+    void fetchCapabilities();
+  }, [fetchCapabilities]);
   const [cartBusinessType, setCartBusinessType] = useState('medical');
   const isCafeSell = cartBusinessType === 'cafe';
   const [sellCatalog, setSellCatalog] = useState<SellCatalog | null>(null);
@@ -2881,12 +2895,14 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   };
 
   /**
-   * MRP / PTR / Cost send their system name and a rule rate its name (`rateName` only); the line
-   * takes price, disc and scheme from the cart response, and the line's typed disc is dropped so
-   * the next sync does not resend it over the new one. Legacy rates keep the price path.
+   * A rule rate sends its name, and with rate rules on MRP / PTR / Cost send their system name
+   * (`rateName` only); the line takes price, disc and scheme from the cart response, and the
+   * line's typed disc is dropped so the next sync does not resend it over the new one. Without
+   * rate rules MRP / PTR / Cost send the batch price, as before rate rules; legacy rates keep the
+   * price path. Only a rule rate's name is remembered in `pickedRateNames`.
    */
   const handleRatePick = (inventoryId: string, options: RateOption[], value: string) => {
-    const request = ratePickRequest(options, value);
+    const request = ratePickRequest(options, value, rateRulesOn);
     if (!request) return;
     if ('priceToRetail' in request) {
       handleSellingPriceChange(inventoryId, request.priceToRetail);
@@ -2894,7 +2910,12 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     }
     const nextOverrides = clearDiscountOverride(additionalDiscountOverrides, inventoryId);
     setAdditionalDiscountOverrides(nextOverrides);
-    setPickedRateNames((prev) => ({ ...prev, [inventoryId]: request.rateName }));
+    const ruleRateName = pickedRuleRateName(options, value);
+    if (ruleRateName) {
+      setPickedRateNames((prev) => ({ ...prev, [inventoryId]: ruleRateName }));
+    } else {
+      forgetPickedRate(inventoryId);
+    }
     syncCartToAPI(
       cartItems,
       undefined,

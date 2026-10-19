@@ -5,6 +5,7 @@ import {
   appliedRateNamesByLine,
   buildRateOptions,
   clearDiscountOverride,
+  pickedRuleRateName,
   prunePickedRateNames,
   ratePickRequest,
   saleDiscountToSend,
@@ -77,33 +78,59 @@ describe('clearDiscountOverride', () => {
 
 describe('ratePickRequest', () => {
   it('a rule rate sends its name only', () => {
-    expect(ratePickRequest(OPTIONS, 'rate:Rate-A')).toEqual({ rateName: 'Rate-A' });
+    expect(ratePickRequest(OPTIONS, 'rate:Rate-A', true)).toEqual({ rateName: 'Rate-A' });
   });
 
   it('a legacy rate keeps the price path', () => {
-    expect(ratePickRequest(OPTIONS, 'rate:Wholesale')).toEqual({ priceToRetail: 90 });
+    expect(ratePickRequest(OPTIONS, 'rate:Wholesale', true)).toEqual({ priceToRetail: 90 });
+    expect(ratePickRequest(OPTIONS, 'rate:Wholesale', false)).toEqual({ priceToRetail: 90 });
   });
 
-  it('system options send their system name', () => {
-    expect(ratePickRequest(OPTIONS, 'system:priceToRetail')).toEqual({
+  it('rulesShopPtrPickSendsSystemName', () => {
+    expect(ratePickRequest(OPTIONS, 'system:priceToRetail', true)).toEqual({
       rateName: 'priceToRetail',
     });
-    expect(ratePickRequest(OPTIONS, 'system:maximumRetailPrice')).toEqual({
+    expect(ratePickRequest(OPTIONS, 'system:maximumRetailPrice', true)).toEqual({
       rateName: 'maximumRetailPrice',
     });
-    expect(ratePickRequest(OPTIONS, 'system:costPrice')).toEqual({ rateName: 'costPrice' });
+    expect(ratePickRequest(OPTIONS, 'system:costPrice', true)).toEqual({ rateName: 'costPrice' });
+  });
+
+  it('noRulesShopPtrPickSendsBatchPrice', () => {
+    // A shop without rate rules sends what main sent: the batch field's value as the price.
+    expect(ratePickRequest(OPTIONS, 'system:priceToRetail', false)).toEqual({
+      priceToRetail: 100,
+    });
+    expect(ratePickRequest(OPTIONS, 'system:maximumRetailPrice', false)).toEqual({
+      priceToRetail: 120,
+    });
+    expect(ratePickRequest(OPTIONS, 'system:costPrice', false)).toEqual({ priceToRetail: 70 });
   });
 
   it('pickRuleRateThenPtrSendsSystemName', () => {
-    expect(ratePickRequest(OPTIONS, 'rate:Rate-A')).toEqual({ rateName: 'Rate-A' });
-    expect(ratePickRequest(OPTIONS, 'system:priceToRetail')).toEqual({
+    expect(ratePickRequest(OPTIONS, 'rate:Rate-A', true)).toEqual({ rateName: 'Rate-A' });
+    expect(ratePickRequest(OPTIONS, 'system:priceToRetail', true)).toEqual({
       rateName: 'priceToRetail',
     });
   });
 
-  it('an unknown value does nothing', () => {
-    expect(ratePickRequest(OPTIONS, 'rate:Nope')).toBeNull();
-    expect(ratePickRequest(OPTIONS, 'PTR')).toBeNull();
+  it('an unknown value sends nothing', () => {
+    expect(ratePickRequest(OPTIONS, 'rate:Nope', true)).toBeNull();
+    expect(ratePickRequest(OPTIONS, 'PTR', false)).toBeNull();
+  });
+});
+
+describe('pickedRuleRateName', () => {
+  it('systemPickNotStored', () => {
+    expect(pickedRuleRateName(OPTIONS, 'system:priceToRetail')).toBeNull();
+    expect(pickedRuleRateName(OPTIONS, 'system:maximumRetailPrice')).toBeNull();
+    expect(pickedRuleRateName(OPTIONS, 'system:costPrice')).toBeNull();
+  });
+
+  it('remembers a rule rate only', () => {
+    expect(pickedRuleRateName(OPTIONS, 'rate:Rate-A')).toBe('Rate-A');
+    expect(pickedRuleRateName(OPTIONS, 'rate:Wholesale')).toBeNull();
+    expect(pickedRuleRateName(OPTIONS, 'rate:Nope')).toBeNull();
   });
 });
 

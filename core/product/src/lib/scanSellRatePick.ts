@@ -56,21 +56,39 @@ export function buildRateOptions(source: RateOptionSource): RateOption[] {
 }
 
 /**
- * What a Scan & Sell rate pick sends for the line. MRP / PTR / Cost send their system name
- * (`priceToRetail` …): the cart puts that batch field on the line, per sale unit; a line at a rule
- * rate goes back to the batch's own sale disc and scheme, any other line keeps its own. A rule
- * rate (one with a base) sends its name: the cart puts the base,
- * disc and scheme on the line. A legacy hand-typed rate keeps the price path.
+ * What a Scan & Sell rate pick sends for the line. With rate rules on (`features.rateRules`),
+ * MRP / PTR / Cost send their system name (`priceToRetail` …): the cart puts that batch field on
+ * the line, per sale unit; a line at a rule rate goes back to the batch's own sale disc and
+ * scheme, any other line keeps its own. A shop without rules sends the option's batch price
+ * (`priceToRetail`), as before rate rules. A rule rate (one with a base) sends its name: the cart
+ * puts the base, disc and scheme on the line. A legacy hand-typed rate keeps the price path.
  */
 export type RatePickRequest = { rateName: string } | { priceToRetail: number };
 
-export function ratePickRequest(options: RateOption[], value: string): RatePickRequest | null {
+export function ratePickRequest(
+  options: RateOption[],
+  value: string,
+  rateRules: boolean,
+): RatePickRequest | null {
   const option = options.find((o) => o.value === value);
   if (!option) return null;
-  if (option.systemKey) return { rateName: option.systemKey };
+  if (option.systemKey) {
+    return rateRules ? { rateName: option.systemKey } : { priceToRetail: option.rate.price };
+  }
   return isRuleRate(option.rate)
     ? { rateName: option.rate.name }
     : { priceToRetail: option.rate.price };
+}
+
+/**
+ * The rate name the page remembers for a pick (`pickedRateNames`, the fallback for an API without
+ * `appliedRateName`): only a rule rate's name. MRP / PTR / Cost and legacy rates give null, so a
+ * system key is never stored as a picked rate.
+ */
+export function pickedRuleRateName(options: RateOption[], value: string): string | null {
+  const option = options.find((o) => o.value === value);
+  if (!option || option.systemKey || !isRuleRate(option.rate)) return null;
+  return option.rate.name;
 }
 
 /**
