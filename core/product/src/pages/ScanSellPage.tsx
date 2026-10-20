@@ -208,6 +208,7 @@ import {
   appliedRateNamesByLine,
   buildRateOptions,
   clearDiscountOverride,
+  lineSaleDiscountFromResponse,
   pickedRuleRateName,
   prunePickedRateNames,
   ratePickRequest,
@@ -2121,8 +2122,10 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
           const inventoryItem: InventoryItem = existing
             ? {
                 ...existing.inventoryItem,
-                saleAdditionalDiscount:
-                  resItem.saleAdditionalDiscount ?? existing.inventoryItem.saleAdditionalDiscount,
+                saleAdditionalDiscount: lineSaleDiscountFromResponse(
+                  resItem.saleAdditionalDiscount,
+                  existing.inventoryItem.saleAdditionalDiscount,
+                ),
                 sgst: resItem.sgst ?? existing.inventoryItem.sgst,
                 cgst: resItem.cgst ?? existing.inventoryItem.cgst,
                 billingMode: normalizeBillingMode(

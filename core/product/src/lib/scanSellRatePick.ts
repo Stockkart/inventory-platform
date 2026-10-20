@@ -122,6 +122,18 @@ export function clearDiscountOverride(
 }
 
 /**
+ * A cart line's sale disc after a cart response. A null from the cart is a cleared disc (a PTR /
+ * MRP / Cost pick drops a rule rate's disc) and replaces the line's; only a response without the
+ * field keeps the line's own.
+ */
+export function lineSaleDiscountFromResponse(
+  responseDiscount: number | null | undefined,
+  lineDiscount: number | null | undefined,
+): number | null {
+  return responseDiscount !== undefined ? responseDiscount : lineDiscount ?? null;
+}
+
+/**
  * The sale disc a cart sync sends for a line: the one the user typed, else the line's own. A lot
  * new to the cart sends only a typed disc; the backend fills in the batch's (or its default rule
  * rate's) disc itself, and a disc sent on a first add would stop the rate's from applying.

@@ -5,6 +5,7 @@ import {
   appliedRateNamesByLine,
   buildRateOptions,
   clearDiscountOverride,
+  lineSaleDiscountFromResponse,
   pickedRuleRateName,
   prunePickedRateNames,
   ratePickRequest,
@@ -146,6 +147,21 @@ describe('appliedRateNamesByLine', () => {
       ]),
     ).toEqual({ a: 'Rate-A', b: null });
     expect(appliedRateNamesByLine(null)).toEqual({});
+  });
+});
+
+describe('lineSaleDiscountFromResponse', () => {
+  it('a disc the cart cleared clears the line, so PTR after Rate-A does not keep the 5%', () => {
+    expect(lineSaleDiscountFromResponse(null, 5)).toBeNull();
+  });
+
+  it('takes the cart disc when it sent one', () => {
+    expect(lineSaleDiscountFromResponse(7, 5)).toBe(7);
+    expect(lineSaleDiscountFromResponse(0, 5)).toBe(0);
+  });
+
+  it('keeps the line disc when the response has no such field', () => {
+    expect(lineSaleDiscountFromResponse(undefined, 5)).toBe(5);
   });
 });
 
