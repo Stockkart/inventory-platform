@@ -1,9 +1,8 @@
 import type { PricingRate } from '@inventory-platform/contracts';
-import { Select } from '@inventory-platform/ui-kit';
+import { useState } from 'react';
+import { ChoiceList, FilterDropdown } from '@inventory-platform/ui-kit';
 import { isRuleRate, rateGstLabel } from '../../lib/pricingRate';
 import type { RateOption } from '../../lib/scanSellRatePick';
-
-const CUSTOM = '__custom__';
 
 /** Where the picker sits; system and legacy options keep each view's label from before rate rules. */
 export type RatePickerLayout = 'list' | 'grid';
@@ -49,13 +48,12 @@ export function rateOptionLabel(rate: PricingRate, layout: RatePickerLayout): st
   return [rate.name, price, rate.termsText?.trim() || null].filter(Boolean).join(' · ');
 }
 
-function selectedAriaLabel(rate: PricingRate, layout: RatePickerLayout): string {
-  return isRuleRate(rate)
-    ? `Rate: ${rateOptionLabel(rate, layout)}`
-    : `Rate: ${rate.name}, ${formatInr(rate.price)}`;
-}
-
-/** Scan & Sell rate dropdown for one cart line. Displays the API's figures; does no arithmetic. */
+/**
+ * Scan & Sell rate dropdown for one cart line: the ui-kit `FilterDropdown` with a `ChoiceList`,
+ * as Product Search's sort. It reads `Rate: <option>`, or `Rate: Custom` when the line's price
+ * matches no option (Custom is not offered, as picking it never changed the line). Picking the
+ * option already shown does nothing. Displays the API's figures; does no arithmetic.
+ */
 export function RatePicker({
   options,
   value,
@@ -66,30 +64,39 @@ export function RatePicker({
   loading,
   className,
 }: RatePickerProps) {
+  const [open, setOpen] = useState(false);
   const selected = value != null ? options.find((o) => o.value === value) : undefined;
-  const ariaLabel = loading
-    ? 'Loading rates'
+  const shown = loading
+    ? 'Loading rates…'
     : selected
-    ? selectedAriaLabel(selected.rate, layout)
-    : 'Select selling rate';
+    ? rateOptionLabel(selected.rate, layout)
+    : 'Custom';
   return (
-    <Select
+    <FilterDropdown
+      block
       className={className}
-      value={selected ? selected.value : CUSTOM}
-      onChange={(e) => {
-        const picked = e.currentTarget.value;
-        if (picked !== CUSTOM) onPick(picked);
+      label="Rate"
+      value={shown}
+      panelTitle="Selling rate"
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) onOpen?.();
       }}
-      onMouseDown={onOpen}
       disabled={disabled}
-      aria-label={ariaLabel}
-      options={[
-        { value: CUSTOM, label: 'Custom' },
-        ...options.map((option) => ({
+    >
+      <ChoiceList
+        aria-label="Selling rates"
+        value={selected?.value ?? ''}
+        options={options.map((option) => ({
           value: option.value,
           label: rateOptionLabel(option.rate, layout),
-        })),
-      ]}
-    />
+        }))}
+        onChange={(picked) => {
+          setOpen(false);
+          if (picked !== selected?.value) onPick(picked);
+        }}
+      />
+    </FilterDropdown>
   );
 }

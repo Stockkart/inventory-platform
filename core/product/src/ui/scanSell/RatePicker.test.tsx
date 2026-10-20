@@ -25,10 +25,36 @@ const LEGACY_RATE: PricingRate = { name: 'Wholesale', price: 90 };
 
 function setup(source: RateOptionSource, value?: string, layout: 'list' | 'grid' = 'list') {
   const onPick = vi.fn();
+  const onOpen = vi.fn();
   render(
-    <RatePicker options={buildRateOptions(source)} value={value} onPick={onPick} layout={layout} />,
+    <RatePicker
+      options={buildRateOptions(source)}
+      value={value}
+      onPick={onPick}
+      onOpen={onOpen}
+      layout={layout}
+    />,
   );
-  return { onPick, select: screen.getByRole('combobox') as HTMLSelectElement };
+  return { onPick, onOpen };
+}
+
+/** The dropdown's button; its name is what the line shows (`Rate: …`). */
+function trigger(): HTMLElement {
+  return screen.getByRole('button', { name: /^Rate/ });
+}
+
+function openPicker() {
+  fireEvent.click(trigger());
+}
+
+function pick(label: string) {
+  openPicker();
+  fireEvent.click(screen.getByRole('option', { name: label }));
+}
+
+function optionLabels(): string[] {
+  openPicker();
+  return screen.getAllByRole('option').map((o) => o.textContent ?? '');
 }
 
 const rates = (...list: PricingRate[]): RateOptionSource => ({ rates: list });
@@ -71,16 +97,27 @@ function PickHarness({ source, cart, sent }: PickHarnessProps) {
   );
 }
 
-function optionLabels(select: HTMLSelectElement): string[] {
-  return Array.from(select.options).map((o) => o.textContent ?? '');
-}
-
 describe('RatePicker', () => {
+  it('is a custom dropdown, not a native select', () => {
+    setup(rates(LEGACY_RATE));
+    expect(screen.queryByRole('combobox')).toBeNull();
+    expect(screen.queryByRole('listbox')).toBeNull();
+    openPicker();
+    expect(screen.getByRole('listbox', { name: 'Selling rates' })).toBeTruthy();
+  });
+
   it('pickSendsTheOptionValue', () => {
-    const { onPick, select } = setup(rates(LEGACY_RATE, RULE_RATE));
-    fireEvent.change(select, { target: { value: 'rate:Rate-A' } });
+    const { onPick } = setup(rates(LEGACY_RATE, RULE_RATE));
+    pick('Rate-A · 83.64/unit + GST · PTR less 8%, 10+1');
     expect(onPick).toHaveBeenCalledTimes(1);
     expect(onPick).toHaveBeenCalledWith('rate:Rate-A');
+    expect(screen.queryByRole('listbox')).toBeNull();
+  });
+
+  it('calls onOpen when opened, e.g. to load the batch rates', () => {
+    const { onOpen } = setup(rates(LEGACY_RATE));
+    openPicker();
+    expect(onOpen).toHaveBeenCalledTimes(1);
   });
 
   it('pickRuleRateThenPtrSendsSystemNameAndShowsPtrTerms', () => {
@@ -97,66 +134,67 @@ describe('RatePicker', () => {
         sent={sent}
       />,
     );
-    const select = screen.getByRole('combobox') as HTMLSelectElement;
 
-    fireEvent.change(select, { target: { value: 'rate:Rate-A' } });
-    expect(select.value).toBe('rate:Rate-A');
+    pick('Rate-A · 83.64/unit + GST · PTR less 8%, 10+1');
+    expect(trigger().textContent).toBe('Rate: Rate-A · 83.64/unit + GST · PTR less 8%, 10+1');
     expect(screen.getByLabelText('line terms').textContent).toBe('10 less 8%');
 
-    fireEvent.change(select, { target: { value: 'system:priceToRetail' } });
+    pick('PTR · ₹100.00');
     expect(sent).toEqual([{ rateName: 'Rate-A' }, { rateName: 'priceToRetail' }]);
-    expect(select.value).toBe('system:priceToRetail');
-    expect(select.getAttribute('aria-label')).toBe('Rate: PTR, ₹100.00');
+    expect(trigger().textContent).toBe('Rate: PTR · ₹100.00');
     expect(screen.getByLabelText('line terms').textContent).toBe('10 less 0%');
   });
 
-  it('does not pick on Custom', () => {
-    const { onPick, select } = setup(rates(RULE_RATE), 'rate:Rate-A');
-    fireEvent.change(select, { target: { value: '__custom__' } });
+  it('does not pick the option already shown', () => {
+    const { onPick } = setup(rates(RULE_RATE), 'rate:Rate-A');
+    pick('Rate-A · 83.64/unit + GST · PTR less 8%, 10+1');
     expect(onPick).not.toHaveBeenCalled();
   });
 
   it('optionLabelUsesApiTerms', () => {
-    const { select } = setup(rates(RULE_RATE));
-    expect(optionLabels(select)).toContain('Rate-A · 83.64/unit + GST · PTR less 8%, 10+1');
+    setup(rates(RULE_RATE));
+    expect(optionLabels()).toContain('Rate-A · 83.64/unit + GST · PTR less 8%, 10+1');
   });
 
   it('labels an inclusive rate incl. GST', () => {
-    const { select } = setup(rates({ ...RULE_RATE, gstMode: 'INCLUSIVE' }));
-    expect(optionLabels(select)).toContain('Rate-A · 83.64/unit incl. GST · PTR less 8%, 10+1');
+    setup(rates({ ...RULE_RATE, gstMode: 'INCLUSIVE' }));
+    expect(optionLabels()).toContain('Rate-A · 83.64/unit incl. GST · PTR less 8%, 10+1');
   });
 
   it('legacyAndSystemOptionsKeepMainsListLabel', () => {
-    const { select } = setup({ maximumRetailPrice: 120, rates: [LEGACY_RATE] }, undefined, 'list');
-    expect(optionLabels(select)).toEqual(['Custom', 'MRP · ₹120.00', 'Wholesale · ₹90.00']);
+    setup({ maximumRetailPrice: 120, rates: [LEGACY_RATE] }, undefined, 'list');
+    expect(optionLabels()).toEqual(['MRP · ₹120.00', 'Wholesale · ₹90.00']);
   });
 
   it('legacyAndSystemOptionsKeepMainsGridLabel', () => {
-    const { select } = setup({ priceToRetail: 100, rates: [LEGACY_RATE] }, undefined, 'grid');
-    expect(optionLabels(select)).toEqual(['Custom', 'PTR (₹100.00)', 'Wholesale (₹90.00)']);
+    setup({ priceToRetail: 100, rates: [LEGACY_RATE] }, undefined, 'grid');
+    expect(optionLabels()).toEqual(['PTR (₹100.00)', 'Wholesale (₹90.00)']);
   });
 
   it('ruleRateUsesTermsLabelInBothLayouts', () => {
-    const { select } = setup(rates(RULE_RATE), undefined, 'grid');
-    expect(optionLabels(select)).toContain('Rate-A · 83.64/unit + GST · PTR less 8%, 10+1');
+    setup(rates(RULE_RATE), undefined, 'grid');
+    expect(optionLabels()).toContain('Rate-A · 83.64/unit + GST · PTR less 8%, 10+1');
   });
 
-  it('namesALegacySelectionAsMainDid', () => {
-    const { select } = setup(rates(LEGACY_RATE), 'rate:Wholesale');
-    expect(select.getAttribute('aria-label')).toBe('Rate: Wholesale, ₹90.00');
+  it('shows the given value and marks it chosen', () => {
+    setup(rates(LEGACY_RATE, RULE_RATE), 'rate:Rate-A');
+    expect(trigger().textContent).toBe('Rate: Rate-A · 83.64/unit + GST · PTR less 8%, 10+1');
+    openPicker();
+    expect(
+      screen
+        .getByRole('option', { name: 'Rate-A · 83.64/unit + GST · PTR less 8%, 10+1' })
+        .getAttribute('aria-selected'),
+    ).toBe('true');
   });
 
-  it('shows the given value and names it for screen readers', () => {
-    const { select } = setup(rates(LEGACY_RATE, RULE_RATE), 'rate:Rate-A');
-    expect(select.value).toBe('rate:Rate-A');
-    expect(select.getAttribute('aria-label')).toBe(
-      'Rate: Rate-A · 83.64/unit + GST · PTR less 8%, 10+1',
-    );
+  it('falls back to Custom without a value, and does not offer it', () => {
+    setup(rates(LEGACY_RATE));
+    expect(trigger().textContent).toBe('Rate: Custom');
+    expect(optionLabels()).not.toContain('Custom');
   });
 
-  it('falls back to Custom without a value', () => {
-    const { select } = setup(rates(LEGACY_RATE));
-    expect(select.value).toBe('__custom__');
-    expect(select.getAttribute('aria-label')).toBe('Select selling rate');
+  it('says so while the rates load', () => {
+    render(<RatePicker options={[]} onPick={vi.fn()} layout="list" loading />);
+    expect(trigger().textContent).toBe('Rate: Loading rates…');
   });
 });

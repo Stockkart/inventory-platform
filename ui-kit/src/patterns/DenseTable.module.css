@@ -129,13 +129,8 @@
 }
 
 .rateSelect {
-  padding: 0.2rem 0.35rem;
-  font-size: 0.75rem;
-  border: 1px solid var(--sk-color-border-default, var(--border-color));
-  border-radius: 4px;
-  max-width: 90px;
-  background: var(--sk-color-bg-canvas, var(--bg-primary));
-  color: var(--sk-color-text-primary, var(--text-primary));
+  width: 9rem;
+  max-width: 100%;
 }
 
 .cellAdditionalInput {

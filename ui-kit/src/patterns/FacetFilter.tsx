@@ -58,6 +58,8 @@ export interface FilterDropdownProps {
   wide?: boolean;
   /** Anchor the panel to the button's right edge (for the last items in a row). */
   alignRight?: boolean;
+  /** Fill the container with field corners instead of a pill, for a picker in a form row. */
+  block?: boolean;
   /** Optional action in the panel header (e.g. "Clear"). */
   headerAction?: ReactNode;
   /** Panel heading when it should differ from the button text (e.g. button "Sort: …", heading "Sort by"). */
@@ -81,6 +83,7 @@ export function FilterDropdown({
   disabled = false,
   wide = false,
   alignRight = false,
+  block = false,
   headerAction,
   panelTitle,
   className,
@@ -115,7 +118,12 @@ export function FilterDropdown({
   return (
     <div
       ref={rootRef}
-      className={cn(styles.dropdown, onRemove && styles.dropdownHasRemove, className)}
+      className={cn(
+        styles.dropdown,
+        onRemove && styles.dropdownHasRemove,
+        block && styles.dropdownBlock,
+        className,
+      )}
     >
       <button
         type="button"

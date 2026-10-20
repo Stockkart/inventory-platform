@@ -179,6 +179,31 @@
   box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.25);
 }
 
+.dropdownBlock {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.dropdownBlock .dropdownButton {
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: space-between;
+  border-radius: var(--sk-radius-md, 6px);
+  font-weight: 400;
+}
+
+.dropdownBlock .dropdownLabel {
+  flex: 1 1 auto;
+  max-width: none;
+  text-align: left;
+}
+
+.dropdownBlock .dropdownPanel {
+  width: max(100%, 18rem);
+}
+
 .dropdownPanelWide {
   width: 24rem;
 }
