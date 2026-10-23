@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useBlocker } from 'react-router';
-import { ArrowDown, ArrowUp, Plus, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { ApiError, isApiError } from '@inventory-platform/api-client';
 import { useNotify } from '@inventory-platform/session';
 import {
@@ -26,19 +26,21 @@ import {
 import type {
   RateRule,
   RateRuleBase,
+  RateRulePreviewRate,
   RateRuleScheme,
   RateRulesPreviewRequest,
+  RateRulesPreviewResponse,
   RateRulesResponse,
 } from '../../model/rateRules.types';
 import { SchemeInput, type SchemeTypeCart } from '../scheme';
-import { GeneratedRatesList } from './GeneratedRatesList';
+import { rateGstLabel } from '../../lib/pricingRate';
 import {
   baseLabel,
   draftFromRules,
   draftsEqual,
   emptyRule,
-  moveRule,
   schemeText,
+  skippedReasonText,
   toPreviewRules,
   toRules,
   type RateRuleDraft,
@@ -49,7 +51,7 @@ const UNSAVED_PROMPT = 'You have unsaved rate rules changes. Leave without savin
 const PREVIEW_DEBOUNCE_MS = 400;
 
 /**
- * Raw inputs for the sample row. They are sent to the preview endpoint as-is; the
+ * Raw inputs for the sample on each rule. They are sent to the preview endpoint as-is; the
  * server works out every rate, so nothing here is derived from them.
  */
 const SAMPLE_INPUTS: RateRulesPreviewRequest = {
@@ -100,61 +102,79 @@ function SectionHeader({ children }: SectionHeaderProps) {
   );
 }
 
-interface SampleRowsProps {
-  request: RateRulesPreviewRequest;
-  enabled: boolean;
+/** One rule's sample, as the preview endpoint returned it: a rate, or the reason it was skipped. */
+interface RuleSampleValue {
+  rate?: RateRulePreviewRate;
+  skippedReason?: string;
 }
 
-function noop() {
-  /* sample rates are read-only */
+/** Looks up each rule's sample by name. Unnamed or unmatched rules have none. */
+function sampleLookup(
+  data: RateRulesPreviewResponse | undefined,
+): (name: string) => RuleSampleValue | undefined {
+  return (name) => {
+    const key = name.trim();
+    if (!data || key === '') return undefined;
+    const rate = data.rates.find((r) => r.name === key);
+    if (rate) return { rate };
+    const skipped = data.skipped.find((r) => r.name === key);
+    return skipped ? { skippedReason: skipped.reason } : undefined;
+  };
 }
 
-/** Sample rates exactly as the preview endpoint returns them, in the shared rates list. */
-function SampleRows({ request, enabled }: SampleRowsProps) {
-  const query = useRateRulesPreviewQuery(request, enabled);
-  if (!enabled) return null;
+function SampleCaption() {
   return (
-    <Box className={surfaceChrome.rateRulesBlock}>
-      <Text as="p" className={surfaceChrome.profileSectionLabel}>
-        Sample
-      </Text>
-      <Text as="p" variant="caption" color="secondary" className={surfaceChrome.invoiceToggleHint}>
-        For a product with MRP {SAMPLE_INPUTS.maximumRetailPrice}, PTR {SAMPLE_INPUTS.priceToRetail}
-        , selling price {SAMPLE_INPUTS.sellingPrice} and cost {SAMPLE_INPUTS.costPrice}.
-      </Text>
-      {query.isError ? <Alert variant="warning">Could not load the sample rates.</Alert> : null}
-      <GeneratedRatesList
-        rates={query.data?.rates ?? []}
-        skipped={query.data?.skipped ?? []}
-        canEdit={false}
-        onEditTerms={noop}
-        onReset={noop}
-      />
-    </Box>
+    <Text as="p" variant="caption" color="secondary" className={surfaceChrome.invoiceToggleHint}>
+      Each rule shows its rate for a product with MRP {SAMPLE_INPUTS.maximumRetailPrice}, PTR{' '}
+      {SAMPLE_INPUTS.priceToRetail}, selling price {SAMPLE_INPUTS.sellingPrice} and cost{' '}
+      {SAMPLE_INPUTS.costPrice}.
+    </Text>
   );
+}
+
+interface RuleSampleProps {
+  sample: RuleSampleValue | undefined;
+}
+
+/** A rule's sample rate exactly as the preview endpoint returns it: price, GST label and terms. */
+function RuleSample({ sample }: RuleSampleProps) {
+  if (sample?.rate) {
+    const label = rateGstLabel(sample.rate.gstMode);
+    return (
+      <Stack gap="xs" align="end" textAlign="right">
+        <Text as="span" className={surfaceChrome.tabularNums}>
+          {sample.rate.price.toFixed(2)}
+          {label ? ` ${label}` : ''}
+        </Text>
+        {sample.rate.termsText ? (
+          <Text as="span" variant="caption" color="secondary">
+            {sample.rate.termsText}
+          </Text>
+        ) : null}
+      </Stack>
+    );
+  }
+  if (sample?.skippedReason) {
+    return (
+      <Text as="span" variant="caption" color="secondary">
+        Not generated: {skippedReasonText(sample.skippedReason)}
+      </Text>
+    );
+  }
+  return null;
 }
 
 interface RuleRowProps {
   row: RateRuleDraft;
   index: number;
-  count: number;
   baseOptions: RateRuleBase[];
+  sample: RuleSampleValue | undefined;
   onChange: (key: string, patch: Partial<RateRuleDraft>) => void;
-  onMove: (index: number, dir: 'up' | 'down') => void;
   onRemove: (key: string) => void;
   disabled: boolean;
 }
 
-function RuleRow({
-  row,
-  index,
-  count,
-  baseOptions,
-  onChange,
-  onMove,
-  onRemove,
-  disabled,
-}: RuleRowProps) {
+function RuleRow({ row, index, baseOptions, sample, onChange, onRemove, disabled }: RuleRowProps) {
   const label = row.name.trim() || `rule ${index + 1}`;
   const scheme = row.scheme;
   // Base keys the API no longer offers stay selectable so the row is not silently rewritten.
@@ -228,23 +248,8 @@ function RuleRow({
           />
         </FormField>
       </Inline>
-      <Inline gap="xs" align="center">
-        <IconButton
-          size="sm"
-          label={`Move ${label} up`}
-          disabled={disabled || index === 0}
-          onClick={() => onMove(index, 'up')}
-        >
-          <ArrowUp size={14} />
-        </IconButton>
-        <IconButton
-          size="sm"
-          label={`Move ${label} down`}
-          disabled={disabled || index === count - 1}
-          onClick={() => onMove(index, 'down')}
-        >
-          <ArrowDown size={14} />
-        </IconButton>
+      <Inline gap="sm" align="center">
+        <RuleSample sample={sample} />
         <IconButton
           size="sm"
           label={`Remove ${label}`}
@@ -260,9 +265,10 @@ function RuleRow({
 
 interface ReadOnlyRulesProps {
   rules: RateRule[];
+  sampleFor: (name: string) => RuleSampleValue | undefined;
 }
 
-function ReadOnlyRules({ rules }: ReadOnlyRulesProps) {
+function ReadOnlyRules({ rules, sampleFor }: ReadOnlyRulesProps) {
   if (rules.length === 0) {
     return (
       <Box className={surfaceChrome.rateRulesEmpty}>
@@ -286,24 +292,29 @@ function ReadOnlyRules({ rules }: ReadOnlyRulesProps) {
             as="li"
             display="flex"
             align="center"
+            justify="between"
             gap="sm"
             py="xs"
+            flexWrap
             borderBottom={index < rules.length - 1}
           >
-            <Text
-              as="span"
-              variant="caption"
-              color="secondary"
-              className={surfaceChrome.tabularNums}
-            >
-              {index + 1}.
-            </Text>
-            <Text as="span">{rule.name}</Text>
-            <Text as="span" variant="caption" color="secondary">
-              {baseLabel(rule.base)}
-              {rule.discountPercent != null ? ` less ${rule.discountPercent}%` : ''}
-              {scheme ? `, scheme ${scheme}` : ''}
-            </Text>
+            <Inline gap="sm">
+              <Text
+                as="span"
+                variant="caption"
+                color="secondary"
+                className={surfaceChrome.tabularNums}
+              >
+                {index + 1}.
+              </Text>
+              <Text as="span">{rule.name}</Text>
+              <Text as="span" variant="caption" color="secondary">
+                {baseLabel(rule.base)}
+                {rule.discountPercent != null ? ` less ${rule.discountPercent}%` : ''}
+                {scheme ? `, scheme ${scheme}` : ''}
+              </Text>
+            </Inline>
+            <RuleSample sample={sampleFor(rule.name)} />
           </Box>
         );
       })}
@@ -353,13 +364,13 @@ function RateRulesEditor({ data, onReload }: RateRulesEditorProps) {
   );
   const debouncedRequest = useDebounced(request, PREVIEW_DEBOUNCE_MS);
   const hasRules = readOnly ? data.rules.length > 0 : (previewRules?.length ?? 0) > 0;
+  const preview = useRateRulesPreviewQuery(debouncedRequest, hasRules);
+  const sampleFor = sampleLookup(hasRules ? preview.data : undefined);
 
   const updateRow = (key: string, patch: Partial<RateRuleDraft>) =>
     setDraft((prev) => ({
       rules: prev.rules.map((row) => (row.key === key ? { ...row, ...patch } : row)),
     }));
-  const moveRow = (index: number, dir: 'up' | 'down') =>
-    setDraft((prev) => ({ rules: moveRule(prev.rules, index, dir) }));
   const removeRow = (key: string) =>
     setDraft((prev) => ({ rules: prev.rules.filter((row) => row.key !== key) }));
   const addRow = () =>
@@ -423,8 +434,12 @@ function RateRulesEditor({ data, onReload }: RateRulesEditorProps) {
           <Text as="p" className={surfaceChrome.profileSectionLabel}>
             Rates in order
           </Text>
+          {hasRules ? <SampleCaption /> : null}
+          {hasRules && preview.isError ? (
+            <Alert variant="warning">Could not load the sample rates.</Alert>
+          ) : null}
           {readOnly ? (
-            <ReadOnlyRules rules={data.rules} />
+            <ReadOnlyRules rules={data.rules} sampleFor={sampleFor} />
           ) : (
             <Stack gap="sm">
               {draft.rules.length === 0 ? (
@@ -447,10 +462,9 @@ function RateRulesEditor({ data, onReload }: RateRulesEditorProps) {
                       key={row.key}
                       row={row}
                       index={index}
-                      count={draft.rules.length}
                       baseOptions={data.baseOptions}
+                      sample={sampleFor(row.name)}
                       onChange={updateRow}
-                      onMove={moveRow}
                       onRemove={removeRow}
                       disabled={busy}
                     />
@@ -471,8 +485,6 @@ function RateRulesEditor({ data, onReload }: RateRulesEditorProps) {
             </Stack>
           )}
         </Box>
-
-        <SampleRows request={debouncedRequest} enabled={hasRules} />
       </Box>
 
       {readOnly ? null : (

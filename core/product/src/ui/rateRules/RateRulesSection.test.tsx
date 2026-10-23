@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 import { ApiError } from '@inventory-platform/api-client';
@@ -95,11 +95,11 @@ describe('RateRulesSection', () => {
 
   it('showsPreviewTermsAndPriceFromApi', async () => {
     mount();
-    expect(await screen.findByText('83.64 + GST')).toBeTruthy();
-    expect(screen.getByText('PTR less 5% plus GST')).toBeTruthy();
-    // The shared, read-only generated rates list: no terms editor in the sample.
-    expect(screen.getByRole('list', { name: 'Generated rates' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /Reset .* to rule/ })).toBeNull();
+    const wholesaleRow = (await screen.findAllByLabelText('Rate name'))[0].closest('li');
+    // The sample sits in the rule's own row, not in a separate list.
+    expect(await within(wholesaleRow as HTMLElement).findByText('83.64 + GST')).toBeTruthy();
+    expect(within(wholesaleRow as HTMLElement).getByText('PTR less 5% plus GST')).toBeTruthy();
+    expect(screen.queryByRole('list', { name: 'Sample rates' })).toBeNull();
     const body = api.preview.mock.calls[0][0];
     expect(body.rules.map((r: { name: string }) => r.name)).toEqual(['Wholesale', 'Retail']);
   });
@@ -110,26 +110,35 @@ describe('RateRulesSection', () => {
       skipped: [{ name: 'Retail', reason: 'BELOW_COST' }],
     });
     mount();
-    expect(await screen.findByText('Retail not generated: below cost')).toBeTruthy();
+    const retailRow = (await screen.findAllByLabelText('Rate name'))[1].closest('li');
+    expect(
+      await within(retailRow as HTMLElement).findByText('Not generated: below cost'),
+    ).toBeTruthy();
     expect(screen.queryByText(/BELOW_COST/)).toBeNull();
   });
 
-  it('savesOrderedRules', async () => {
+  it('hasNoReorderButtons', async () => {
     mount();
     await screen.findAllByLabelText('Rate name');
-    fireEvent.click(screen.getByRole('button', { name: 'Move Wholesale down' }));
-    fireEvent.change(screen.getAllByLabelText('Discount %')[0], { target: { value: '12.5' } });
+    expect(screen.queryByRole('button', { name: /^Move / })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Remove Wholesale' })).toBeTruthy();
+  });
+
+  it('savesRulesInTheirOrder', async () => {
+    mount();
+    await screen.findAllByLabelText('Rate name');
+    fireEvent.change(screen.getAllByLabelText('Discount %')[1], { target: { value: '12.5' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save rules' }));
     await waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
     expect(api.update.mock.calls[0][0]).toEqual({
       rules: [
+        { name: 'Wholesale', base: 'priceToRetail', discountPercent: 5, scheme: null },
         {
           name: 'Retail',
           base: 'maximumRetailPrice',
           discountPercent: 12.5,
           scheme: { schemeType: 'FIXED_UNITS', schemePayFor: 10, schemeFree: 1 },
         },
-        { name: 'Wholesale', base: 'priceToRetail', discountPercent: 5, scheme: null },
       ],
     });
   });
