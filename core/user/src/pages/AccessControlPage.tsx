@@ -9,6 +9,7 @@ import type {
 import { CORE_PRODUCT_SEARCH_FIELDS } from '@inventory-platform/access';
 import { useAuthStore, useNotify, useShopAccessStore } from '@inventory-platform/session';
 import { RoleBadge } from '../ui/RoleBadge';
+import { modulesFromMember } from '../lib/memberModules';
 import type { UserRole } from '@inventory-platform/user/types';
 import {
   Alert,
@@ -43,6 +44,7 @@ const MODULE_COLUMNS: {
   short: string;
 }[] = [
   { key: 'productSearchEdit', label: 'Product search edit', short: 'Edit' },
+  { key: 'rateRulesEdit', label: 'Edit rate rules and rates', short: 'Rate rules' },
   { key: 'accounting', label: 'Accounting', short: 'Accounting' },
   { key: 'analytics', label: 'Analytics', short: 'Analytics' },
   { key: 'mis', label: 'MIS', short: 'MIS' },
@@ -81,21 +83,6 @@ const FIELD_GROUPS: {
 const FIELD_LABEL_BY_KEY = Object.fromEntries(
   CORE_PRODUCT_SEARCH_FIELDS.map((field) => [field.key, field.label]),
 ) as Record<(typeof CORE_PRODUCT_SEARCH_FIELDS)[number]['key'], string>;
-
-function modulesFromMember(member: ShopMemberAccess): MemberModulePermissions {
-  const effective = member.effectiveAccess.modules;
-  const stored = member.permissions?.modules ?? {};
-  return {
-    accounting: stored.accounting ?? effective.accounting,
-    analytics: stored.analytics ?? effective.analytics,
-    mis: stored.mis ?? effective.mis,
-    taxes: stored.taxes ?? effective.taxes,
-    stockCorrection: stored.stockCorrection ?? effective.stockCorrection,
-    marketing: stored.marketing ?? effective.marketing,
-    paymentPlan: stored.paymentPlan ?? effective.paymentPlan,
-    productSearchEdit: stored.productSearchEdit ?? effective.productSearchEdit,
-  };
-}
 
 function modulesEqual(a: MemberModulePermissions, b: MemberModulePermissions) {
   return (Object.keys(a) as Array<keyof MemberModulePermissions>).every((key) => a[key] === b[key]);

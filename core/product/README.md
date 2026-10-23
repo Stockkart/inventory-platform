@@ -98,6 +98,26 @@ Product Search and Scan & Sell call `POST /inventory/search` (`inventoryApi.sear
   reposted; Save is off when nothing would change. After saving, the toast and the "Last
   corrected" line give the invoice total and tax before and after.
 
+### Rate rules (`ui/rateRules/`, `queries/rateRules.queries.ts`)
+
+- **Profile → Rate rules** (`RateRulesSection`, registered by `plugins/registry`) edits the shop's
+  ordered rate rules: name, base, discount % and scheme (`SchemeInput`, shared with Scan & Sell).
+  Rules keep the order they were added in; "Save rules" (the only save button) sends
+  `PUT /shops/active-shop/rate-rules` and then refetches the rules and reloads this shop's
+  capabilities (`features.rateRules`) in place, keeping the old value until the new one arrives
+  (`fetchCapabilities({ force: true })`). A 403 reloads the rules, so the section turns
+  read-only; a 409 (`RATE_RULES_CONFLICT`, someone else saved first) shows the server's message
+  and loads the rules now saved. The draft helpers live in `lib/rateRulesDraft.ts`.
+- **The backend decides; this package carries.** Base choices come only from the API's
+  `baseOptions` (the picker is hidden when there is one), never from the shop type. Each rule's
+  row shows its sample, matched by name from what `POST /rate-rules/preview` returns for the
+  draft, price and `termsText` as sent; the screen does no rate, discount, scheme or tax
+  arithmetic. A rule that cannot be generated shows "Not generated" with the server's reason.
+- **Access.** When `enabled` is false (cafe) the registry hides the Profile tab
+  (`useRateRulesAvailable`) and the section renders nothing; it is read-only (no inputs, no
+  Save) when `canEdit` is false. The owner grants editing per person under Access Control
+  ("Edit rate rules and rates", `rateRulesEdit`).
+
 ### Barcode sticker printing (`lib/renderBarcodeLabelsHtml.ts`, `ui/labelLayout/`)
 
 - **Layout comes from the server.** Profile → Barcode labels edits a draft; the field catalog

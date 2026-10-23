@@ -1,6 +1,11 @@
 import { createElement } from 'react';
 import { registerProfileTab } from '@inventory-platform/user';
-import { BarcodeLabelLayoutSection, ProductCardLayoutSection } from '@inventory-platform/product';
+import {
+  BarcodeLabelLayoutSection,
+  ProductCardLayoutSection,
+  RateRulesSection,
+  useRateRulesAvailable,
+} from '@inventory-platform/product';
 
 /**
  * Profile tabs contributed by domain packages that `core/user` must not import
@@ -9,6 +14,7 @@ import { BarcodeLabelLayoutSection, ProductCardLayoutSection } from '@inventory-
  */
 export const BARCODE_LABELS_PROFILE_TAB_ID = 'labels';
 export const PRODUCT_CARDS_PROFILE_TAB_ID = 'cards';
+export const RATE_RULES_PROFILE_TAB_ID = 'rate-rules';
 
 let registered = false;
 
@@ -19,7 +25,7 @@ let registered = false;
  * hydration of `/dashboard/profile` in sync).
  *
  * Extensions anchored on the same built-in tab keep registration order, so
- * "Product cards" lands directly after "Barcode labels".
+ * "Product cards" lands directly after "Barcode labels", and "Rate rules" after that.
  */
 export function registerComposedProfileTabs(): void {
   if (registered) return;
@@ -35,5 +41,13 @@ export function registerComposedProfileTabs(): void {
     label: 'Product cards',
     after: 'invoice',
     render: () => createElement(ProductCardLayoutSection),
+  });
+  registerProfileTab({
+    id: RATE_RULES_PROFILE_TAB_ID,
+    label: 'Rate rules',
+    after: 'invoice',
+    render: () => createElement(RateRulesSection),
+    // Hidden where the API says rate rules are off for the shop's vertical (cafe).
+    useVisible: useRateRulesAvailable,
   });
 }
