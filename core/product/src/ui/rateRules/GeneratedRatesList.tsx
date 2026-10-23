@@ -48,7 +48,8 @@ export function isRuleRate(rate: PricingRate): boolean {
   return rate.base != null;
 }
 
-function gstLabel(gstMode: string | null | undefined): string | null {
+/** Words the API's `gstMode` for a rate. Wording only; the mode is the server's. */
+export function gstLabel(gstMode: string | null | undefined): string | null {
   if (gstMode === 'INCLUSIVE') return 'incl. GST';
   if (gstMode === 'EXCLUSIVE') return '+ GST';
   return null;
