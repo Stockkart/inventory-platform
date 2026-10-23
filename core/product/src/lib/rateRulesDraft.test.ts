@@ -3,7 +3,6 @@ import {
   baseLabel,
   draftFromRules,
   draftsEqual,
-  moveRule,
   schemeText,
   skippedReasonText,
   toPreviewRules,
@@ -28,18 +27,12 @@ describe('rateRulesDraft', () => {
     expect(toPreviewRules(draft).map((r) => r.name)).toEqual(['A']);
   });
 
-  it('movesWithinBoundsOnly', () => {
-    expect(moveRule([1, 2, 3], 0, 'down')).toEqual([2, 1, 3]);
-    expect(moveRule([1, 2, 3], 0, 'up')).toEqual([1, 2, 3]);
-    expect(moveRule([1, 2, 3], 2, 'down')).toEqual([1, 2, 3]);
-  });
-
   it('detectsOrderChange', () => {
     const a = draftFromRules([
       { name: 'A', base: 'priceToRetail' },
       { name: 'B', base: 'priceToRetail' },
     ]);
-    expect(draftsEqual(a, { rules: moveRule(a.rules, 0, 'down') })).toBe(false);
+    expect(draftsEqual(a, { rules: [...a.rules].reverse() })).toBe(false);
   });
 
   it('labelsKnownBases', () => {
