@@ -96,7 +96,7 @@
   min-width: 35px;
 }
 
-.table td:nth-child(5) select {
+.table td:nth-child(5) [data-sk-select] {
   width: 60px;
   min-width: 60px;
 }

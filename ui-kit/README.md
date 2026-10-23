@@ -52,6 +52,10 @@ Domain widgets and pages stay in `core/*/ui` and `core/*/pages`.
 | `searchChrome`       | Filter strip under a search bar: `FilterStrip` + `FilterDropdown` pills, `FacetCheckboxList` inside; `CollapsibleGroup` for vertical panels. `FilterDropdown block` + `ChoiceList` is the custom single-choice dropdown for a form row (no native `select`) |
 | `registrationChrome` | Product registration grids / vendor cards                                                                                                                                                                                                                   |
 
+## Dropdowns
+
+No native `<select>` or `<datalist>`, here or in any package (ESLint bans them). `Select` is the StockKart dropdown: a field-styled button that opens `ChoiceList` in an `AnchoredPortal` panel (out of scroll containers, over modals, flips up near the bottom). It keeps the native props (`value`, `onChange` with `event.target.value`, `options` or `<option>` children, `id`, `name`, `required`). Filter pills use `FilterDropdown` + `ChoiceList`.
+
 ## Button language
 
 - **In-app actions:** `variant="solid"`

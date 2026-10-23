@@ -431,6 +431,12 @@
   box-shadow: 0 0 0 2px var(--sk-color-focus-ring);
 }
 
+.choiceItem:disabled {
+  opacity: 0.5;
+  cursor: default;
+  background: transparent;
+}
+
 .choiceItemSelected {
   color: var(--sk-color-brand, #3b82f6);
   font-weight: 600;

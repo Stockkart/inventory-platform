@@ -326,13 +326,18 @@ export interface ChoiceOption {
   hint?: string;
   /** Options with the same group text are listed under one heading. */
   group?: string;
+  /** Shown but not choosable. */
+  disabled?: boolean;
 }
 
 export interface ChoiceListProps {
   options: readonly ChoiceOption[];
   value: string;
   onChange: (value: string) => void;
-  'aria-label': string;
+  /** Accessible name; or name the list by another element with `aria-labelledby`. */
+  'aria-label'?: string;
+  'aria-labelledby'?: string;
+  id?: string;
   className?: string;
 }
 
@@ -345,12 +350,16 @@ export function ChoiceList({
   value,
   onChange,
   'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledBy,
+  id,
   className,
 }: ChoiceListProps) {
   const listRef = useRef<HTMLUListElement>(null);
   const move = (from: HTMLElement, delta: number) => {
     const items = Array.from(
-      listRef.current?.querySelectorAll<HTMLButtonElement>('button[role="option"]') ?? [],
+      listRef.current?.querySelectorAll<HTMLButtonElement>(
+        'button[role="option"]:not(:disabled)',
+      ) ?? [],
     );
     const i = items.indexOf(from as HTMLButtonElement);
     const next = items[(i + delta + items.length) % items.length];
@@ -374,6 +383,7 @@ export function ChoiceList({
           type="button"
           role="option"
           aria-selected={selected}
+          disabled={o.disabled}
           className={cn(styles.choiceItem, selected && styles.choiceItemSelected)}
           onClick={() => onChange(o.value)}
           onKeyDown={(e) => {
@@ -398,8 +408,10 @@ export function ChoiceList({
   return (
     <ul
       ref={listRef}
+      id={id}
       role="listbox"
       aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
       className={cn(styles.choiceList, className)}
     >
       {rows}
