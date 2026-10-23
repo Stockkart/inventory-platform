@@ -100,6 +100,7 @@ scripts/deploy/      Vercel deploy and verify scripts
 - Types live in `src/model/`, exported as `@inventory-platform/<d>/types`. Example: `core/reminders/package.json`.
   - Inside a package, imports are mixed: about 100 files use the `/types` self-alias, about 90 use relative `../model` (user, product, pricing, accounting, reminders). Match the file you edit.
 - Use ui-kit primitives, never native tags. `bannedNativeHtmlTags` in root `eslint.config.mjs` bans `div span p button input select textarea table form label a ul ol li h1–h6` in domain, shell, schema, routing and plugin code. For semantics use `Text as="h2"` or `Box as="span"`. Example: `core/user/src/pages/ProfilePage.tsx`.
+- No native dropdowns anywhere, ui-kit included. Every picker is ui-kit `Select` (a button opening the `ChoiceList` panel, portalled above scroll containers and modals) or `FilterDropdown` + `ChoiceList` for filter pills. ESLint bans `<select>` and `<datalist>` in all packages, ui-kit too (`nativeDropdownBan` in root `eslint.config.mjs`). Tests open it with a click on its label and pick `getByRole('option', …)`. Example: `core/product/src/ui/rateRules/RateRulesSection.test.tsx`.
 - `Button` defaults to `variant="solid"` (`ui-kit/src/forms/Button.tsx`). Use `brand` for marketing only. Example: `core/plan/src/ui/Hero.tsx`.
   - Exceptions: the auth forms in `core/user/src/journey/auth/forms/` and `core/user/src/journey/ui/JourneyHeader.tsx`.
 - Toasts: `useNotify` from `@inventory-platform/session`. It is an object, not a hook: destructure it, do not call it. Example: `core/reminders/src/ui/ReminderForm.tsx`.
@@ -269,6 +270,7 @@ Status, run in the task workspace on 2026-10-17 (pnpm 10.24.0, Node 20.20.2):
 - Do import other packages only through their `exports` (Nx workspace structure and project boundaries).
 - Don't import `core/*` or `plugins/*` from `platform/*` (Nx workspace structure and project boundaries).
 - Don't use native HTML tags in domain code; use ui-kit primitives (Component conventions).
+- Don't use a native dropdown (`<select>`, `<datalist>`) anywhere, ui-kit included; use ui-kit `Select` (Component conventions).
 - Do write components as named function declarations with `interface <Name>Props` (Component conventions).
 - Don't use `variant="brand"` outside marketing (Component conventions).
 - Don't import `.module.css` outside ui-kit or add inline styles (Styling).

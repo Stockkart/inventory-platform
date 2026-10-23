@@ -389,19 +389,6 @@
 .itemRateSelect {
   flex: 1 1 9rem;
   min-width: 8rem;
-  min-height: 2.15rem !important;
-  font-size: 0.8125rem !important;
-  padding: 0.35rem 0.55rem !important;
-  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 92%, transparent) !important;
-  border-radius: 6px !important;
-  background: var(--sk-color-bg-elevated, #fff) !important;
-  box-shadow: none !important;
-}
-.itemRateSelect:focus,
-.itemRateSelect:focus-visible {
-  outline: none !important;
-  border-color: color-mix(in srgb, #355a82 40%, transparent) !important;
-  box-shadow: none !important;
 }
 .itemUnitSelect {
   font-size: 0.8125rem !important;

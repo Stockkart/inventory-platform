@@ -77,13 +77,11 @@ describe('RateRulesSection', () => {
     mount();
     const selects = await screen.findAllByLabelText('Base');
     expect(selects).toHaveLength(2);
-    const options = Array.from((selects[0] as HTMLSelectElement).options).map((o) => o.value);
-    expect(options).toEqual(['priceToRetail', 'maximumRetailPrice']);
-    expect(Array.from((selects[0] as HTMLSelectElement).options).map((o) => o.text)).toEqual([
-      'PTR',
-      'MRP',
-    ]);
-    expect((selects[1] as HTMLSelectElement).value).toBe('maximumRetailPrice');
+    expect(selects[0]).toHaveTextContent('PTR');
+    expect(selects[1]).toHaveTextContent('MRP');
+    fireEvent.click(selects[0]);
+    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(['PTR', 'MRP']);
+    expect(screen.getByRole('option', { name: 'PTR' })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('hidesBasePickerWhenOneOption', async () => {
