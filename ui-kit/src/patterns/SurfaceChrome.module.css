@@ -1577,6 +1577,14 @@
   color: var(--sk-color-text-secondary, #64748b);
 }
 
+/* Product Entry: hint under "Generated rates" (EntryRatePreview). */
+.entryRatePreviewHint {
+  margin: 0 0 var(--sk-space-xs, 0.25rem);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
 .priceEditRateHead {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 7rem 2.5rem;

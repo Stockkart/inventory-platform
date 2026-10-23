@@ -33,6 +33,7 @@ import type {
   RateRulesResponse,
 } from '../../model/rateRules.types';
 import { SchemeInput, type SchemeTypeCart } from '../scheme';
+import { gstLabel } from './GeneratedRatesList';
 import {
   baseLabel,
   draftFromRules,
@@ -135,13 +136,15 @@ interface RuleSampleProps {
   sample: RuleSampleValue | undefined;
 }
 
-/** A rule's sample rate exactly as the preview endpoint returns it: price and terms as sent. */
+/** A rule's sample rate exactly as the preview endpoint returns it: price, GST label and terms. */
 function RuleSample({ sample }: RuleSampleProps) {
   if (sample?.rate) {
+    const label = gstLabel(sample.rate.gstMode);
     return (
       <Stack gap="xs" align="end" textAlign="right">
         <Text as="span" className={surfaceChrome.tabularNums}>
           {sample.rate.price.toFixed(2)}
+          {label ? ` ${label}` : ''}
         </Text>
         {sample.rate.termsText ? (
           <Text as="span" variant="caption" color="secondary">
