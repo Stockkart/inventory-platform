@@ -19,6 +19,12 @@ import {
 } from '../lib/productEntryDraft';
 import { PrintBarcodeLabelsModal } from '../ui/PrintBarcodeLabelsModal';
 import { openLocalBarcodeLabelPrint } from '../lib/printBarcodeLabels';
+import {
+  MAX_INVOICE_IMAGES,
+  compressInvoiceImage,
+  pickedImageProblem,
+  uploadProblem,
+} from '../lib/invoiceImage';
 import { vendorsApi } from '@inventory-platform/user/vendors';
 import {
   VENDOR_PLACE_REQUIRED_MESSAGE,
@@ -978,8 +984,6 @@ export function ProductEntryPage() {
   // Image upload state
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string>('');
-  const MAX_INVOICE_IMAGES = 20;
-  const MAX_INVOICE_IMAGE_BYTES = 10 * 1024 * 1024;
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1621,83 +1625,10 @@ export function ProductEntryPage() {
     );
   };
 
-  /**
-   * Compresses and resizes an image file to reduce its size before upload
-   * @param file - The original image file
-   * @param maxWidth - Maximum width in pixels (default: 1600)
-   * @param maxHeight - Maximum height in pixels (default: 1600)
-   * @param quality - Compression quality 0-1 (default: 0.7)
-   * @param maxFileSizeMB - Target max file size in MB; quality is reduced if larger (default: 2)
-   * @returns Promise<File> - The compressed image file
-   */
-  const compressImage = async (
-    file: File,
-    maxWidth = 1600,
-    maxHeight = 1600,
-    quality = 0.7,
-    maxFileSizeMB = 2,
-  ): Promise<File> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          let width = img.width;
-          let height = img.height;
-          if (width > maxWidth || height > maxHeight) {
-            const ratio = Math.min(maxWidth / width, maxHeight / height);
-            width = width * ratio;
-            height = height * ratio;
-          }
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            reject(new Error('Failed to get canvas context'));
-            return;
-          }
-          ctx.drawImage(img, 0, 0, width, height);
-          const compressWithQuality = (currentQuality: number): void => {
-            canvas.toBlob(
-              (blob) => {
-                if (!blob) {
-                  reject(new Error('Failed to compress image'));
-                  return;
-                }
-                const fileSizeMB = blob.size / (1024 * 1024);
-                if (fileSizeMB > maxFileSizeMB && currentQuality > 0.3) {
-                  compressWithQuality(Math.max(0.3, currentQuality - 0.1));
-                  return;
-                }
-                resolve(
-                  new File([blob], file.name, {
-                    type: file.type,
-                    lastModified: Date.now(),
-                  }),
-                );
-              },
-              file.type,
-              currentQuality,
-            );
-          };
-          compressWithQuality(quality);
-        };
-        img.onerror = () => reject(new Error('Failed to load image'));
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsDataURL(file);
-    });
-  };
-
   const validateInvoiceImageFile = (file: File, label: string): boolean => {
-    if (!file.type.startsWith('image/')) {
-      notifyError(`${label}: must be an image file`);
-      return false;
-    }
-    if (file.size > MAX_INVOICE_IMAGE_BYTES) {
-      notifyError(`${label}: must be less than 10 MB`);
+    const problem = pickedImageProblem(file, label);
+    if (problem) {
+      notifyError(problem);
       return false;
     }
     return true;
@@ -1753,7 +1684,14 @@ export function ProductEntryPage() {
             ? 'Compressing image...'
             : `Compressing image ${i + 1} of ${selectedFiles.length}...`,
         );
-        compressedFiles.push(await compressImage(selectedFiles[i]));
+        compressedFiles.push(
+          await compressInvoiceImage(selectedFiles[i], { maxSide: 1600, quality: 0.7 }),
+        );
+      }
+      const tooMuch = uploadProblem(compressedFiles);
+      if (tooMuch) {
+        notifyError(tooMuch);
+        return;
       }
 
       setUploadProgress(
