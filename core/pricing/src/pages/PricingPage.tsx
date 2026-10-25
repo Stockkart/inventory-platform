@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { inventoryApi } from '@inventory-platform/product/api';
+import { inventoryApi, resolveInventoryDocumentId } from '@inventory-platform/product/api';
+import { canEditAnyPriceField, priceEditPath } from '@inventory-platform/product';
+import { useAuthStore, useShopAccessStore } from '@inventory-platform/session';
 import type { InventoryItem } from '@inventory-platform/product/types';
 import {
   Alert,
@@ -39,6 +41,10 @@ function formatMoney(value: number | null | undefined) {
 
 export function PricingPage() {
   const navigate = useNavigate();
+  const shopId = useAuthStore((s) => s.user?.shopId ?? null);
+  const canEditPrices = canEditAnyPriceField(
+    useShopAccessStore((s) => (shopId ? s.byShopId[shopId]?.productSearch : undefined)),
+  );
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -168,28 +174,26 @@ export function PricingPage() {
                     </TableCell>
                     <TableCell>{item.location || '—'}</TableCell>
                     <TableCell className={surfaceChrome.pricingActionCell}>
-                      {item.pricingId ? (
+                      {!item.pricingId ? (
+                        <Badge variant="neutral">No pricing</Badge>
+                      ) : canEditPrices ? (
                         <Button
                           type="button"
                           size="sm"
                           variant="outline"
                           onClick={() =>
-                            navigate(`/dashboard/price-edit/${item.pricingId}`, {
-                              state: {
-                                priceToRetail: item.priceToRetail,
-                                maximumRetailPrice: item.maximumRetailPrice,
-                                productName: item.name,
-                                rates: item.rates ?? undefined,
-                                defaultRate: item.defaultRate ?? undefined,
-                              },
-                            })
+                            navigate(
+                              priceEditPath(
+                                item.pricingId as string,
+                                resolveInventoryDocumentId(item),
+                              ),
+                              { state: { productName: item.name } },
+                            )
                           }
                         >
                           Edit price
                         </Button>
-                      ) : (
-                        <Badge variant="neutral">No pricing</Badge>
-                      )}
+                      ) : null}
                     </TableCell>
                   </TableRow>
                 ))
