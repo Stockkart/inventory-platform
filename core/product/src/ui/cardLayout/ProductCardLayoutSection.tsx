@@ -383,91 +383,87 @@ function SurfaceLayoutEditor({ catalog, layouts }: SurfaceLayoutEditorProps) {
         </Box>
       </Box>
 
-      <Box className={surfaceChrome.cardBuilderFrame}>
-        <Box className={surfaceChrome.cardBuilderLayout}>
-          <Box className={surfaceChrome.cardBuilderColumn}>
-            <Box className={surfaceChrome.cardBuilderColumnHead}>
-              <Text as="p" className={surfaceChrome.profileSectionLabel}>
-                Fields
-              </Text>
-              <Text variant="caption" color="secondary">
-                {`${fieldCount} / ${limits.maxFieldsTotal}`}
-              </Text>
-            </Box>
-            <CardFieldPicker
-              groups={groups}
-              enabledKeys={enabledKeys(spec)}
-              excludedKeys={surfaceInfo?.excludedFieldKeys ?? []}
-              atLimit={atLimit}
-              maxFields={limits.maxFieldsTotal}
-              onToggle={handleToggle}
-            />
+      <Box className={surfaceChrome.cardBuilderLayout}>
+        <Box className={surfaceChrome.cardBuilderColumn}>
+          <Box className={surfaceChrome.cardBuilderColumnHead}>
+            <Text as="p" className={surfaceChrome.profileSectionLabel}>
+              Fields
+            </Text>
+            <Text variant="caption" color="secondary">
+              {`${fieldCount} / ${limits.maxFieldsTotal}`}
+            </Text>
           </Box>
+          <CardFieldPicker
+            groups={groups}
+            enabledKeys={enabledKeys(spec)}
+            excludedKeys={surfaceInfo?.excludedFieldKeys ?? []}
+            atLimit={atLimit}
+            maxFields={limits.maxFieldsTotal}
+            onToggle={handleToggle}
+          />
+        </Box>
 
-          <Box className={surfaceChrome.cardBuilderMain}>
-            <Box className={surfaceChrome.cardBuilderColumnHead}>
-              <Text as="p" className={surfaceChrome.profileSectionLabel}>
-                Layout
-              </Text>
-              <Text variant="caption" color="secondary">
-                Click a field to edit it
-              </Text>
-            </Box>
-            <LayoutBuilder
+        <Box className={surfaceChrome.cardBuilderMain}>
+          <Box className={surfaceChrome.cardBuilderColumnHead}>
+            <Text as="p" className={surfaceChrome.profileSectionLabel}>
+              Layout
+            </Text>
+            <Text variant="caption" color="secondary">
+              Click a field to edit it
+            </Text>
+          </Box>
+          <LayoutBuilder
+            spec={spec}
+            catalogByKey={catalogByKey}
+            limits={limits}
+            targetSectionId={targetSectionId}
+            selectedFieldKey={selectedFieldKey}
+            onSelectSection={(id) => select({ sectionId: id })}
+            onSelectField={(key) => select({ fieldKey: key })}
+            onAddSection={() =>
+              edit((s) => {
+                const next = addSection(s, limits);
+                const added = next.sections[next.sections.length - 1];
+                if (next !== s && added) select({ sectionId: added.id });
+                return next;
+              })
+            }
+            onRemoveSection={(id) => edit((s) => removeSection(s, id))}
+            onMoveSection={(i, dir) => edit((s) => moveSection(s, i, dir))}
+            onUpdateSection={(id, patch) => edit((s) => updateSection(s, id, patch, limits))}
+            onMoveRow={(id, i, dir) => edit((s) => moveRow(s, id, i, dir))}
+            onJoinRow={(id, i) => edit((s) => joinRowWithPrevious(s, id, i, limits))}
+            onSplitRow={(id, i) => edit((s) => splitRow(s, id, i, limits))}
+            options={spec.options}
+            descriptionUnavailable={surfaceInfo?.excludedFieldKeys.includes('description') ?? false}
+            onUpdateOptions={(patch) => edit((s) => updateOptions(s, patch))}
+          />
+          {selectedFieldKey ? (
+            <FieldInspector
               spec={spec}
-              catalogByKey={catalogByKey}
+              fieldKey={selectedFieldKey}
+              catalogField={catalogByKey.get(selectedFieldKey)}
               limits={limits}
-              targetSectionId={targetSectionId}
-              selectedFieldKey={selectedFieldKey}
-              onSelectSection={(id) => select({ sectionId: id })}
-              onSelectField={(key) => select({ fieldKey: key })}
-              onAddSection={() =>
-                edit((s) => {
-                  const next = addSection(s, limits);
-                  const added = next.sections[next.sections.length - 1];
-                  if (next !== s && added) select({ sectionId: added.id });
-                  return next;
-                })
+              onUpdate={(patch) => edit((s) => updateField(s, selectedFieldKey, patch, limits))}
+              onMoveToSection={(to) =>
+                edit((s) => moveFieldToSection(s, selectedFieldKey, to, limits))
               }
-              onRemoveSection={(id) => edit((s) => removeSection(s, id))}
-              onMoveSection={(i, dir) => edit((s) => moveSection(s, i, dir))}
-              onUpdateSection={(id, patch) => edit((s) => updateSection(s, id, patch, limits))}
-              onMoveRow={(id, i, dir) => edit((s) => moveRow(s, id, i, dir))}
-              onJoinRow={(id, i) => edit((s) => joinRowWithPrevious(s, id, i, limits))}
-              onSplitRow={(id, i) => edit((s) => splitRow(s, id, i, limits))}
-              options={spec.options}
-              descriptionUnavailable={
-                surfaceInfo?.excludedFieldKeys.includes('description') ?? false
-              }
-              onUpdateOptions={(patch) => edit((s) => updateOptions(s, patch))}
+              onRemove={() => {
+                edit((s) => removeField(s, selectedFieldKey));
+                select({ fieldKey: null });
+              }}
+              onClose={() => select({ fieldKey: null })}
             />
-            {selectedFieldKey ? (
-              <FieldInspector
-                spec={spec}
-                fieldKey={selectedFieldKey}
-                catalogField={catalogByKey.get(selectedFieldKey)}
-                limits={limits}
-                onUpdate={(patch) => edit((s) => updateField(s, selectedFieldKey, patch, limits))}
-                onMoveToSection={(to) =>
-                  edit((s) => moveFieldToSection(s, selectedFieldKey, to, limits))
-                }
-                onRemove={() => {
-                  edit((s) => removeField(s, selectedFieldKey));
-                  select({ fieldKey: null });
-                }}
-                onClose={() => select({ fieldKey: null })}
-              />
-            ) : null}
-          </Box>
+          ) : null}
+        </Box>
 
-          <Box className={surfaceChrome.invoiceSettingsPreview}>
-            <Box className={surfaceChrome.cardBuilderPreviewSticky}>
-              <CardLayoutPreview
-                surfaceId={surface.surfaceId}
-                item={sampleForVariant}
-                layout={resolved}
-              />
-            </Box>
+        <Box className={surfaceChrome.invoiceSettingsPreview}>
+          <Box className={surfaceChrome.cardBuilderPreviewSticky}>
+            <CardLayoutPreview
+              surfaceId={surface.surfaceId}
+              item={sampleForVariant}
+              layout={resolved}
+            />
           </Box>
         </Box>
       </Box>

@@ -26,13 +26,19 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Thin, theme-coloured scrollbars everywhere. macOS overlays its scrollbars (and
-   keeps doing so with these set), but Windows and Linux draw a classic 17px track
-   on every scroll container, which dominated the sidebar, the settings panes and
-   the invoice preview. Standard properties only: ::-webkit-scrollbar would force
-   always-visible custom bars onto macOS Safari. */
+/* Thin scrollbars that behave like macOS overlay bars: the thumb is invisible until the
+   container is being scrolled (ScrollbarReveal in platform/shell marks it with
+   data-sk-scrolling) or hovered. Windows and Linux otherwise draw a permanent classic
+   bar on every scroll container. Standard properties only: ::-webkit-scrollbar would
+   force always-visible custom bars onto macOS Safari. The page's own bar reveals on
+   scroll only, since the document is "hovered" whenever the pointer is in the window. */
 * {
   scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+:where(:not(html, body)):hover,
+[data-sk-scrolling] {
   scrollbar-color: var(--sk-color-border-strong) transparent;
 }
 
