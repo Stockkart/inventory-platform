@@ -11,6 +11,15 @@ function rbacKeysFor(key: string, payload: UpdateInventoryRequest): string[] {
       return ['unitsPerPack'];
     case 'verticalFields':
       return Object.keys(payload.verticalFields ?? {});
+    case 'clearFields':
+      // A clear needs the grant for setting the field; schemes are granted by their type.
+      return (payload.clearFields ?? []).map((field) =>
+        field === 'saleScheme'
+          ? 'schemeType'
+          : field === 'purchaseScheme'
+          ? 'purchaseSchemeType'
+          : field,
+      );
     default:
       return [key];
   }

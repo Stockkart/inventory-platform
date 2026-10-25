@@ -337,18 +337,16 @@ export function InventoryAlertDetails({
     setIsSaving(true);
     try {
       const payload: UpdateInventoryRequest = {};
-      if (editForm.name !== undefined && editForm.name !== currentItem.name)
-        payload.name = String(editForm.name) || undefined;
-      if (editForm.barcode !== undefined && editForm.barcode !== currentItem.barcode)
-        payload.barcode = String(editForm.barcode) || undefined;
-      if (editForm.description !== undefined && editForm.description !== currentItem.description)
-        payload.description = String(editForm.description) || undefined;
-      if (editForm.companyName !== undefined && editForm.companyName !== currentItem.companyName)
-        payload.companyName = String(editForm.companyName) || undefined;
-      if (editForm.location !== undefined && editForm.location !== currentItem.location)
-        payload.location = String(editForm.location) || undefined;
-      if (editForm.hsn !== undefined && editForm.hsn !== currentItem.hsn)
-        payload.hsn = String(editForm.hsn) || undefined;
+      // A null field means "keep it" to the API, so an emptied field is named here instead.
+      const clearFields: string[] = [];
+      const name = String(editForm.name ?? '');
+      if (name !== '' && name !== (currentItem.name ?? '')) payload.name = name;
+      for (const key of ['barcode', 'description', 'companyName', 'location', 'hsn'] as const) {
+        const next = String(editForm[key] ?? '');
+        if (next === (currentItem[key] ?? '')) continue;
+        if (next === '') clearFields.push(key);
+        else payload[key] = next;
+      }
 
       // Vertical fields come from the schema-driven section. Only the keys that changed are
       // sent: the server merges the bag with what it already holds, and per-field edit
@@ -392,14 +390,15 @@ export function InventoryAlertDetails({
       const addDiscStr = String(editForm.saleAdditionalDiscount ?? '').trim();
       const addDisc = addDiscStr !== '' ? parseFloat(addDiscStr) : null;
       const currentAddDisc = currentItem.saleAdditionalDiscount ?? null;
-      if (addDisc !== currentAddDisc && (addDisc != null || currentAddDisc != null))
-        payload.saleAdditionalDiscount = addDisc;
-      if (
-        editForm.thresholdCount !== undefined &&
-        editForm.thresholdCount !== currentItem.thresholdCount
-      )
-        payload.thresholdCount =
-          editForm.thresholdCount != null ? Number(editForm.thresholdCount) : null;
+      if (addDisc !== currentAddDisc) {
+        if (addDisc != null) payload.saleAdditionalDiscount = addDisc;
+        else clearFields.push('saleAdditionalDiscount');
+      }
+      const threshold = editForm.thresholdCount != null ? Number(editForm.thresholdCount) : null;
+      if (threshold !== (currentItem.thresholdCount ?? null)) {
+        if (threshold != null) payload.thresholdCount = threshold;
+        else clearFields.push('thresholdCount');
+      }
       if (editForm.purchaseDate) {
         const d = String(editForm.purchaseDate).trim();
         const currentPd = currentItem.purchaseDate ? currentItem.purchaseDate.slice(0, 10) : '';
@@ -432,11 +431,8 @@ export function InventoryAlertDetails({
       const currentSaleScheme = formatSaleSchemeDisplay(currentItem);
       if (saleSchemeRaw !== currentSaleScheme) {
         if (saleSchemeRaw === '') {
-          payload.schemeType = 'FIXED_UNITS';
-          payload.schemePayFor = null;
-          payload.schemeFree = null;
-          payload.schemePercentage = null;
-          payload.scheme = null;
+          delete payload.schemeType;
+          clearFields.push('saleScheme');
         } else {
           const parsed = parseSaleSchemeDraft(saleSchemeRaw);
           if (parsed) {
@@ -452,8 +448,9 @@ export function InventoryAlertDetails({
       const purchaseDiscStr = String(editForm.purchaseAdditionalDiscount ?? '').trim();
       const purchaseDisc = purchaseDiscStr !== '' ? parseFloat(purchaseDiscStr) : null;
       const curPurchaseDisc = currentItem.purchaseAdditionalDiscount ?? null;
-      if (purchaseDisc !== curPurchaseDisc && (purchaseDisc != null || curPurchaseDisc != null)) {
-        payload.purchaseAdditionalDiscount = purchaseDisc;
+      if (purchaseDisc !== curPurchaseDisc) {
+        if (purchaseDisc != null) payload.purchaseAdditionalDiscount = purchaseDisc;
+        else clearFields.push('purchaseAdditionalDiscount');
       }
 
       const editPurchaseSchemeType = String(
@@ -467,9 +464,8 @@ export function InventoryAlertDetails({
       const currentPurchaseScheme = formatPurchaseSchemeDisplay(currentItem);
       if (purchaseSchemeRaw !== currentPurchaseScheme) {
         if (purchaseSchemeRaw === '') {
-          payload.purchaseSchemePayFor = null;
-          payload.purchaseSchemeFree = null;
-          payload.purchaseSchemePercentage = null;
+          delete payload.purchaseSchemeType;
+          clearFields.push('purchaseScheme');
         } else {
           const parsed = parsePurchaseSchemeDraft(purchaseSchemeRaw);
           if (parsed) {
@@ -500,8 +496,10 @@ export function InventoryAlertDetails({
       const editDisc = String(editForm.discountApplicable ?? '').trim();
       const curDisc = currentItem.discountApplicable ?? '';
       if (editDisc !== curDisc) {
-        payload.discountApplicable = editDisc === '' ? null : (editDisc as DiscountApplicable);
+        if (editDisc !== '') payload.discountApplicable = editDisc as DiscountApplicable;
+        else clearFields.push('discountApplicable');
       }
+      if (clearFields.length > 0) payload.clearFields = clearFields;
 
       if (Object.keys(payload).length === 0) {
         setIsEditing(false);
