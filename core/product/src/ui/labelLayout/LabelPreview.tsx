@@ -125,8 +125,11 @@ export function LabelPreview({ label, layout, title = 'Live preview' }: LabelPre
     drawBars(frameRef.current);
   }, [html]);
 
+  // Rendered as a fragment: the caller's preview column (`invoiceSettingsPreview`)
+  // owns the padding, background and scrolling. Nesting a second column here gave the
+  // Barcode labels tab two scrollers inside one another.
   return (
-    <Box className={surfaceChrome.invoiceSettingsPreview}>
+    <>
       <Box className={surfaceChrome.invoiceSettingsPreviewToolbar}>
         <Stack gap="sm">
           <Text as="p" className={surfaceChrome.profileSectionLabel}>
@@ -169,6 +172,6 @@ export function LabelPreview({ label, layout, title = 'Live preview' }: LabelPre
           ? 'Scaled to fit — printed sheets use the physical page size above.'
           : 'Shown enlarged for readability — printed stickers use the physical size above.'}
       </Text>
-    </Box>
+    </>
   );
 }
