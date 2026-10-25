@@ -261,14 +261,16 @@
   font-weight: 600;
 }
 
+/* The rule under the tabs is an inset shadow, not a border, so the active tab's 2px
+   underline can sit over it without a negative margin. The old -1px margin made the
+   tabs overflow their bar by a pixel, which Windows showed as a tiny vertical scroller. */
 .navTabBar {
-  border-bottom: 1px solid var(--sk-color-border-default);
+  box-shadow: inset 0 -1px 0 var(--sk-color-border-default);
 }
 
 .navTab {
   border-bottom: 2px solid transparent;
   border-radius: 0;
-  margin-bottom: -1px;
 }
 
 .navTabActive {

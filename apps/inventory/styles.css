@@ -26,6 +26,16 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Thin, theme-coloured scrollbars everywhere. macOS overlays its scrollbars (and
+   keeps doing so with these set), but Windows and Linux draw a classic 17px track
+   on every scroll container, which dominated the sidebar, the settings panes and
+   the invoice preview. Standard properties only: ::-webkit-scrollbar would force
+   always-visible custom bars onto macOS Safari. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sk-color-border-strong) transparent;
+}
+
 a {
   color: var(--link);
   text-decoration: none;

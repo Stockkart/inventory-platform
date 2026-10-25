@@ -331,6 +331,7 @@ export const surfaceChrome = {
   // Product card layout builder (Profile → Product cards)
   cardBuilderToolbar: styles.cardBuilderToolbar,
   cardBuilderToolbarGroup: styles.cardBuilderToolbarGroup,
+  cardBuilderFrame: styles.cardBuilderFrame,
   cardBuilderLayout: styles.cardBuilderLayout,
   cardBuilderColumn: styles.cardBuilderColumn,
   cardBuilderMain: styles.cardBuilderMain,
