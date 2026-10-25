@@ -6,6 +6,7 @@ import {
   GRID_IDS,
   ShopLayoutColumnsSection,
 } from '@inventory-platform/product';
+import { HrSettingsSection } from '@inventory-platform/hr';
 
 /**
  * Profile tabs contributed by domain packages that `core/user` must not import
@@ -15,6 +16,8 @@ import {
 export const BARCODE_LABELS_PROFILE_TAB_ID = 'labels';
 export const PRODUCT_CARDS_PROFILE_TAB_ID = 'cards';
 export const PRODUCT_ENTRY_COLUMNS_PROFILE_TAB_ID = 'entry-columns';
+/** HR settings tab (`?tab=hr`); always listed, the section itself handles read-only and access. */
+export const HR_SETTINGS_PROFILE_TAB_ID = 'hr';
 
 let registered = false;
 
@@ -53,5 +56,11 @@ export function registerComposedProfileTabs(): void {
         description:
           'Choose the columns everyone in this shop sees on Product Entry. Hidden columns are hidden in grid and list view; order and width apply to grid view. Columns with a lock are required and cannot be hidden. Some columns only appear for certain billing or pricing modes.',
       }),
+  });
+  // No `after` anchor: HR goes last, after every built-in and product tab.
+  registerProfileTab({
+    id: HR_SETTINGS_PROFILE_TAB_ID,
+    label: 'HR',
+    render: () => createElement(HrSettingsSection),
   });
 }
