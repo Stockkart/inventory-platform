@@ -1,6 +1,4 @@
-import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { plansApi } from '@inventory-platform/plan/api';
 import {
   Alert,
   Button,
@@ -9,27 +7,13 @@ import {
   MarketingSection,
   SectionHeading,
 } from '@inventory-platform/ui-kit';
+import { usePlansQuery } from '../queries/hooks';
 import { PlanCarousel } from './PlanCarousel';
 
 export function Pricing() {
   const navigate = useNavigate();
-  const [plans, setPlans] = useState<Awaited<ReturnType<typeof plansApi.list>>>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        const data = await plansApi.list();
-        setPlans(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load plans');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPlans();
-  }, []);
+  const { data: plans = [], isPending: loading, error: queryError } = usePlansQuery();
+  const error = queryError ? queryError.message || 'Failed to load plans' : null;
 
   if (loading) {
     return (

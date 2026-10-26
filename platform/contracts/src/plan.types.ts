@@ -1,5 +1,16 @@
 /** Plan catalog and shop subscription status (API response shapes). */
 
+/** Gated capability a plan includes. Features every plan has are not listed. */
+export type PlanFeature =
+  | 'CREDIT_BALANCE'
+  | 'ACCOUNTING'
+  | 'BARCODE_GENERATOR'
+  | 'LOW_STOCK_NOTIFICATION'
+  | 'MARKETING'
+  | 'SALARY'
+  | 'BIOMETRIC_ATTENDANCE'
+  | 'ADVANCED_ACCESS_CONTROL';
+
 export interface PlanResponse {
   id: string;
   planName: string;
@@ -13,6 +24,14 @@ export interface PlanResponse {
   unlimited: boolean;
   linkedId: string | null;
   bestFor: string | null;
+  /** Catalogue fields; absent on legacy plans and on older API versions. */
+  code?: string | null;
+  displayOrder?: number | null;
+  /** OCR invoices included per month. */
+  ocrLimit?: number | null;
+  features?: PlanFeature[] | null;
+  /** Marketing highlight chosen by the backend, e.g. MOST_POPULAR. */
+  badge?: string | null;
 }
 
 export interface UsageResponse {

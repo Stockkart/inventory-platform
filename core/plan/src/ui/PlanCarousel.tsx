@@ -1,6 +1,6 @@
 import type { PlanResponse } from '@inventory-platform/plan/types';
 import { PlanCard, PlanCarousel3D } from '@inventory-platform/ui-kit';
-import { buildPlanFeatures } from './PlanGrid';
+import { buildPlanFeatures, isMostPopular } from './PlanGrid';
 
 const EXTRA_PLANS = ['Extra User Plan', 'Extra Shop Plan'];
 
@@ -20,7 +20,7 @@ function planCardProps(
       ? allFeatures.filter((f) => f !== plan.bestFor)
       : allFeatures;
 
-  const highlight = plan.planName === 'Silver';
+  const highlight = isMostPopular(plan);
   const showPopular = highlight && (options.isCenter ?? true);
   const showTrial = options.showTrialBadge && !EXTRA_PLANS.includes(plan.planName);
 
