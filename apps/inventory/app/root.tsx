@@ -8,7 +8,7 @@ import {
   type LinksFunction,
 } from 'react-router';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { ThemeProvider, AuthInitializer } from '@inventory-platform/shell';
+import { ThemeProvider, AuthInitializer, ScrollbarReveal } from '@inventory-platform/shell';
 import { QueryProvider } from '@inventory-platform/query';
 import '../styles.css';
 
@@ -81,6 +81,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </ThemeProvider>
           </QueryProvider>
         </GoogleOAuthProvider>
+        <ScrollbarReveal />
         <ScrollRestoration />
         <Scripts />
       </body>

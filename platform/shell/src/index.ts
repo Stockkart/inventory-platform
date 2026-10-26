@@ -18,6 +18,7 @@ export {
 } from '@inventory-platform/routing';
 export { filterDashboardMenuGroupsByAccess, canAccessDashboardPath } from './lib/accessNav';
 export { AuthInitializer } from './lib/AuthInitializer';
+export { ScrollbarReveal } from './lib/ScrollbarReveal';
 export { CommandPalette } from './lib/CommandPalette';
 export { KeyboardShortcutsModal } from './lib/KeyboardShortcutsModal';
 export {

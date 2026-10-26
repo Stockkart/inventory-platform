@@ -2900,18 +2900,15 @@
   gap: 0.5rem;
 }
 
-/* The builder is three columns only while its own card is wide enough for them, so the
-   breakpoints are container queries on .cardBuilderFrame rather than viewport queries:
-   a 1366px Windows laptop with the sidebar open has a ~1050px card, which squeezed the
-   Layout column to under 400px while the viewport query still said "three columns". */
-.cardBuilderFrame {
-  container-type: inline-size;
-}
-
+/* Three columns down to a ~1000px card (a 1366px Windows laptop with the sidebar open):
+   the side columns are kept narrow so the Layout editor keeps ~460px, and the preview
+   only drops below the editor once the viewport itself is too narrow for three. The
+   earlier container query on a wrapper put the preview on its own row at exactly that
+   laptop size, which read as a broken layout next to the same page on a wider Mac. */
 .cardBuilderLayout {
   --settings-pane-max: min(78vh, 56rem);
   display: grid;
-  grid-template-columns: minmax(15rem, 17.5rem) minmax(0, 1fr) minmax(19rem, 24rem);
+  grid-template-columns: minmax(13rem, 15rem) minmax(0, 1fr) minmax(17rem, 20rem);
   align-items: stretch;
   min-height: min(34rem, var(--settings-pane-max));
 }
@@ -3203,9 +3200,9 @@
   align-self: start;
 }
 
-/* Below ~68rem of card width the three columns cannot all keep a usable width: the
-   preview drops under the two editing columns and flows at its natural height. */
-@container (max-width: 68rem) {
+/* Below 1100px the viewport cannot hold three usable columns even with the sidebar
+   collapsed: the preview drops under the two editing columns at its natural height. */
+@media (max-width: 1100px) {
   .cardBuilderLayout {
     grid-template-columns: minmax(14rem, 16rem) minmax(0, 1fr);
   }
@@ -3221,7 +3218,7 @@
   }
 }
 
-@container (max-width: 44rem) {
+@media (max-width: 860px) {
   .cardBuilderLayout {
     grid-template-columns: 1fr;
   }
