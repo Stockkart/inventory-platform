@@ -89,6 +89,9 @@ describe('accessNav HR gating', () => {
       true,
     );
     expect(canAccessDashboardPath('/dashboard/hr/settings', withPerms([], 'emp-1'))).toBe(false);
+    expect(
+      canAccessDashboardPath('/dashboard/hr/settings', withPerms(['SELF_CHECK_IN'], 'emp-1')),
+    ).toBe(false);
     expect(canAccessDashboardPath('/dashboard/hr/settings', access(null))).toBe(false);
     expect(canAccessDashboardPath('/dashboard/hr/settings', null)).toBe(false);
   });

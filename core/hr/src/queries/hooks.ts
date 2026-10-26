@@ -13,6 +13,8 @@ import {
   chunkRows,
   type AdvanceResponse,
   type AttendanceRowResponse,
+  type SelfCheckInRequest,
+  type SelfCheckInResponse,
   type PayrollLineResponse,
   type PayrollRunResponse,
   type RecordAdvanceRequest,
@@ -343,6 +345,20 @@ export function useAttendanceHistoryQuery(
   return useQuery({
     queryKey: hrKeys.attendanceHistory(shopId, employeeId ?? '', date ?? ''),
     queryFn: () => attendanceApi.history(employeeId ?? '', date ?? ''),
+    enabled: Boolean(shopId) && Boolean(employeeId) && Boolean(date) && enabled,
+  });
+}
+
+/** VIEW_ATTENDANCE: punches of one employee-day (day drawer). */
+export function useAttendancePunchesQuery(
+  employeeId: string | undefined,
+  date: string | undefined,
+  enabled = true,
+) {
+  const shopId = useHrShopId();
+  return useQuery({
+    queryKey: hrKeys.attendancePunches(shopId, employeeId ?? '', date ?? ''),
+    queryFn: () => attendanceApi.punches(employeeId ?? '', date ?? ''),
     enabled: Boolean(shopId) && Boolean(employeeId) && Boolean(date) && enabled,
   });
 }
@@ -755,6 +771,29 @@ export function useCancelMyLeaveMutation() {
   return useMutation<LeaveRequestResponse, Error, string>({
     mutationFn: (id) => meApi.cancelLeave(id),
     onSettled: () => void invalidateMyLeave(queryClient, shopId),
+  });
+}
+
+export function useMyCheckInQuery(enabled = true) {
+  const shopId = useHrShopId();
+  return useQuery({
+    queryKey: hrKeys.meCheckIn(shopId),
+    queryFn: () => meApi.checkInStatus(),
+    enabled: Boolean(shopId) && enabled,
+  });
+}
+
+/** A punch changes own status and own attendance; registers too (a manager may be looking). */
+export function useCheckInMutation() {
+  const shopId = useHrShopId();
+  const queryClient = useQueryClient();
+  return useMutation<SelfCheckInResponse, Error, SelfCheckInRequest>({
+    mutationFn: (body) => meApi.checkIn(body),
+    onSuccess: (status) => {
+      queryClient.setQueryData(hrKeys.meCheckIn(shopId), status);
+      void queryClient.invalidateQueries({ queryKey: hrKeys.me(shopId) });
+      void queryClient.invalidateQueries({ queryKey: hrKeys.attendance(shopId) });
+    },
   });
 }
 

@@ -1,5 +1,7 @@
 import { Alert, Box, CenteredLoader, Stack, Text, hrChrome } from '@inventory-platform/ui-kit';
+import { HR_PERMISSIONS } from '@inventory-platform/hr/types';
 import { useHrAccess } from '../access/useHrAccess';
+import { AttendanceCaptureCard } from './AttendanceCaptureCard';
 import { useHrSettingsQuery } from '../queries/hooks';
 import { HolidaysCard } from './HolidaysCard';
 import { HrRolePermissionsCard } from './HrRolePermissionsCard';
@@ -15,7 +17,9 @@ export function HrSettingsSection() {
   const readOnly = !can('MANAGE_SETTINGS');
   // `hr` is null when the member's HR switch is off: the server answers 403 for every settings
   // call then, so do not ask (self-service is unaffected). Before access loads, try anyway.
-  const enabled = !accessLoaded || hrEnabled || isOwner;
+  // Self check-in alone opens no HR staff screen (the server answers 403 then too).
+  const staff = HR_PERMISSIONS.some((p) => p !== 'SELF_CHECK_IN' && can(p));
+  const enabled = !accessLoaded || isOwner || (hrEnabled && staff);
   const settings = useHrSettingsQuery(enabled);
 
   return (
@@ -31,8 +35,9 @@ export function HrSettingsSection() {
 
       {!enabled ? (
         <Alert variant="info">
-          HR is switched off for your login in this shop. Ask the owner to turn it on in Access
-          control.
+          {hrEnabled
+            ? 'Your role has no HR settings to see. Ask the owner if you need them.'
+            : 'HR is switched off for your login in this shop. Ask the owner to turn it on in Access control.'}
         </Alert>
       ) : (
         <>
@@ -54,6 +59,7 @@ export function HrSettingsSection() {
                 </Alert>
               ) : null}
               <HrSettingsForm settings={settings.data} readOnly={readOnly} />
+              <AttendanceCaptureCard settings={settings.data} readOnly={readOnly} />
               <HolidaysCard readOnly={readOnly} />
               <LeaveTypesCard readOnly={readOnly} />
             </>

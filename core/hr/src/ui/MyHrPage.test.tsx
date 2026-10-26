@@ -25,6 +25,9 @@ const meApi = vi.hoisted(() => ({
   notifications: vi.fn(),
   markNotificationRead: vi.fn(),
   markAllNotificationsRead: vi.fn(),
+  checkInStatus: vi.fn(),
+  checkIn: vi.fn(),
+  punches: vi.fn(),
 }));
 // Staff APIs: My HR must never call them (they would show other employees).
 const staff = vi.hoisted(() => ({
@@ -111,7 +114,17 @@ function request(id: string, extra: Partial<LeaveRequestResponse>): LeaveRequest
   };
 }
 
+const CHECK_IN_OFF = {
+  enabled: false,
+  locationRequired: false,
+  canCheckIn: false,
+  nextDirection: 'IN',
+  punchCount: 0,
+  missingCheckOut: false,
+};
+
 beforeEach(() => {
+  meApi.checkInStatus.mockResolvedValue(CHECK_IN_OFF);
   meApi.profile.mockResolvedValue({
     id: 'e1',
     code: 'EMP-001',
@@ -294,5 +307,106 @@ describe('MyHrPage', () => {
     expect(meApi.profile).not.toHaveBeenCalled();
     expect(meApi.payslips).not.toHaveBeenCalled();
     expectNoStaffCalls();
+  });
+});
+
+describe('MyHrPage check-in', () => {
+  const ON = { ...CHECK_IN_OFF, enabled: true, canCheckIn: true };
+
+  function mockGeolocation(impl: (ok: PositionCallback, fail: PositionErrorCallback) => void) {
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: { getCurrentPosition: vi.fn(impl) },
+    });
+  }
+
+  it('checks in, then offers Check out with both times', async () => {
+    signIn('e1', ['SELF_CHECK_IN']);
+    meApi.checkInStatus.mockResolvedValueOnce(ON).mockResolvedValue({
+      ...ON,
+      todayIn: '09:12',
+      nextDirection: 'OUT',
+      punchCount: 1,
+    });
+    meApi.checkIn
+      .mockResolvedValueOnce({ ...ON, todayIn: '09:12', nextDirection: 'OUT', punchCount: 1 })
+      .mockResolvedValueOnce({
+        ...ON,
+        todayIn: '09:12',
+        todayOut: '18:40',
+        nextDirection: 'OUT',
+        punchCount: 2,
+      });
+    renderPage();
+
+    expect(await screen.findByText('Not checked in today')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Check in' }));
+    expect(meApi.checkIn).toHaveBeenCalledWith({});
+    expect(await screen.findByRole('button', { name: 'Check out' })).toBeInTheDocument();
+    expect(screen.getByText('Checked in at 09:12')).toBeInTheDocument();
+
+    meApi.checkInStatus.mockResolvedValue({
+      ...ON,
+      todayIn: '09:12',
+      todayOut: '18:40',
+      nextDirection: 'OUT',
+      punchCount: 2,
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Check out' }));
+    expect(
+      await screen.findByText('Checked in at 09:12 · Checked out at 18:40'),
+    ).toBeInTheDocument();
+  });
+
+  it('sends the location when the shop checks it', async () => {
+    signIn('e1', ['SELF_CHECK_IN']);
+    mockGeolocation((ok) =>
+      ok({ coords: { latitude: 12.9, longitude: 77.6, accuracy: 18 } } as GeolocationPosition),
+    );
+    meApi.checkInStatus.mockResolvedValue({ ...ON, locationRequired: true });
+    meApi.checkIn.mockResolvedValue({ ...ON, todayIn: '09:12', nextDirection: 'OUT' });
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Check in' }));
+    await waitFor(() =>
+      expect(meApi.checkIn).toHaveBeenCalledWith({ lat: 12.9, lng: 77.6, accuracy: 18 }),
+    );
+  });
+
+  it('still asks the server when the location is denied, and shows its answer', async () => {
+    signIn('e1', ['SELF_CHECK_IN']);
+    mockGeolocation((_ok, fail) => fail({ code: 1 } as GeolocationPositionError));
+    meApi.checkInStatus.mockResolvedValue({ ...ON, locationRequired: true });
+    meApi.checkIn.mockRejectedValue(new Error("You're not at the shop"));
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Check in' }));
+    await waitFor(() => expect(meApi.checkIn).toHaveBeenCalledWith({}));
+    expect(await screen.findByText("You're not at the shop")).toBeInTheDocument();
+    expect(screen.getByText(/Location is blocked for this site/)).toBeInTheDocument();
+  });
+
+  it('shows the reason instead of the button, and the missing check-out chip', async () => {
+    signIn('e1', ['SELF_CHECK_IN']);
+    meApi.checkInStatus.mockResolvedValue({
+      ...ON,
+      canCheckIn: false,
+      reason: 'You are on leave today',
+      missingCheckOut: true,
+    });
+    renderPage();
+
+    expect(await screen.findByText('You are on leave today')).toBeInTheDocument();
+    expect(screen.getByText('Missing check-out')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Check in' })).toBeNull();
+  });
+
+  it('hides the card when self check-in is off', async () => {
+    signIn('e1', ['SELF_CHECK_IN']);
+    renderPage();
+    expect(await screen.findByText('My attendance')).toBeInTheDocument();
+    await waitFor(() => expect(meApi.checkInStatus).toHaveBeenCalled());
+    expect(screen.queryByRole('button', { name: 'Check in' })).toBeNull();
+    expect(screen.queryByText('Today')).toBeNull();
   });
 });

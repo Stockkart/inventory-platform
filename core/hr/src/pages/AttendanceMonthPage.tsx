@@ -36,7 +36,7 @@ import { AttendanceDayDrawer } from '../ui/AttendanceDayDrawer';
 import { EmployeeNameLink } from '../ui/EmployeeNameLink';
 import { HrDownloadAlert } from '../ui/HrDownloadAlert';
 import { HrInbox } from '../ui/HrInbox';
-import { AttendanceLegend, AttendanceMark } from '../ui/AttendanceMark';
+import { AttendanceLegend, AttendanceMark, CaptureSourceIcon } from '../ui/AttendanceMark';
 
 const WEEKDAY_LETTER = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
@@ -64,7 +64,7 @@ function weekdayOf(date: string): number {
 function spoken(name: string, date: string, cell: MonthRegisterCell): string {
   return `${name}, ${formatDayShort(date)}: ${DAY_STATUS_LABELS[cell.status]}${
     cell.late ? ', late' : ''
-  }`;
+  }${cell.markSource === 'SELF_CHECK_IN' ? ', by phone' : ''}`;
 }
 
 /**
@@ -229,6 +229,7 @@ export function AttendanceMonthPage() {
                               }
                             >
                               <AttendanceMark status={cell.status} late={cell.late ?? false} />
+                              <CaptureSourceIcon source={cell.markSource} />
                             </Button>
                           )}
                         </DenseTableCell>

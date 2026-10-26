@@ -57,6 +57,8 @@ export const hrChrome = {
   hrTeamPicker: styles.hrTeamPicker,
   /** Clickable mark in a month register cell (opens the day detail). */
   hrRegisterDayButton: styles.hrRegisterDayButton,
+  /** Small muted source icon (phone = self check-in) beside a mark or a name. */
+  hrSourceIcon: styles.hrSourceIcon,
   /** Day detail drawer body: padded, scrolls on its own. */
   hrDayDrawer: styles.hrDayDrawer,
   /** Colour key for attendance marks. */

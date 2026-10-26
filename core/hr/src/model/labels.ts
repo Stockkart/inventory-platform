@@ -1,5 +1,5 @@
 import type { HrPermission } from '@inventory-platform/access';
-import type { DayStatus, HrAuditAction } from './attendance.types';
+import type { CaptureMarks, DayStatus, HrAuditAction, PunchFlag } from './attendance.types';
 import type { EmployeeStatus, HrPaymentMethod, PayType } from './employee.types';
 import type { LeaveRequestStatus } from './leave.types';
 import type { AdvanceStatus } from './advance.types';
@@ -18,6 +18,7 @@ export const HR_PERMISSION_LABELS: Record<HrPermission, string> = {
   RECORD_PAYMENTS: 'Record salary payments',
   MANAGE_ADVANCES: 'Manage advances',
   MANAGE_SETTINGS: 'Manage HR settings and holidays',
+  SELF_CHECK_IN: 'Self check-in',
 };
 
 export const HR_GRID_ROLE_LABELS: Record<HrGridRole, string> = {
@@ -124,3 +125,22 @@ export const PAYROLL_WARNING_LABELS: Record<string, string> = {
   NO_SALARY: 'No salary set',
   DEDUCTIONS_EXCEED_PAY: 'Deductions more than pay',
 };
+
+/** Punch flags in plain English (R9.2); no location and poor accuracy read the same. */
+export const PUNCH_FLAG_LABELS: Record<PunchFlag, string> = {
+  OUTSIDE_SHOP: 'Outside shop',
+  LOW_ACCURACY: 'Location unclear',
+  NO_LOCATION: 'Location unclear',
+  LOCKED_PERIOD: 'Locked month',
+};
+
+/** Register chips for a punch-filled day: "Missing check-out", "Outside shop", "Location unclear". */
+export function captureChips(marks: CaptureMarks): string[] {
+  const chips = marks.missingCheckOut ? ['Missing check-out'] : [];
+  for (const f of marks.flags ?? []) {
+    if (f === 'LOCKED_PERIOD') continue;
+    const label = PUNCH_FLAG_LABELS[f];
+    if (label && !chips.includes(label)) chips.push(label);
+  }
+  return chips;
+}

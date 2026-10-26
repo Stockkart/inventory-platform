@@ -217,3 +217,18 @@ export function formatDateTime(instant: string | null | undefined): string {
   const d = new Date(instant);
   return Number.isNaN(d.getTime()) ? instant : DATE_TIME.format(d);
 }
+
+const CLOCK = new Intl.DateTimeFormat('en-GB', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+  timeZone: 'Asia/Kolkata',
+});
+
+/** "09:12": an `HH:mm[:ss]` time as is, an ISO instant in Indian time; `—` when unknown. */
+export function formatClock(value: string | null | undefined): string {
+  if (!value) return '—';
+  if (/^\d{2}:\d{2}/.test(value)) return value.slice(0, 5);
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? value : CLOCK.format(d);
+}

@@ -21,6 +21,7 @@ const attendanceApi = vi.hoisted(() => ({
   markUnmarkedPresent: vi.fn(),
   month: vi.fn(),
   history: vi.fn(),
+  punches: vi.fn(),
   monthExport: vi.fn(),
 }));
 const download = vi.hoisted(() => ({ deliverHrFile: vi.fn() }));
@@ -102,6 +103,7 @@ function register(over: Partial<DailyRegisterResponse> = {}): DailyRegisterRespo
 }
 
 beforeEach(() => {
+  attendanceApi.punches.mockResolvedValue([]);
   attendanceApi.daily.mockResolvedValue(register());
   attendanceApi.saveDays.mockResolvedValue([]);
   attendanceApi.markUnmarkedPresent.mockResolvedValue({ marked: 1 });
@@ -629,5 +631,94 @@ describe('month register names (run F9)', () => {
     const table = await screen.findByRole('table', { name: /Attendance register/ });
     expect(within(table).getByText('Asha')).toBeInTheDocument();
     expect(within(table).queryByRole('button', { name: 'Asha' })).not.toBeInTheDocument();
+  });
+});
+
+describe('self check-in on the registers', () => {
+  it('shows the phone icon and capture chips on the daily row, nothing for a hand mark', async () => {
+    signIn(['VIEW_ATTENDANCE']);
+    attendanceApi.daily.mockResolvedValue(
+      register({
+        rows: [
+          row({
+            employeeId: 'e1',
+            name: 'Asha',
+            status: 'PRESENT',
+            source: 'MARK',
+            markSource: 'SELF_CHECK_IN',
+            inTime: '09:12',
+            missingCheckOut: true,
+            flags: ['OUTSIDE_SHOP', 'LOW_ACCURACY', 'NO_LOCATION'],
+          }),
+          { ...RAVI, markSource: 'MANUAL' },
+        ],
+      }),
+    );
+    renderAt('/dashboard/hr/attendance');
+
+    const asha = await screen.findByRole('listitem', { name: 'Asha' });
+    expect(within(asha).getByRole('img', { name: 'by phone' })).toBeInTheDocument();
+    expect(within(asha).getByText('Missing check-out')).toBeInTheDocument();
+    expect(within(asha).getByText('Outside shop')).toBeInTheDocument();
+    expect(within(asha).getAllByText('Location unclear')).toHaveLength(1);
+    const ravi = screen.getByRole('listitem', { name: 'Ravi' });
+    expect(within(ravi).queryByRole('img', { name: 'by phone' })).toBeNull();
+  });
+
+  it('marks a phone day in the month cell and lists its punches in the drawer', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_ATTENDANCE']);
+    attendanceApi.month.mockResolvedValue({
+      ...MONTH,
+      rows: [
+        {
+          ...MONTH.rows[0],
+          cells: MONTH.rows[0].cells.map((c, i) =>
+            i === 0 ? { ...c, markSource: 'SELF_CHECK_IN' as const } : c,
+          ),
+        },
+      ],
+    });
+    attendanceApi.punches.mockResolvedValue([
+      {
+        id: 'p1',
+        employeeId: 'e1',
+        at: '2026-10-01T03:42:00Z',
+        direction: 'IN',
+        source: 'SELF',
+        distanceMetres: 42,
+      },
+      {
+        id: 'p2',
+        employeeId: 'e1',
+        at: '2026-10-01T13:10:00Z',
+        time: '18:40',
+        direction: 'OUT',
+        source: 'SELF',
+        distanceMetres: 310,
+        flags: ['OUTSIDE_SHOP'],
+      },
+      {
+        id: 'p3',
+        employeeId: 'e1',
+        at: '2026-10-01T13:12:00Z',
+        time: '18:42',
+        direction: 'OUT',
+        source: 'SELF',
+        counted: false,
+      },
+    ]);
+    renderAt('/dashboard/hr/attendance/month');
+
+    const table = await screen.findByRole('table', { name: /Attendance register/ });
+    await user.click(within(table).getByRole('button', { name: /Asha, Thu, 1 Oct: .*by phone/ }));
+
+    const list = await screen.findByRole('list', { name: 'Check-ins on this day' });
+    expect(within(list).getByText('09:12 · In by phone')).toBeInTheDocument();
+    expect(within(list).getByText('42 m from shop')).toBeInTheDocument();
+    expect(within(list).getByText('18:40 · Out by phone')).toBeInTheDocument();
+    expect(within(list).getByText('310 m from shop · Outside shop')).toBeInTheDocument();
+    expect(within(list).getByText(/Not counted/)).toBeInTheDocument();
+    expect(attendanceApi.punches).toHaveBeenCalledWith('e1', '2026-10-01');
   });
 });

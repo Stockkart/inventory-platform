@@ -21,6 +21,7 @@ describe('hrKeys', () => {
     ['attendanceDaily', hrKeys.attendanceDaily(SHOP, '2026-10-06')],
     ['attendanceMonth', hrKeys.attendanceMonth(SHOP, '2026-10', 'e1')],
     ['attendanceHistory', hrKeys.attendanceHistory(SHOP, 'e1', '2026-10-06')],
+    ['attendancePunches', hrKeys.attendancePunches(SHOP, 'e1', '2026-10-06')],
     ['leave', hrKeys.leave(SHOP)],
     ['leaveRequests', hrKeys.leaveRequests(SHOP, { status: 'PENDING' })],
     [
@@ -42,6 +43,7 @@ describe('hrKeys', () => {
     ['meLeave', hrKeys.meLeave(SHOP, '2026')],
     ['meLeavePreview', hrKeys.meLeavePreview(SHOP, { leaveTypeId: 't1', from: 'a', to: 'b' })],
     ['mePayslips', hrKeys.mePayslips(SHOP)],
+    ['meCheckIn', hrKeys.meCheckIn(SHOP)],
     ['notifications', hrKeys.notifications(SHOP)],
   ];
 
@@ -72,6 +74,7 @@ describe('hrKeys', () => {
       hrKeys.attendanceDaily(SHOP, '2026-10-06'),
       hrKeys.attendanceMonth(SHOP, '2026-10'),
       hrKeys.attendanceHistory(SHOP, 'e1', '2026-10-06'),
+      hrKeys.attendancePunches(SHOP, 'e1', '2026-10-06'),
     ]) {
       expect(key.slice(0, att.length)).toEqual([...att]);
     }
@@ -115,6 +118,7 @@ describe('hrKeys', () => {
       hrKeys.meAttendance(SHOP, '2026-10'),
       hrKeys.meLeave(SHOP),
       hrKeys.mePayslips(SHOP),
+      hrKeys.meCheckIn(SHOP),
     ]) {
       expect(key.slice(0, me.length)).toEqual([...me]);
     }

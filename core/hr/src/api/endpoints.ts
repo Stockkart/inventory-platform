@@ -25,6 +25,8 @@ export const HR_ENDPOINTS = {
   ATTENDANCE_MARK_UNMARKED_PRESENT: '/hr/attendance/mark-unmarked-present',
   ATTENDANCE_MONTH: '/hr/attendance/month',
   ATTENDANCE_HISTORY: '/hr/attendance/history',
+  // Attendance capture: punches and self check-in.
+  ATTENDANCE_PUNCHES: '/hr/attendance/punches',
   LEAVE_REQUESTS: '/hr/leave-requests',
   LEAVE_PREVIEW: '/hr/leave-requests/preview',
   LEAVE_DECISION: (id: string, decision: 'approve' | 'reject' | 'cancel') =>
@@ -62,6 +64,8 @@ export const HR_ENDPOINTS = {
   ME_LEAVE_REQUESTS: '/hr/me/leave-requests',
   ME_LEAVE_CANCEL: (id: string) => `/hr/me/leave-requests/${encodeURIComponent(id)}/cancel`,
   ME_PAYSLIPS: '/hr/me/payslips',
+  ME_CHECK_IN: '/hr/me/check-in',
+  ME_PUNCHES: '/hr/me/punches',
   ME_PAYSLIP_PDF: (lineId: string) => `/hr/me/payslips/${encodeURIComponent(lineId)}/pdf`,
   ME_NOTIFICATIONS: '/hr/me/notifications',
   ME_NOTIFICATION_READ: (id: string) => `/hr/me/notifications/${encodeURIComponent(id)}/read`,

@@ -49,6 +49,7 @@ import {
 } from '../queries/hooks';
 import { AskLeaveModal } from '../ui/AskLeaveModal';
 import { AttendanceCalendar } from '../ui/AttendanceCalendar';
+import { CheckInCard } from '../ui/CheckInCard';
 import { paymentText } from '../ui/EmployeeProfileTab';
 import { HrDownloadAlert } from '../ui/HrDownloadAlert';
 import { HrInbox } from '../ui/HrInbox';
@@ -292,6 +293,7 @@ export function MyHrPage() {
   return (
     <Stack gap="lg">
       <PageHeader description="Your own attendance, leave and payslips." actions={<HrInbox />} />
+      <CheckInCard />
       {profile.error ? <Alert variant="danger">{profile.error.message}</Alert> : null}
       {me ? (
         <Card>

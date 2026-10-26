@@ -7,6 +7,7 @@ import type {
   MarkUnmarkedPresentRequest,
   MarkUnmarkedPresentResponse,
   MonthRegisterResponse,
+  PunchResponse,
   SaveAttendanceDaysRequest,
 } from '@inventory-platform/hr/types';
 import { downloadHrBlob, type HrFile } from './download';
@@ -61,6 +62,15 @@ export const attendanceApi = {
       { employeeId, date },
     );
     return response.data;
+  },
+
+  /** VIEW_ATTENDANCE: every punch of one employee-day, oldest first. */
+  punches: async (employeeId: string, date: string): Promise<PunchResponse[]> => {
+    const response = await apiClient.get<ApiResponse<PunchResponse[]>>(
+      HR_ENDPOINTS.ATTENDANCE_PUNCHES,
+      { employeeId, date },
+    );
+    return response.data ?? [];
   },
 
   /** VIEW_ATTENDANCE: the month register as Excel (may answer 503 "busy" under load). */

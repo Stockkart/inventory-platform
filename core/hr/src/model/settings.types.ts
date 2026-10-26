@@ -42,6 +42,32 @@ export interface WeeklyOffEntryDto {
   days?: DayOfWeek[] | null;
 }
 
+/** Backend `OutsideAction`: what self check-in does outside the shop radius or without a location. */
+export type OutsideAction = 'BLOCK' | 'FLAG';
+
+/** `HrSettingsResponse.AttendanceCaptureDto`: self check-in and location check, defaults filled in. */
+export interface AttendanceCaptureDto {
+  selfCheckIn: boolean;
+  /** Only works while `selfCheckIn` is on. */
+  locationCheck: boolean;
+  /** null = shop location not set yet. */
+  shopLat?: number | null;
+  shopLng?: number | null;
+  /** 30–1,000; default 100. */
+  radiusMetres: number;
+  outsideAction: OutsideAction;
+}
+
+/** `UpdateHrSettingsRequest.AttendanceCaptureChange`: a null/omitted field keeps its value. */
+export type AttendanceCaptureChange = {
+  [K in keyof AttendanceCaptureDto]?: AttendanceCaptureDto[K] | null;
+};
+
+/** Shop radius limits (`HrSettingsValidator`). */
+export const MIN_RADIUS_METRES = 30;
+export const MAX_RADIUS_METRES = 1000;
+export const DEFAULT_RADIUS_METRES = 100;
+
 /** `HrSettingsResponse`: settings with defaults filled in; `saved = false` = nothing stored yet. */
 export interface HrSettingsResponse {
   saved: boolean;
@@ -60,6 +86,8 @@ export interface HrSettingsResponse {
   payCycleStartDay?: number | null;
   /** Salary month (`YYYY-MM`) today falls in; missing on older backends (work it out locally). */
   currentSalaryPeriod?: string | null;
+  /** Missing on older backends (= everything off). */
+  attendanceCapture?: AttendanceCaptureDto | null;
   /** Send back on PUT for lost-update protection; null = never saved. */
   revision?: number | null;
   updatedAt?: string | null;
@@ -89,6 +117,8 @@ export interface UpdateHrSettingsRequest {
   leaveYearStartMonth?: LeaveYearStartMonth | null;
   /** Day 1–28 the salary month starts on; null = 1 (calendar month). */
   payCycleStartDay?: number | null;
+  /** null = unchanged. */
+  attendanceCapture?: AttendanceCaptureChange | null;
   revision?: number | null;
 }
 
