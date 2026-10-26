@@ -31,7 +31,7 @@ import {
 import { useAuthStore, useNotify } from '@inventory-platform/session';
 import {
   EMPLOYEE_STATUS_LABELS,
-  EMPTY_EMPLOYEE_FORM,
+  newEmployeeForm,
   fillFromLogin,
   formToRequest,
   formatDate,
@@ -96,7 +96,7 @@ export function EmployeesPage() {
   const setup = useHrSetupStatusQuery(canView);
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [form, setForm] = useState<EmployeeFormValue>(EMPTY_EMPLOYEE_FORM);
+  const [form, setForm] = useState<EmployeeFormValue>(() => newEmployeeForm());
   const [errors, setErrors] = useState<EmployeeFormErrors>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const [loginId, setLoginId] = useState<string | null>(null);
@@ -113,7 +113,7 @@ export function EmployeesPage() {
   };
 
   const openCreate = () => {
-    setForm(EMPTY_EMPLOYEE_FORM);
+    setForm(newEmployeeForm());
     setLoginId(null);
     setErrors({});
     setSaveError(null);

@@ -4,6 +4,7 @@ import {
   EMPTY_EMPLOYEE_FORM,
   IFSC_PATTERN,
   UPI_PATTERN,
+  newEmployeeForm,
   validateEmployeeForm,
   type EmployeeFormValue,
 } from './employee-validation';
@@ -30,6 +31,7 @@ const REQUIRES: HrRequiresMap = {
 const form = (patch: Partial<EmployeeFormValue>): EmployeeFormValue => ({
   ...EMPTY_EMPLOYEE_FORM,
   name: 'Ravi',
+  joinDate: '2026-01-05',
   ...patch,
 });
 const ALL = { creating: true, withPay: true, withPayment: true };
@@ -95,6 +97,16 @@ describe('employee validation mirrors the backend patterns', () => {
     expect(
       validateEmployeeForm(form({ payType: 'MONTHLY', salaryAmount: '10.005' }), ALL).salaryAmount,
     ).toBe('Salary must be more than 0, in rupees and paise');
+  });
+
+  it('requires a join date; the Add form starts at today', () => {
+    expect(validateEmployeeForm(form({ joinDate: '' }), ALL).joinDate).toBe(
+      'Join date is required',
+    );
+    expect(validateEmployeeForm(form({ joinDate: '' }), { ...ALL, creating: false }).joinDate).toBe(
+      'Join date is required',
+    );
+    expect(newEmployeeForm(new Date(2026, 8, 7)).joinDate).toBe('2026-09-07');
   });
 
   it('wants both own working hours, start before end', () => {

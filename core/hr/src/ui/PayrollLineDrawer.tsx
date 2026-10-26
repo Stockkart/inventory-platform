@@ -23,6 +23,7 @@ import {
   PAYROLL_WARNING_LABELS,
   adjustmentsDraftFromLine,
   adjustmentsToRequest,
+  formatDate,
   formatDays,
   formatInr,
   formatMinutes,
@@ -301,6 +302,15 @@ export function PayrollLineDrawer({
             <Text variant="heading4" as="h3">
               Days
             </Text>
+            {/* Counting starts at the join date (old records without one: the creation date). */}
+            {snap?.joinDate ? (
+              <Text color="secondary">
+                Joined {formatDate(snap.joinDate)}
+                {snap.exitDate ? ` · Left ${formatDate(snap.exitDate)}` : ''}
+              </Text>
+            ) : snap?.exitDate ? (
+              <Text color="secondary">Left {formatDate(snap.exitDate)}</Text>
+            ) : null}
             {DAY_ROWS.filter(([key]) => counts[key] != null).map(([key, label]) => (
               <Inline key={key} justify="between" gap="sm">
                 <Text>{label}</Text>

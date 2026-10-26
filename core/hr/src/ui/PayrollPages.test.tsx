@@ -381,6 +381,29 @@ describe('PayrollRunPage', () => {
     expect(within(drawer).getByText('31.5')).toBeInTheDocument();
   });
 
+  it('shows where day counting starts: Joined (and Left) above days employed', async () => {
+    const user = userEvent.setup();
+    signIn(RUNNER);
+    payrollApi.get.mockResolvedValue({
+      ...DRAFT,
+      lines: [
+        {
+          ...LINE,
+          employeeSnapshot: {
+            ...LINE.employeeSnapshot,
+            joinDate: '2026-09-10',
+            exitDate: '2026-09-25',
+          },
+        },
+      ],
+    });
+    renderAt('/dashboard/hr/payroll/run-sep');
+    await user.click(await screen.findByRole('button', { name: 'Show pay details for Asha' }));
+    const drawer = await screen.findByRole('dialog', { name: 'Asha' });
+    const days = within(drawer).getByRole('region', { name: 'Days' });
+    expect(within(days).getByText('Joined 10 Sep 2026 · Left 25 Sep 2026')).toBeInTheDocument();
+  });
+
   it('saves a bonus from the line drawer', async () => {
     const user = userEvent.setup();
     signIn(RUNNER);
