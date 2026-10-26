@@ -13,6 +13,7 @@ import {
   Stack,
   Switch,
   Text,
+  hrChrome,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import {
@@ -21,6 +22,8 @@ import {
   LEAVE_YEAR_LABELS,
   PER_DAY_BASIS_LABELS,
   currentMonth,
+  cycleRange,
+  formatDateRange,
   formatMonth,
   type DayOfWeek,
   type HrSettingsResponse,
@@ -45,6 +48,7 @@ interface SettingsDraft {
   overtimeMultiplier: string;
   perDayBasis: PerDayBasis;
   leaveYearStartMonth: LeaveYearStartMonth;
+  payCycleStartDay: string;
 }
 
 function draftFrom(s: HrSettingsResponse): SettingsDraft {
@@ -59,6 +63,7 @@ function draftFrom(s: HrSettingsResponse): SettingsDraft {
     overtimeMultiplier: String(s.overtimeMultiplier ?? 1.5),
     perDayBasis: s.perDayBasis ?? 'CALENDAR_DAYS',
     leaveYearStartMonth: s.leaveYearStartMonth ?? 'JANUARY',
+    payCycleStartDay: String(s.payCycleStartDay ?? 1),
   };
 }
 
@@ -85,7 +90,17 @@ function validate(d: SettingsDraft): string | null {
   if (!d.overtimeMultiplier.trim() || !Number.isFinite(mult) || mult < 1 || mult > 5) {
     return 'Overtime multiplier must be between 1 and 5';
   }
+  if (cycleStartDay(d.payCycleStartDay) == null) {
+    return 'Salary month start day must be a whole number from 1 to 28';
+  }
   return null;
+}
+
+/** Salary month start day typed in the form; null = not a whole number from 1 to 28. */
+function cycleStartDay(text: string): number | null {
+  if (!/^\d{1,2}$/.test(text.trim())) return null;
+  const day = Number(text);
+  return day >= 1 && day <= 28 ? day : null;
 }
 
 const PER_DAY_OPTIONS = (Object.keys(PER_DAY_BASIS_LABELS) as PerDayBasis[]).map((value) => ({
@@ -120,6 +135,10 @@ export function HrSettingsForm({ settings, readOnly }: HrSettingsFormProps) {
   const savedLeaveYear = settings.leaveYearStartMonth ?? 'JANUARY';
   const leaveYearChanged = settings.saved && draft.leaveYearStartMonth !== savedLeaveYear;
   const disabled = readOnly || save.isPending;
+  const startDay = cycleStartDay(draft.payCycleStartDay);
+  const thisCycle = startDay == null ? null : cycleRange(currentMonth(), startDay);
+  const stepDay = (by: number) =>
+    set('payCycleStartDay', String(Math.min(28, Math.max(1, (startDay ?? 1) + by))));
 
   const set = <K extends keyof SettingsDraft>(key: K, value: SettingsDraft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
@@ -149,6 +168,7 @@ export function HrSettingsForm({ settings, readOnly }: HrSettingsFormProps) {
       overtimeMultiplier: Number(draft.overtimeMultiplier),
       perDayBasis: draft.perDayBasis,
       leaveYearStartMonth: draft.leaveYearStartMonth,
+      payCycleStartDay: cycleStartDay(draft.payCycleStartDay),
       // null on the very first save; afterwards the server rejects a stale copy with 409.
       revision: settings.revision ?? null,
     };
@@ -327,6 +347,51 @@ export function HrSettingsForm({ settings, readOnly }: HrSettingsFormProps) {
               </Alert>
             ) : null}
           </Stack>
+
+          <FormField
+            label="Salary month starts on day"
+            id="hr-pay-cycle-start"
+            hint="1 = calendar month. Example: 26 means the October salary covers 26 Sep – 25 Oct, and you can pay it from 26 Oct."
+          >
+            <Inline gap="xs" align="center">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                aria-label="Start one day earlier"
+                disabled={disabled || (startDay ?? 1) <= 1}
+                onClick={() => stepDay(-1)}
+              >
+                −
+              </Button>
+              <Input
+                id="hr-pay-cycle-start"
+                type="text"
+                inputMode="numeric"
+                maxLength={2}
+                className={hrChrome.hrDayInput}
+                value={draft.payCycleStartDay}
+                onChange={(e) => set('payCycleStartDay', e.target.value)}
+                disabled={disabled}
+                aria-invalid={startDay == null}
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                aria-label="Start one day later"
+                disabled={disabled || (startDay ?? 1) >= 28}
+                onClick={() => stepDay(1)}
+              >
+                +
+              </Button>
+            </Inline>
+          </FormField>
+          <Text variant="caption" color="secondary" role="status">
+            {thisCycle
+              ? `This month's salary: ${formatDateRange(thisCycle.from, thisCycle.to)}`
+              : 'Enter a day from 1 to 28.'}
+          </Text>
 
           {error ? <Alert variant="danger">{error}</Alert> : null}
 

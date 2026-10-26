@@ -198,7 +198,7 @@ describe('MyHrPage', () => {
     expect(screen.getByText(/Present 1 · Half-days 0/)).toBeInTheDocument();
     expect(await screen.findByText('10 days')).toBeInTheDocument();
     const payslips = await screen.findByRole('table', { name: 'My payslips' });
-    expect(within(payslips).getByText('September 2026')).toBeInTheDocument();
+    expect(within(payslips).getByText('September 2026 · 1 Sep – 30 Sep')).toBeInTheDocument();
     expect(within(payslips).getByText('₹12,533.00')).toBeInTheDocument();
     expect(within(payslips).getByText('Paid on 3 Oct 2026')).toBeInTheDocument();
 

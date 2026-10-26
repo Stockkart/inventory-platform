@@ -224,6 +224,12 @@
   }
 }
 
+/* Two-digit day box between − / + buttons (HR settings salary month start). */
+.hrDayInput.hrDayInput {
+  width: 3.5rem;
+  text-align: center;
+}
+
 /* Small in/out time boxes on the daily list (fit "10:45 AM" with the clock icon). */
 .hrTimeInput.hrTimeInput {
   width: 6.75rem;

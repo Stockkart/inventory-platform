@@ -1,4 +1,5 @@
 import type { HrPaymentMethod, PayType } from './employee.types';
+import { todayIso } from './format';
 
 /*
  * Client-side copy of the backend `EmployeeValidator` patterns and messages, so the form can say
@@ -54,6 +55,11 @@ export const EMPTY_EMPLOYEE_FORM: EmployeeFormValue = {
   upiId: '',
 };
 
+/** Add employee form: join date starts at today (the backend requires one). */
+export function newEmployeeForm(now: Date = new Date()): EmployeeFormValue {
+  return { ...EMPTY_EMPLOYEE_FORM, joinDate: todayIso(now) };
+}
+
 export type EmployeeFormErrors = Partial<Record<keyof EmployeeFormValue, string>>;
 
 export interface EmployeeValidationOptions {
@@ -105,7 +111,9 @@ export function validateEmployeeForm(
   } else if (!opts.creating) {
     errors.code = 'Employee code is required';
   }
-  if (v.joinDate && !DATE_PATTERN.test(v.joinDate)) {
+  if (!v.joinDate) {
+    errors.joinDate = 'Join date is required';
+  } else if (!DATE_PATTERN.test(v.joinDate)) {
     errors.joinDate = 'Join date must be a date like 2025-04-01';
   }
   if (v.workStart || v.workEnd) {

@@ -123,12 +123,7 @@ export function EmployeeForm({
           />
         </FormField>
       </FormRow>
-      <FormField
-        label="Join date"
-        id={id('join-date')}
-        hint="Leave blank for today."
-        error={errors.joinDate}
-      >
+      <FormField label="Join date" id={id('join-date')} required error={errors.joinDate}>
         <Input
           id={id('join-date')}
           type="date"

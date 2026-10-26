@@ -49,6 +49,63 @@ export function formatDate(date: string | null | undefined): string {
   return `${Number(m[3])} ${month} ${m[1]}`;
 }
 
+function iso(y: number, m: number, d: number): string {
+  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+/**
+ * Dates a salary month covers, mirroring the backend: start day 1 (or none) = the calendar month;
+ * start day d > 1 = day d of the previous month to day d − 1 of `period`'s month. `period` is
+ * `YYYY-MM`, start day 1–28 (out-of-range values count as 1).
+ */
+export function cycleRange(
+  period: string,
+  startDay: number | null | undefined,
+): { from: string; to: string } {
+  const [y, m] = period.split('-').map(Number);
+  const day =
+    startDay && Number.isInteger(startDay) && startDay >= 2 && startDay <= 28 ? startDay : 1;
+  if (day === 1) {
+    // Day 0 of the next month = last day of this one (UTC: no time-zone shift).
+    const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    return { from: iso(y, m, 1), to: iso(y, m, last) };
+  }
+  const prevY = m === 1 ? y - 1 : y;
+  const prevM = m === 1 ? 12 : m - 1;
+  return { from: iso(prevY, prevM, day), to: iso(y, m, day - 1) };
+}
+
+/** `2026-09-26` → "26 Sep" (formatDate without the year). */
+function formatDayMonth(date: string): string {
+  return formatDate(date).replace(/ \d{4}$/, '');
+}
+
+/** "26 Sep – 25 Oct". */
+export function formatDateRange(from: string, to: string): string {
+  return `${formatDayMonth(from)} – ${formatDayMonth(to)}`;
+}
+
+/** Salary period of a run, line or payslip; old data without dates = the calendar month. */
+export function salaryRange(item: {
+  period: string;
+  fromDate?: string | null;
+  toDate?: string | null;
+}): { from: string; to: string } {
+  return item.fromDate && item.toDate
+    ? { from: item.fromDate, to: item.toDate }
+    : cycleRange(item.period, 1);
+}
+
+/** "October 2026 · 26 Sep – 25 Oct" (calendar month when the item has no dates). */
+export function formatSalaryPeriod(item: {
+  period: string;
+  fromDate?: string | null;
+  toDate?: string | null;
+}): string {
+  const { from, to } = salaryRange(item);
+  return `${formatMonth(item.period)} · ${formatDateRange(from, to)}`;
+}
+
 /** Today's local date as `yyyy-MM-dd`. */
 export function todayIso(now: Date = new Date()): string {
   const y = now.getFullYear();

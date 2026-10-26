@@ -5,7 +5,7 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HrPermission, ShopAccess } from '@inventory-platform/access';
 import { useAuthStore, useShopAccessStore } from '@inventory-platform/session';
-import type { EmployeeResponse } from '@inventory-platform/hr/types';
+import { todayIso, type EmployeeResponse } from '@inventory-platform/hr/types';
 import { EmployeeDetailPage } from '../pages/EmployeeDetailPage';
 import { EmployeesPage } from '../pages/EmployeesPage';
 
@@ -164,6 +164,24 @@ describe('EmployeesPage', () => {
     expect(
       await screen.findByText('IFSC must have 11 characters like ABCD0123456'),
     ).toBeInTheDocument();
+    expect(employeesApi.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('EmployeesPage join date', () => {
+  it('starts the Add form at today and requires a join date', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_EMPLOYEES', 'ADD_EDIT_EMPLOYEES']);
+    renderAt('/dashboard/hr/employees');
+
+    await user.click(await screen.findByRole('button', { name: 'Add employee' }));
+    const joinDate = screen.getByLabelText(/^Join date/);
+    expect(joinDate).toHaveValue(todayIso());
+    await user.type(screen.getByLabelText(/^Name/), 'Sita');
+    await user.clear(joinDate);
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+
+    expect(await screen.findByText('Join date is required')).toBeInTheDocument();
     expect(employeesApi.create).not.toHaveBeenCalled();
   });
 });
