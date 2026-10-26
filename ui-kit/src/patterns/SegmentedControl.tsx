@@ -14,6 +14,8 @@ export type SegmentedControlProps<T extends string = string> = {
   options: readonly SegmentedOption<T>[];
   className?: string;
   disabled?: boolean;
+  /** `sm` = 2rem tall, for dense rows (e.g. the daily attendance list). Default `md`. */
+  size?: 'sm' | 'md';
   'aria-label'?: string;
 };
 
@@ -23,11 +25,17 @@ export function SegmentedControl<T extends string>({
   options,
   className,
   disabled = false,
+  size = 'md',
   'aria-label': ariaLabel,
 }: SegmentedControlProps<T>) {
   return (
     <div
-      className={cn(styles.track, disabled && styles.trackDisabled, className)}
+      className={cn(
+        styles.track,
+        size === 'sm' && styles.trackSm,
+        disabled && styles.trackDisabled,
+        className,
+      )}
       role="group"
       aria-label={ariaLabel}
     >
@@ -37,7 +45,7 @@ export function SegmentedControl<T extends string>({
           <button
             key={option.value}
             type="button"
-            className={cn(styles.btn, active && styles.btnActive)}
+            className={cn(styles.btn, size === 'sm' && styles.btnSm, active && styles.btnActive)}
             aria-pressed={active}
             aria-label={option.ariaLabel}
             disabled={disabled}

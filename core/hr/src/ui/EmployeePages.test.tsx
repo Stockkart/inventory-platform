@@ -298,3 +298,154 @@ describe('EmployeeDetailPage', () => {
     expect(screen.getByRole('option', { name: /^Me/ })).toBeInTheDocument();
   });
 });
+
+describe('Add from your team (run F9)', () => {
+  const LOGINS = [
+    { userId: 'u1', name: 'Me', role: 'MANAGER', linkedEmployeeId: null },
+    {
+      userId: 'u9',
+      name: 'Sita Devi',
+      role: 'CASHIER',
+      linkedEmployeeId: null,
+      email: 'sita@example.com',
+      phone: '9123456780',
+    },
+    { userId: 'u8', name: 'Taken', role: 'CASHIER', linkedEmployeeId: 'e1' },
+    { userId: 'u7', name: 'Mohan', role: 'HELPER', linkedEmployeeId: null },
+  ];
+  const LINKER: HrPermission[] = ['VIEW_EMPLOYEES', 'ADD_EDIT_EMPLOYEES', 'VIEW_SALARIES'];
+
+  it('lists only logins that are not an employee yet, without your own', async () => {
+    const user = userEvent.setup();
+    signIn(LINKER, { userId: 'u1' });
+    employeesApi.linkableLogins.mockResolvedValue(LOGINS);
+    renderAt('/dashboard/hr/employees');
+
+    await user.click(await screen.findByRole('button', { name: 'Add employee' }));
+    await user.click(
+      await screen.findByRole('button', {
+        name: /Add from your team\s*:\s*New person \(no login\)/,
+      }),
+    );
+    const options = within(screen.getByRole('listbox', { name: 'Add from your team' }))
+      .getAllByRole('option')
+      .map((o) => o.textContent);
+    expect(options).toEqual([
+      'New person (no login)',
+      expect.stringMatching(/^Sita Devi/),
+      expect.stringMatching(/^Mohan/),
+    ]);
+  });
+
+  it('fills in name, phone and email, keeps them editable and creates the employee linked', async () => {
+    const user = userEvent.setup();
+    signIn(LINKER, { userId: 'u1' });
+    employeesApi.linkableLogins.mockResolvedValue(LOGINS);
+    employeesApi.create.mockResolvedValue({ ...RAVI, id: 'e5', name: 'Sita D', code: 'EMP-005' });
+    renderAt('/dashboard/hr/employees');
+
+    await user.click(await screen.findByRole('button', { name: 'Add employee' }));
+    await user.click(await screen.findByRole('button', { name: /^Add from your team/ }));
+    await user.click(screen.getByRole('option', { name: /Sita Devi/ }));
+
+    expect(screen.getByLabelText(/^Name/)).toHaveValue('Sita Devi');
+    expect(screen.getByLabelText('Phone')).toHaveValue('9123456780');
+    expect(screen.getByLabelText('Email')).toHaveValue('sita@example.com');
+    expect(
+      screen.getByRole('button', { name: /Add from your team\s*:\s*Sita Devi/ }),
+    ).toBeInTheDocument();
+
+    const name = screen.getByLabelText(/^Name/);
+    await user.clear(name);
+    await user.type(name, 'Sita D');
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+
+    await waitFor(() => expect(employeesApi.create).toHaveBeenCalledTimes(1));
+    expect(employeesApi.create.mock.calls[0][0]).toMatchObject({
+      name: 'Sita D',
+      phone: '9123456780',
+      email: 'sita@example.com',
+      userId: 'u9',
+    });
+  });
+
+  it('going back to "New person" clears what the login filled in and sends no link', async () => {
+    const user = userEvent.setup();
+    signIn(LINKER, { userId: 'u1' });
+    employeesApi.linkableLogins.mockResolvedValue(LOGINS);
+    employeesApi.create.mockResolvedValue({ ...RAVI, id: 'e5' });
+    renderAt('/dashboard/hr/employees');
+
+    await user.click(await screen.findByRole('button', { name: 'Add employee' }));
+    await user.click(await screen.findByRole('button', { name: /^Add from your team/ }));
+    await user.click(screen.getByRole('option', { name: /Sita Devi/ }));
+    await user.click(screen.getByRole('button', { name: /^Add from your team/ }));
+    await user.click(screen.getByRole('option', { name: 'New person (no login)' }));
+
+    expect(screen.getByLabelText(/^Name/)).toHaveValue('');
+    expect(screen.getByLabelText('Email')).toHaveValue('');
+    await user.type(screen.getByLabelText(/^Name/), 'Gopal');
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await waitFor(() => expect(employeesApi.create).toHaveBeenCalledTimes(1));
+    expect(employeesApi.create.mock.calls[0][0]).toMatchObject({ name: 'Gopal', userId: null });
+  });
+
+  it('lists your own login for the owner', async () => {
+    const user = userEvent.setup();
+    signIn(LINKER, { owner: true, userId: 'u1' });
+    employeesApi.linkableLogins.mockResolvedValue(LOGINS);
+    renderAt('/dashboard/hr/employees');
+
+    await user.click(await screen.findByRole('button', { name: 'Add employee' }));
+    await user.click(await screen.findByRole('button', { name: /^Add from your team/ }));
+    expect(screen.getByRole('option', { name: /^Me/ })).toBeInTheDocument();
+  });
+
+  it('is hidden without VIEW_SALARIES and the logins are not even asked for', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_EMPLOYEES', 'ADD_EDIT_EMPLOYEES']);
+    employeesApi.linkableLogins.mockResolvedValue(LOGINS);
+    employeesApi.create.mockResolvedValue({ ...RAVI, id: 'e5' });
+    renderAt('/dashboard/hr/employees');
+
+    await user.click(await screen.findByRole('button', { name: 'Add employee' }));
+    expect(screen.getByLabelText(/^Name/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Add from your team/ })).not.toBeInTheDocument();
+    expect(employeesApi.linkableLogins).not.toHaveBeenCalled();
+    await user.type(screen.getByLabelText(/^Name/), 'Gopal');
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await waitFor(() => expect(employeesApi.create).toHaveBeenCalledTimes(1));
+    expect(employeesApi.create.mock.calls[0][0].userId).toBeNull();
+  });
+});
+
+describe('links and back links (run F9)', () => {
+  it('shows employee names as links that open the employee', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_EMPLOYEES']);
+    employeesApi.get.mockResolvedValue(RAVI);
+    renderAt('/dashboard/hr/employees');
+
+    const link = await screen.findByRole('button', { name: 'Ravi Kumar' });
+    expect(link.className).toMatch(/linkButton/);
+    link.focus();
+    await user.keyboard('{Enter}');
+    expect(await screen.findByRole('tab', { name: 'Profile' })).toBeInTheDocument();
+    expect(employeesApi.get).toHaveBeenCalledWith('e1');
+  });
+
+  it('has "← All employees" at the top of the employee page, back to the list', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_EMPLOYEES']);
+    employeesApi.get.mockResolvedValue(RAVI);
+    renderAt('/dashboard/hr/employees/e1');
+
+    await screen.findByRole('tab', { name: 'Profile' });
+    const buttons = screen.getAllByRole('button');
+    const back = screen.getByRole('button', { name: '← All employees' });
+    // First control on the page (top-left), before the inbox and the tabs.
+    expect(buttons[0]).toBe(back);
+    await user.click(back);
+    expect(await screen.findByRole('button', { name: 'Ravi Kumar' })).toBeInTheDocument();
+  });
+});

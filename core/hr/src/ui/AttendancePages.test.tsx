@@ -59,6 +59,7 @@ function renderAt(path: string) {
       { path: '/dashboard/hr/attendance', element: <AttendanceDailyPage /> },
       { path: '/dashboard/hr/attendance/month', element: <AttendanceMonthPage /> },
       { path: '/dashboard/hr/employees', element: <>Employees page</> },
+      { path: '/dashboard/hr/employees/:employeeId', element: <>Employee detail page</> },
     ],
     { initialEntries: [path] },
   );
@@ -477,5 +478,156 @@ describe('AttendanceMonthPage Excel download (run F5)', () => {
     await waitFor(() => expect(download.deliverHrFile).toHaveBeenCalledTimes(1));
     expect(attendanceApi.monthExport).toHaveBeenCalledTimes(2);
     expect(screen.queryByText(/The server is busy/)).not.toBeInTheDocument();
+  });
+});
+
+describe('compact daily rows (run F9)', () => {
+  it('shows in/out times only for Present and Half-day', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_ATTENDANCE', 'MARK_ATTENDANCE']);
+    renderAt('/dashboard/hr/attendance');
+
+    const asha = await screen.findByRole('group', { name: 'Attendance for Asha' });
+    // Unmarked: no time boxes, no note.
+    expect(screen.queryByLabelText('In time, Asha')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add note for Asha' })).not.toBeInTheDocument();
+    // Ravi is Present: both boxes, filled from the server.
+    expect(screen.getByLabelText('In time, Ravi')).toHaveValue('09:00');
+    expect(screen.getByLabelText('Out time, Ravi')).toBeInTheDocument();
+
+    await user.click(within(asha).getByRole('button', { name: 'Absent' }));
+    expect(screen.queryByLabelText('In time, Asha')).not.toBeInTheDocument();
+    await user.click(within(asha).getByRole('button', { name: 'Half-day' }));
+    expect(screen.getByLabelText('In time, Asha')).toBeInTheDocument();
+    expect(screen.getByLabelText('Out time, Asha')).toBeInTheDocument();
+  });
+
+  it('keeps the note behind a small button and saves it with the changed row only', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_ATTENDANCE', 'MARK_ATTENDANCE']);
+    renderAt('/dashboard/hr/attendance');
+
+    const noteButton = await screen.findByRole('button', { name: 'Add note for Ravi' });
+    expect(screen.queryByLabelText('Note, Ravi')).not.toBeInTheDocument();
+    expect(noteButton).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(noteButton);
+    expect(noteButton).toHaveAttribute('aria-expanded', 'true');
+    const panel = screen.getByRole('dialog', { name: 'Note for Ravi' });
+    const input = within(panel).getByLabelText('Note, Ravi');
+    expect(input).toHaveFocus();
+    await user.type(input, 'Left early');
+    // Escape closes the panel and gives focus back to the button, which now reads "Edit".
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog', { name: 'Note for Ravi' })).not.toBeInTheDocument();
+    const editButton = screen.getByRole('button', { name: 'Edit note for Ravi' });
+    expect(editButton).toHaveFocus();
+
+    // Reopen shows the typed note; Done closes it.
+    await user.click(editButton);
+    expect(screen.getByLabelText('Note, Ravi')).toHaveValue('Left early');
+    await user.click(screen.getByRole('button', { name: 'Done' }));
+    expect(screen.queryByLabelText('Note, Ravi')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Save 1 change' }));
+    await waitFor(() => expect(attendanceApi.saveDays).toHaveBeenCalledTimes(1));
+    const body = attendanceApi.saveDays.mock.calls[0][0];
+    expect(body.rows).toEqual([
+      expect.objectContaining({ employeeId: 'e2', status: 'PRESENT', note: 'Left early' }),
+    ]);
+  });
+
+  it('closes the note on a click outside', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_ATTENDANCE', 'MARK_ATTENDANCE']);
+    renderAt('/dashboard/hr/attendance');
+
+    await user.click(await screen.findByRole('button', { name: 'Add note for Ravi' }));
+    expect(screen.getByRole('dialog', { name: 'Note for Ravi' })).toBeInTheDocument();
+    await user.click(screen.getByText(/employees ·/));
+    expect(screen.queryByRole('dialog', { name: 'Note for Ravi' })).not.toBeInTheDocument();
+  });
+
+  it('closes the note when focus leaves it (run F10)', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_ATTENDANCE', 'MARK_ATTENDANCE']);
+    renderAt('/dashboard/hr/attendance');
+
+    await user.click(await screen.findByRole('button', { name: 'Add note for Ravi' }));
+    const panel = screen.getByRole('dialog', { name: 'Note for Ravi' });
+    expect(within(panel).getByLabelText('Note, Ravi')).toHaveFocus();
+    // Tab inside the popover keeps it open (input -> Done).
+    await user.tab();
+    expect(within(panel).getByRole('button', { name: 'Done' })).toHaveFocus();
+    expect(screen.getByRole('dialog', { name: 'Note for Ravi' })).toBeInTheDocument();
+    // Tab out of it closes it.
+    await user.tab();
+    expect(screen.queryByRole('dialog', { name: 'Note for Ravi' })).not.toBeInTheDocument();
+  });
+
+  it('puts the chips before the code and designation (run F10)', async () => {
+    signIn(['VIEW_ATTENDANCE', 'MARK_ATTENDANCE']);
+    attendanceApi.daily.mockResolvedValue(
+      register({
+        rows: [
+          row({
+            employeeId: 'e1',
+            name: 'Asha',
+            code: 'E-001',
+            designation: 'Senior sales associate',
+            late: true,
+          }),
+        ],
+      }),
+    );
+    renderAt('/dashboard/hr/attendance');
+
+    const late = await screen.findByText('Late');
+    const meta = screen.getByText('E-001 · Senior sales associate');
+    expect(late.compareDocumentPosition(meta) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('shows a half-day leave row without Leave and a read-only full-day leave row', async () => {
+    signIn(['VIEW_ATTENDANCE', 'MARK_ATTENDANCE']);
+    attendanceApi.daily.mockResolvedValue(
+      register({
+        rows: [
+          row({ employeeId: 'e1', name: 'Asha', halfDayLeave: true, status: 'UNMARKED' }),
+          row({ employeeId: 'e2', name: 'Ravi', status: 'LEAVE', source: 'LEAVE' }),
+        ],
+      }),
+    );
+    renderAt('/dashboard/hr/attendance');
+
+    const asha = await screen.findByRole('group', { name: 'Attendance for Asha' });
+    expect(within(asha).queryByRole('button', { name: 'Leave' })).not.toBeInTheDocument();
+    expect(within(asha).getByRole('button', { name: 'Half-day' })).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Attendance for Ravi' })).not.toBeInTheDocument();
+    expect(screen.getByText('Change or cancel the leave on the Leave page.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /note for Ravi/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('month register names (run F9)', () => {
+  it('shows the employee name as a link to the employee page', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_ATTENDANCE', 'VIEW_EMPLOYEES']);
+    attendanceApi.month.mockResolvedValue(MONTH);
+    renderAt('/dashboard/hr/attendance/month');
+
+    const link = await screen.findByRole('button', { name: 'Asha' });
+    expect(link.className).toMatch(/linkButton/);
+    await user.click(link);
+    expect(await screen.findByText('Employee detail page')).toBeInTheDocument();
+  });
+
+  it('keeps the name as plain text without VIEW_EMPLOYEES', async () => {
+    signIn(['VIEW_ATTENDANCE']);
+    attendanceApi.month.mockResolvedValue(MONTH);
+    renderAt('/dashboard/hr/attendance/month');
+
+    const table = await screen.findByRole('table', { name: /Attendance register/ });
+    expect(within(table).getByText('Asha')).toBeInTheDocument();
+    expect(within(table).queryByRole('button', { name: 'Asha' })).not.toBeInTheDocument();
   });
 });

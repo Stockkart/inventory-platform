@@ -33,6 +33,7 @@ import { attendanceApi } from '../api/attendance.api';
 import { deliverHrFile } from '../api/download';
 import { useHrDownload, useMonthRegisterQuery } from '../queries/hooks';
 import { AttendanceDayDrawer } from '../ui/AttendanceDayDrawer';
+import { EmployeeNameLink } from '../ui/EmployeeNameLink';
 import { HrDownloadAlert } from '../ui/HrDownloadAlert';
 import { HrInbox } from '../ui/HrInbox';
 import { AttendanceLegend, AttendanceMark } from '../ui/AttendanceMark';
@@ -172,13 +173,14 @@ export function AttendanceMonthPage() {
                       abbr={formatDayShort(d)}
                       className={hrChrome.hrRegisterDayCell}
                     >
-                      <Text as="span" variant="caption">
-                        {Number(d.slice(8, 10))}
-                      </Text>
-                      <Text as="span" variant="micro" color="muted">
-                        {' '}
-                        {WEEKDAY_LETTER[weekdayOf(d)]}
-                      </Text>
+                      <Box as="span" className={hrChrome.hrRegisterDayHead}>
+                        <Text as="span" variant="caption">
+                          {Number(d.slice(8, 10))}
+                        </Text>
+                        <Text as="span" variant="micro" color="muted">
+                          {WEEKDAY_LETTER[weekdayOf(d)]}
+                        </Text>
+                      </Box>
                     </DenseTableHeaderCell>
                   ))}
                   {TOTAL_COLUMNS.map((c) => (
@@ -196,10 +198,11 @@ export function AttendanceMonthPage() {
                 {rows.map((row) => (
                   <DenseTableRow key={row.employeeId}>
                     <DenseTableHeaderCell scope="row" className={hrChrome.hrRegisterNameCell}>
-                      <Text as="span">{row.name}</Text>{' '}
-                      <Text as="span" variant="caption" color="muted">
-                        {row.code}
-                      </Text>
+                      <EmployeeNameLink
+                        employeeId={row.employeeId}
+                        name={row.name}
+                        code={row.code}
+                      />
                     </DenseTableHeaderCell>
                     {row.cells.map((cell, i) => {
                       const date = dates[i];

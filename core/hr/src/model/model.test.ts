@@ -7,7 +7,13 @@ import {
   validateEmployeeForm,
   type EmployeeFormValue,
 } from './employee-validation';
-import { employeeToForm, formToRequest, linkRequest } from './employee-form';
+import {
+  employeeToForm,
+  fillFromLogin,
+  formToRequest,
+  linkRequest,
+  unlinkedLogins,
+} from './employee-form';
 import { lockedPermissions, togglePermission, type HrRequiresMap } from './permission-closure';
 import { formatInr, formatMonth } from './format';
 import type { EmployeeResponse } from './employee.types';
@@ -157,8 +163,45 @@ describe('employee request mapping', () => {
 
   it('a create keeps the typed email without VIEW_SALARIES and never links a login', () => {
     const form = { ...employeeToForm(employee()), email: 'sita@example.com' };
-    const body = formToRequest(form, { creating: true, withSalaries: false });
+    const body = formToRequest(form, { creating: true, withSalaries: false, userId: 'u9' });
     expect(body).toMatchObject({ email: 'sita@example.com', userId: null });
+  });
+
+  it('a create by a salary viewer sends the login picked under "Add from your team"', () => {
+    const form = { ...employeeToForm(employee()) };
+    expect(formToRequest(form, { creating: true, withSalaries: true, userId: 'u9' }).userId).toBe(
+      'u9',
+    );
+    expect(formToRequest(form, { creating: true, withSalaries: true }).userId).toBeNull();
+  });
+});
+
+describe('Add from your team (run F9)', () => {
+  const sita = { userId: 'u9', name: 'Sita', phone: '9123456780', email: 's@x.in' };
+  const mohan = { userId: 'u7', name: 'Mohan', phone: null, email: 'm@x.in' };
+
+  it('offers unlinked logins only, and your own login only to the owner', () => {
+    const logins = [
+      { userId: 'u1', name: 'Me' },
+      sita,
+      { userId: 'u8', name: 'Taken', linkedEmployeeId: 'e1' },
+    ];
+    expect(unlinkedLogins(logins, 'u1', false).map((l) => l.userId)).toEqual(['u9']);
+    expect(unlinkedLogins(logins, 'u1', true).map((l) => l.userId)).toEqual(['u1', 'u9']);
+  });
+
+  it('fills empty fields, replaces its own earlier fill and keeps what the user typed', () => {
+    const empty = employeeToForm(employee({ name: '', phone: null, email: null }));
+    const one = fillFromLogin(empty, null, sita);
+    expect([one.name, one.phone, one.email]).toEqual(['Sita', '9123456780', 's@x.in']);
+
+    const typed = { ...one, name: 'Sita Devi' };
+    const two = fillFromLogin(typed, sita, mohan);
+    // Name was typed over, so it stays; phone/email still showed Sita's, so they follow Mohan.
+    expect([two.name, two.phone, two.email]).toEqual(['Sita Devi', '', 'm@x.in']);
+
+    const none = fillFromLogin(two, mohan, null);
+    expect([none.name, none.phone, none.email]).toEqual(['Sita Devi', '', '']);
   });
 });
 

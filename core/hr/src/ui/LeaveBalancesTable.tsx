@@ -10,6 +10,7 @@ import {
   Text,
 } from '@inventory-platform/ui-kit';
 import { formatDays, type LeaveBalanceRow } from '@inventory-platform/hr/types';
+import { EmployeeNameLink } from './EmployeeNameLink';
 
 export interface LeaveBalancesTableProps {
   rows: readonly LeaveBalanceRow[];
@@ -56,12 +57,7 @@ export function LeaveBalancesTable({
                 <TableCell>
                   {/* Name once per employee keeps long lists readable. */}
                   {first ? (
-                    <>
-                      <Text as="span">{row.name}</Text>{' '}
-                      <Text as="span" variant="caption" color="muted">
-                        {row.code}
-                      </Text>
-                    </>
+                    <EmployeeNameLink employeeId={row.employeeId} name={row.name} code={row.code} />
                   ) : null}
                 </TableCell>
               )}

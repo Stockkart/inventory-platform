@@ -28,6 +28,9 @@
   --sk-color-accent: var(--sk-color-brand);
   --sk-color-accent-hover: var(--sk-color-brand-hover);
   --sk-color-accent-soft: var(--sk-color-brand-soft);
+  /* Clickable values inside tables and text (LinkButton, accounting entry links). */
+  --sk-color-link: #2563eb;
+  --sk-color-link-hover: #1d4ed8;
   --sk-color-success: #059669;
   --sk-color-success-soft: rgba(5, 150, 105, 0.12);
   --sk-color-warning: #d97706;
@@ -150,6 +153,8 @@
   --sk-color-accent: var(--sk-color-brand);
   --sk-color-accent-hover: var(--sk-color-brand-hover);
   --sk-color-accent-soft: var(--sk-color-brand-soft);
+  --sk-color-link: var(--sk-color-brand);
+  --sk-color-link-hover: var(--sk-color-brand-hover);
   --sk-color-hover: rgba(248, 250, 252, 0.06);
   --sk-color-focus-ring: rgba(147, 197, 253, 0.4);
 

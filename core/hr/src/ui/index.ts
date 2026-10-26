@@ -43,3 +43,10 @@ export { PayrollLinesTable, type PayrollLinesTableProps } from './PayrollLinesTa
 export { PayrollLineDrawer, type PayrollLineDrawerProps } from './PayrollLineDrawer';
 export { UnmarkedDaysModal, type UnmarkedDaysModalProps } from './UnmarkedDaysModal';
 export { ReopenPayrollModal, type ReopenPayrollModalProps } from './ReopenPayrollModal';
+export {
+  EmployeeNameLink,
+  EMPLOYEES_PATH,
+  employeePath,
+  type EmployeeNameLinkProps,
+} from './EmployeeNameLink';
+export { HrBackLink, type HrBackLinkProps } from './HrBackLink';

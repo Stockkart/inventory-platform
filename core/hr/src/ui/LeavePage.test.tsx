@@ -48,9 +48,13 @@ function signIn(permissions: HrPermission[]) {
 
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const router = createMemoryRouter([{ path: '/dashboard/hr/leave', element: <LeavePage /> }], {
-    initialEntries: ['/dashboard/hr/leave'],
-  });
+  const router = createMemoryRouter(
+    [
+      { path: '/dashboard/hr/leave', element: <LeavePage /> },
+      { path: '/dashboard/hr/employees/:employeeId', element: <>Employee detail page</> },
+    ],
+    { initialEntries: ['/dashboard/hr/leave'] },
+  );
   render(
     <QueryClientProvider client={client}>
       <RouterProvider router={router} />
@@ -213,5 +217,25 @@ describe('LeavePage', () => {
     await user.click(screen.getByRole('button', { name: 'Download Excel' }));
     await waitFor(() => expect(download.deliverHrFile).toHaveBeenCalledWith(file, 'xlsx'));
     expect(leaveApi.balancesExport).toHaveBeenCalledWith('2026');
+  });
+});
+
+describe('employee names (run F9)', () => {
+  it('shows the employee as a link to the employee page for people who can see employees', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_ATTENDANCE', 'APPROVE_LEAVE', 'VIEW_EMPLOYEES']);
+    renderPage();
+    const link = await screen.findByRole('button', { name: 'Asha' });
+    expect(link.className).toMatch(/linkButton/);
+    await user.click(link);
+    expect(await screen.findByText('Employee detail page')).toBeInTheDocument();
+  });
+
+  it('keeps the name as text without VIEW_EMPLOYEES', async () => {
+    signIn(['VIEW_ATTENDANCE', 'APPROVE_LEAVE']);
+    renderPage();
+    expect(await screen.findByText('Mon, 6 Oct – Tue, 7 Oct')).toBeInTheDocument();
+    expect(screen.getByText('Asha')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Asha' })).not.toBeInTheDocument();
   });
 });

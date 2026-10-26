@@ -42,6 +42,7 @@ import {
 } from '../queries/hooks';
 import { EmailPayslipsModal } from '../ui/EmailPayslipsModal';
 import { HrDownloadAlert } from '../ui/HrDownloadAlert';
+import { HrBackLink } from '../ui/HrBackLink';
 import { HrInbox } from '../ui/HrInbox';
 import { PaymentModal, type PaymentTarget } from '../ui/PaymentModal';
 import { PayrollLineDrawer } from '../ui/PayrollLineDrawer';
@@ -89,11 +90,7 @@ export function PayrollRunPage() {
   const [emailOpen, setEmailOpen] = useState(false);
   const download = useHrDownload();
 
-  const back = (
-    <Button type="button" variant="ghost" size="sm" onClick={() => navigate(PAYROLL_LIST_PATH)}>
-      ← All payroll months
-    </Button>
-  );
+  const back = <HrBackLink to={PAYROLL_LIST_PATH} label="All payroll months" />;
 
   if (!canView) {
     return (

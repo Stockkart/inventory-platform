@@ -125,6 +125,9 @@ export interface LinkableLoginResponse {
   role?: string | null;
   /** Employee already linked to this login; null = free. */
   linkedEmployeeId?: string | null;
+  /** Login's email / phone, for filling in a new employee; only sent to VIEW_SALARIES callers. */
+  email?: string | null;
+  phone?: string | null;
 }
 
 /** Query params of `GET /employees` (backend default page 0, size 20, max 100). */
