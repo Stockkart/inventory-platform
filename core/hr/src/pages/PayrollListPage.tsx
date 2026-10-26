@@ -22,13 +22,13 @@ import {
   LinkButton,
 } from '@inventory-platform/ui-kit';
 import {
-  currentMonth,
   finaliseOrderBlocker,
   formatInr,
   cycleRange,
   formatDateRange,
   formatMonth,
   formatSalaryPeriod,
+  salaryPeriodOf,
   salaryRange,
 } from '@inventory-platform/hr/types';
 import { useHrAccess } from '../access/useHrAccess';
@@ -49,13 +49,18 @@ export function PayrollListPage() {
   const { can } = useHrAccess();
   const canRun = can('RUN_PAYROLL');
   const canView = canRun || can('RECORD_PAYMENTS');
-  const thisMonth = currentMonth();
-  const [period, setPeriod] = useState(thisMonth);
+  const [picked, setPicked] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const runs = usePayrollRunsQuery(canView);
   const create = useCreatePayrollRunMutation();
   const settings = useHrSettingsQuery(canView);
+  // Latest month that can be picked = the salary month today falls in (server value, else
+  // worked out from the start day). Until the user picks, that month is selected.
+  const currentPeriod =
+    settings.data?.currentSalaryPeriod ?? salaryPeriodOf(settings.data?.payCycleStartDay);
+  const period = picked ?? currentPeriod;
+  const setPeriod = (value: string) => setPicked(value);
 
   if (!canView) {
     return (
@@ -91,7 +96,7 @@ export function PayrollListPage() {
       />
       <Box className={hrChrome.hrPageToolbar}>
         <Stack gap="xs">
-          <MonthPicker label="Month" value={period} onChange={setPeriod} max={thisMonth} />
+          <MonthPicker label="Month" value={period} onChange={setPeriod} max={currentPeriod} />
           <Text variant="caption" color="secondary">
             Salary period {formatDateRange(range.from, range.to)}
           </Text>

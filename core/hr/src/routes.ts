@@ -56,6 +56,12 @@ export const hrRoutes: RouteModule = {
       file: 'routes/me.tsx',
       lazy: () => import('./routes/me'),
     },
+    // HR settings in the HR menu (same section as the Profile → HR tab).
+    {
+      path: 'settings',
+      file: 'routes/settings.tsx',
+      lazy: () => import('./routes/settings'),
+    },
   ],
 };
 

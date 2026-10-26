@@ -123,6 +123,45 @@ export function isBlankFutureCell(cell: { status: string; future?: boolean | nul
   return cell.future === true && cell.status === 'UNMARKED';
 }
 
+/**
+ * Salary month (`YYYY-MM`) that `today` falls in, mirroring the backend: start day d > 1 and
+ * today's day >= d = next month (the period is named after the month it ends in), else this month.
+ */
+export function salaryPeriodOf(
+  startDay: number | null | undefined,
+  now: Date = new Date(),
+): string {
+  const day =
+    startDay && Number.isInteger(startDay) && startDay >= 2 && startDay <= 28 ? startDay : 1;
+  const y = now.getFullYear();
+  const m = now.getMonth() + 1;
+  if (day > 1 && now.getDate() >= day) {
+    return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
+  }
+  return `${y}-${String(m).padStart(2, '0')}`;
+}
+
+/**
+ * "Joined 3 Oct" / "Left 20 Oct" when the employee's join or exit date falls inside the line's
+ * salary period (old lines without dates = the calendar month).
+ */
+export function lineEmploymentChanges(line: {
+  period: string;
+  fromDate?: string | null;
+  toDate?: string | null;
+  employeeSnapshot?: { joinDate?: string | null; exitDate?: string | null } | null;
+}): { kind: 'JOINED' | 'LEFT'; label: string }[] {
+  const { from, to } = salaryRange(line);
+  const inside = (d: string | null | undefined): d is string => !!d && d >= from && d <= to;
+  const out: { kind: 'JOINED' | 'LEFT'; label: string }[] = [];
+  const snap = line.employeeSnapshot;
+  if (inside(snap?.joinDate))
+    out.push({ kind: 'JOINED', label: `Joined ${formatDayMonth(snap.joinDate)}` });
+  if (inside(snap?.exitDate))
+    out.push({ kind: 'LEFT', label: `Left ${formatDayMonth(snap.exitDate)}` });
+  return out;
+}
+
 /** This month as `YYYY-MM`. */
 export function currentMonth(now: Date = new Date()): string {
   return todayIso(now).slice(0, 7);

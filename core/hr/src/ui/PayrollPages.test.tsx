@@ -10,6 +10,7 @@ import {
   currentMonth,
   cycleRange,
   formatDateRange,
+  salaryPeriodOf,
   type PayrollLineResponse,
   type PayrollRunResponse,
 } from '@inventory-platform/hr/types';
@@ -170,6 +171,43 @@ describe('PayrollListPage', () => {
     expect(screen.getByText(/Months are finalised oldest first\. To change/)).toBeInTheDocument();
   });
 
+  it.each([
+    [24, 'November 2026'],
+    [1, 'October 2026'],
+  ])('with start day %i on 26 Oct, selects and caps the month at %s', async (startDay, month) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 26, 12, 0));
+    try {
+      signIn(RUNNER);
+      settingsApi.getSettings.mockResolvedValue({ saved: true, payCycleStartDay: startDay });
+      payrollApi.list.mockResolvedValue([]);
+      renderAt('/dashboard/hr/payroll');
+      expect(
+        await screen.findByRole('button', { name: `Month: ${month}. Choose a month` }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Next month' })).toBeDisabled();
+      expect(
+        screen.getByRole('button', { name: `Start payroll for ${month}` }),
+      ).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('uses the server current salary period when given', async () => {
+    signIn(RUNNER);
+    settingsApi.getSettings.mockResolvedValue({
+      saved: true,
+      payCycleStartDay: 1,
+      currentSalaryPeriod: '2030-03',
+    });
+    payrollApi.list.mockResolvedValue([]);
+    renderAt('/dashboard/hr/payroll');
+    expect(
+      await screen.findByRole('button', { name: 'Month: March 2030. Choose a month' }),
+    ).toBeInTheDocument();
+  });
+
   it('has no start button without RUN_PAYROLL', async () => {
     signIn(['VIEW_EMPLOYEES', 'VIEW_SALARIES', 'RECORD_PAYMENTS']);
     payrollApi.list.mockResolvedValue([]);
@@ -189,6 +227,44 @@ describe('PayrollRunPage', () => {
     expect(screen.getByRole('button', { name: 'Show pay details for Asha' })).toBeInTheDocument();
     expect(screen.getByText('No salary set')).toBeInTheDocument();
     expect(screen.getAllByText('₹12,533.00').length).toBeGreaterThan(0);
+  });
+
+  it('badges an exit or join inside the salary period, not outside it', async () => {
+    const user = userEvent.setup();
+    signIn(RUNNER);
+    payrollApi.get.mockResolvedValue({
+      ...DRAFT,
+      lines: [
+        {
+          ...LINE,
+          employeeSnapshot: {
+            ...LINE.employeeSnapshot,
+            joinDate: '2025-01-10',
+            exitDate: '2026-09-20',
+          },
+        },
+        {
+          ...LINE,
+          id: 'l2',
+          employeeId: 'e2',
+          employeeSnapshot: {
+            ...LINE.employeeSnapshot,
+            name: 'Ravi',
+            code: 'EMP-002',
+            joinDate: '2026-09-03',
+            exitDate: '2026-10-05',
+          },
+        },
+      ],
+    });
+    renderAt('/dashboard/hr/payroll/run-sep');
+    expect(await screen.findByText('Left 20 Sep')).toBeInTheDocument();
+    expect(screen.getByText('Joined 3 Sep')).toBeInTheDocument();
+    expect(screen.queryByText(/Left 5 Oct/)).toBeNull();
+    expect(screen.queryByText(/Joined 10 Jan/)).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Show pay details for Asha' }));
+    const drawer = await screen.findByRole('dialog', { name: 'Asha' });
+    expect(within(drawer).getByText('Left 20 Sep')).toBeInTheDocument();
   });
 
   it('labels advance amounts as recovered this month, not taken', async () => {
@@ -485,7 +561,7 @@ describe('links and back link (run F9)', () => {
     expect(screen.getByRole('button', { name: 'Open payroll for August 2026' })).toHaveTextContent(
       'August 2026 · 26 Jul – 25 Aug',
     );
-    const now = currentMonth();
+    const now = salaryPeriodOf(26);
     const range = cycleRange(now, 26);
     expect(
       await screen.findByText(`Salary period ${formatDateRange(range.from, range.to)}`),

@@ -53,6 +53,7 @@ const HR_GROUP: DashboardMenuGroup = {
     { path: '/dashboard/hr/payroll', label: 'Payroll', icon: 'circle-dollar-sign' },
     { path: '/dashboard/hr/advances', label: 'Advances', icon: 'credit-card' },
     { path: '/dashboard/hr/me', label: 'My HR', icon: 'user' },
+    { path: '/dashboard/hr/settings', label: 'Settings', icon: 'settings' },
   ],
 } as DashboardMenuGroup;
 
@@ -76,7 +77,20 @@ describe('accessNav HR gating', () => {
       '/dashboard/hr/employees',
       '/dashboard/hr/attendance',
       '/dashboard/hr/leave',
+      '/dashboard/hr/settings',
     ]);
+  });
+
+  it('shows Settings with any HR permission and hides it with none', () => {
+    expect(canAccessDashboardPath('/dashboard/hr/settings', withPerms(['VIEW_EMPLOYEES']))).toBe(
+      true,
+    );
+    expect(canAccessDashboardPath('/dashboard/hr/settings', withPerms(['MANAGE_SETTINGS']))).toBe(
+      true,
+    );
+    expect(canAccessDashboardPath('/dashboard/hr/settings', withPerms([], 'emp-1'))).toBe(false);
+    expect(canAccessDashboardPath('/dashboard/hr/settings', access(null))).toBe(false);
+    expect(canAccessDashboardPath('/dashboard/hr/settings', null)).toBe(false);
   });
 
   it('opens payroll with either RUN_PAYROLL or RECORD_PAYMENTS, advances with MANAGE_ADVANCES', () => {
@@ -126,7 +140,7 @@ describe('accessNav HR gating', () => {
     );
     expect(canAccessDashboardPath('/dashboard/hr', owner)).toBe(false);
     expect(canAccessDashboardPath('/dashboard/hr/unknown', owner)).toBe(false);
-    expect(paths(filterDashboardMenuGroupsByAccess([HR_GROUP], owner))).toHaveLength(6);
+    expect(paths(filterDashboardMenuGroupsByAccess([HR_GROUP], owner))).toHaveLength(7);
   });
 
   it('leaves non-HR paths as they were', () => {
