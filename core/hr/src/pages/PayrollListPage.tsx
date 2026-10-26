@@ -19,6 +19,7 @@ import {
   TableRow,
   Text,
   hrChrome,
+  LinkButton,
 } from '@inventory-platform/ui-kit';
 import {
   currentMonth,
@@ -124,15 +125,12 @@ export function PayrollListPage() {
                   return (
                     <TableRow key={r.id}>
                       <TableCell>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
+                        <LinkButton
                           aria-label={`Open payroll for ${formatMonth(r.period)}`}
                           onClick={() => navigate(payrollRunPath(r.id))}
                         >
                           {formatMonth(r.period)}
-                        </Button>
+                        </LinkButton>
                       </TableCell>
                       <TableCell>
                         <PayrollStatusBadge status={r.status} />

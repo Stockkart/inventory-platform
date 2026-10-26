@@ -418,3 +418,42 @@ describe('PayrollRunPage', () => {
     expect(within(drawer).queryByRole('button', { name: 'Save changes' })).toBeNull();
   });
 });
+
+describe('links and back link (run F9)', () => {
+  it('shows the month as a link that opens the payroll', async () => {
+    const user = userEvent.setup();
+    signIn(RUNNER);
+    const router = renderAt('/dashboard/hr/payroll');
+
+    const month = await screen.findByRole('button', { name: 'Open payroll for September 2026' });
+    expect(month).toHaveTextContent('September 2026');
+    expect(month.className).toMatch(/linkButton/);
+    await user.click(month);
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe('/dashboard/hr/payroll/run-sep'),
+    );
+  });
+
+  it('shows employee names in the lines as links to the pay details', async () => {
+    const user = userEvent.setup();
+    signIn(RUNNER);
+    renderAt('/dashboard/hr/payroll/run-sep');
+
+    const name = await screen.findByRole('button', { name: 'Show pay details for Asha' });
+    expect(name.className).toMatch(/linkButton/);
+    await user.click(name);
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('has "← All payroll months" first on the page, back to the list', async () => {
+    const user = userEvent.setup();
+    signIn(RUNNER);
+    const router = renderAt('/dashboard/hr/payroll/run-sep');
+
+    await screen.findByRole('heading', { name: 'Payroll for September 2026' });
+    const back = screen.getByRole('button', { name: '← All payroll months' });
+    expect(screen.getAllByRole('button')[0]).toBe(back);
+    await user.click(back);
+    await waitFor(() => expect(router.state.location.pathname).toBe('/dashboard/hr/payroll'));
+  });
+});

@@ -21,6 +21,7 @@ import {
   type LeaveRequestResponse,
   type LeaveRequestStatus,
 } from '@inventory-platform/hr/types';
+import { EmployeeNameLink } from './EmployeeNameLink';
 
 const STATUS_VARIANT: Record<LeaveRequestStatus, BadgeVariant> = {
   PENDING: 'warning',
@@ -91,12 +92,7 @@ export function LeaveRequestsTable({
               <TableRow key={r.id}>
                 {hideEmployee ? null : (
                   <TableCell>
-                    <Text as="span">{who}</Text>{' '}
-                    {r.employeeCode ? (
-                      <Text as="span" variant="caption" color="muted">
-                        {r.employeeCode}
-                      </Text>
-                    ) : null}
+                    <EmployeeNameLink employeeId={r.employeeId} name={who} code={r.employeeCode} />
                   </TableCell>
                 )}
                 <TableCell>{r.leaveTypeName ?? 'Leave'}</TableCell>

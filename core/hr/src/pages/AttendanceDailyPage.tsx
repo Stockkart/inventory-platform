@@ -200,13 +200,23 @@ export function AttendanceDailyPage() {
       ) : rows.length > 0 ? (
         <Card>
           <CardBody>
-            <Stack gap="sm">
-              <Text as="span" variant="caption" color="secondary" aria-live="polite">
+            <Stack gap="xs">
+              <Text
+                as="span"
+                variant="caption"
+                color="secondary"
+                aria-live="polite"
+                className={hrChrome.hrDailySummary}
+              >
                 {formatDayShort(date)} · {rows.length} employee{rows.length === 1 ? '' : 's'} ·{' '}
                 {unmarked} unmarked
                 {dirty ? ` · ${changes.length} not saved` : ''}
               </Text>
-              <Box role="list" aria-label={`Attendance on ${formatDayShort(date)}`}>
+              <Box
+                role="list"
+                aria-label={`Attendance on ${formatDayShort(date)}`}
+                className={hrChrome.hrDailyList}
+              >
                 {rows.map((row) => {
                   const draft = draftOf(row);
                   return (

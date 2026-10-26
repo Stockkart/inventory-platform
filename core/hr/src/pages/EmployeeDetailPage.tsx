@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import {
   Alert,
   Badge,
-  Button,
   CenteredLoader,
   Inline,
   Stack,
@@ -19,26 +18,18 @@ import { EmployeeLeaveTab } from '../ui/EmployeeLeaveTab';
 import { EmployeePayslipsTab } from '../ui/EmployeePayslipsTab';
 import { EmployeeProfileTab } from '../ui/EmployeeProfileTab';
 import { EmployeeSalaryTab } from '../ui/EmployeeSalaryTab';
+import { EMPLOYEES_PATH } from '../ui/EmployeeNameLink';
+import { HrBackLink } from '../ui/HrBackLink';
 import { HrInbox } from '../ui/HrInbox';
 
 export function EmployeeDetailPage() {
   const { employeeId } = useParams();
-  const navigate = useNavigate();
   const { can } = useHrAccess();
   const canView = can('VIEW_EMPLOYEES');
   const employee = useEmployeeQuery(canView ? employeeId : undefined);
   const [tab, setTab] = useState('profile');
 
-  const back = (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      onClick={() => navigate('/dashboard/hr/employees')}
-    >
-      ← All employees
-    </Button>
-  );
+  const back = <HrBackLink to={EMPLOYEES_PATH} label="All employees" />;
 
   if (!canView) {
     return (

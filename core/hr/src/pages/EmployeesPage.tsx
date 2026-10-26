@@ -26,13 +26,16 @@ import {
   TableRow,
   Text,
   surfaceChrome,
+  LinkButton,
 } from '@inventory-platform/ui-kit';
-import { useNotify } from '@inventory-platform/session';
+import { useAuthStore, useNotify } from '@inventory-platform/session';
 import {
   EMPLOYEE_STATUS_LABELS,
   EMPTY_EMPLOYEE_FORM,
+  fillFromLogin,
   formToRequest,
   formatDate,
+  unlinkedLogins,
   validateEmployeeForm,
   type EmployeeFormErrors,
   type EmployeeFormValue,
@@ -46,9 +49,12 @@ import {
   useEmployeeDesignationsQuery,
   useEmployeesQuery,
   useHrSetupStatusQuery,
+  useLinkableLoginsQuery,
 } from '../queries/hooks';
 import { EmployeeForm } from '../ui/EmployeeForm';
+import { employeePath } from '../ui/EmployeeNameLink';
 import { HrGetStartedCard } from '../ui/HrGetStartedCard';
+import { TeamLoginPicker } from '../ui/TeamLoginPicker';
 
 type StatusFilter = EmployeeStatus | 'ALL';
 
@@ -61,10 +67,13 @@ const ANY_DESIGNATION = '';
 
 export function EmployeesPage() {
   const navigate = useNavigate();
-  const { can } = useHrAccess();
+  const { can, isOwner } = useHrAccess();
+  const currentUserId = useAuthStore((s) => s.user?.userId ?? null);
   const canView = can('VIEW_EMPLOYEES');
   const canEdit = can('ADD_EDIT_EMPLOYEES');
   const withSalaries = can('VIEW_SALARIES');
+  // Linking a login decides who sees the pay data, so it needs VIEW_SALARIES too (run B5).
+  const canLink = canEdit && withSalaries;
 
   const [searchInput, setSearchInput] = useState('');
   const [query, setQuery] = useState('');
@@ -90,10 +99,22 @@ export function EmployeesPage() {
   const [form, setForm] = useState<EmployeeFormValue>(EMPTY_EMPLOYEE_FORM);
   const [errors, setErrors] = useState<EmployeeFormErrors>({});
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [loginId, setLoginId] = useState<string | null>(null);
   const create = useCreateEmployeeMutation();
+  const logins = useLinkableLoginsQuery(createOpen && canLink);
+  // "Add from your team" (run F9): logins that are not an employee yet; own login owner-only.
+  const team = canLink ? unlinkedLogins(logins.data ?? [], currentUserId, isOwner) : [];
+
+  const pickLogin = (next: string | null) => {
+    const before = team.find((l) => l.userId === loginId) ?? null;
+    const after = next ? team.find((l) => l.userId === next) ?? null : null;
+    setForm((f) => fillFromLogin(f, before, after));
+    setLoginId(next);
+  };
 
   const openCreate = () => {
     setForm(EMPTY_EMPLOYEE_FORM);
+    setLoginId(null);
     setErrors({});
     setSaveError(null);
     setCreateOpen(true);
@@ -111,7 +132,13 @@ export function EmployeesPage() {
       return;
     }
     setSaveError(null);
-    create.mutate(formToRequest(form, { creating: true, withSalaries }), {
+    const body = formToRequest(form, {
+      creating: true,
+      withSalaries,
+      // Only a login still on offer is sent (a refetch may have dropped it).
+      userId: team.some((l) => l.userId === loginId) ? loginId : null,
+    });
+    create.mutate(body, {
       onSuccess: (saved) => {
         useNotify.success(`${saved.name} added as ${saved.code}`);
         setCreateOpen(false);
@@ -259,14 +286,7 @@ export function EmployeesPage() {
                   <TableRow key={e.id}>
                     <TableCell>{e.code}</TableCell>
                     <TableCell>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => navigate(`/dashboard/hr/employees/${e.id}`)}
-                      >
-                        {e.name}
-                      </Button>
+                      <LinkButton onClick={() => navigate(employeePath(e.id))}>{e.name}</LinkButton>
                     </TableCell>
                     <TableCell>{e.designation || '—'}</TableCell>
                     <TableCell>{e.phone || '—'}</TableCell>
@@ -309,14 +329,24 @@ export function EmployeesPage() {
         error={saveError}
         saveLabel="Add"
       >
-        <EmployeeForm
-          value={form}
-          onChange={setForm}
-          errors={errors}
-          creating
-          withSalaries={withSalaries}
-          disabled={create.isPending}
-        />
+        <Stack gap="md">
+          {team.length > 0 ? (
+            <TeamLoginPicker
+              logins={team}
+              value={loginId}
+              onChange={pickLogin}
+              disabled={create.isPending}
+            />
+          ) : null}
+          <EmployeeForm
+            value={form}
+            onChange={setForm}
+            errors={errors}
+            creating
+            withSalaries={withSalaries}
+            disabled={create.isPending}
+          />
+        </Stack>
       </EditModal>
     </Stack>
   );

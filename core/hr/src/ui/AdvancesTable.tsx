@@ -19,6 +19,7 @@ import {
   formatInr,
   type AdvanceResponse,
 } from '@inventory-platform/hr/types';
+import { EmployeeNameLink } from './EmployeeNameLink';
 
 export interface AdvancesTableProps {
   advances: readonly AdvanceResponse[];
@@ -72,12 +73,7 @@ export function AdvancesTable({
               <TableRow key={a.id}>
                 {hideEmployee ? null : (
                   <TableCell>
-                    <Text as="span">{who}</Text>{' '}
-                    {a.employeeCode ? (
-                      <Text as="span" variant="caption" color="muted">
-                        {a.employeeCode}
-                      </Text>
-                    ) : null}
+                    <EmployeeNameLink employeeId={a.employeeId} name={who} code={a.employeeCode} />
                   </TableCell>
                 )}
                 <TableCell>{formatDate(a.date)}</TableCell>

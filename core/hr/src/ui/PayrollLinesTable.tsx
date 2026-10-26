@@ -10,6 +10,7 @@ import {
   TableBody,
   TableHead,
   Text,
+  LinkButton,
 } from '@inventory-platform/ui-kit';
 import {
   PAYROLL_WARNING_LABELS,
@@ -93,15 +94,12 @@ export function PayrollLinesTable({
                 <DenseTableRow key={l.id}>
                   <DenseTableCell>{l.employeeSnapshot?.code ?? '—'}</DenseTableCell>
                   <DenseTableCell>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
+                    <LinkButton
                       aria-label={`Show pay details for ${name}`}
                       onClick={() => onOpen(l)}
                     >
                       {name}
-                    </Button>
+                    </LinkButton>
                   </DenseTableCell>
                   <DenseTableCell>{formatCount(l.dayCounts?.paidDays)}</DenseTableCell>
                   <DenseTableCell>{formatInr(l.gross)}</DenseTableCell>

@@ -36,7 +36,10 @@ function signIn(permissions: HrPermission[]) {
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const router = createMemoryRouter(
-    [{ path: '/dashboard/hr/advances', element: <AdvancesPage /> }],
+    [
+      { path: '/dashboard/hr/advances', element: <AdvancesPage /> },
+      { path: '/dashboard/hr/employees/:employeeId', element: <>Employee detail page</> },
+    ],
     { initialEntries: ['/dashboard/hr/advances'] },
   );
   render(
@@ -222,5 +225,17 @@ describe('AdvancesPage', () => {
       await screen.findByText('You do not have permission to manage advances in this shop.'),
     ).toBeInTheDocument();
     expect(advancesApi.list).not.toHaveBeenCalled();
+  });
+});
+
+describe('employee names (run F9)', () => {
+  it('shows each employee as a link to the employee page', async () => {
+    const user = userEvent.setup();
+    signIn(MANAGE);
+    renderPage();
+    const link = await screen.findByRole('button', { name: 'Ravi' });
+    expect(link.className).toMatch(/linkButton/);
+    await user.click(link);
+    expect(await screen.findByText('Employee detail page')).toBeInTheDocument();
   });
 });

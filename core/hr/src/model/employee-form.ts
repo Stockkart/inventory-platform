@@ -1,4 +1,8 @@
-import type { EmployeeResponse, SaveEmployeeRequest } from './employee.types';
+import type {
+  EmployeeResponse,
+  LinkableLoginResponse,
+  SaveEmployeeRequest,
+} from './employee.types';
 import { EMPTY_EMPLOYEE_FORM, type EmployeeFormValue } from './employee-validation';
 
 const orNull = (s: string) => (s.trim() ? s.trim() : null);
@@ -34,7 +38,10 @@ export interface FormToRequestOptions {
    * login link and the email be changed (run B5). Defaults to `withSalaries`.
    */
   mayChangeLinkAndEmail?: boolean;
-  /** Update only: the login link to keep (null on PUT would unlink). */
+  /**
+   * Update: the login link to keep (null on PUT would unlink). Create: the login picked under
+   * "Add from your team", sent only with `mayChangeLinkAndEmail` (VIEW_SALARIES), else null.
+   */
   userId?: string | null;
   /** Update only: the stored email, sent back unchanged when the caller may not change it. */
   storedEmail?: string | null;
@@ -49,7 +56,7 @@ export interface FormToRequestOptions {
  *   ones for the chosen method (the others are cleared, matching what the backend stores).
  * - Pay is only sent on create; later changes use salary revisions.
  * - The login link and email change only with VIEW_SALARIES (`mayChangeLinkAndEmail`); on create
- *   an email is fine without it and the link is always null.
+ *   an email is fine without it, and the picked login (run F9) is sent only with it.
  */
 export function formToRequest(
   v: EmployeeFormValue,
@@ -87,8 +94,9 @@ export function formToRequest(
   }
   const mayChangeLinkAndEmail = opts.mayChangeLinkAndEmail ?? opts.withSalaries;
   if (opts.creating) {
-    // The create form has no login picker; linking needs VIEW_SALARIES and is done on the profile.
-    body.userId = null;
+    // "Add from your team" (run F9) creates the employee already linked; linking needs
+    // VIEW_SALARIES, so without it the link is always null.
+    body.userId = mayChangeLinkAndEmail ? opts.userId ?? null : null;
   } else {
     // Without VIEW_SALARIES the server refuses any other link (null included) or email (403),
     // so the stored ones are sent back unchanged.
@@ -114,4 +122,37 @@ export function linkRequest(
     storedEmail: e.email ?? null,
     revision: e.revision ?? null,
   });
+}
+
+/** Shop logins offered under "Add from your team": not linked to anyone, own login owner-only. */
+export function unlinkedLogins(
+  logins: readonly LinkableLoginResponse[],
+  currentUserId: string | null | undefined,
+  isOwner: boolean,
+): LinkableLoginResponse[] {
+  return logins.filter(
+    (l) => !l.linkedEmployeeId && (isOwner || !currentUserId || l.userId !== currentUserId),
+  );
+}
+
+const FILLED_FROM_LOGIN = ['name', 'phone', 'email'] as const;
+
+/**
+ * Create form after picking a login under "Add from your team" (run F9): name, phone and email
+ * come from the login. A field is only replaced while it is empty or still shows what the
+ * previous pick filled in, so anything the user typed stays. `next` null ("New person") clears
+ * what the previous pick filled in.
+ */
+export function fillFromLogin(
+  form: EmployeeFormValue,
+  previous: LinkableLoginResponse | null,
+  next: LinkableLoginResponse | null,
+): EmployeeFormValue {
+  const out = { ...form };
+  for (const key of FILLED_FROM_LOGIN) {
+    const before = previous?.[key]?.trim() ?? '';
+    const current = form[key].trim();
+    if (current === '' || current === before) out[key] = next?.[key]?.trim() ?? '';
+  }
+  return out;
 }
