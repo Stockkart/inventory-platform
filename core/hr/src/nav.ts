@@ -20,5 +20,7 @@ export const hrNav: NavContribution = {
     { path: '/dashboard/hr/advances', label: 'Advances', icon: 'credit-card' },
     // Run F5: My HR; `accessNav.ts` shows it only when `hr.employeeId` is set.
     { path: '/dashboard/hr/me', label: 'My HR', icon: 'user' },
+    // HR settings (same section as the Profile → HR tab); read-only without MANAGE_SETTINGS.
+    { path: '/dashboard/hr/settings', label: 'Settings', icon: 'settings' },
   ],
 };

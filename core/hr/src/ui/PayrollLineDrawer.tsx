@@ -42,7 +42,7 @@ import {
   type PayrollLineResponse,
 } from '@inventory-platform/hr/types';
 import { useSavePayrollAdjustmentsMutation } from '../queries/hooks';
-import { formatCount } from './PayrollLinesTable';
+import { EmploymentChangeBadges, formatCount } from './PayrollLinesTable';
 
 const KIND_OPTIONS = (['BONUS', 'OTHER_DEDUCTION'] as ManualItemKind[]).map((value) => ({
   value,
@@ -279,9 +279,12 @@ export function PayrollLineDrawer({
         <Box className={hrChrome.hrDayDrawer}>
           <Inline justify="between" align="start" gap="sm">
             <Stack gap="xs">
-              <Text variant="heading4" as="h2" id={titleId}>
-                {snap?.name ?? 'Employee'}
-              </Text>
+              <Inline gap="xs" align="center" flexWrap>
+                <Text variant="heading4" as="h2" id={titleId}>
+                  {snap?.name ?? 'Employee'}
+                </Text>
+                <EmploymentChangeBadges line={line} />
+              </Inline>
               <Text color="secondary">
                 {[snap?.code, snap?.designation].filter(Boolean).join(' · ')}
               </Text>

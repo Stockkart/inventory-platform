@@ -58,6 +58,8 @@ export interface HrSettingsResponse {
   leaveYearStartMonth?: LeaveYearStartMonth | null;
   /** Day 1–28 the salary month starts on; null = 1 (calendar month). */
   payCycleStartDay?: number | null;
+  /** Salary month (`YYYY-MM`) today falls in; missing on older backends (work it out locally). */
+  currentSalaryPeriod?: string | null;
   /** Send back on PUT for lost-update protection; null = never saved. */
   revision?: number | null;
   updatedAt?: string | null;

@@ -17,6 +17,7 @@ import {
   formatInr,
   formatMonth,
   isLinePending,
+  lineEmploymentChanges,
   lineAdvanceRecovered,
   lineOtherDeductions,
   paymentStatusText,
@@ -44,6 +45,21 @@ export interface PayrollLinesTableProps {
   onPayslip?: (line: PayrollLineResponse) => void;
   /** Line whose payslip is downloading. */
   payslipPendingId?: string | null;
+}
+
+/** Small "Joined 3 Oct" / "Left 20 Oct" badges when that happened inside the salary period. */
+export function EmploymentChangeBadges({ line }: { line: PayrollLineResponse }) {
+  const changes = lineEmploymentChanges(line);
+  if (changes.length === 0) return null;
+  return (
+    <>
+      {changes.map((c) => (
+        <Badge key={c.kind} variant={c.kind === 'LEFT' ? 'warning' : 'neutral'}>
+          {c.label}
+        </Badge>
+      ))}
+    </>
+  );
 }
 
 /** One row per employee; the name opens the full breakdown. Warnings are plain text badges. */
@@ -94,12 +110,15 @@ export function PayrollLinesTable({
                 <DenseTableRow key={l.id}>
                   <DenseTableCell>{l.employeeSnapshot?.code ?? '—'}</DenseTableCell>
                   <DenseTableCell>
-                    <LinkButton
-                      aria-label={`Show pay details for ${name}`}
-                      onClick={() => onOpen(l)}
-                    >
-                      {name}
-                    </LinkButton>
+                    <Inline gap="xs" flexWrap>
+                      <LinkButton
+                        aria-label={`Show pay details for ${name}`}
+                        onClick={() => onOpen(l)}
+                      >
+                        {name}
+                      </LinkButton>
+                      <EmploymentChangeBadges line={l} />
+                    </Inline>
                   </DenseTableCell>
                   <DenseTableCell>{formatCount(l.dayCounts?.paidDays)}</DenseTableCell>
                   <DenseTableCell>{formatInr(l.gross)}</DenseTableCell>

@@ -21,6 +21,8 @@ const HR_PATH_RULES: ReadonlyArray<{ prefix: string; allowed: (access: ShopAcces
   { prefix: '/dashboard/hr/advances', allowed: (a) => hrCan(a, 'MANAGE_ADVANCES') },
   // Self-service: only a linked employee, whatever their permissions or HR switch.
   { prefix: '/dashboard/hr/me', allowed: (a) => Boolean(a.hr?.employeeId) },
+  // Settings: any HR permission; the section itself is read-only without MANAGE_SETTINGS.
+  { prefix: '/dashboard/hr/settings', allowed: (a) => (a.hr?.permissions?.length ?? 0) > 0 },
 ];
 
 function hrCan(access: ShopAccess, permission: HrPermission): boolean {
