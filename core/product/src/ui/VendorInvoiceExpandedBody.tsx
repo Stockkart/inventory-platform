@@ -1,3 +1,4 @@
+import { formatDocumentDate, formatRecordedAt } from '../lib/documentDate';
 import { useMemo } from 'react';
 import type {
   AmendVendorPurchaseInvoicePayload,
@@ -30,18 +31,6 @@ function formatMoney(n: number | null | undefined): string {
     currency: 'INR',
     maximumFractionDigits: 2,
   }).format(n);
-}
-
-function formatDate(iso: string | null | undefined): string {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleString(undefined, {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    });
-  } catch {
-    return iso;
-  }
 }
 
 function formatCompactDate(iso: string | null | undefined): string {
@@ -98,7 +87,7 @@ export function VendorInvoiceExpandedBody({
       { label: 'Overall discount', value: formatMoney(detail.overallDiscount) },
       { label: 'Round off', value: formatMoney(detail.roundOff) },
       { label: 'Invoice total', value: formatMoney(detail.invoiceTotal) },
-      { label: 'Recorded', value: formatDate(detail.createdAt) },
+      { label: 'Recorded', value: formatRecordedAt(detail.createdAt) },
     ],
     [detail],
   );
@@ -122,7 +111,7 @@ export function VendorInvoiceExpandedBody({
           <Text weight="semibold">{vendorDisplay(detail)}</Text>
           {detail.invoiceDate ? (
             <Text variant="caption" color="secondary">
-              Dated {formatDate(detail.invoiceDate)}
+              Dated {formatDocumentDate(detail.invoiceDate)}
             </Text>
           ) : null}
         </Stack>
