@@ -284,7 +284,6 @@ export function InventoryAlertDetails({
       itemTypeDegree: d.itemTypeDegree != null ? String(d.itemTypeDegree) : '',
       discountApplicable: d.discountApplicable ?? '',
       thresholdCount: d.thresholdCount ?? null,
-      purchaseDate: d.purchaseDate ? d.purchaseDate.slice(0, 10) : '',
     });
     setVerticalDraft(initVerticalDraft(d, extraVerticalFields));
   }, [item, extraVerticalFields]);
@@ -400,13 +399,6 @@ export function InventoryAlertDetails({
       )
         payload.thresholdCount =
           editForm.thresholdCount != null ? Number(editForm.thresholdCount) : null;
-      if (editForm.purchaseDate) {
-        const d = String(editForm.purchaseDate).trim();
-        const currentPd = currentItem.purchaseDate ? currentItem.purchaseDate.slice(0, 10) : '';
-        if (d !== currentPd) {
-          payload.purchaseDate = d ? `${d}T00:00:00Z` : undefined;
-        }
-      }
 
       const packStr = String(editForm.conversionFactor ?? '').trim();
       const curPackFactor = currentItem.unitConversions?.factor ?? currentItem.unitsPerPack ?? null;
@@ -776,20 +768,13 @@ export function InventoryAlertDetails({
                   <DetailValue>{packagingFactorDisplay(item)}</DetailValue>
                 )}
               </DetailField>
+              {/* Set at stock-in; the API rejects a changed purchase date. */}
               <DetailField icon={ShoppingCart} label="Purchase date">
-                {showEditor('purchaseDate') ? (
-                  <Input
-                    type="date"
-                    value={String(editForm.purchaseDate ?? '')}
-                    onChange={(e) => updateEditField('purchaseDate', e.target.value)}
-                  />
-                ) : (
-                  <DetailValue>
-                    {item.purchaseDate
-                      ? new Date(item.purchaseDate).toLocaleDateString('en-IN')
-                      : '—'}
-                  </DetailValue>
-                )}
+                <DetailValue>
+                  {item.purchaseDate
+                    ? new Date(item.purchaseDate).toLocaleDateString('en-IN')
+                    : '—'}
+                </DetailValue>
               </DetailField>
               <DetailField icon={AlertTriangle} label="Low-stock threshold">
                 {showEditor('thresholdCount') ? (
