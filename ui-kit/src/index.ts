@@ -264,6 +264,23 @@ export {
   ledgerLayoutClassName,
   templateChipClassName,
   navTabClassName,
+  MonthPicker,
+  DateStepper,
+  CalendarMonthGrid,
+  buildMonthWeeks,
+  AttendanceCell,
+  ATTENDANCE_STATUS_META,
+  PermissionGrid,
+  hrChrome,
+  type MonthPickerProps,
+  type DateStepperProps,
+  type CalendarDay,
+  type CalendarMonthGridProps,
+  type AttendanceCellProps,
+  type AttendanceStatus,
+  type PermissionGridColumn,
+  type PermissionGridProps,
+  type PermissionGridRow,
 } from './patterns';
 
 // Hooks
