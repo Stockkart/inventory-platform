@@ -42,6 +42,10 @@ export interface MyPayslipResponse {
   runId: string;
   /** YYYY-MM. */
   period: string;
+  /** yyyy-MM-dd first day of the salary month; missing on old data (= calendar month). */
+  fromDate?: string | null;
+  /** yyyy-MM-dd last day of the salary month; missing on old data. */
+  toDate?: string | null;
   /** Own pay, so shown (R10.5). */
   net: number;
   paymentStatus?: SalaryPaymentStatus | null;

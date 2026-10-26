@@ -16,7 +16,7 @@ import {
   unlinkedLogins,
 } from './employee-form';
 import { lockedPermissions, togglePermission, type HrRequiresMap } from './permission-closure';
-import { formatInr, formatMonth } from './format';
+import { cycleRange, formatInr, formatMonth, formatSalaryPeriod } from './format';
 import type { EmployeeResponse } from './employee.types';
 
 const REQUIRES: HrRequiresMap = {
@@ -240,5 +240,33 @@ describe('formatting', () => {
     expect(formatInr(123456.5)).toBe('₹1,23,456.50');
     expect(formatInr(null)).toBe('—');
     expect(formatMonth('2026-04')).toBe('April 2026');
+  });
+});
+
+describe('salary month range (cycleRange mirrors the backend)', () => {
+  it('start day 1 (or none) is the calendar month', () => {
+    expect(cycleRange('2026-10', 1)).toEqual({ from: '2026-10-01', to: '2026-10-31' });
+    expect(cycleRange('2026-09', null)).toEqual({ from: '2026-09-01', to: '2026-09-30' });
+    expect(cycleRange('2028-02', 1)).toEqual({ from: '2028-02-01', to: '2028-02-29' });
+    expect(cycleRange('2027-02', 1)).toEqual({ from: '2027-02-01', to: '2027-02-28' });
+  });
+
+  it('start day 26 runs from the 26th of the previous month to the 25th', () => {
+    expect(cycleRange('2026-10', 26)).toEqual({ from: '2026-09-26', to: '2026-10-25' });
+    expect(cycleRange('2027-01', 26)).toEqual({ from: '2026-12-26', to: '2027-01-25' });
+    expect(cycleRange('2027-03', 26)).toEqual({ from: '2027-02-26', to: '2027-03-25' });
+  });
+
+  it('start day 28 works across Jan, Mar and a leap February', () => {
+    expect(cycleRange('2027-01', 28)).toEqual({ from: '2026-12-28', to: '2027-01-27' });
+    expect(cycleRange('2028-03', 28)).toEqual({ from: '2028-02-28', to: '2028-03-27' });
+    expect(cycleRange('2028-02', 28)).toEqual({ from: '2028-01-28', to: '2028-02-27' });
+  });
+
+  it('formats a period with its dates, or the calendar month without them', () => {
+    expect(
+      formatSalaryPeriod({ period: '2026-10', fromDate: '2026-09-26', toDate: '2026-10-25' }),
+    ).toBe('October 2026 · 26 Sep – 25 Oct');
+    expect(formatSalaryPeriod({ period: '2028-02' })).toBe('February 2028 · 1 Feb – 29 Feb');
   });
 });

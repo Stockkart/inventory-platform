@@ -56,6 +56,8 @@ export interface HrSettingsResponse {
   overtimeMultiplier?: number | null;
   perDayBasis?: PerDayBasis | null;
   leaveYearStartMonth?: LeaveYearStartMonth | null;
+  /** Day 1–28 the salary month starts on; null = 1 (calendar month). */
+  payCycleStartDay?: number | null;
   /** Send back on PUT for lost-update protection; null = never saved. */
   revision?: number | null;
   updatedAt?: string | null;
@@ -83,6 +85,8 @@ export interface UpdateHrSettingsRequest {
   overtimeMultiplier?: number | null;
   perDayBasis?: PerDayBasis | null;
   leaveYearStartMonth?: LeaveYearStartMonth | null;
+  /** Day 1–28 the salary month starts on; null = 1 (calendar month). */
+  payCycleStartDay?: number | null;
   revision?: number | null;
 }
 

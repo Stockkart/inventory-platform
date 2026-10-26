@@ -113,6 +113,10 @@ export interface PayrollLineResponse {
   runId: string;
   employeeId: string;
   period: string;
+  /** yyyy-MM-dd first day of the salary month; missing on old data (= calendar month). */
+  fromDate?: string | null;
+  /** yyyy-MM-dd last day of the salary month; missing on old data. */
+  toDate?: string | null;
   employeeSnapshot: PayrollEmployeeSnapshot;
   dayCounts?: PayrollDayCounts | null;
   overtimeMinutes?: number | null;
@@ -147,6 +151,10 @@ export interface PayrollRunResponse {
   id: string;
   /** YYYY-MM. */
   period: string;
+  /** yyyy-MM-dd first day of the salary month; missing on old data (= calendar month). */
+  fromDate?: string | null;
+  /** yyyy-MM-dd last day of the salary month; missing on old data. */
+  toDate?: string | null;
   status: PayrollRunStatus;
   revision?: number | null;
   /** null = not computed. */

@@ -22,6 +22,7 @@ import {
   formatDateTime,
   formatInr,
   formatMonth,
+  formatSalaryPeriod,
   isLinePending,
   isRunBusy,
   reopenOrderBlocker,
@@ -197,7 +198,7 @@ export function PayrollRunPage() {
       <Inline gap="sm" flexWrap justify="between">
         <Inline gap="sm" flexWrap>
           <Text variant="heading3" as="h2">
-            Payroll for {month}
+            Payroll for {formatSalaryPeriod(r)}
           </Text>
           <PayrollStatusBadge status={r.status} />
         </Inline>

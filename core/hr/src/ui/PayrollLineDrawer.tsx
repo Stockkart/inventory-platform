@@ -24,6 +24,8 @@ import {
   adjustmentsDraftFromLine,
   adjustmentsToRequest,
   formatDate,
+  formatDateRange,
+  salaryRange,
   formatDays,
   formatInr,
   formatMinutes,
@@ -268,6 +270,8 @@ export function PayrollLineDrawer({
   const counts = line?.dayCounts ?? {};
   const advance = line ? lineAdvanceRecovered(line) : 0;
   const payment = line?.paymentStatus ?? 'PENDING';
+  // Old lines without dates: the calendar month of the period.
+  const range = line ? salaryRange(line) : null;
 
   return (
     <Drawer open={line != null} onClose={onClose} side="right" labelledBy={titleId}>
@@ -302,6 +306,9 @@ export function PayrollLineDrawer({
             <Text variant="heading4" as="h3">
               Days
             </Text>
+            {range ? (
+              <Text color="secondary">Salary period {formatDateRange(range.from, range.to)}</Text>
+            ) : null}
             {/* Counting starts at the join date (old records without one: the creation date). */}
             {snap?.joinDate ? (
               <Text color="secondary">

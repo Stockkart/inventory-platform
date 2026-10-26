@@ -12,7 +12,11 @@ import {
   TableRow,
   Text,
 } from '@inventory-platform/ui-kit';
-import { formatMonth, type EmployeeResponse } from '@inventory-platform/hr/types';
+import {
+  formatMonth,
+  formatSalaryPeriod,
+  type EmployeeResponse,
+} from '@inventory-platform/hr/types';
 import { deliverHrFile } from '../api/download';
 import { payrollApi } from '../api/payroll.api';
 import { hrKeys } from '../queries/keys';
@@ -75,7 +79,7 @@ export function EmployeePayslipsTab({ employee }: EmployeePayslipsTabProps) {
             months.map((r) => (
               <TableRow key={r.id}>
                 <TableCell>
-                  <Text as="span">{formatMonth(r.period)}</Text>
+                  <Text as="span">{formatSalaryPeriod(r)}</Text>
                 </TableCell>
                 <TableCell>
                   <Button

@@ -25,11 +25,19 @@ import {
   currentMonth,
   finaliseOrderBlocker,
   formatInr,
+  cycleRange,
+  formatDateRange,
   formatMonth,
+  formatSalaryPeriod,
+  salaryRange,
 } from '@inventory-platform/hr/types';
 import { useHrAccess } from '../access/useHrAccess';
 import { HrInbox } from '../ui/HrInbox';
-import { useCreatePayrollRunMutation, usePayrollRunsQuery } from '../queries/hooks';
+import {
+  useCreatePayrollRunMutation,
+  useHrSettingsQuery,
+  usePayrollRunsQuery,
+} from '../queries/hooks';
 import { PayrollStatusBadge, payrollRunPath } from '../ui/PayrollStatusBadge';
 
 /**
@@ -47,6 +55,7 @@ export function PayrollListPage() {
 
   const runs = usePayrollRunsQuery(canView);
   const create = useCreatePayrollRunMutation();
+  const settings = useHrSettingsQuery(canView);
 
   if (!canView) {
     return (
@@ -59,6 +68,10 @@ export function PayrollListPage() {
   // Newest month first on screen; the order rules are checked against all runs.
   const list = [...(runs.data ?? [])].sort((a, b) => b.period.localeCompare(a.period));
   const existing = list.find((r) => r.period === period);
+  // A started month keeps the dates it was made with; otherwise use the shop's current start day.
+  const range = existing
+    ? salaryRange(existing)
+    : cycleRange(period, settings.data?.payCycleStartDay ?? 1);
 
   const start = () => {
     setError(null);
@@ -77,7 +90,12 @@ export function PayrollListPage() {
         actions={<HrInbox />}
       />
       <Box className={hrChrome.hrPageToolbar}>
-        <MonthPicker label="Month" value={period} onChange={setPeriod} max={thisMonth} />
+        <Stack gap="xs">
+          <MonthPicker label="Month" value={period} onChange={setPeriod} max={thisMonth} />
+          <Text variant="caption" color="secondary">
+            Salary period {formatDateRange(range.from, range.to)}
+          </Text>
+        </Stack>
         <Box className={hrChrome.hrPageToolbarEnd}>
           {existing ? (
             <Button
@@ -129,7 +147,7 @@ export function PayrollListPage() {
                           aria-label={`Open payroll for ${formatMonth(r.period)}`}
                           onClick={() => navigate(payrollRunPath(r.id))}
                         >
-                          {formatMonth(r.period)}
+                          {formatSalaryPeriod(r)}
                         </LinkButton>
                       </TableCell>
                       <TableCell>

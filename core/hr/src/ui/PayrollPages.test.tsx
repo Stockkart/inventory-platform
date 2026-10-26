@@ -8,6 +8,8 @@ import { ApiError } from '@inventory-platform/api-client';
 import { useAuthStore, useShopAccessStore } from '@inventory-platform/session';
 import {
   currentMonth,
+  cycleRange,
+  formatDateRange,
   type PayrollLineResponse,
   type PayrollRunResponse,
 } from '@inventory-platform/hr/types';
@@ -25,8 +27,10 @@ const payrollApi = vi.hoisted(() => ({
   reopen: vi.fn(),
 }));
 const attendanceApi = vi.hoisted(() => ({ markUnmarkedPresent: vi.fn() }));
+const settingsApi = vi.hoisted(() => ({ getSettings: vi.fn() }));
 vi.mock('../api/payroll.api', () => ({ payrollApi }));
 vi.mock('../api/attendance.api', () => ({ attendanceApi }));
+vi.mock('../api/settings.api', () => ({ hrSettingsApi: settingsApi }));
 
 const SHOP = 'shop-1';
 const RUNNER: HrPermission[] = [
@@ -127,6 +131,7 @@ beforeEach(() => {
     updatedAt: '2026-10-01T11:00:00Z',
   }));
   attendanceApi.markUnmarkedPresent.mockResolvedValue({ marked: 2 });
+  settingsApi.getSettings.mockResolvedValue({ saved: true, payCycleStartDay: null });
 });
 
 afterEach(() => {
@@ -179,7 +184,7 @@ describe('PayrollRunPage', () => {
     signIn(RUNNER);
     renderAt('/dashboard/hr/payroll/run-sep');
     expect(
-      await screen.findByRole('heading', { name: 'Payroll for September 2026' }),
+      await screen.findByRole('heading', { name: 'Payroll for September 2026 · 1 Sep – 30 Sep' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Show pay details for Asha' })).toBeInTheDocument();
     expect(screen.getByText('No salary set')).toBeInTheDocument();
@@ -443,6 +448,50 @@ describe('PayrollRunPage', () => {
 });
 
 describe('links and back link (run F9)', () => {
+  it('shows the salary period of a run with its own dates in the header and the drawer', async () => {
+    const user = userEvent.setup();
+    signIn(RUNNER);
+    const dates = { period: '2026-10', fromDate: '2026-09-26', toDate: '2026-10-25' };
+    payrollApi.get.mockResolvedValue({ ...DRAFT, ...dates, lines: [{ ...LINE, ...dates }] });
+    renderAt('/dashboard/hr/payroll/run-sep');
+    expect(
+      await screen.findByRole('heading', { name: 'Payroll for October 2026 · 26 Sep – 25 Oct' }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Show pay details for Asha' }));
+    const drawer = await screen.findByRole('dialog', { name: 'Asha' });
+    const days = within(drawer).getByRole('region', { name: 'Days' });
+    expect(within(days).getByText('Salary period 26 Sep – 25 Oct')).toBeInTheDocument();
+  });
+
+  it('lists runs with their period and shows the next range from the start day setting', async () => {
+    signIn(RUNNER);
+    settingsApi.getSettings.mockResolvedValue({ saved: true, payCycleStartDay: 26 });
+    payrollApi.list.mockResolvedValue([
+      { ...DRAFT, lines: null },
+      {
+        ...DRAFT,
+        id: 'run-aug',
+        period: '2026-08',
+        fromDate: '2026-07-26',
+        toDate: '2026-08-25',
+        lines: null,
+      },
+    ]);
+    renderAt('/dashboard/hr/payroll');
+    // Old data without dates falls back to the calendar month.
+    expect(
+      await screen.findByRole('button', { name: 'Open payroll for September 2026' }),
+    ).toHaveTextContent('September 2026 · 1 Sep – 30 Sep');
+    expect(screen.getByRole('button', { name: 'Open payroll for August 2026' })).toHaveTextContent(
+      'August 2026 · 26 Jul – 25 Aug',
+    );
+    const now = currentMonth();
+    const range = cycleRange(now, 26);
+    expect(
+      await screen.findByText(`Salary period ${formatDateRange(range.from, range.to)}`),
+    ).toBeInTheDocument();
+  });
+
   it('shows the month as a link that opens the payroll', async () => {
     const user = userEvent.setup();
     signIn(RUNNER);
@@ -473,7 +522,7 @@ describe('links and back link (run F9)', () => {
     signIn(RUNNER);
     const router = renderAt('/dashboard/hr/payroll/run-sep');
 
-    await screen.findByRole('heading', { name: 'Payroll for September 2026' });
+    await screen.findByRole('heading', { name: 'Payroll for September 2026 · 1 Sep – 30 Sep' });
     const back = screen.getByRole('button', { name: '← All payroll months' });
     expect(screen.getAllByRole('button')[0]).toBe(back);
     await user.click(back);

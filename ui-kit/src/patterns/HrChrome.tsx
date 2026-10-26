@@ -41,6 +41,8 @@ export const hrChrome = {
   hrDailyRowActions: styles.hrDailyRowActions,
   /** Row error spanning the whole row. */
   hrDailyRowError: styles.hrDailyRowError,
+  /** Two-digit day box between − / + buttons. */
+  hrDayInput: styles.hrDayInput,
   /** Small in/out time box on the daily list. */
   hrTimeInput: styles.hrTimeInput,
   /** Small status chip (on a `Badge`): Late, On leave, Not saved. */

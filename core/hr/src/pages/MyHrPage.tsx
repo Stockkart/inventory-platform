@@ -30,6 +30,7 @@ import {
   formatDayRange,
   formatInr,
   formatMonth,
+  formatSalaryPeriod,
   formatPay,
   todayIso,
   type LeaveRequestResponse,
@@ -226,7 +227,7 @@ function PayslipsSection({
           ) : (
             sorted.map((p) => (
               <TableRow key={p.lineId}>
-                <TableCell>{formatMonth(p.period)}</TableCell>
+                <TableCell>{formatSalaryPeriod(p)}</TableCell>
                 <TableCell>{formatInr(p.net)}</TableCell>
                 <TableCell>
                   {p.paymentStatus === 'PAID' ? (

@@ -6,7 +6,12 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HrPermission, ShopAccess } from '@inventory-platform/access';
 import { useAuthStore, useShopAccessStore } from '@inventory-platform/session';
-import type { HrSettingsResponse } from '@inventory-platform/hr/types';
+import {
+  currentMonth,
+  cycleRange,
+  formatDateRange,
+  type HrSettingsResponse,
+} from '@inventory-platform/hr/types';
 import { HrSettingsSection } from './HrSettingsSection';
 
 const api = vi.hoisted(() => ({
@@ -115,6 +120,56 @@ describe('HrSettingsSection', () => {
     await waitFor(() => expect(api.updateSettings).toHaveBeenCalledTimes(1));
     const body = api.updateSettings.mock.calls[0][0];
     expect(body).toMatchObject({ graceMinutes: 20, revision: 2, weeklyOff: null });
+  });
+
+  it('sets the salary month start day with a live preview, 1 to 28 only', async () => {
+    const user = userEvent.setup();
+    signIn(['MANAGE_SETTINGS']);
+    api.updateSettings.mockResolvedValue({ ...SETTINGS, payCycleStartDay: 26, revision: 3 });
+    renderSection();
+
+    const day = await screen.findByLabelText('Salary month starts on day');
+    expect(day).toHaveValue('1');
+    const calendar = cycleRange(currentMonth(), 1);
+    expect(
+      screen.getByText(`This month's salary: ${formatDateRange(calendar.from, calendar.to)}`),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Start one day earlier' })).toBeDisabled();
+
+    await user.clear(day);
+    await user.type(day, '29');
+    expect(screen.getByText('Enter a day from 1 to 28.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Save working rules' }));
+    expect(
+      screen.getByText('Salary month start day must be a whole number from 1 to 28'),
+    ).toBeInTheDocument();
+    expect(api.updateSettings).not.toHaveBeenCalled();
+
+    await user.clear(day);
+    await user.type(day, '25');
+    await user.click(screen.getByRole('button', { name: 'Start one day later' }));
+    expect(day).toHaveValue('26');
+    const cycle = cycleRange(currentMonth(), 26);
+    expect(
+      screen.getByText(`This month's salary: ${formatDateRange(cycle.from, cycle.to)}`),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Save working rules' }));
+    await waitFor(() => expect(api.updateSettings).toHaveBeenCalledTimes(1));
+    expect(api.updateSettings.mock.calls[0][0]).toMatchObject({ payCycleStartDay: 26 });
+  });
+
+  it('shows the server refusal to change the start day as sent', async () => {
+    const user = userEvent.setup();
+    signIn(['MANAGE_SETTINGS']);
+    const sent = 'The salary month start can be changed only before any payroll is finalised.';
+    api.updateSettings.mockRejectedValue(new Error(sent));
+    renderSection();
+
+    const day = await screen.findByLabelText('Salary month starts on day');
+    await user.clear(day);
+    await user.type(day, '26');
+    await user.click(screen.getByRole('button', { name: 'Save working rules' }));
+    expect(await screen.findByText(sent)).toBeInTheDocument();
   });
 
   it('warns before the leave year start changes', async () => {
