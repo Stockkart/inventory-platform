@@ -231,3 +231,65 @@ export interface MisStockReportParams {
   lowStockOnly?: boolean;
   deadStockOnly?: boolean;
 }
+
+/**
+ * Where a Bank Summary period's opening value came from.
+ *
+ * {@code SNAPSHOT} means the prior period was closed and its closing value was carried
+ * forward, so the number is frozen. {@code DERIVED} means it was reconstructed by rolling
+ * live stock counters backwards, and will move if historical data is edited.
+ */
+export type MisBankSummaryOpeningSource = 'SNAPSHOT' | 'DERIVED';
+
+export interface MisBankSummaryRow {
+  company: string;
+  opening: number;
+  purchase: number;
+  sale: number;
+  /** Stock corrections applied in the period. Usually zero. */
+  adjustment: number;
+  closing: number;
+}
+
+export interface MisBankSummaryTotals {
+  companyCount: number;
+  opening: number;
+  purchase: number;
+  sale: number;
+  adjustment: number;
+  closing: number;
+}
+
+export interface MisBankSummaryReportResponse {
+  from: string | null;
+  to: string | null;
+  openingSource: MisBankSummaryOpeningSource;
+  openingSnapshotDate: string | null;
+  /** True when some row has a non-zero adjustment, so the extra column is worth showing. */
+  hasAdjustments: boolean;
+  /** True once this period has been closed; re-closing it then needs force. */
+  periodClosed: boolean;
+  totals: MisBankSummaryTotals;
+  rows: MisBankSummaryRow[];
+  page: number;
+  size: number;
+  totalItems: number;
+}
+
+export interface MisBankSummaryReportParams {
+  from?: string;
+  to?: string;
+  page?: number;
+  size?: number;
+  q?: string;
+}
+
+export interface MisStockPeriodSnapshot {
+  id: string;
+  shopId: string;
+  periodEnd: string;
+  closingByCompany: Record<string, number>;
+  totalClosing: number;
+  createdAt: string | null;
+  createdByUserId: string | null;
+}
