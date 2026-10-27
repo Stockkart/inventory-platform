@@ -111,12 +111,21 @@ Product Search and Scan & Sell call `POST /inventory/search` (`inventoryApi.sear
 - **The backend decides; this package carries.** Base choices come only from the API's
   `baseOptions` (the picker is hidden when there is one), never from the shop type. Each rule's
   row shows its sample, matched by name from what `POST /rate-rules/preview` returns for the
-  draft, price and `termsText` as sent; the screen does no rate, discount, scheme or tax
-  arithmetic. A rule that cannot be generated shows "Not generated" with the server's reason.
+  draft, price, GST label and `termsText` as sent; the screen does no rate, discount, scheme or
+  tax arithmetic. A rule that cannot be generated shows "Not generated" with the server's reason
+  in words (`skippedReasonText`).
 - **Access.** When `enabled` is false (cafe) the registry hides the Profile tab
   (`useRateRulesAvailable`) and the section renders nothing; it is read-only (no inputs, no
   Save) when `canEdit` is false. The owner grants editing per person under Access Control
   ("Edit rate rules and rates", `rateRulesEdit`).
+
+### Rate rules display (`ui/rateRules/`)
+
+`GeneratedRatesList` shows rule-generated rates exactly as the API returns them: price, `termsText`, a GST label (`INCLUSIVE` "incl. GST", `EXCLUSIVE` "+ GST"), an "overridden" marker when `manual` is set, an "unsaved" marker on rates whose terms were edited and not saved (`pendingEdit`), and rules skipped or left below cost (`BELOW_COST` is worded "below cost"; a `REPLACED_BY_RULE` warning says the rule now sets a rate that was typed by hand). Input ids come from `useId`, never from rate names. Given `canEdit` (the `rateRulesEdit` grant) a rule rate offers its discount % and scheme (`SchemeInput`), never its price, plus "Reset to rule" on an overridden rate. Those sit on one row under the rate's name and terms (it wraps on a narrow screen, Reset at its end), with the "schemes can't be removed by override" note under the row. Nothing here works out a price.
+
+- `EntryRatePreview` is the Product Entry block: it fetches the preview itself (debounced `useRateRulesPreviewQuery` on the typed PTR / MRP / selling price / cost / GST, plus `costPriceIncludesTax` from the bill's server-resolved tax treatment; `lib/ratePreviewRequest.ts` builds the request) and shows the result read-only. Overrides cannot clear a discount or scheme (the server treats blank as unchanged), so the editor restores the saved value and points to "Reset to rule". Term overrides exist only on a saved batch, so a new batch has no edit action (the backend ignores terms on create).
+- On Product Entry the hand-typed "Rates (optional)" editor and "Default rate" select stay distributor-only. Any non-cafe shop whose backend flag `features.rateRules` is true (never by counting rules), retailers included, sees `EntryRatePreview` instead (`lib/entryRateFlags.ts`).
+- `core/pricing` imports `GeneratedRatesList` from the barrel for the price edit page; the Profile → Rate rules sample rows use it read-only too.
 
 ### Barcode sticker printing (`lib/renderBarcodeLabelsHtml.ts`, `ui/labelLayout/`)
 

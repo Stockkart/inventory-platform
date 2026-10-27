@@ -97,7 +97,7 @@ describe('RateRulesSection', () => {
     mount();
     const wholesaleRow = (await screen.findAllByLabelText('Rate name'))[0].closest('li');
     // The sample sits in the rule's own row, not in a separate list.
-    expect(await within(wholesaleRow as HTMLElement).findByText('83.64')).toBeTruthy();
+    expect(await within(wholesaleRow as HTMLElement).findByText('83.64 + GST')).toBeTruthy();
     expect(within(wholesaleRow as HTMLElement).getByText('PTR less 5% plus GST')).toBeTruthy();
     expect(screen.queryByRole('list', { name: 'Sample rates' })).toBeNull();
     const body = api.preview.mock.calls[0][0];
