@@ -240,8 +240,6 @@ export function ProfilePage() {
     { label: 'PAN', value: displayValue(shop.panNo) },
     { label: 'DL No', value: displayValue(shop.dlNo) },
     { label: 'FSSAI', value: displayValue(shop.fssai) },
-    { label: 'SGST', value: displayValue(shop.sgst) },
-    { label: 'CGST', value: displayValue(shop.cgst) },
   ];
 
   return (

@@ -99,8 +99,22 @@ export {
 export * from './ui/scanSellStyles';
 export { CardLayoutBody, type CardLayoutBodyProps } from './ui/cardLayout/CardLayoutBody';
 export { ProductCardLayoutSection } from './ui/cardLayout/ProductCardLayoutSection';
+export {
+  ShopLayoutColumnsSection,
+  type ShopLayoutColumnsSectionProps,
+} from './ui/shopLayoutGrid/ShopLayoutColumnsSection';
+export {
+  ShopLayoutColumnsBar,
+  ShopLayoutGrid,
+  type ShopLayoutColumnsBarProps,
+  type ShopLayoutGridColumn,
+  type ShopLayoutGridProps,
+} from './ui/shopLayoutGrid/ShopLayoutGrid';
 export { cardLayoutApi } from './api/cardLayout.api';
 export * from './queries/cardLayout.queries';
+export { gridLayoutApi } from './api/gridLayout.api';
+export * from './queries/gridLayout.queries';
+export * from './model/gridLayout.types';
 export {
   useSurfaceCardLayout,
   allowAll,

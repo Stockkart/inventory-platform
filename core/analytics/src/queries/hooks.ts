@@ -1,4 +1,4 @@
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
+import { useMutation, useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import type {
   CustomerAnalytics,
   InventoryAnalytics,
@@ -12,6 +12,7 @@ import {
   type CustomerAnalyticsParams,
   type ExpiryBucketsParams,
   type InventoryAnalyticsParams,
+  type InventoryItemsParams,
   type ProfitAnalyticsParams,
   type SalesAnalyticsParams,
   type VendorAnalyticsParams,
@@ -85,5 +86,12 @@ export function useExpiryBucketsQuery(
     queryKey: analyticsKeys.expiryBuckets(params),
     queryFn: () => analyticsApi.getExpiryBuckets(params),
     ...options,
+  });
+}
+
+/** Next page of one Inventory-tab list ("Show more"); the caller appends the rows it gets. */
+export function useInventoryItemsPageMutation() {
+  return useMutation({
+    mutationFn: (params: InventoryItemsParams) => analyticsApi.getInventoryItems(params),
   });
 }

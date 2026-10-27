@@ -46,6 +46,7 @@ const MODULE_COLUMNS: {
   { key: 'accounting', label: 'Accounting', short: 'Accounting' },
   { key: 'analytics', label: 'Analytics', short: 'Analytics' },
   { key: 'mis', label: 'MIS', short: 'MIS' },
+  { key: 'hr', label: 'HR', short: 'HR' },
   { key: 'taxes', label: 'Taxes', short: 'Taxes' },
   { key: 'marketing', label: 'Marketing', short: 'Marketing' },
   { key: 'paymentPlan', label: 'Payment & plan', short: 'Plan' },
@@ -94,6 +95,8 @@ function modulesFromMember(member: ShopMemberAccess): MemberModulePermissions {
     marketing: stored.marketing ?? effective.marketing,
     paymentPlan: stored.paymentPlan ?? effective.paymentPlan,
     productSearchEdit: stored.productSearchEdit ?? effective.productSearchEdit,
+    // HR switch: stored `null` means on (design); an older backend may not send `modules.hr`.
+    hr: stored.hr ?? effective.hr ?? true,
   };
 }
 

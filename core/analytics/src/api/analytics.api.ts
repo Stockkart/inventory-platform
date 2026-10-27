@@ -6,6 +6,8 @@ import type {
   VendorAnalytics,
   CustomerAnalytics,
   InventoryAnalytics,
+  InventoryAnalyticsItemsPage,
+  InventoryPagedList,
 } from '@inventory-platform/analytics/types';
 import type { InventoryExpiryBuckets } from '@inventory-platform/product/types';
 import { ANALYTICS_ENDPOINTS } from './endpoints';
@@ -29,6 +31,16 @@ export type ProfitAnalyticsParams = {
 
 export type InventoryAnalyticsParams = {
   includeAll?: boolean;
+  lowStockThreshold?: number;
+  deadStockDays?: number;
+  expiringSoonDays?: number;
+};
+
+export type InventoryItemsParams = {
+  list: InventoryPagedList;
+  /** 0-based. */
+  page: number;
+  size: number;
   lowStockThreshold?: number;
   deadStockDays?: number;
   expiringSoonDays?: number;
@@ -94,6 +106,21 @@ export const analyticsApi = {
       ANALYTICS_ENDPOINTS.INVENTORY,
       toQuery({
         includeAll: params.includeAll,
+        lowStockThreshold: params.lowStockThreshold,
+        deadStockDays: params.deadStockDays,
+        expiringSoonDays: params.expiringSoonDays,
+      }),
+    );
+    return response.data;
+  },
+
+  getInventoryItems: async (params: InventoryItemsParams): Promise<InventoryAnalyticsItemsPage> => {
+    const response = await apiClient.get<ApiResponse<InventoryAnalyticsItemsPage>>(
+      ANALYTICS_ENDPOINTS.INVENTORY_ITEMS,
+      toQuery({
+        list: params.list,
+        page: params.page,
+        size: params.size,
         lowStockThreshold: params.lowStockThreshold,
         deadStockDays: params.deadStockDays,
         expiringSoonDays: params.expiringSoonDays,
