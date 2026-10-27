@@ -10,6 +10,37 @@ export interface ShopAccessModules {
   paymentPlan: boolean;
   productSearchEdit: boolean;
   rateRulesEdit: boolean;
+
+  /** Module switch for the HR area (employees, attendance, leave, payroll). */
+  hr: boolean;
+}
+
+/**
+ * HR permissions, mirroring the backend `HrPermission` enum names exactly.
+ * Kept as a runtime list too so UI (e.g. the permission grid) can iterate them in a stable order.
+ */
+export const HR_PERMISSIONS = [
+  'VIEW_ATTENDANCE',
+  'MARK_ATTENDANCE',
+  'APPROVE_LEAVE',
+  'VIEW_EMPLOYEES',
+  'ADD_EDIT_EMPLOYEES',
+  'VIEW_SALARIES',
+  'RUN_PAYROLL',
+  'RECORD_PAYMENTS',
+  'MANAGE_ADVANCES',
+  'MANAGE_SETTINGS',
+  /** Self-service: "Check in" / "Check out" on My HR. Opens no HR staff screen. */
+  'SELF_CHECK_IN',
+] as const;
+
+export type HrPermission = (typeof HR_PERMISSIONS)[number];
+
+/** Effective HR access for the signed-in user in the active shop. */
+export interface HrAccess {
+  permissions: HrPermission[];
+  /** Employee record linked to this login; `null` when the user is not an employee (no "My HR"). */
+  employeeId: string | null;
 }
 
 export interface ShopStockCorrectionAccess {
@@ -34,6 +65,8 @@ export interface ShopAccess {
   stockCorrection: ShopStockCorrectionAccess;
   modules: ShopAccessModules;
   team: ShopAccessTeam;
+  /** `null` when the HR module is off for this member. */
+  hr: HrAccess | null;
 }
 
 export interface ShopAccessTeam {
@@ -53,6 +86,8 @@ export interface MemberModulePermissions {
   paymentPlan?: boolean;
   productSearchEdit?: boolean;
   rateRulesEdit?: boolean;
+
+  hr?: boolean;
 }
 
 export interface MemberPermissions {

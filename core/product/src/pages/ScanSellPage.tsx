@@ -99,6 +99,7 @@ import { CardLayoutBody } from '../ui/cardLayout/CardLayoutBody';
 import { sellCatalogApi } from '../api/sell-catalog.api';
 import { pricingClient } from '../api/pricing-client.api';
 import { gstAmountRowLabel, uniqueGstRateLabel } from '../lib/gstRateLabel';
+import { buildCartLineTaxIndex, formatGstRate } from '../lib/cartLineTax';
 import type {
   AvailableUnit,
   BillingMode,
@@ -106,6 +107,7 @@ import type {
   CartResponse,
   CheckoutItemResponse,
   QuotationSummary,
+  SaleLineTax,
 } from '@inventory-platform/product/types';
 import type { PricingResponse } from '@inventory-platform/contracts';
 import type { CustomerResponse } from '@inventory-platform/user/types';
@@ -348,6 +350,18 @@ interface CartLineMarginFigures {
   costTotal: number | null;
   profit: number | null;
   marginPercent: number | null;
+}
+
+/** "Taxable ₹107.42 · GST ₹5.37 (5%)" under a cart line; nothing on an untaxed bill. */
+function CartLineTax({ tax }: { tax: SaleLineTax | null }) {
+  if (!tax) return null;
+  const rate = tax.ratePercent > 0 ? ` (${formatGstRate(tax.ratePercent)}%)` : '';
+  return (
+    <Text variant="caption" color="secondary">
+      Taxable ₹{tax.taxableValue.toFixed(2)} · GST ₹{tax.taxAmount.toFixed(2)}
+      {rate}
+    </Text>
+  );
 }
 
 /**
@@ -976,6 +990,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   const [cartData, setCartData] = useState<CartResponse | null>(null);
   /** Built once per cart response so each line looks its margin up instead of scanning the cart. */
   const cartLineMarginById = useMemo(() => buildCartLineMarginIndex(cartData), [cartData]);
+  const cartLineTaxById = useMemo(() => buildCartLineTaxIndex(cartData), [cartData]);
+  const showLineTax = cartLineTaxById.size > 0;
   const [quotations, setQuotations] = useState<QuotationSummary[]>([]);
   const [activePurchaseId, setActivePurchaseId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -3581,6 +3597,12 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                   <DenseTableHeaderCell>Price</DenseTableHeaderCell>
                                   <DenseTableHeaderCell>Disc</DenseTableHeaderCell>
                                   <DenseTableHeaderCell>Scheme</DenseTableHeaderCell>
+                                  {showLineTax ? (
+                                    <>
+                                      <DenseTableHeaderCell>Taxable</DenseTableHeaderCell>
+                                      <DenseTableHeaderCell>GST</DenseTableHeaderCell>
+                                    </>
+                                  ) : null}
                                   <DenseTableHeaderCell>Amount</DenseTableHeaderCell>
                                   <DenseTableHeaderCell
                                     aria-label="Actions"
@@ -3609,6 +3631,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                       cartItem,
                                     ),
                                   );
+                                  const lineTax =
+                                    cartLineTaxById.get(cartItem.inventoryItem.id) ?? null;
                                   const formatPrice = (n: number) =>
                                     new Intl.NumberFormat('en-IN', {
                                       style: 'currency',
@@ -3815,6 +3839,22 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                             </Box>
                                           </Stack>
                                         </DenseTableCell>
+                                        {showLineTax ? (
+                                          <>
+                                            <DenseTableCell>
+                                              {lineTax ? formatPrice(lineTax.taxableValue) : '—'}
+                                            </DenseTableCell>
+                                            <DenseTableCell>
+                                              {lineTax
+                                                ? `${formatPrice(lineTax.taxAmount)}${
+                                                    lineTax.ratePercent > 0
+                                                      ? ` (${formatGstRate(lineTax.ratePercent)}%)`
+                                                      : ''
+                                                  }`
+                                                : '—'}
+                                            </DenseTableCell>
+                                          </>
+                                        ) : null}
                                         <DenseTableCell>{formatPrice(lineTotal)}</DenseTableCell>
                                         <DenseTableCell className={productChrome.rowActionsCell}>
                                           <IconButton
@@ -4215,6 +4255,11 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                               ),
                                             ).toFixed(2)}
                                           </Text>
+                                          <CartLineTax
+                                            tax={
+                                              cartLineTaxById.get(cartItem.inventoryItem.id) ?? null
+                                            }
+                                          />
                                           {!hidePurchaseDetailsInSell ? (
                                             <CartLineMargin
                                               figures={

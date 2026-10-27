@@ -413,13 +413,39 @@
   text-decoration: underline;
 }
 
+.authCheckbox {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
+.authCheckbox input {
+  flex: none;
+}
+
+.authConsent {
+  align-items: flex-start;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.authConsent input {
+  margin-top: 0.15rem;
+}
+
+.authConsent a {
+  font-weight: 600;
+}
+
 .authSubmit {
   margin-top: 0.15rem;
 }
 
 .authFooter {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  gap: 0.3rem;
   padding-top: 0.15rem;
   font-size: 0.875rem;
   line-height: 1.4;

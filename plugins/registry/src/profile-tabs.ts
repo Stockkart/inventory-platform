@@ -3,9 +3,12 @@ import { registerProfileTab } from '@inventory-platform/user';
 import {
   BarcodeLabelLayoutSection,
   ProductCardLayoutSection,
+  GRID_IDS,
   RateRulesSection,
+  ShopLayoutColumnsSection,
   useRateRulesAvailable,
 } from '@inventory-platform/product';
+import { HrSettingsSection } from '@inventory-platform/hr';
 
 /**
  * Profile tabs contributed by domain packages that `core/user` must not import
@@ -14,7 +17,10 @@ import {
  */
 export const BARCODE_LABELS_PROFILE_TAB_ID = 'labels';
 export const PRODUCT_CARDS_PROFILE_TAB_ID = 'cards';
+export const PRODUCT_ENTRY_COLUMNS_PROFILE_TAB_ID = 'entry-columns';
 export const RATE_RULES_PROFILE_TAB_ID = 'rate-rules';
+/** HR settings tab (`?tab=hr`); always listed, the section itself handles read-only and access. */
+export const HR_SETTINGS_PROFILE_TAB_ID = 'hr';
 
 let registered = false;
 
@@ -25,7 +31,8 @@ let registered = false;
  * hydration of `/dashboard/profile` in sync).
  *
  * Extensions anchored on the same built-in tab keep registration order, so
- * "Product cards" lands directly after "Barcode labels", and "Rate rules" after that.
+ * "Product cards" lands directly after "Barcode labels", then "Product entry columns", then
+ * "Rate rules".
  */
 export function registerComposedProfileTabs(): void {
   if (registered) return;
@@ -43,11 +50,29 @@ export function registerComposedProfileTabs(): void {
     render: () => createElement(ProductCardLayoutSection),
   });
   registerProfileTab({
+    id: PRODUCT_ENTRY_COLUMNS_PROFILE_TAB_ID,
+    label: 'Product entry columns',
+    after: 'invoice',
+    render: () =>
+      createElement(ShopLayoutColumnsSection, {
+        gridId: GRID_IDS.PRODUCT_ENTRY,
+        title: 'Product entry columns',
+        description:
+          'Choose the columns everyone in this shop sees on Product Entry. Hidden columns are hidden in grid and list view; order and width apply to grid view. Columns with a lock are required and cannot be hidden. Some columns only appear for certain billing or pricing modes.',
+      }),
+  });
+  registerProfileTab({
     id: RATE_RULES_PROFILE_TAB_ID,
     label: 'Rate rules',
     after: 'invoice',
     render: () => createElement(RateRulesSection),
     // Hidden where the API says rate rules are off for the shop's vertical (cafe).
     useVisible: useRateRulesAvailable,
+  });
+  // No `after` anchor: HR goes last, after every built-in and product tab.
+  registerProfileTab({
+    id: HR_SETTINGS_PROFILE_TAB_ID,
+    label: 'HR',
+    render: () => createElement(HrSettingsSection),
   });
 }

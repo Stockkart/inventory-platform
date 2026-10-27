@@ -177,6 +177,8 @@ export interface SearchInputProps {
   flush?: boolean;
   className?: string;
   disabled?: boolean;
+  /** Accessible name of the search box (the placeholder alone is not a label). */
+  'aria-label'?: string;
 }
 
 export function SearchInput({
@@ -192,6 +194,7 @@ export function SearchInput({
   flush = false,
   className,
   disabled,
+  'aria-label': ariaLabel,
 }: SearchInputProps) {
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && onSearch) {
@@ -212,6 +215,7 @@ export function SearchInput({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={disabled}
+        aria-label={ariaLabel}
         className={styles.searchFieldInput}
       />
     </div>
@@ -223,6 +227,7 @@ export function SearchInput({
       onKeyDown={handleKeyDown}
       placeholder={placeholder}
       disabled={disabled}
+      aria-label={ariaLabel}
       className={cn(styles.searchInput, grow && !showSearchButton && styles.searchToolbarGrow)}
     />
   );

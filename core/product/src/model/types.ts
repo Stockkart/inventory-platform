@@ -818,6 +818,12 @@ export interface UpdateInventoryRequest {
   unitConversions?: UnitConversion | null;
   /** Extension vertical fields (batchNo, expiryDate, sport, …). */
   verticalFields?: Record<string, unknown> | null;
+  /**
+   * Fields to empty. A null field means "keep it" to the API, so clearing needs the name:
+   * barcode, description, companyName, location, hsn, discountApplicable, thresholdCount,
+   * saleAdditionalDiscount, purchaseAdditionalDiscount, saleScheme, purchaseScheme.
+   */
+  clearFields?: string[] | null;
 }
 
 export interface InventoryListResponse {
@@ -975,6 +981,15 @@ export interface GstRateRow {
   sgstAmount: number;
 }
 
+/** One line's taxable value and GST, as the API works it from the line's amount at its own rate. */
+export interface SaleLineTax {
+  taxableValue: number;
+  /** Combined GST on the line (CGST + SGST, or IGST interstate); 0 on an untaxed line. */
+  taxAmount: number;
+  /** Combined GST rate, e.g. 5 for 2.5 + 2.5; 0 when the line carries none. */
+  ratePercent: number;
+}
+
 /** A bill's totals as the printed invoice states them, computed by the API from the lines. */
 export interface SaleTaxSummary {
   subTotal: number;
@@ -986,6 +1001,8 @@ export interface SaleTaxSummary {
   roundOff: number;
   /** Each line's rate before tax, in line order. */
   lineRates: Array<number | null>;
+  /** Each line's taxable value and GST, in line order. Absent from older API builds. */
+  lines?: SaleLineTax[] | null;
 }
 
 export interface CheckoutResponse {
