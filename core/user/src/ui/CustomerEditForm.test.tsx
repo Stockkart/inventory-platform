@@ -73,7 +73,8 @@ describe('<CustomerEditForm> walk-ins', () => {
 
   it('a state can still be picked by hand for an out-of-state buyer', async () => {
     renderForm();
-    fireEvent.change(screen.getByLabelText('State'), { target: { value: '29' } });
+    fireEvent.click(screen.getByLabelText('State'));
+    fireEvent.click(screen.getByRole('option', { name: /\(29\)$/ }));
     expect(current().postalAddress?.stateCode).toBe('29');
   });
 });
