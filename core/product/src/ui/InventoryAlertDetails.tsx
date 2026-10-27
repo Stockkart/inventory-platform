@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Link as RouterLink } from 'react-router';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import { getShopAvailableDisplayCount } from '../lib/inventoryAvailability';
+import { splitUpdateByAccess } from '../lib/productEditPermissions';
 import { barcodesApi } from '../api/barcodes.api';
 import { openLocalBarcodeLabelPrint } from '../lib/printBarcodeLabels';
 import { vendorsApi } from '@inventory-platform/user/vendors';
@@ -336,18 +337,16 @@ export function InventoryAlertDetails({
     setIsSaving(true);
     try {
       const payload: UpdateInventoryRequest = {};
-      if (editForm.name !== undefined && editForm.name !== currentItem.name)
-        payload.name = String(editForm.name) || undefined;
-      if (editForm.barcode !== undefined && editForm.barcode !== currentItem.barcode)
-        payload.barcode = String(editForm.barcode) || undefined;
-      if (editForm.description !== undefined && editForm.description !== currentItem.description)
-        payload.description = String(editForm.description) || undefined;
-      if (editForm.companyName !== undefined && editForm.companyName !== currentItem.companyName)
-        payload.companyName = String(editForm.companyName) || undefined;
-      if (editForm.location !== undefined && editForm.location !== currentItem.location)
-        payload.location = String(editForm.location) || undefined;
-      if (editForm.hsn !== undefined && editForm.hsn !== currentItem.hsn)
-        payload.hsn = String(editForm.hsn) || undefined;
+      // A null field means "keep it" to the API, so an emptied field is named here instead.
+      const clearFields: string[] = [];
+      const name = String(editForm.name ?? '');
+      if (name !== '' && name !== (currentItem.name ?? '')) payload.name = name;
+      for (const key of ['barcode', 'description', 'companyName', 'location', 'hsn'] as const) {
+        const next = String(editForm[key] ?? '');
+        if (next === (currentItem[key] ?? '')) continue;
+        if (next === '') clearFields.push(key);
+        else payload[key] = next;
+      }
 
       // Vertical fields come from the schema-driven section. Only the keys that changed are
       // sent: the server merges the bag with what it already holds, and per-field edit
@@ -391,14 +390,15 @@ export function InventoryAlertDetails({
       const addDiscStr = String(editForm.saleAdditionalDiscount ?? '').trim();
       const addDisc = addDiscStr !== '' ? parseFloat(addDiscStr) : null;
       const currentAddDisc = currentItem.saleAdditionalDiscount ?? null;
-      if (addDisc !== currentAddDisc && (addDisc != null || currentAddDisc != null))
-        payload.saleAdditionalDiscount = addDisc;
-      if (
-        editForm.thresholdCount !== undefined &&
-        editForm.thresholdCount !== currentItem.thresholdCount
-      )
-        payload.thresholdCount =
-          editForm.thresholdCount != null ? Number(editForm.thresholdCount) : null;
+      if (addDisc !== currentAddDisc) {
+        if (addDisc != null) payload.saleAdditionalDiscount = addDisc;
+        else clearFields.push('saleAdditionalDiscount');
+      }
+      const threshold = editForm.thresholdCount != null ? Number(editForm.thresholdCount) : null;
+      if (threshold !== (currentItem.thresholdCount ?? null)) {
+        if (threshold != null) payload.thresholdCount = threshold;
+        else clearFields.push('thresholdCount');
+      }
       if (editForm.purchaseDate) {
         const d = String(editForm.purchaseDate).trim();
         const currentPd = currentItem.purchaseDate ? currentItem.purchaseDate.slice(0, 10) : '';
@@ -431,11 +431,8 @@ export function InventoryAlertDetails({
       const currentSaleScheme = formatSaleSchemeDisplay(currentItem);
       if (saleSchemeRaw !== currentSaleScheme) {
         if (saleSchemeRaw === '') {
-          payload.schemeType = 'FIXED_UNITS';
-          payload.schemePayFor = null;
-          payload.schemeFree = null;
-          payload.schemePercentage = null;
-          payload.scheme = null;
+          delete payload.schemeType;
+          clearFields.push('saleScheme');
         } else {
           const parsed = parseSaleSchemeDraft(saleSchemeRaw);
           if (parsed) {
@@ -451,8 +448,9 @@ export function InventoryAlertDetails({
       const purchaseDiscStr = String(editForm.purchaseAdditionalDiscount ?? '').trim();
       const purchaseDisc = purchaseDiscStr !== '' ? parseFloat(purchaseDiscStr) : null;
       const curPurchaseDisc = currentItem.purchaseAdditionalDiscount ?? null;
-      if (purchaseDisc !== curPurchaseDisc && (purchaseDisc != null || curPurchaseDisc != null)) {
-        payload.purchaseAdditionalDiscount = purchaseDisc;
+      if (purchaseDisc !== curPurchaseDisc) {
+        if (purchaseDisc != null) payload.purchaseAdditionalDiscount = purchaseDisc;
+        else clearFields.push('purchaseAdditionalDiscount');
       }
 
       const editPurchaseSchemeType = String(
@@ -466,9 +464,8 @@ export function InventoryAlertDetails({
       const currentPurchaseScheme = formatPurchaseSchemeDisplay(currentItem);
       if (purchaseSchemeRaw !== currentPurchaseScheme) {
         if (purchaseSchemeRaw === '') {
-          payload.purchaseSchemePayFor = null;
-          payload.purchaseSchemeFree = null;
-          payload.purchaseSchemePercentage = null;
+          delete payload.purchaseSchemeType;
+          clearFields.push('purchaseScheme');
         } else {
           const parsed = parsePurchaseSchemeDraft(purchaseSchemeRaw);
           if (parsed) {
@@ -499,46 +496,23 @@ export function InventoryAlertDetails({
       const editDisc = String(editForm.discountApplicable ?? '').trim();
       const curDisc = currentItem.discountApplicable ?? '';
       if (editDisc !== curDisc) {
-        payload.discountApplicable = editDisc === '' ? null : (editDisc as DiscountApplicable);
+        if (editDisc !== '') payload.discountApplicable = editDisc as DiscountApplicable;
+        else clearFields.push('discountApplicable');
       }
+      if (clearFields.length > 0) payload.clearFields = clearFields;
 
       if (Object.keys(payload).length === 0) {
         setIsEditing(false);
         return;
       }
 
-      const filtered: UpdateInventoryRequest = {};
-      const allowPayloadKey = (key: keyof UpdateInventoryRequest) => {
-        if (!productSearchAccess?.canEdit && productSearchAccess) {
-          return false;
-        }
-        if (productSearchAccess?.editMode === 'FULL_EDIT' || !productSearchAccess) {
-          return true;
-        }
-        if (key === 'unitConversions' || key === 'baseUnit') {
-          return (
-            productSearchAccess.editableFields.includes('unitsPerPack') ||
-            productSearchAccess.editableFields.includes('baseUnit')
-          );
-        }
-        if (key === 'verticalFields' && payload.verticalFields) {
-          return Object.keys(payload.verticalFields).every((k) =>
-            productSearchAccess.editableFields.includes(k),
-          );
-        }
-        return productSearchAccess.editableFields.includes(String(key));
-      };
-      for (const [key, value] of Object.entries(payload)) {
-        if (allowPayloadKey(key as keyof UpdateInventoryRequest)) {
-          (filtered as Record<string, unknown>)[key] = value;
-        }
-      }
-      if (Object.keys(filtered).length === 0) {
-        notifyError('No changes allowed with your current product edit permissions');
+      const { allowed, refused } = splitUpdateByAccess(payload, productSearchAccess);
+      if (refused.length > 0) {
+        notifyError(`You are not allowed to edit: ${refused.join(', ')}`);
         return;
       }
 
-      const updated = await inventoryApi.update(inventoryDocumentId, filtered);
+      const updated = await inventoryApi.update(inventoryDocumentId, allowed);
       notifySuccess('Product updated successfully');
       onUpdated?.(updated);
       setIsEditing(false);
@@ -690,7 +664,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               <DetailField icon={MapPin} label="Location">
-                {isEditing ? (
+                {showEditor('location') ? (
                   <Input
                     type="text"
                     value={String(editForm.location ?? '')}
@@ -702,7 +676,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               <DetailField icon={Hash} label="HSN">
-                {isEditing ? (
+                {showEditor('hsn') ? (
                   <Input
                     type="text"
                     value={String(editForm.hsn ?? '')}
@@ -732,7 +706,7 @@ export function InventoryAlertDetails({
                 </DetailField>
               ) : null}
               <DetailField icon={FileText} label="Description" fullWidth>
-                {isEditing ? (
+                {showEditor('description') ? (
                   <Textarea
                     rows={2}
                     value={String(editForm.description ?? '')}
@@ -781,7 +755,7 @@ export function InventoryAlertDetails({
                 <DetailValue>{item.soldCount}</DetailValue>
               </DetailField>
               <DetailField icon={Ruler} label="Packaging">
-                {isEditing ? (
+                {showEditor('conversionFactor') ? (
                   <Inline gap="sm" align="center">
                     <Text aria-hidden className={surfaceChrome.flexShrink0}>
                       1 ×
@@ -801,7 +775,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               <DetailField icon={ShoppingCart} label="Purchase date">
-                {isEditing ? (
+                {showEditor('purchaseDate') ? (
                   <Input
                     type="date"
                     value={String(editForm.purchaseDate ?? '')}
@@ -816,7 +790,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               <DetailField icon={AlertTriangle} label="Low-stock threshold">
-                {isEditing ? (
+                {showEditor('thresholdCount') ? (
                   <Input
                     type="number"
                     min={0}
@@ -840,7 +814,7 @@ export function InventoryAlertDetails({
             <SectionHeader icon={Gift} title="Schemes & attributes" />
             <Grid columns={2} gap="sm">
               <DetailField icon={Gift} label="Sale deal type">
-                {isEditing ? (
+                {showEditor('schemeType') ? (
                   <Select
                     options={SCHEME_TYPE_OPTIONS}
                     value={String(editForm.schemeType ?? 'FIXED_UNITS')}
@@ -855,7 +829,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               <DetailField icon={Percent} label="Sale scheme">
-                {isEditing ? (
+                {showEditor('saleScheme') ? (
                   <Input
                     type="text"
                     value={String(editForm.saleScheme ?? '')}
@@ -867,7 +841,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               <DetailField icon={ShoppingCart} label="Purchase deal type">
-                {isEditing ? (
+                {showEditor('purchaseSchemeType') ? (
                   <Select
                     options={SCHEME_TYPE_OPTIONS}
                     value={String(editForm.purchaseSchemeType ?? 'FIXED_UNITS')}
@@ -882,7 +856,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               <DetailField icon={Percent} label="Purchase scheme">
-                {isEditing ? (
+                {showEditor('purchaseScheme') ? (
                   <Input
                     type="text"
                     value={String(editForm.purchaseScheme ?? '')}
@@ -894,7 +868,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               <DetailField icon={Percent} label="Purchase add. discount (%)">
-                {isEditing ? (
+                {showEditor('purchaseAdditionalDiscount') ? (
                   <Input
                     type="text"
                     inputMode="decimal"
@@ -914,7 +888,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               <DetailField icon={Tag} label="Item type">
-                {isEditing ? (
+                {showEditor('itemType') ? (
                   <Select
                     options={ITEM_TYPE_OPTIONS}
                     value={String(editForm.itemType ?? 'NORMAL')}
@@ -930,7 +904,7 @@ export function InventoryAlertDetails({
               </DetailField>
               {isEditing || item.itemType === 'DEGREE' || editForm.itemType === 'DEGREE' ? (
                 <DetailField icon={Thermometer} label="Temperature (°)">
-                  {isEditing ? (
+                  {showEditor('itemTypeDegree') ? (
                     <Input
                       type="number"
                       min={1}
@@ -945,7 +919,7 @@ export function InventoryAlertDetails({
                 </DetailField>
               ) : null}
               <DetailField icon={Percent} label="Discount applicable">
-                {isEditing ? (
+                {showEditor('discountApplicable') ? (
                   <Select
                     options={DISCOUNT_OPTIONS}
                     value={String(editForm.discountApplicable ?? '')}
@@ -962,7 +936,7 @@ export function InventoryAlertDetails({
             <SectionHeader icon={IndianRupee} title="Pricing" />
             <Grid columns={2} gap="sm">
               <DetailField icon={Banknote} label="Selling Price (PTR)">
-                {isEditing ? (
+                {showEditor('priceToRetail') ? (
                   <Input
                     type="text"
                     inputMode="decimal"
@@ -982,7 +956,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               <DetailField icon={Tag} label="MRP">
-                {isEditing ? (
+                {showEditor('maximumRetailPrice') ? (
                   <Input
                     type="text"
                     inputMode="decimal"
@@ -999,7 +973,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               <DetailField icon={IndianRupee} label="Price to stockist (PTS)">
-                {isEditing ? (
+                {showEditor('costPrice') ? (
                   <Input
                     type="text"
                     inputMode="decimal"
@@ -1015,7 +989,7 @@ export function InventoryAlertDetails({
               </DetailField>
               {item?.billingMode !== 'BASIC' ? (
                 <DetailField icon={Percent} label="SGST (%)">
-                  {isEditing ? (
+                  {showEditor('sgst') ? (
                     <Input
                       type="text"
                       inputMode="decimal"
@@ -1030,7 +1004,7 @@ export function InventoryAlertDetails({
               ) : null}
               {item?.billingMode !== 'BASIC' ? (
                 <DetailField icon={Percent} label="CGST (%)">
-                  {isEditing ? (
+                  {showEditor('cgst') ? (
                     <Input
                       type="text"
                       inputMode="decimal"
@@ -1044,7 +1018,7 @@ export function InventoryAlertDetails({
                 </DetailField>
               ) : null}
               <DetailField icon={Percent} label="Sale add. discount (%)">
-                {isEditing ? (
+                {showEditor('saleAdditionalDiscount') ? (
                   <Input
                     type="text"
                     inputMode="decimal"

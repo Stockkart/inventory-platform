@@ -12,6 +12,7 @@ import {
   Link as UiLink,
   SocialAuthSlot,
   Text,
+  cn,
   journeyChrome,
 } from '@inventory-platform/ui-kit';
 
@@ -210,6 +211,7 @@ export function SignupForm() {
 
             <Checkbox
               required
+              className={cn(journeyChrome.authCheckbox, journeyChrome.authConsent)}
               label={
                 <>
                   I agree to the <UiLink href="#terms">Terms of Service</UiLink> and{' '}
@@ -232,17 +234,20 @@ export function SignupForm() {
             <Divider label="or" />
 
             <SocialAuthSlot>
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={handleGoogleError}
-                useOneTap={false}
-                auto_select={false}
-                theme="outline"
-                size="large"
-                type="standard"
-                shape="pill"
-                ux_mode="popup"
-              />
+              {({ buttonWidth }) => (
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  useOneTap={false}
+                  auto_select={false}
+                  theme="outline"
+                  size="large"
+                  type="standard"
+                  shape="pill"
+                  ux_mode="popup"
+                  width={buttonWidth}
+                />
+              )}
             </SocialAuthSlot>
           </Box>
 
