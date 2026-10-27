@@ -277,7 +277,7 @@ export interface BulkCreateInventoryItem {
   unitsPerPack?: number | null;
   unitConversions?: UnitConversion | null;
   /** Optional. Array of custom rates { name, price }. */
-  rates?: Array<{ name: string; price: number }> | null;
+  rates?: PricingRate[] | null;
   /** Optional. Must be empty/null or one of: rates[].name, "priceToRetail", "maximumRetailPrice", "costPrice". */
   defaultRate?: string | null;
   /** Extension vertical fields (sport, brand, model, storageTemp, …). */
@@ -695,7 +695,7 @@ export interface ParseInvoiceItem {
   baseUnit?: string | null;
   unitsPerPack?: number | null;
   unitConversions?: UnitConversion | null;
-  rates?: Array<{ name: string; price: number }> | null;
+  rates?: PricingRate[] | null;
   defaultRate?: string | null;
 }
 
@@ -894,6 +894,12 @@ export interface CheckoutItem {
   /** @deprecated use {@code sellableRef} with {@code menu:…} prefix */
   menuItemId?: string;
   unit?: string;
+  /**
+   * Rate to bill the line at: a batch rate's name, or a system option (`priceToRetail`,
+   * `maximumRetailPrice`, `costPrice`), which puts that batch field on the line with the batch's
+   * own sale disc and scheme. Not combinable with a unit change or a quantity decrease.
+   */
+  rateName?: string;
   quantity?: number;
   baseQuantity?: number;
   priceToRetail?: number;
@@ -958,6 +964,12 @@ export interface CheckoutItemResponse {
   purchaseSchemePayFor?: number | null;
   purchaseSchemeFree?: number | null;
   purchaseSchemePercentage?: number | null;
+  /**
+   * Rate the line is billed at, as the cart stored it: a picked rate's name, a system key
+   * (`priceToRetail`, `maximumRetailPrice`, `costPrice`) or the batch's default rule rate on a
+   * first add. Null after a manual price, disc or scheme edit, and on older lines.
+   */
+  appliedRateName?: string | null;
 }
 
 /** GST at one rate on a bill, as the API works it out. */

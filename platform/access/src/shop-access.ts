@@ -9,6 +9,8 @@ export interface ShopAccessModules {
   marketing: boolean;
   paymentPlan: boolean;
   productSearchEdit: boolean;
+  rateRulesEdit: boolean;
+
   /** Module switch for the HR area (employees, attendance, leave, payroll). */
   hr: boolean;
 }
@@ -83,6 +85,8 @@ export interface MemberModulePermissions {
   marketing?: boolean;
   paymentPlan?: boolean;
   productSearchEdit?: boolean;
+  rateRulesEdit?: boolean;
+
   hr?: boolean;
 }
 
