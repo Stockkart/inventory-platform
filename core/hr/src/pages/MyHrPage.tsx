@@ -51,7 +51,6 @@ import { AskLeaveModal } from '../ui/AskLeaveModal';
 import { AttendanceCalendar } from '../ui/AttendanceCalendar';
 import { CheckInCard } from '../ui/CheckInCard';
 import { paymentText } from '../ui/EmployeeProfileTab';
-import { HrDownloadAlert } from '../ui/HrDownloadAlert';
 import { HrInbox } from '../ui/HrInbox';
 import { LeaveBalancesTable } from '../ui/LeaveBalancesTable';
 import { LeaveRequestsTable } from '../ui/LeaveRequestsTable';
@@ -98,12 +97,10 @@ function LeaveSection({ lockedMonths }: { lockedMonths: ReadonlySet<string> }) {
   const cancel = useCancelMyLeaveMutation();
   const [askOpen, setAskOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<LeaveRequestResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const balances = leave.data?.balances ?? null;
 
   const doCancel = () => {
     if (!cancelTarget) return;
-    setError(null);
     cancel.mutate(cancelTarget.id, {
       onSuccess: () => {
         useNotify.success('Leave cancelled');
@@ -112,7 +109,7 @@ function LeaveSection({ lockedMonths }: { lockedMonths: ReadonlySet<string> }) {
       // e.g. "already decided" or "payroll for that month is finalised", as the server says.
       onError: (err) => {
         setCancelTarget(null);
-        setError(err.message || 'Could not cancel the leave');
+        useNotify.error(err.message || 'Could not cancel the leave');
       },
     });
   };
@@ -133,7 +130,6 @@ function LeaveSection({ lockedMonths }: { lockedMonths: ReadonlySet<string> }) {
         </Button>
       </Inline>
       {leave.error ? <Alert variant="danger">{leave.error.message}</Alert> : null}
-      {error ? <Alert variant="danger">{error}</Alert> : null}
       {!leave.isLoading && !leave.error && !balances ? (
         <Text color="muted">You are not employed in this leave year, so there is no balance.</Text>
       ) : null}
@@ -207,7 +203,6 @@ function PayslipsSection({
         My payslips
       </Text>
       {error ? <Alert variant="danger">{error.message}</Alert> : null}
-      <HrDownloadAlert download={download} />
       <Table aria-label="My payslips">
         <TableHead>
           <TableRow>

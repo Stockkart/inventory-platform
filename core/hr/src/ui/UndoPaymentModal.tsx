@@ -23,18 +23,15 @@ export interface UndoPaymentModalProps {
 export function UndoPaymentModal({ runId, line, onClose }: UndoPaymentModalProps) {
   const undo = useUndoSalaryPaymentMutation();
   const [reason, setReason] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setReason('');
-    setError(null);
   }, [line?.id]);
 
   if (!line) return null;
   const name = line.employeeSnapshot?.name ?? 'this employee';
 
   const handleSave = () => {
-    setError(null);
     undo.mutate(
       { runId, lineId: line.id, reason },
       {
@@ -43,7 +40,7 @@ export function UndoPaymentModal({ runId, line, onClose }: UndoPaymentModalProps
           onClose();
         },
         // e.g. "This payment is being undone by someone else" — shown as sent.
-        onError: (err) => setError(err.message || 'Could not undo the payment'),
+        onError: (err) => useNotify.error(err.message || 'Could not undo the payment'),
       },
     );
   };
@@ -56,7 +53,6 @@ export function UndoPaymentModal({ runId, line, onClose }: UndoPaymentModalProps
       onCancel={onClose}
       onSave={handleSave}
       saving={undo.isPending}
-      error={error}
       saveLabel="Undo payment"
     >
       <Stack gap="md">

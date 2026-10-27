@@ -121,7 +121,13 @@ export function PaymentModal({ run, target, onClose }: PaymentModalProps) {
     setSummary(result);
     // Refresh whatever happened: paid lines change status, a failure may leave some paid.
     void refresh();
-    if (!result.error && result.paid > 0) {
+    if (result.error) {
+      useNotify.error(
+        result.paid > 0
+          ? `Marked ${result.paid} as paid, then: ${result.error.message}`
+          : result.error.message || 'Could not record the payment',
+      );
+    } else if (result.paid > 0) {
       useNotify.success(
         result.paid === 1 ? 'Payment recorded' : `${result.paid} payments recorded`,
       );
@@ -139,13 +145,6 @@ export function PaymentModal({ run, target, onClose }: PaymentModalProps) {
       <Modal.Body>
         {summary ? (
           <Stack gap="sm" aria-live="polite">
-            {summary.error ? (
-              <Alert variant="danger">
-                {summary.paid > 0
-                  ? `Marked ${summary.paid} as paid, then: ${summary.error.message}`
-                  : summary.error.message}
-              </Alert>
-            ) : null}
             {describePaymentSummary(summary, nameOf).map((sentence) => (
               <Text key={sentence}>{sentence}</Text>
             ))}

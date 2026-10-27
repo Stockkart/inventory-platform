@@ -62,13 +62,11 @@ export function GiveAdvanceModal({
   const record = useRecordAdvanceMutation();
   const [form, setForm] = useState<AdvanceFormValue>(() => emptyForm(employee?.employeeId ?? ''));
   const [errors, setErrors] = useState<AdvanceFormErrors>({});
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
       setForm(emptyForm(employee?.employeeId ?? ''));
       setErrors({});
-      setError(null);
     }
   }, [open, employee?.employeeId]);
 
@@ -89,7 +87,7 @@ export function GiveAdvanceModal({
         onClose();
       },
       // e.g. "The employee was not employed on this date", already in plain words.
-      onError: (err) => setError(err.message || 'Could not record the advance'),
+      onError: (err) => useNotify.error(err.message || 'Could not record the advance'),
     });
   };
 
@@ -101,7 +99,6 @@ export function GiveAdvanceModal({
       onCancel={onClose}
       onSave={handleSave}
       saving={record.isPending}
-      error={error}
       saveLabel="Record advance"
     >
       <Stack gap="md">

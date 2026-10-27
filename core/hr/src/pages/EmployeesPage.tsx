@@ -143,7 +143,7 @@ export function EmployeesPage() {
         useNotify.success(`${saved.name} added as ${saved.code}`);
         setCreateOpen(false);
       },
-      onError: (err) => setSaveError(err.message || 'Could not add the employee'),
+      onError: (err) => useNotify.error(err.message || 'Could not add the employee'),
     });
   };
 

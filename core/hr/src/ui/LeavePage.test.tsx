@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HrPermission, ShopAccess } from '@inventory-platform/access';
-import { useAuthStore, useShopAccessStore } from '@inventory-platform/session';
+import { useAuthStore, useNotify, useShopAccessStore } from '@inventory-platform/session';
 import type { LeaveRequestResponse } from '@inventory-platform/hr/types';
 import { LeavePage } from '../pages/LeavePage';
 
@@ -142,6 +142,8 @@ describe('LeavePage', () => {
   });
 
   it('rejects without a note and shows server errors in plain words', async () => {
+    const notifyError = vi.spyOn(useNotify, 'error');
+    notifyError.mockClear();
     const user = userEvent.setup();
     signIn(['VIEW_ATTENDANCE', 'APPROVE_LEAVE']);
     leaveApi.decide.mockRejectedValue(new Error('This leave request has already been decided'));
@@ -152,9 +154,9 @@ describe('LeavePage', () => {
     await waitFor(() =>
       expect(leaveApi.decide).toHaveBeenCalledWith('r1', 'reject', { note: null }),
     );
-    expect(
-      await screen.findByText('This leave request has already been decided'),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(notifyError).toHaveBeenCalledWith('This leave request has already been decided'),
+    );
   });
 
   it('hides every action from view-only users', async () => {

@@ -21,6 +21,7 @@ import {
   hrChrome,
   LinkButton,
 } from '@inventory-platform/ui-kit';
+import { useNotify } from '@inventory-platform/session';
 import {
   finaliseOrderBlocker,
   formatInr,
@@ -50,7 +51,6 @@ export function PayrollListPage() {
   const canRun = can('RUN_PAYROLL');
   const canView = canRun || can('RECORD_PAYMENTS');
   const [picked, setPicked] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const runs = usePayrollRunsQuery(canView);
   const create = useCreatePayrollRunMutation();
@@ -79,12 +79,11 @@ export function PayrollListPage() {
     : cycleRange(period, settings.data?.payCycleStartDay ?? 1);
 
   const start = () => {
-    setError(null);
     // The server answers the existing run when the month already has one, so a double click or
     // a stale list never makes a second run.
     create.mutate(period, {
       onSuccess: (run) => navigate(payrollRunPath(run.id)),
-      onError: (err) => setError(err.message || 'Could not start payroll'),
+      onError: (err) => useNotify.error(err.message || 'Could not start payroll'),
     });
   };
 
@@ -122,7 +121,6 @@ export function PayrollListPage() {
         reopened newest first.
       </Text>
 
-      {error ? <Alert variant="danger">{error}</Alert> : null}
       {runs.error ? <Alert variant="danger">{runs.error.message}</Alert> : null}
 
       <Card>

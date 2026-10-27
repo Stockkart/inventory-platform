@@ -30,12 +30,10 @@ export interface LeaveDecisionModalProps {
 /** Approve, reject or cancel one request with an optional note (R6.7, R6.11). */
 export function LeaveDecisionModal({ target, onClose }: LeaveDecisionModalProps) {
   const [note, setNote] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const decide = useLeaveDecisionMutation();
 
   useEffect(() => {
     setNote('');
-    setError(null);
   }, [target]);
 
   if (!target) return null;
@@ -50,7 +48,7 @@ export function LeaveDecisionModal({ target, onClose }: LeaveDecisionModalProps)
           onClose();
         },
         // e.g. HR_LEAVE_STATE_CONFLICT ("already decided") or HR_PERIOD_LOCKED, in plain words.
-        onError: (err) => setError(err.message || 'Could not update the leave'),
+        onError: (err) => useNotify.error(err.message || 'Could not update the leave'),
       },
     );
   };
@@ -63,7 +61,6 @@ export function LeaveDecisionModal({ target, onClose }: LeaveDecisionModalProps)
       onCancel={onClose}
       onSave={handleSave}
       saving={decide.isPending}
-      error={error}
       saveLabel={TITLES[decision]}
     >
       <Stack gap="md">

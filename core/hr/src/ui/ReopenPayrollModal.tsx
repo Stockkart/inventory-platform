@@ -41,7 +41,7 @@ export function ReopenPayrollModal({ run, onClose }: ReopenPayrollModalProps) {
           onClose();
         },
         // Order rule ("Reopen … first") and "Undo the salary payments of this run first".
-        onError: (err) => setError(err.message || 'Could not reopen this payroll'),
+        onError: (err) => useNotify.error(err.message || 'Could not reopen this payroll'),
       },
     );
   };

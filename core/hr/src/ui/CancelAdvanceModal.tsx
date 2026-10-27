@@ -41,7 +41,7 @@ export function CancelAdvanceModal({ advance, onClose }: CancelAdvanceModalProps
           onClose();
         },
         // "Part of this advance has already been recovered" or "Payroll is being finalised…".
-        onError: (err) => setError(err.message || 'Could not cancel the advance'),
+        onError: (err) => useNotify.error(err.message || 'Could not cancel the advance'),
       },
     );
   };

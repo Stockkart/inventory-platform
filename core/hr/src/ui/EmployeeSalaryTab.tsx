@@ -76,7 +76,7 @@ export function EmployeeSalaryTab({ employee }: EmployeeSalaryTabProps) {
           useNotify.success(`New pay applies from ${formatMonth(month)}`);
           setOpen(false);
         },
-        onError: (err) => setError(err.message || 'Could not change the salary'),
+        onError: (err) => useNotify.error(err.message || 'Could not change the salary'),
       },
     );
   };

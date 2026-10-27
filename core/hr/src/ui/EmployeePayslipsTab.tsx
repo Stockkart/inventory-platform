@@ -21,7 +21,6 @@ import { deliverHrFile } from '../api/download';
 import { payrollApi } from '../api/payroll.api';
 import { hrKeys } from '../queries/keys';
 import { useHrDownload, useHrShopId, usePayrollRunsQuery } from '../queries/hooks';
-import { HrDownloadAlert } from './HrDownloadAlert';
 
 export interface EmployeePayslipsTabProps {
   employee: EmployeeResponse;
@@ -61,7 +60,6 @@ export function EmployeePayslipsTab({ employee }: EmployeePayslipsTabProps) {
 
   return (
     <>
-      <HrDownloadAlert download={download} />
       {runs.error ? <Alert variant="danger">{runs.error.message}</Alert> : null}
       <Table aria-label={`Payslips of ${employee.name}`}>
         <TableHead>

@@ -42,7 +42,6 @@ import {
   useRecalculatePayrollMutation,
 } from '../queries/hooks';
 import { EmailPayslipsModal } from '../ui/EmailPayslipsModal';
-import { HrDownloadAlert } from '../ui/HrDownloadAlert';
 import { HrBackLink } from '../ui/HrBackLink';
 import { HrInbox } from '../ui/HrInbox';
 import { PaymentModal, type PaymentTarget } from '../ui/PaymentModal';
@@ -85,7 +84,6 @@ export function PayrollRunPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [reopenOpen, setReopenOpen] = useState(false);
   const [checking, setChecking] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [payTarget, setPayTarget] = useState<PaymentTarget | null>(null);
   const [undoLineId, setUndoLineId] = useState<string | null>(null);
   const [emailOpen, setEmailOpen] = useState(false);
@@ -144,7 +142,6 @@ export function PayrollRunPage() {
 
   /** Shows the unmarked list when there is one, else the confirm dialog. */
   const checkThenConfirm = async () => {
-    setActionError(null);
     setChecking(true);
     try {
       const found = await fetchUnmarked(r.id);
@@ -155,7 +152,9 @@ export function PayrollRunPage() {
         setConfirmOpen(true);
       }
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Could not check attendance');
+      useNotify.error(
+        err instanceof Error && err.message ? err.message : 'Could not check attendance',
+      );
     } finally {
       setChecking(false);
     }
@@ -179,16 +178,15 @@ export function PayrollRunPage() {
         // mutation, so the page shows the draft again under this message.
         // Run B6: a month that is not over yet is a 400 ("This month is not over yet. Payroll
         // for YYYY-MM can be finalised from <date>"), not the 422 unmarked flow; shown as sent.
-        setActionError(err.message || 'Could not finalise this payroll');
+        useNotify.error(err.message || 'Could not finalise this payroll');
       },
     });
   };
 
   const doRecalc = () => {
-    setActionError(null);
     recalc.mutate(r.id, {
       onSuccess: () => useNotify.success('Pay worked out again from the latest attendance'),
-      onError: (err) => setActionError(err.message || 'Could not recalculate'),
+      onError: (err) => useNotify.error(err.message || 'Could not recalculate'),
     });
   };
 
@@ -230,9 +228,6 @@ export function PayrollRunPage() {
           </Button>
         </Alert>
       ) : null}
-
-      {actionError ? <Alert variant="danger">{actionError}</Alert> : null}
-      <HrDownloadAlert download={download} />
 
       {showToolbar ? (
         <Box className={hrChrome.hrPageToolbar}>

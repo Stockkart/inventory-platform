@@ -174,7 +174,7 @@ export function HrSettingsForm({ settings, readOnly }: HrSettingsFormProps) {
     };
     save.mutate(body, {
       onSuccess: () => useNotify.success('HR settings saved'),
-      onError: (err) => setError(err.message || 'Could not save HR settings'),
+      onError: (err) => useNotify.error(err.message || 'Could not save HR settings'),
     });
   };
 

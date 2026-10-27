@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HrPermission, ShopAccess } from '@inventory-platform/access';
-import { useAuthStore, useShopAccessStore } from '@inventory-platform/session';
+import { useAuthStore, useNotify, useShopAccessStore } from '@inventory-platform/session';
 import type {
   AttendanceRowResponse,
   DailyRegisterResponse,
@@ -465,7 +465,9 @@ describe('AttendanceMonthPage Excel download (run F5)', () => {
     expect(attendanceApi.monthExport).toHaveBeenCalledWith(MONTH.period);
   });
 
-  it('shows the server busy message and tries again on request', async () => {
+  it('shows the server busy message as a toast and downloads again on request', async () => {
+    const notifyError = vi.spyOn(useNotify, 'error');
+    notifyError.mockClear();
     const user = userEvent.setup();
     signIn(['VIEW_ATTENDANCE']);
     attendanceApi.month.mockResolvedValue(MONTH);
@@ -475,11 +477,14 @@ describe('AttendanceMonthPage Excel download (run F5)', () => {
     renderAt('/dashboard/hr/attendance/month');
 
     await user.click(await screen.findByRole('button', { name: 'Download Excel' }));
-    expect(await screen.findByText(/The server is busy/)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    await waitFor(() =>
+      expect(notifyError).toHaveBeenCalledWith(expect.stringMatching(/The server is busy/)),
+    );
+    expect(download.deliverHrFile).not.toHaveBeenCalled();
+    // The toast has no retry button: pressing Download again repeats it.
+    await user.click(screen.getByRole('button', { name: 'Download Excel' }));
     await waitFor(() => expect(download.deliverHrFile).toHaveBeenCalledTimes(1));
     expect(attendanceApi.monthExport).toHaveBeenCalledTimes(2);
-    expect(screen.queryByText(/The server is busy/)).not.toBeInTheDocument();
   });
 });
 

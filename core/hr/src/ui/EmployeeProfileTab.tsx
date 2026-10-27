@@ -84,7 +84,6 @@ export function EmployeeProfileTab({ employee }: EmployeeProfileTabProps) {
   const [exitOpen, setExitOpen] = useState(false);
   const [exitDate, setExitDate] = useState(todayIso());
   const [exitError, setExitError] = useState<string | null>(null);
-  const [linkError, setLinkError] = useState<string | null>(null);
 
   const linkedLogin = employee.userId
     ? logins.data?.find((l) => l.userId === employee.userId)
@@ -124,18 +123,17 @@ export function EmployeeProfileTab({ employee }: EmployeeProfileTabProps) {
           useNotify.success('Employee details saved');
           setEditOpen(false);
         },
-        onError: (err) => setSaveError(err.message || 'Could not save the employee'),
+        onError: (err) => useNotify.error(err.message || 'Could not save the employee'),
       },
     );
   };
 
   const handleLink = (userId: string | null) => {
-    setLinkError(null);
     update.mutate(
       { id: employee.id, body: linkRequest(employee, userId, can('VIEW_SALARIES')) },
       {
         onSuccess: () => useNotify.success(userId ? 'Login linked' : 'Login unlinked'),
-        onError: (err) => setLinkError(err.message || 'Could not change the login link'),
+        onError: (err) => useNotify.error(err.message || 'Could not change the login link'),
       },
     );
   };
@@ -157,7 +155,7 @@ export function EmployeeProfileTab({ employee }: EmployeeProfileTabProps) {
           useNotify.success(`${employee.name} marked as exited`);
           setExitOpen(false);
         },
-        onError: (err) => setExitError(err.message || 'Could not mark the employee as exited'),
+        onError: (err) => useNotify.error(err.message || 'Could not mark the employee as exited'),
       },
     );
   };
@@ -240,7 +238,6 @@ export function EmployeeProfileTab({ employee }: EmployeeProfileTabProps) {
               </Text>
             ) : null}
             {logins.error ? <Alert variant="danger">{logins.error.message}</Alert> : null}
-            {linkError ? <Alert variant="danger">{linkError}</Alert> : null}
           </Stack>
         </CardBody>
       </Card>

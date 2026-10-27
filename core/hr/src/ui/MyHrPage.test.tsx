@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HrPermission, ShopAccess } from '@inventory-platform/access';
-import { useAuthStore, useShopAccessStore } from '@inventory-platform/session';
+import { useAuthStore, useNotify, useShopAccessStore } from '@inventory-platform/session';
 import {
   currentMonth,
   type LeaveRequestResponse,
@@ -374,6 +374,8 @@ describe('MyHrPage check-in', () => {
   });
 
   it('still asks the server when the location is denied, and shows its answer', async () => {
+    const notifyError = vi.spyOn(useNotify, 'error');
+    notifyError.mockClear();
     signIn('e1', ['SELF_CHECK_IN']);
     mockGeolocation((_ok, fail) => fail({ code: 1 } as GeolocationPositionError));
     meApi.checkInStatus.mockResolvedValue({ ...ON, locationRequired: true });
@@ -382,7 +384,7 @@ describe('MyHrPage check-in', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Check in' }));
     await waitFor(() => expect(meApi.checkIn).toHaveBeenCalledWith({}));
-    expect(await screen.findByText("You're not at the shop")).toBeInTheDocument();
+    await waitFor(() => expect(notifyError).toHaveBeenCalledWith("You're not at the shop"));
     expect(screen.getByText(/Location is blocked for this site/)).toBeInTheDocument();
   });
 

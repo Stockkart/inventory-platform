@@ -34,7 +34,6 @@ import { deliverHrFile } from '../api/download';
 import { useHrDownload, useMonthRegisterQuery } from '../queries/hooks';
 import { AttendanceDayDrawer } from '../ui/AttendanceDayDrawer';
 import { EmployeeNameLink } from '../ui/EmployeeNameLink';
-import { HrDownloadAlert } from '../ui/HrDownloadAlert';
 import { HrInbox } from '../ui/HrInbox';
 import { AttendanceLegend, AttendanceMark, CaptureSourceIcon } from '../ui/AttendanceMark';
 
@@ -132,7 +131,6 @@ export function AttendanceMonthPage() {
           </Button>
         </Box>
       </Box>
-      <HrDownloadAlert download={download} />
 
       {data?.locked ? (
         <Alert variant="warning">
