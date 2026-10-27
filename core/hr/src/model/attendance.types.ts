@@ -22,13 +22,48 @@ export type StoredAttendanceStatus = 'PRESENT' | 'ABSENT' | 'HALF_DAY' | 'WEEK_O
 export type SaveAttendanceStatus = StoredAttendanceStatus | 'UNMARKED';
 
 /** `AttendanceSource`: where a stored mark came from. */
-export type AttendanceSource = 'MANUAL' | 'BULK_PRESENT';
+export type AttendanceSource = 'MANUAL' | 'BULK_PRESENT' | 'SELF_CHECK_IN';
+
+/** Backend `PunchFlag`: marks on a stored punch that managers see. */
+export type PunchFlag = 'OUTSIDE_SHOP' | 'LOW_ACCURACY' | 'NO_LOCATION' | 'LOCKED_PERIOD';
+
+/** Backend `PunchDirection`. */
+export type PunchDirection = 'IN' | 'OUT';
+
+/** Backend `PunchSource`; only SELF is written today. */
+export type PunchSource = 'SELF' | 'DEVICE_FILE' | 'BRIDGE';
+
+/** `PunchResponse`: one recorded moment (`GET /attendance/punches`, `GET /me/punches`). */
+export interface PunchResponse {
+  id: string;
+  employeeId: string;
+  /** ISO instant (server time). */
+  at: string;
+  /** HH:mm of `at`, Asia/Kolkata. */
+  time?: string | null;
+  /** yyyy-MM-dd. */
+  localDate?: string | null;
+  direction: PunchDirection;
+  source: PunchSource;
+  /** Self check-in with location check only; the employee's own coordinates are never sent. */
+  distanceMetres?: number | null;
+  accuracyMetres?: number | null;
+  flags?: PunchFlag[] | null;
+  /** false = within 5 minutes of the previous counted punch, so it does not count (R4.2). */
+  counted?: boolean | null;
+}
+
+/** Fields the registers carry for punch-filled days (left out when false or empty). */
+export interface CaptureMarks {
+  missingCheckOut?: boolean | null;
+  flags?: PunchFlag[] | null;
+}
 
 /** `DayStatusResolver.Source`: which rule decided the day's status. */
 export type DayStatusSource = 'EMPLOYMENT' | 'LEAVE' | 'MARK' | 'HOLIDAY' | 'WEEK_OFF' | 'NONE';
 
 /** `AttendanceRowResponse`: one resolved employee-day (daily register, save response). */
-export interface AttendanceRowResponse {
+export interface AttendanceRowResponse extends CaptureMarks {
   employeeId: string;
   code: string;
   name: string;
@@ -54,6 +89,11 @@ export interface AttendanceRowResponse {
   markedByUserId?: string | null;
   /** The day's month is locked by payroll. */
   locked: boolean;
+  /**
+   * Where the stored mark came from (a mark without one is MANUAL); null = no mark. Not `source`,
+   * which says what decided the status.
+   */
+  markSource?: AttendanceSource | null;
 }
 
 /** `DailyRegisterResponse`: everyone employed on `date`, by name. */
@@ -95,8 +135,10 @@ export interface MarkUnmarkedPresentResponse {
 }
 
 /** `MonthRegisterResponse.Cell`; flags that are false are left out by the server. */
-export interface MonthRegisterCell {
+export interface MonthRegisterCell extends CaptureMarks {
   status: DayStatus;
+  /** Where the stored mark came from when it is not a hand-made one; left out otherwise. */
+  markSource?: AttendanceSource | null;
   late?: boolean | null;
   halfDayLeave?: boolean | null;
   /** Half-day leave only. */

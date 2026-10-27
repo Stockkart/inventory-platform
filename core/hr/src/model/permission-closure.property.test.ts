@@ -24,6 +24,7 @@ const BACKEND_REQUIRES: Record<HrPermission, HrPermission[]> = {
   RECORD_PAYMENTS: ['VIEW_SALARIES', 'VIEW_EMPLOYEES'],
   MANAGE_ADVANCES: ['VIEW_SALARIES', 'VIEW_EMPLOYEES'],
   MANAGE_SETTINGS: [],
+  SELF_CHECK_IN: [],
 };
 
 /** Backend `HrPermission.closure`: the set plus everything each member requires. */

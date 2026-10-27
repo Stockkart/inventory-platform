@@ -21,8 +21,12 @@ const HR_PATH_RULES: ReadonlyArray<{ prefix: string; allowed: (access: ShopAcces
   { prefix: '/dashboard/hr/advances', allowed: (a) => hrCan(a, 'MANAGE_ADVANCES') },
   // Self-service: only a linked employee, whatever their permissions or HR switch.
   { prefix: '/dashboard/hr/me', allowed: (a) => Boolean(a.hr?.employeeId) },
-  // Settings: any HR permission; the section itself is read-only without MANAGE_SETTINGS.
-  { prefix: '/dashboard/hr/settings', allowed: (a) => (a.hr?.permissions?.length ?? 0) > 0 },
+  // Settings: any HR staff permission (self check-in alone opens no staff screen, as on the
+  // server); the section itself is read-only without MANAGE_SETTINGS.
+  {
+    prefix: '/dashboard/hr/settings',
+    allowed: (a) => (a.hr?.permissions ?? []).some((p) => p !== 'SELF_CHECK_IN'),
+  },
 ];
 
 function hrCan(access: ShopAccess, permission: HrPermission): boolean {

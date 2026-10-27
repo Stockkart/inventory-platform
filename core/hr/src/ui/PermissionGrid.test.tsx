@@ -59,4 +59,12 @@ describe('HrPermissionGridEditor', () => {
     expect(screen.getAllByText('Also gives view all attendance')).toHaveLength(2);
     expect(screen.getByText('Also gives view salaries and view employees')).toBeInTheDocument();
   });
+
+  it('has a Self check-in row with no dependencies', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={{ CASHIER: [] }} />);
+    await user.click(box('Self check-in', 'Cashier'));
+    expect(box('Self check-in', 'Cashier')).toBeChecked();
+    expect(box('View all attendance', 'Cashier')).not.toBeChecked();
+  });
 });

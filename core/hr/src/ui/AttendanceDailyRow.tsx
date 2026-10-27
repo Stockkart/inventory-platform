@@ -11,6 +11,7 @@ import {
 } from '@inventory-platform/ui-kit';
 import {
   DAY_STATUS_LABELS,
+  captureChips,
   MAX_ATTENDANCE_NOTE_LENGTH,
   isFullDayLeave,
   takesNote,
@@ -18,7 +19,7 @@ import {
   type AttendanceDraft,
   type AttendanceRowResponse,
 } from '@inventory-platform/hr/types';
-import { AttendanceMark } from './AttendanceMark';
+import { AttendanceMark, CaptureSourceIcon } from './AttendanceMark';
 import { AttendanceNotePopover } from './AttendanceNotePopover';
 
 /** Segment value that opens the record-leave modal instead of changing the draft. */
@@ -84,6 +85,7 @@ export function AttendanceDailyRow({
             {row.name}
           </Text>
           <Box as="span" className={hrChrome.hrDailyRowMeta}>
+            <CaptureSourceIcon source={row.markSource} />
             {row.late ? (
               <Badge variant="warning" className={hrChrome.hrChip}>
                 Late
@@ -104,6 +106,11 @@ export function AttendanceDailyRow({
                 {DAY_STATUS_LABELS[row.status]}
               </Badge>
             ) : null}
+            {captureChips(row).map((chip) => (
+              <Badge key={chip} variant="warning" className={hrChrome.hrChip}>
+                {chip}
+              </Badge>
+            ))}
             {changed ? (
               <Badge variant="neutral" className={hrChrome.hrChip}>
                 Not saved

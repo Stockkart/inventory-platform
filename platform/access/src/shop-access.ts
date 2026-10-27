@@ -28,6 +28,8 @@ export const HR_PERMISSIONS = [
   'RECORD_PAYMENTS',
   'MANAGE_ADVANCES',
   'MANAGE_SETTINGS',
+  /** Self-service: "Check in" / "Check out" on My HR. Opens no HR staff screen. */
+  'SELF_CHECK_IN',
 ] as const;
 
 export type HrPermission = (typeof HR_PERMISSIONS)[number];

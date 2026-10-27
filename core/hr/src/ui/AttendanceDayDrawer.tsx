@@ -13,14 +13,18 @@ import { useAuthStore } from '@inventory-platform/session';
 import {
   AUDIT_ACTION_LABELS,
   DAY_STATUS_LABELS,
+  PUNCH_FLAG_LABELS,
+  formatClock,
   formatDateTime,
   formatDayShort,
   isBlankFutureCell,
   type AuditEventResponse,
   type DayStatus,
   type MonthRegisterCell,
+  type PunchResponse,
+  type PunchSource,
 } from '@inventory-platform/hr/types';
-import { useAttendanceHistoryQuery } from '../queries/hooks';
+import { useAttendanceHistoryQuery, useAttendancePunchesQuery } from '../queries/hooks';
 import { AttendanceMark } from './AttendanceMark';
 
 export interface AttendanceDayDrawerProps {
@@ -46,6 +50,20 @@ function describeEvent(e: AuditEventResponse): string {
   return label;
 }
 
+const PUNCH_SOURCE_WORDS: Record<PunchSource, string> = {
+  SELF: 'by phone',
+  DEVICE_FILE: 'from machine file',
+  BRIDGE: 'from machine',
+};
+
+/** "42 m from shop · Outside shop"; empty when there is nothing to add. */
+function punchDetail(p: PunchResponse): string {
+  const flags = [...new Set((p.flags ?? []).map((f) => PUNCH_FLAG_LABELS[f]))];
+  const distance = p.distanceMetres != null ? `${Math.round(p.distanceMetres)} m from shop` : null;
+  const duplicate = p.counted === false ? 'Not counted (within 5 minutes of the last one)' : null;
+  return [distance, ...flags, duplicate].filter(Boolean).join(' · ');
+}
+
 /**
  * Side drawer for one employee-day of the month register: the resolved status, and for
  * MARK_ATTENDANCE users who marked it first and every later change, newest first.
@@ -63,6 +81,8 @@ export function AttendanceDayDrawer({ day, canSeeHistory, onClose }: AttendanceD
     day?.date,
     canSeeHistory && !!day && !future,
   );
+  // The register needs VIEW_ATTENDANCE, which is what punches need too.
+  const punches = useAttendancePunchesQuery(day?.employeeId, day?.date, !!day && !future);
   // "you" for the signed-in user, else the name the server sends (null = unknown login).
   const who = (userId: string | null | undefined, name: string | null | undefined) =>
     userId && userId === myUserId ? 'you' : name ?? 'someone';
@@ -99,6 +119,33 @@ export function AttendanceDayDrawer({ day, canSeeHistory, onClose }: AttendanceD
               </Text>
             </Inline>
           )}
+
+          {punches.error ? <Alert variant="danger">{punches.error.message}</Alert> : null}
+          {punches.data && punches.data.length > 0 ? (
+            <Stack gap="sm">
+              <Text variant="heading4" as="h3">
+                Check-ins
+              </Text>
+              <Stack as="ul" gap="sm" aria-label="Check-ins on this day">
+                {punches.data.map((p, i) => {
+                  const detail = punchDetail(p);
+                  return (
+                    <Box as="li" key={`${p.at}-${i}`}>
+                      <Text color={p.counted === false ? 'muted' : undefined}>
+                        {p.time ?? formatClock(p.at)} · {p.direction === 'IN' ? 'In' : 'Out'}{' '}
+                        {PUNCH_SOURCE_WORDS[p.source] ?? ''}
+                      </Text>
+                      {detail ? (
+                        <Text variant="caption" color="muted">
+                          {detail}
+                        </Text>
+                      ) : null}
+                    </Box>
+                  );
+                })}
+              </Stack>
+            </Stack>
+          ) : null}
 
           {canSeeHistory && !future ? (
             <Stack gap="sm">

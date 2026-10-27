@@ -1,6 +1,8 @@
 import { apiClient } from '@inventory-platform/api-client';
 import type { ApiResponse } from '@inventory-platform/contracts';
 import type {
+  SelfCheckInRequest,
+  SelfCheckInResponse,
   EmployeeResponse,
   HrNotificationsResponse,
   LeavePreviewResponse,
@@ -9,6 +11,7 @@ import type {
   MyLeavePreviewParams,
   MyLeaveResponse,
   MyPayslipResponse,
+  PunchResponse,
   RequestLeaveRequest,
 } from '@inventory-platform/hr/types';
 import { downloadHrBlob, type HrFile } from './download';
@@ -75,6 +78,35 @@ export const meApi = {
       {},
     );
     return response.data;
+  },
+
+  /** Whether and how the caller can check in now, and today's times. */
+  checkInStatus: async (): Promise<SelfCheckInResponse> => {
+    const response = await apiClient.get<ApiResponse<SelfCheckInResponse>>(
+      HR_ENDPOINTS.ME_CHECK_IN,
+    );
+    return response.data;
+  },
+
+  /**
+   * Check in or out (the server picks the direction and the time). `body` carries the phone's
+   * location only when the shop checks it; the server keeps the distance, never the coordinates.
+   */
+  checkIn: async (body: SelfCheckInRequest): Promise<SelfCheckInResponse> => {
+    const response = await apiClient.post<ApiResponse<SelfCheckInResponse>>(
+      HR_ENDPOINTS.ME_CHECK_IN,
+      body,
+    );
+    return response.data;
+  },
+
+  /** Own punches of one day (yyyy-MM-dd, default today). */
+  punches: async (date?: string): Promise<PunchResponse[]> => {
+    const response = await apiClient.get<ApiResponse<PunchResponse[]>>(
+      HR_ENDPOINTS.ME_PUNCHES,
+      date ? { date } : undefined,
+    );
+    return response.data ?? [];
   },
 
   /** Own payslips of finalised months. */

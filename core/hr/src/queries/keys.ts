@@ -53,6 +53,8 @@ export const hrKeys = {
     [...attendance(shopId), 'month', period, employeeId] as const,
   attendanceHistory: (shopId: string, employeeId: string, date: string) =>
     [...attendance(shopId), 'history', employeeId, date] as const,
+  attendancePunches: (shopId: string, employeeId: string, date: string) =>
+    [...attendance(shopId), 'punches', employeeId, date] as const,
   leave,
   leaveRequests: (shopId: string, params: LeaveRequestListParams) =>
     [...leave(shopId), 'requests', params] as const,
@@ -80,6 +82,8 @@ export const hrKeys = {
   meLeavePreview: (shopId: string, params: MyLeavePreviewParams) =>
     [...me(shopId), 'leave-preview', params] as const,
   mePayslips: (shopId: string) => [...me(shopId), 'payslips'] as const,
+  /** Check-in status only; the phone's location is never part of a key. */
+  meCheckIn: (shopId: string) => [...me(shopId), 'check-in'] as const,
   /**
    * The inbox (items gathered so far + cursor). Outside the `me` sub-tree on purpose: writes
    * refresh `me`, but the inbox only moves forward by its own polls.

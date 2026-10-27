@@ -7,6 +7,7 @@
  */
 import type { LeaveBalanceRow, LeaveRequestResponse } from './leave.types';
 import type { SalaryPaymentStatus } from './payroll.types';
+import type { PunchDirection, PunchFlag } from './attendance.types';
 
 /** `MyLeaveResponse`. */
 export interface MyLeaveResponse {
@@ -76,4 +77,32 @@ export interface HrNotificationResponse {
 export interface HrNotificationsResponse {
   items: HrNotificationResponse[];
   cursor?: string | null;
+}
+
+/** `SelfCheckInResponse`: what My HR's check-in card shows (`GET`/`POST /me/check-in`). */
+export interface SelfCheckInResponse {
+  /** Self check-in is on for the shop; false = hide the card. */
+  enabled: boolean;
+  /** The shop checks location: ask the browser before each punch. */
+  locationRequired: boolean;
+  canCheckIn: boolean;
+  /** Plain-English reason when `canCheckIn` is false. */
+  reason?: string | null;
+  /** Today's first and last counted punch (HH:mm or ISO instant). */
+  todayIn?: string | null;
+  todayOut?: string | null;
+  nextDirection: PunchDirection;
+  punchCount: number;
+  missingCheckOut: boolean;
+  /** POST only: flags on the punch just stored. */
+  flags?: PunchFlag[] | null;
+  /** POST only, with location check. */
+  distanceMetres?: number | null;
+}
+
+/** `SelfCheckInRequest`: the phone's location, sent only when the shop checks it; never stored. */
+export interface SelfCheckInRequest {
+  lat?: number | null;
+  lng?: number | null;
+  accuracy?: number | null;
 }

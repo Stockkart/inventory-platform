@@ -1,7 +1,9 @@
+import { Smartphone } from 'lucide-react';
 import {
   ATTENDANCE_STATUS_META,
   AttendanceCell,
   Box,
+  Icon,
   Text,
   VisuallyHidden,
   hrChrome,
@@ -53,6 +55,21 @@ export function AttendanceMark({
     );
   }
   return <AttendanceCell status={status} late={late} context={context} size={size} />;
+}
+
+/** Small phone icon for a day filled by self check-in; nothing for a day marked by hand. */
+export function CaptureSourceIcon({ source }: { source?: string | null }) {
+  if (source !== 'SELF_CHECK_IN') return null;
+  return (
+    <Icon
+      icon={Smartphone}
+      size={12}
+      className={hrChrome.hrSourceIcon}
+      role="img"
+      aria-hidden={false}
+      aria-label="by phone"
+    />
+  );
 }
 
 const LEGEND_ORDER: AttendanceStatus[] = [

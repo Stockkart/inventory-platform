@@ -303,11 +303,26 @@
 
 /* A register mark that opens the day detail: no button chrome, keeps the cell compact. */
 .hrRegisterDayButton.hrRegisterDayButton {
+  position: relative;
   min-width: 0;
   min-height: 0;
   height: auto;
   padding: 0.0625rem;
   border-radius: var(--sk-radius-sm, 4px);
+}
+
+/* Phone icon of a self check-in day; in a register cell it sits on the mark's corner. */
+.hrSourceIcon {
+  flex-shrink: 0;
+  color: var(--sk-color-text-muted);
+}
+
+.hrRegisterDayButton .hrSourceIcon {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.25rem;
+  width: 0.625rem;
+  height: 0.625rem;
 }
 
 /* Side drawer with one employee-day's detail and change history. */
