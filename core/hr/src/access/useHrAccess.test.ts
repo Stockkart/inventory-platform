@@ -30,6 +30,7 @@ function access(overrides: Partial<ShopAccess>): ShopAccess {
       marketing: false,
       paymentPlan: false,
       productSearchEdit: false,
+      rateRulesEdit: false,
       hr: true,
     },
     team: {
