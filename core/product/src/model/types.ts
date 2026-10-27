@@ -818,6 +818,12 @@ export interface UpdateInventoryRequest {
   unitConversions?: UnitConversion | null;
   /** Extension vertical fields (batchNo, expiryDate, sport, …). */
   verticalFields?: Record<string, unknown> | null;
+  /**
+   * Fields to empty. A null field means "keep it" to the API, so clearing needs the name:
+   * barcode, description, companyName, location, hsn, discountApplicable, thresholdCount,
+   * saleAdditionalDiscount, purchaseAdditionalDiscount, saleScheme, purchaseScheme.
+   */
+  clearFields?: string[] | null;
 }
 
 export interface InventoryListResponse {

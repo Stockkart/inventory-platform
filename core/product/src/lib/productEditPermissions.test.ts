@@ -79,6 +79,22 @@ describe('splitUpdateByAccess', () => {
     expect(refused).toEqual(['expiryDate']);
   });
 
+  it('checks a clear under the grant for setting the field', () => {
+    const member = access({ editableFields: ['location'] });
+
+    expect(splitUpdateByAccess({ clearFields: ['location'] }, member).refused).toEqual([]);
+    expect(splitUpdateByAccess({ clearFields: ['location', 'saleScheme'] }, member)).toEqual({
+      allowed: {},
+      refused: ['schemeType'],
+    });
+    expect(
+      splitUpdateByAccess(
+        { clearFields: ['purchaseScheme', 'saleAdditionalDiscount'] },
+        access({ editMode: 'FULL_EDIT' }),
+      ).refused,
+    ).toEqual([]);
+  });
+
   it('sends everything when access has not loaded', () => {
     const { allowed, refused } = splitUpdateByAccess({ thresholdCount: 5 }, null);
 
