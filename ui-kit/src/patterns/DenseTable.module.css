@@ -1,11 +1,15 @@
+/* A POS grid that scrolls sideways must say so: keep its scrollbar visible at rest instead of
+   the app-wide "only while scrolling" thumb, or the columns past the fold go unnoticed. */
 .root {
   overflow: auto;
   max-height: 100%;
+  scrollbar-color: var(--sk-color-border-strong, #cbd5e1) transparent;
 }
 
 .tableWrap {
   overflow: auto;
   max-height: 100%;
+  scrollbar-color: var(--sk-color-border-strong, #cbd5e1) transparent;
 }
 
 [data-theme='dark'] .tableWrap {

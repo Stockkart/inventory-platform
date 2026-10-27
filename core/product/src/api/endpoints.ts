@@ -50,6 +50,11 @@ export const CARD_LAYOUT_ENDPOINTS = {
     `/shops/active-shop/card-layouts/${encodeURIComponent(surfaceId)}/defaults`,
 } as const;
 
+/** Shop data grid column layouts (active-shop scoped) paths. */
+export const GRID_LAYOUT_ENDPOINTS = {
+  GRID: (gridId: string) => `/shops/active-shop/grid-layouts/${encodeURIComponent(gridId)}`,
+} as const;
+
 /** Invoice / credit-note printer layout for PDF generation. */
 export type PrinterType = 'NORMAL' | 'DOT_MATRIX' | 'THERMAL_3INCH';
 

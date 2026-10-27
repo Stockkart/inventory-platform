@@ -75,6 +75,7 @@ scripts/deploy/      Vercel deploy and verify scripts
 | `pricing`       | pricing list + price edit                                          |
 | `reminders`     | reminders + inventory alert                                        |
 | `taxation`      | GSTR tabs                                                          |
+| `hr`            | employees, attendance, leave, payroll, advances, My HR             |
 | `checkout`      | **scaffold only** — real checkout still in `product`               |
 | `notifications` | **scaffold only** — bell UI in `platform/shell`                    |
 

@@ -161,7 +161,6 @@ function wrapPreviewHtml(html: string, printerType: InvoicePrinterType): string 
       }
       pre {
         font-family: Courier, "Courier New", monospace !important;
-        font-size: 12pt !important;
         line-height: 1.0 !important;
         white-space: pre !important;
       }
@@ -175,6 +174,33 @@ function wrapPreviewHtml(html: string, printerType: InvoicePrinterType): string 
     return html.replace(/<\/head>/i, `${styleTag}</head>`);
   }
   return `${styleTag}${html}`;
+}
+
+/**
+ * The server sets dot-matrix text at a fixed pitch for a page about 650px wide. On a
+ * narrower sheet (a 1366px Windows laptop with the sidebar open) the right of every
+ * line fell off the paper, so the page is zoomed to make its widest line exactly fit
+ * the sheet: down on a narrow pane, up (to a limit) in the expanded preview.
+ * Measured at zoom 1 each time so repeated fits never compound.
+ */
+const DOT_MATRIX_MAX_ZOOM = 1.6;
+
+function fitDotMatrixPreview(doc: Document): void {
+  const pre = doc.querySelector('pre');
+  const body = doc.body;
+  if (!pre || !body) return;
+  const style = body.style as CSSStyleDeclaration & { zoom?: string };
+  style.zoom = '1';
+  const available = doc.documentElement.clientWidth;
+  if (available <= 0) return;
+  // scrollWidth never reports less than the box, so shrink the box to its text first;
+  // otherwise a page already wider than the text would always measure as "fits".
+  pre.style.width = 'max-content';
+  const box = pre.getBoundingClientRect();
+  const needed = box.left + Math.max(pre.scrollWidth, box.width) + box.left;
+  pre.style.width = '';
+  if (needed <= 0) return;
+  style.zoom = Math.min(available / needed, DOT_MATRIX_MAX_ZOOM).toFixed(4);
 }
 
 function paperClassForPrinter(printerType: InvoicePrinterType): string {
@@ -358,6 +384,34 @@ export function InvoiceSettingsSection() {
     offerEnterHint();
   }, [previewHtml]);
 
+  const handlePreviewFrameLoad = (frame: HTMLIFrameElement | null) => {
+    if (!frame) return;
+    try {
+      const doc = frame.contentDocument;
+      if (!doc?.documentElement) return;
+      if (defaultPrinterType === 'DOT_MATRIX') fitDotMatrixPreview(doc);
+      const height = Math.max(
+        doc.documentElement.scrollHeight,
+        doc.body?.scrollHeight ?? 0,
+        defaultPrinterType === 'THERMAL_3INCH' ? 320 : 480,
+      );
+      frame.style.height = `${height + 8}px`;
+    } catch {
+      // Sandbox / cross-origin — keep CSS fallback height
+    }
+  };
+
+  // The paper changes width without the document reloading (Expand, a window
+  // resize, the sidebar collapsing), so refit the dot-matrix text whenever it does.
+  const previewFrameRef = useRef<HTMLIFrameElement | null>(null);
+  useEffect(() => {
+    const frame = previewFrameRef.current;
+    if (!frame || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => handlePreviewFrameLoad(frame));
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, [previewHtml]);
+
   const activeFields = editMode === 'REGULAR' ? regularFields : basicFields;
   const setActiveFields = editMode === 'REGULAR' ? setRegularFields : setBasicFields;
 
@@ -414,22 +468,6 @@ export function InvoiceSettingsSection() {
   const modeLabel = editMode === 'REGULAR' ? 'Tax invoice' : 'Estimate / basic bill';
   const printerLabel =
     PRINTER_OPTIONS.find((o) => o.value === defaultPrinterType)?.title ?? defaultPrinterType;
-
-  const handlePreviewFrameLoad = (frame: HTMLIFrameElement | null) => {
-    if (!frame) return;
-    try {
-      const doc = frame.contentDocument;
-      if (!doc?.documentElement) return;
-      const height = Math.max(
-        doc.documentElement.scrollHeight,
-        doc.body?.scrollHeight ?? 0,
-        defaultPrinterType === 'THERMAL_3INCH' ? 320 : 480,
-      );
-      frame.style.height = `${height + 8}px`;
-    } catch {
-      // Sandbox / cross-origin — keep CSS fallback height
-    }
-  };
 
   return (
     <Box className={surfaceChrome.invoiceSettingsCard}>
@@ -710,6 +748,7 @@ export function InvoiceSettingsSection() {
             {previewHtml ? (
               <Box className={paperClassForPrinter(defaultPrinterType)}>
                 <iframe
+                  ref={previewFrameRef}
                   title="Invoice preview"
                   srcDoc={previewHtml}
                   sandbox="allow-same-origin"

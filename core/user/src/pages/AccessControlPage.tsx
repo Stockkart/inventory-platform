@@ -48,6 +48,7 @@ const MODULE_COLUMNS: {
   { key: 'accounting', label: 'Accounting', short: 'Accounting' },
   { key: 'analytics', label: 'Analytics', short: 'Analytics' },
   { key: 'mis', label: 'MIS', short: 'MIS' },
+  { key: 'hr', label: 'HR', short: 'HR' },
   { key: 'taxes', label: 'Taxes', short: 'Taxes' },
   { key: 'marketing', label: 'Marketing', short: 'Marketing' },
   { key: 'paymentPlan', label: 'Payment & plan', short: 'Plan' },

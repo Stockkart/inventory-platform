@@ -261,14 +261,16 @@
   font-weight: 600;
 }
 
+/* The rule under the tabs is an inset shadow, not a border, so the active tab's 2px
+   underline can sit over it without a negative margin. The old -1px margin made the
+   tabs overflow their bar by a pixel, which Windows showed as a tiny vertical scroller. */
 .navTabBar {
-  border-bottom: 1px solid var(--sk-color-border-default);
+  box-shadow: inset 0 -1px 0 var(--sk-color-border-default);
 }
 
 .navTab {
   border-bottom: 2px solid transparent;
   border-radius: 0;
-  margin-bottom: -1px;
 }
 
 .navTabActive {
@@ -383,36 +385,7 @@
   letter-spacing: -0.01em;
 }
 
-.entryLink.entryLink {
-  display: inline-flex;
-  align-items: center;
-  min-height: unset;
-  height: auto;
-  padding: 0.15rem 0;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  color: #2563eb;
-  font-weight: 600;
-  font-size: 0.875rem;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.entryLink.entryLink:hover:not(:disabled) {
-  color: #1d4ed8;
-  background: transparent;
-  text-decoration: underline;
-  text-underline-offset: 0.18em;
-}
-
-.entryLink.entryLink:focus-visible {
-  outline: 2px solid color-mix(in srgb, #2563eb 45%, transparent);
-  outline-offset: 2px;
-}
+/* Entry links (.entryLink) moved to the shared LinkButton class in forms.module.css. */
 
 .recentEntriesTable {
   width: 100%;
@@ -1276,13 +1249,11 @@
   color: #6ee7b7;
 }
 
-[data-theme='dark'] .entryLink.entryLink,
 [data-theme='dark'] .tbAccountLink.tbAccountLink,
 [data-theme='dark'] .templateChipActive {
   color: var(--sk-color-brand, #93c5fd);
 }
 
-[data-theme='dark'] .entryLink.entryLink:hover:not(:disabled),
 [data-theme='dark'] .tbAccountLink.tbAccountLink:hover:not(:disabled) {
   color: var(--sk-color-brand-hover, #bfdbfe);
 }

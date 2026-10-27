@@ -2397,11 +2397,16 @@
   color: var(--sk-color-text-secondary, #64748b);
 }
 
+/* Every pane in a settings layout shares one height cap (--settings-pane-max). The
+   grid stretches each column to the row, and because no column may exceed the cap,
+   none can be taller than its neighbours: the controls no longer stop short of the
+   preview on short (Windows laptop) viewports and leave the card bottom ragged. */
 .invoiceSettingsLayout {
+  --settings-pane-max: min(78vh, 52rem);
   display: grid;
   grid-template-columns: minmax(17.5rem, 22rem) minmax(0, 1fr);
   align-items: stretch;
-  min-height: 34rem;
+  min-height: min(34rem, var(--settings-pane-max));
 }
 
 .invoiceSettingsControls {
@@ -2416,7 +2421,7 @@
     var(--sk-color-bg-muted, #f8fafc) 28%,
     var(--sk-color-bg-elevated, #fff)
   );
-  max-height: min(78vh, 52rem);
+  max-height: var(--settings-pane-max);
   overflow-y: auto;
 }
 
@@ -2608,7 +2613,9 @@
       color-mix(in srgb, var(--sk-color-bg-muted, #e8eef5) 80%, #dbe3ec) 0%,
       color-mix(in srgb, var(--sk-color-bg-muted, #f1f5f9) 90%, #e2e8f0) 100%
     );
-  min-height: 34rem;
+  min-height: min(34rem, var(--settings-pane-max, 34rem));
+  max-height: var(--settings-pane-max, none);
+  overflow-y: auto;
 }
 
 .invoiceSettingsPreviewToolbar {
@@ -2618,14 +2625,16 @@
   gap: 0.75rem;
 }
 
+/* The stage is the one scroller of the preview column: it fills whatever height the
+   column has left after the toolbar and hint (flex: 1 1 auto, explicit min-height so
+   it may shrink below its paper) and scrolls the paper inside. */
 .invoicePreviewStage {
   position: relative;
-  flex: 1;
+  flex: 1 1 auto;
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  min-height: min(68vh, 44rem);
-  max-height: min(78vh, 52rem);
+  min-height: 12rem;
   overflow: auto;
   padding: 1.35rem 1rem 1.75rem;
   border-radius: 14px;
@@ -2662,8 +2671,9 @@
     0 0 0 1px rgba(15, 23, 42, 0.07);
 }
 
+/* The dot-matrix sheet is 80 condensed columns wide: give it every pixel the stage has. */
 .invoicePreviewPaperDotMatrix {
-  width: min(100%, 36rem);
+  width: 100%;
 }
 
 .invoicePreviewPaperDotMatrix .invoicePreviewFrame {
@@ -2716,12 +2726,13 @@
   margin: 0;
   padding: 1rem 1.25rem 1.25rem;
   border-radius: 0;
+  min-height: 0;
+  max-height: none;
   overflow: auto;
 }
 
 .invoiceSettingsPreviewExpanded .invoicePreviewStage {
   min-height: 0;
-  max-height: none;
   flex: 1;
 }
 
@@ -2870,12 +2881,13 @@
     overflow: visible;
   }
 
+  /* Stacked: the panes flow naturally and only the stage scrolls. */
   .invoiceSettingsPreview {
-    min-height: 28rem;
+    min-height: 0;
+    max-height: none;
   }
 
   .invoicePreviewStage {
-    min-height: min(55vh, 32rem);
     max-height: min(65vh, 40rem);
   }
 }
@@ -2957,11 +2969,17 @@
   gap: 0.5rem;
 }
 
+/* Three columns down to a ~1000px card (a 1366px Windows laptop with the sidebar open):
+   the side columns are kept narrow so the Layout editor keeps ~460px, and the preview
+   only drops below the editor once the viewport itself is too narrow for three. The
+   earlier container query on a wrapper put the preview on its own row at exactly that
+   laptop size, which read as a broken layout next to the same page on a wider Mac. */
 .cardBuilderLayout {
+  --settings-pane-max: min(78vh, 56rem);
   display: grid;
-  grid-template-columns: minmax(15rem, 17.5rem) minmax(0, 1fr) minmax(19rem, 24rem);
+  grid-template-columns: minmax(13rem, 15rem) minmax(0, 1fr) minmax(17rem, 20rem);
   align-items: stretch;
-  min-height: 34rem;
+  min-height: min(34rem, var(--settings-pane-max));
 }
 
 .cardBuilderColumn {
@@ -2977,7 +2995,7 @@
     var(--sk-color-bg-muted, #f8fafc) 28%,
     var(--sk-color-bg-elevated, #fff)
   );
-  max-height: min(78vh, 56rem);
+  max-height: var(--settings-pane-max);
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -2990,7 +3008,7 @@
   padding: 1rem 1.25rem 1.25rem;
   border-right: 1px solid
     color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
-  max-height: min(78vh, 56rem);
+  max-height: var(--settings-pane-max);
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -3059,6 +3077,7 @@
 .cardBuilderSectionHeadRow {
   display: flex;
   flex: 1 1 100%;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 0.75rem;
   min-width: 0;
@@ -3077,9 +3096,11 @@
   white-space: nowrap;
 }
 
+/* Wide enough for its own placeholder; when the row cannot give it that, the
+   Divider switch wraps under it instead of the input being cut to "Title (opti". */
 .cardBuilderSectionTitleInput {
-  flex: 1 1 8rem;
-  min-width: 6rem;
+  flex: 1 1 9rem;
+  min-width: 9rem;
 }
 
 .cardBuilderActions {
@@ -3248,13 +3269,17 @@
   align-self: start;
 }
 
-@media (max-width: 1180px) {
+/* Below 1100px the viewport cannot hold three usable columns even with the sidebar
+   collapsed: the preview drops under the two editing columns at its natural height. */
+@media (max-width: 1100px) {
   .cardBuilderLayout {
     grid-template-columns: minmax(14rem, 16rem) minmax(0, 1fr);
   }
 
   .cardBuilderLayout > :nth-child(3) {
     grid-column: 1 / -1;
+    min-height: 0;
+    max-height: none;
   }
 
   .cardBuilderMain {

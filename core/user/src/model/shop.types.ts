@@ -23,8 +23,6 @@ export interface RegisterShopDto {
   fssai?: string;
   dlNo?: string;
   panNo?: string;
-  sgst?: string;
-  cgst?: string;
   tagline?: string;
 }
 
@@ -48,8 +46,6 @@ export interface ShopDetailResponse {
   dlNo?: string | null;
   fssai?: string | null;
   shopType?: ShopType | null;
-  sgst?: string | null;
-  cgst?: string | null;
   status?: string | null;
   createdAt?: string | null;
 }

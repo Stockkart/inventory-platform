@@ -286,8 +286,12 @@
   color: var(--sk-color-text-muted, #64748b);
 }
 
+/* min-width: 0 — as a flex item the card otherwise refuses to be narrower than the cart
+   table's min-content width, and with Margin, Taxable and GST columns on it grew under
+   the bill summary (STK-295). The table scrolls inside DenseTable instead. */
 .cartSection {
   flex: 1;
+  min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
