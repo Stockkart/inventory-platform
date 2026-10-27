@@ -111,7 +111,7 @@ export function RecordLeaveModal({
           onClose();
         },
         // Server messages are plain English (e.g. overlap, locked month, balance).
-        onError: (err) => setError(err.message || 'Could not record the leave'),
+        onError: (err) => useNotify.error(err.message || 'Could not record the leave'),
       },
     );
   };

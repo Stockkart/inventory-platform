@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Alert, Box, Button, Modal, Stack, Text } from '@inventory-platform/ui-kit';
+import { Box, Button, Modal, Stack, Text } from '@inventory-platform/ui-kit';
+import { useNotify } from '@inventory-platform/session';
 import {
   formatDayShort,
   formatMonth,
@@ -30,7 +30,6 @@ export function UnmarkedDaysModal({
   onClose,
 }: UnmarkedDaysModalProps) {
   const mark = useMarkUnmarkedPresentMutation();
-  const [error, setError] = useState<string | null>(null);
 
   if (!unmarked) return null;
 
@@ -40,12 +39,11 @@ export function UnmarkedDaysModal({
   const allDates = [...new Set(employees.flatMap((e) => e.dates))].sort();
 
   const markAll = () => {
-    setError(null);
     mark.mutate(
       { dates: allDates, employeeIds: employees.map((e) => e.employeeId) },
       {
         onSuccess: () => onMarked(),
-        onError: (err) => setError(err.message || 'Could not mark the days'),
+        onError: (err) => useNotify.error(err.message || 'Could not mark the days'),
       },
     );
   };
@@ -55,7 +53,6 @@ export function UnmarkedDaysModal({
       <Modal.Header title="Some days are not marked yet" onClose={onClose} />
       <Modal.Body>
         <Stack gap="md">
-          {error ? <Alert variant="danger">{error}</Alert> : null}
           <Text>
             Payroll for {formatMonth(unmarked.period)} can be finalised only when every day has
             attendance. These days have nothing marked:

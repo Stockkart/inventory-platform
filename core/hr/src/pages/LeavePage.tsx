@@ -36,7 +36,6 @@ import {
   useLeaveRequestsQuery,
 } from '../queries/hooks';
 import { HR_SETTINGS_PROFILE_PATH } from '../ui/HrGetStartedCard';
-import { HrDownloadAlert } from '../ui/HrDownloadAlert';
 import { HrInbox } from '../ui/HrInbox';
 import { LeaveBalancesTable } from '../ui/LeaveBalancesTable';
 import { LeaveDecisionModal } from '../ui/LeaveDecisionModal';
@@ -185,7 +184,6 @@ function BalancesTab() {
           </Button>
         </Box>
       </Box>
-      <HrDownloadAlert download={download} />
       {balances.error ? <Alert variant="danger">{balances.error.message}</Alert> : null}
       <Card>
         <CardBody>

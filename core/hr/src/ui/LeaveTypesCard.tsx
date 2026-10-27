@@ -90,7 +90,7 @@ export function LeaveTypesCard({ readOnly }: LeaveTypesCardProps) {
           useNotify.success(draft.id ? 'Leave type updated' : 'Leave type added');
           setDraft(null);
         },
-        onError: (err) => setDraftError(err.message || 'Could not save the leave type'),
+        onError: (err) => useNotify.error(err.message || 'Could not save the leave type'),
       },
     );
   };

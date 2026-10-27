@@ -83,7 +83,7 @@ export function HolidaysCard({ readOnly, initialYear }: HolidaysCardProps) {
           const savedYear = Number(saved.date.slice(0, 4));
           if (Number.isFinite(savedYear) && savedYear !== year) setYear(savedYear);
         },
-        onError: (err) => setDraftError(err.message || 'Could not save the holiday'),
+        onError: (err) => useNotify.error(err.message || 'Could not save the holiday'),
       },
     );
   };

@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HrPermission, ShopAccess } from '@inventory-platform/access';
-import { useAuthStore, useShopAccessStore } from '@inventory-platform/session';
+import { useAuthStore, useNotify, useShopAccessStore } from '@inventory-platform/session';
 import {
   todayIso,
   type PayrollLineResponse,
@@ -294,7 +294,9 @@ describe('PayrollRunPage payments (run F5)', () => {
     ]);
   });
 
-  it('shows the busy message from a register download and lets the user retry', async () => {
+  it('toasts the busy message from a register download and downloads again on request', async () => {
+    const notifyError = vi.spyOn(useNotify, 'error');
+    notifyError.mockClear();
     const user = userEvent.setup();
     signIn(OWNERISH);
     payrollApi.register
@@ -303,8 +305,14 @@ describe('PayrollRunPage payments (run F5)', () => {
     renderRun();
     await user.click(await screen.findByRole('button', { name: 'Salary register' }));
     await user.click(screen.getByRole('menuitem', { name: 'Download Excel' }));
-    expect(await screen.findByText(/Too many reports are being made/)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    await waitFor(() =>
+      expect(notifyError).toHaveBeenCalledWith(
+        expect.stringMatching(/Too many reports are being made/),
+      ),
+    );
+    // The toast has no retry button: choosing the download again repeats it.
+    await user.click(screen.getByRole('button', { name: 'Salary register' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Download Excel' }));
     await waitFor(() => expect(download.deliverHrFile).toHaveBeenCalledTimes(1));
   });
 });

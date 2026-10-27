@@ -6,7 +6,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from '@tanstack/react-query';
-import { useAuthStore, useShopAccessStore } from '@inventory-platform/session';
+import { useAuthStore, useNotify, useShopAccessStore } from '@inventory-platform/session';
 import {
   MAX_ATTENDANCE_ROWS,
   MAX_PAYSLIP_EMAIL_LINES,
@@ -886,22 +886,17 @@ export function useHrInbox(enabled = true) {
 export interface HrDownloadState {
   /** Id of the download running now, or null. */
   pending: string | null;
-  error: { id: string; message: string } | null;
-  /** Runs `job` under `id`; a failure keeps the job so `retry` can run it again. */
+  /** Runs `job` under `id`; a failure shows the server's message as an error toast. */
   run: (id: string, job: () => Promise<void>) => Promise<void>;
-  retry: () => void;
-  dismiss: () => void;
 }
 
 /**
  * Tracks file downloads for a screen: one at a time, with the server's message on failure. The
  * heavy ones (registers, exports) may answer 503 "busy, try again" under load; the screen shows
- * that message with a "Try again" button rather than retrying by itself.
+ * that message as an error toast rather than retrying by itself.
  */
 export function useHrDownload(): HrDownloadState {
   const [pending, setPending] = useState<string | null>(null);
-  const [error, setError] = useState<{ id: string; message: string } | null>(null);
-  const last = useRef<{ id: string; job: () => Promise<void> } | null>(null);
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
@@ -911,28 +906,17 @@ export function useHrDownload(): HrDownloadState {
   }, []);
 
   const run = useCallback(async (id: string, job: () => Promise<void>) => {
-    last.current = { id, job };
-    setError(null);
     setPending(id);
     try {
       await job();
     } catch (err) {
-      if (mounted.current) {
-        setError({
-          id,
-          message:
-            err instanceof Error && err.message ? err.message : 'Could not download the file',
-        });
-      }
+      useNotify.error(
+        err instanceof Error && err.message ? err.message : 'Could not download the file',
+      );
     } finally {
       if (mounted.current) setPending(null);
     }
   }, []);
 
-  const retry = useCallback(() => {
-    if (last.current) void run(last.current.id, last.current.job);
-  }, [run]);
-  const dismiss = useCallback(() => setError(null), []);
-
-  return { pending, error, run, retry, dismiss };
+  return { pending, run };
 }

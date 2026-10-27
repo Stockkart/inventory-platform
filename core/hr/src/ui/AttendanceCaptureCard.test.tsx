@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useAuthStore } from '@inventory-platform/session';
+import { useAuthStore, useNotify } from '@inventory-platform/session';
 import type { AttendanceCaptureDto, HrSettingsResponse } from '@inventory-platform/hr/types';
 import { AttendanceCaptureCard } from './AttendanceCaptureCard';
 
@@ -97,16 +97,24 @@ describe('AttendanceCaptureCard', () => {
   });
 
   it('explains a denied location and saves nothing', async () => {
+    const notifyError = vi.spyOn(useNotify, 'error');
+    notifyError.mockClear();
     mockGeolocation((_ok, fail) => fail({ code: 1 } as GeolocationPositionError));
     renderCard(withCapture({ selfCheckIn: true, locationCheck: true }));
 
     await userEvent.click(screen.getByRole('button', { name: 'Use my current location' }));
 
-    expect(await screen.findByText(/Location is blocked for this site/)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(notifyError).toHaveBeenCalledWith(
+        expect.stringMatching(/Location is blocked for this site/),
+      ),
+    );
     expect(api.updateSettings).not.toHaveBeenCalled();
   });
 
   it('checks the radius before saving', async () => {
+    const notifyError = vi.spyOn(useNotify, 'error');
+    notifyError.mockClear();
     renderCard(withCapture({ selfCheckIn: true, locationCheck: true, shopLat: 1, shopLng: 2 }));
     expect(screen.getByText('Location set')).toBeInTheDocument();
     const radius = screen.getByLabelText('Radius (metres)');
@@ -114,7 +122,9 @@ describe('AttendanceCaptureCard', () => {
     await userEvent.clear(radius);
     await userEvent.type(radius, '20');
     await userEvent.click(screen.getByRole('button', { name: 'Save attendance' }));
-    expect(screen.getByText(/Radius must be a whole number from 30 to 1,000/)).toBeInTheDocument();
+    expect(notifyError).toHaveBeenCalledWith(
+      expect.stringMatching(/Radius must be a whole number from 30 to 1,000/),
+    );
     expect(api.updateSettings).not.toHaveBeenCalled();
 
     await userEvent.clear(radius);

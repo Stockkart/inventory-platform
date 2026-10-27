@@ -107,7 +107,6 @@ export function HrRolePermissionsCard() {
   const grid = useHrRolePermissionsQuery();
   const save = useUpdateHrRolePermissionsMutation();
   const [draft, setDraft] = useState<Rows>(() => rolesOf(grid.data));
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setDraft(rolesOf(grid.data));
@@ -143,8 +142,6 @@ export function HrRolePermissionsCard() {
             />
           ) : null}
 
-          {error ? <Alert variant="danger">{error}</Alert> : null}
-
           {grid.data ? (
             <Inline gap="sm" justify="end">
               <Button
@@ -153,7 +150,6 @@ export function HrRolePermissionsCard() {
                 disabled={!dirty || save.isPending}
                 onClick={() => {
                   setDraft(rolesOf(grid.data));
-                  setError(null);
                 }}
               >
                 Undo changes
@@ -164,12 +160,12 @@ export function HrRolePermissionsCard() {
                 disabled={!dirty}
                 loading={save.isPending}
                 onClick={() => {
-                  setError(null);
                   save.mutate(
                     { roles: draft },
                     {
                       onSuccess: () => useNotify.success('HR permissions saved'),
-                      onError: (err) => setError(err.message || 'Could not save HR permissions'),
+                      onError: (err) =>
+                        useNotify.error(err.message || 'Could not save HR permissions'),
                     },
                   );
                 }}

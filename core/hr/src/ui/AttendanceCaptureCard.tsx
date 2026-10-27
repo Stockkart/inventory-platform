@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import {
-  Alert,
   Button,
   Card,
   CardBody,
@@ -64,7 +63,6 @@ export interface AttendanceCaptureCardProps {
  */
 export function AttendanceCaptureCard({ settings, readOnly }: AttendanceCaptureCardProps) {
   const [draft, setDraft] = useState<Draft>(() => draftFrom(settings));
-  const [error, setError] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
   /** Accuracy (m) of the location saved in this visit; the coordinates are not kept. */
   const [savedAccuracy, setSavedAccuracy] = useState<number | null>(null);
@@ -81,14 +79,13 @@ export function AttendanceCaptureCard({ settings, readOnly }: AttendanceCaptureC
   const submit = (extra: AttendanceCaptureChange, onDone: () => void) => {
     const radiusMetres = radiusOf(draft.radius);
     if (draft.locationCheck && radiusMetres == null) {
-      setError(`Radius must be a whole number from ${MIN_RADIUS_METRES} to 1,000 metres`);
+      useNotify.error(`Radius must be a whole number from ${MIN_RADIUS_METRES} to 1,000 metres`);
       return;
     }
     if (draft.locationCheck && !hasShop && extra.shopLat == null) {
-      setError('Set the shop location first: press "Use my current location" in the shop.');
+      useNotify.error('Set the shop location first: press "Use my current location" in the shop.');
       return;
     }
-    setError(null);
     save.mutate(
       {
         attendanceCapture: {
@@ -100,17 +97,16 @@ export function AttendanceCaptureCard({ settings, readOnly }: AttendanceCaptureC
         },
         revision: settings.revision ?? null,
       },
-      { onSuccess: onDone, onError: (err) => setError(err.message || 'Could not save') },
+      { onSuccess: onDone, onError: (err) => useNotify.error(err.message || 'Could not save') },
     );
   };
 
   const takeShopLocation = async () => {
-    setError(null);
     setLocating(true);
     const fix = await getCurrentPosition();
     setLocating(false);
     if (!fix.ok) {
-      setError(fix.message);
+      useNotify.error(fix.message);
       return;
     }
     const accuracy = Math.round(fix.accuracy);
@@ -217,8 +213,6 @@ export function AttendanceCaptureCard({ settings, readOnly }: AttendanceCaptureC
               </Text>
             </Stack>
           ) : null}
-
-          {error ? <Alert variant="danger">{error}</Alert> : null}
 
           {readOnly ? null : (
             <Inline gap="sm" justify="end">

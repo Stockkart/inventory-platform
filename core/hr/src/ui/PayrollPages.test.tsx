@@ -5,7 +5,7 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HrPermission, ShopAccess } from '@inventory-platform/access';
 import { ApiError } from '@inventory-platform/api-client';
-import { useAuthStore, useShopAccessStore } from '@inventory-platform/session';
+import { useAuthStore, useNotify, useShopAccessStore } from '@inventory-platform/session';
 import {
   currentMonth,
   cycleRange,
@@ -356,6 +356,8 @@ describe('PayrollRunPage', () => {
   });
 
   it('shows "this month is not over yet" as sent, not as the unmarked list (run F8)', async () => {
+    const notifyError = vi.spyOn(useNotify, 'error');
+    notifyError.mockClear();
     const user = userEvent.setup();
     signIn(RUNNER);
     const sent = 'This month is not over yet. Payroll for 2026-09 can be finalised from 2026-10-01';
@@ -365,14 +367,16 @@ describe('PayrollRunPage', () => {
     await user.click(
       within(await screen.findByRole('dialog')).getByRole('button', { name: 'Finalise payroll' }),
     );
-    expect(await screen.findByText(sent)).toBeInTheDocument();
-    expect(screen.queryByText('Could not finalise this payroll')).toBeNull();
+    await waitFor(() => expect(notifyError).toHaveBeenCalledWith(sent));
+    expect(notifyError).not.toHaveBeenCalledWith('Could not finalise this payroll');
     // Not the 422 flow: the unmarked list is not fetched again or shown.
     expect(payrollApi.unmarked).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('list', { name: 'Unmarked days' })).toBeNull();
   });
 
   it('says plainly when payroll went back to draft while finalising and refreshes', async () => {
+    const notifyError = vi.spyOn(useNotify, 'error');
+    notifyError.mockClear();
     const user = userEvent.setup();
     signIn(RUNNER);
     payrollApi.finalise.mockRejectedValue(
@@ -386,7 +390,9 @@ describe('PayrollRunPage', () => {
     await user.click(
       within(await screen.findByRole('dialog')).getByRole('button', { name: 'Finalise payroll' }),
     );
-    expect(await screen.findByText(/so it is back to draft/)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(notifyError).toHaveBeenCalledWith(expect.stringMatching(/so it is back to draft/)),
+    );
     // The run is read again so the page shows the new draft.
     await waitFor(() => expect(payrollApi.get.mock.calls.length).toBeGreaterThan(1));
   });
@@ -428,6 +434,8 @@ describe('PayrollRunPage', () => {
   });
 
   it('shows the account conflict message as sent when finalise is refused', async () => {
+    const notifyError = vi.spyOn(useNotify, 'error');
+    notifyError.mockClear();
     const user = userEvent.setup();
     signIn(RUNNER);
     const sent =
@@ -438,8 +446,8 @@ describe('PayrollRunPage', () => {
     await user.click(
       within(await screen.findByRole('dialog')).getByRole('button', { name: 'Finalise payroll' }),
     );
-    expect(await screen.findByText(sent)).toBeInTheDocument();
-    expect(screen.queryByText('Could not finalise this payroll')).toBeNull();
+    await waitFor(() => expect(notifyError).toHaveBeenCalledWith(sent));
+    expect(notifyError).not.toHaveBeenCalledWith('Could not finalise this payroll');
   });
 
   it('shows half a day of off-day work and paid days above days employed', async () => {

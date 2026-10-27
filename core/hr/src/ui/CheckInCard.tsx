@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Alert,
   Badge,
   Button,
   Card,
@@ -36,14 +35,12 @@ export function CheckInCard() {
   const punch = useCheckInMutation();
   const [locating, setLocating] = useState(false);
   const [locationNote, setLocationNote] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const s = status.data;
   if (!s?.enabled) return null;
 
   const label = s.nextDirection === 'OUT' ? 'Check out' : 'Check in';
 
   const press = async () => {
-    setError(null);
     setLocationNote(null);
     let body: SelfCheckInRequest = {};
     if (s.locationRequired) {
@@ -62,7 +59,7 @@ export function CheckInCard() {
             : `Checked in at ${formatClock(r.todayIn)}`,
         ),
       // Sent as the server says it: "You're not at the shop", locked month, on leave…
-      onError: (err) => setError(err.message || 'Could not record your check-in'),
+      onError: (err) => useNotify.error(err.message || 'Could not record your check-in'),
     });
   };
 
@@ -104,7 +101,6 @@ export function CheckInCard() {
               {locationNote}
             </Text>
           ) : null}
-          {error ? <Alert variant="danger">{error}</Alert> : null}
         </Stack>
       </CardBody>
     </Card>

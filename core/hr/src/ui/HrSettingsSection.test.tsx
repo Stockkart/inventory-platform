@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HrPermission, ShopAccess } from '@inventory-platform/access';
-import { useAuthStore, useShopAccessStore } from '@inventory-platform/session';
+import { useAuthStore, useNotify, useShopAccessStore } from '@inventory-platform/session';
 import {
   currentMonth,
   cycleRange,
@@ -159,6 +159,8 @@ describe('HrSettingsSection', () => {
   });
 
   it('shows the server refusal to change the start day as sent', async () => {
+    const notifyError = vi.spyOn(useNotify, 'error');
+    notifyError.mockClear();
     const user = userEvent.setup();
     signIn(['MANAGE_SETTINGS']);
     const sent = 'The salary month start can be changed only before any payroll is finalised.';
@@ -169,7 +171,7 @@ describe('HrSettingsSection', () => {
     await user.clear(day);
     await user.type(day, '26');
     await user.click(screen.getByRole('button', { name: 'Save working rules' }));
-    expect(await screen.findByText(sent)).toBeInTheDocument();
+    await waitFor(() => expect(notifyError).toHaveBeenCalledWith(sent));
   });
 
   it('warns before the leave year start changes', async () => {

@@ -96,7 +96,7 @@ export function AskLeaveModal({ open, onClose, balances, defaultDate }: AskLeave
           onClose();
         },
         // Server messages are plain English (overlap, locked month, balance, too long).
-        onError: (err) => setError(err.message || 'Could not send the request'),
+        onError: (err) => useNotify.error(err.message || 'Could not send the request'),
       },
     );
   };

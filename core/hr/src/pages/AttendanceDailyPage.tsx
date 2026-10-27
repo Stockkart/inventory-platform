@@ -60,7 +60,6 @@ export function AttendanceDailyPage() {
 
   const [date, setDate] = useState(today);
   const [drafts, setDrafts] = useState<DraftState>({ date: today, byEmployee: {} });
-  const [saveError, setSaveError] = useState<string | null>(null);
   const [leaveFor, setLeaveFor] = useState<AttendanceRowResponse | null>(null);
 
   const daily = useDailyRegisterQuery(date, canView);
@@ -83,7 +82,6 @@ export function AttendanceDailyPage() {
   const changeDate = (next: string) => {
     setDate(next);
     setDrafts({ date: next, byEmployee: {} });
-    setSaveError(null);
   };
 
   const setDraft = (employeeId: string, draft: AttendanceDraft) =>
@@ -91,15 +89,13 @@ export function AttendanceDailyPage() {
 
   const discard = () => {
     setDrafts({ date, byEmployee: {} });
-    setSaveError(null);
   };
 
   const handleSave = () => {
     if (rowErrors.length > 0) {
-      setSaveError('Please fix the highlighted rows.');
+      useNotify.error('Please fix the highlighted rows.');
       return;
     }
-    setSaveError(null);
     save.mutate(changes, {
       onSuccess: (saved) => {
         useNotify.success(
@@ -108,7 +104,7 @@ export function AttendanceDailyPage() {
         discard();
       },
       // Plain-English server message, e.g. locked month or "change or cancel the leave first".
-      onError: (err) => setSaveError(err.message || 'Could not save attendance'),
+      onError: (err) => useNotify.error(err.message || 'Could not save attendance'),
     });
   };
 
@@ -179,7 +175,6 @@ export function AttendanceDailyPage() {
         <Alert variant="info">You can see attendance but not mark or change it.</Alert>
       ) : null}
       {daily.error ? <Alert variant="danger">{daily.error.message}</Alert> : null}
-      {saveError ? <Alert variant="danger">{saveError}</Alert> : null}
 
       {daily.isLoading ? (
         <CenteredLoader label="Loading attendance…" />

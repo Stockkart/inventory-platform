@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button, Checkbox, Inline, Modal, Stack, Text } from '@inventory-platform/ui-kit';
+import { useNotify } from '@inventory-platform/session';
 import {
   formatMonth,
   type EmailPayslipsResponse,
@@ -22,14 +23,12 @@ export function EmailPayslipsModal({ run, onClose }: EmailPayslipsModalProps) {
   const lines = run?.lines ?? [];
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [result, setResult] = useState<EmailPayslipsResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   // Everyone is ticked each time the box opens.
   useEffect(() => {
     if (!run) return;
     setSelected(new Set((run.lines ?? []).map((l) => l.id)));
     setResult(null);
-    setError(null);
     // Keyed on the run id only: a background refetch of the same run keeps the user's ticks.
   }, [run?.id]);
 
@@ -46,14 +45,13 @@ export function EmailPayslipsModal({ run, onClose }: EmailPayslipsModalProps) {
     });
 
   const handleSend = () => {
-    setError(null);
     // Keep the table order so chunks go out in the order shown.
     const lineIds = lines.filter((l) => selected.has(l.id)).map((l) => l.id);
     send.mutate(
       { runId: run.id, lineIds },
       {
         onSuccess: setResult,
-        onError: (err) => setError(err.message || 'Could not send the payslips'),
+        onError: (err) => useNotify.error(err.message || 'Could not send the payslips'),
       },
     );
   };
@@ -93,7 +91,6 @@ export function EmailPayslipsModal({ run, onClose }: EmailPayslipsModalProps) {
           </Stack>
         ) : (
           <Stack gap="sm">
-            {error ? <Alert variant="danger">{error}</Alert> : null}
             <Text color="secondary">
               Each employee with an email address gets their payslip as a PDF.
             </Text>

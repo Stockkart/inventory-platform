@@ -87,7 +87,6 @@ function AdjustmentsEditor({ runId, line }: AdjustmentsEditorProps) {
   const save = useSavePayrollAdjustmentsMutation();
   const [draft, setDraft] = useState<AdjustmentsDraft>(() => adjustmentsDraftFromLine(line));
   const [errors, setErrors] = useState<AdjustmentsErrors>({ items: {} });
-  const [error, setError] = useState<string | null>(null);
   // Offer the advance box only when there is something to recover (or an override to undo).
   const hasAdvance =
     (line.advanceRecoveries ?? []).length > 0 ||
@@ -103,14 +102,13 @@ function AdjustmentsEditor({ runId, line }: AdjustmentsEditorProps) {
   const handleSave = () => {
     const found = validateAdjustments(draft);
     setErrors(found);
-    setError(null);
     if (hasAdjustmentErrors(found)) return;
     save.mutate(
       { runId, lineId: line.id, body: adjustmentsToRequest(draft) },
       {
         onSuccess: () => useNotify.success('Pay changes saved'),
         // e.g. "The deductions are more than this employee's pay for the month".
-        onError: (err) => setError(err.message || 'Could not save the changes'),
+        onError: (err) => useNotify.error(err.message || 'Could not save the changes'),
       },
     );
   };
@@ -120,7 +118,6 @@ function AdjustmentsEditor({ runId, line }: AdjustmentsEditorProps) {
       <Text variant="heading4" as="h3">
         Changes for this month
       </Text>
-      {error ? <Alert variant="danger">{error}</Alert> : null}
       {errors.form ? <Alert variant="danger">{errors.form}</Alert> : null}
       {draft.items.length === 0 ? (
         <Text color="muted">No bonus or extra deduction added.</Text>
