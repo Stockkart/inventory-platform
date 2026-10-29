@@ -30,6 +30,16 @@ export {
   clearLabelLayoutSession,
 } from './lib/labelLayoutSession';
 export { productKeys, PRODUCT_MODULE_VERSION } from './queries/keys';
+export {
+  PRICE_FIELDS,
+  buildPriceUpdate,
+  canEditAnyPriceField,
+  canEditPriceField,
+  priceDraftFrom,
+  priceEditPath,
+  type PriceDraft,
+  type PriceField,
+} from './lib/priceEdit';
 export * from './queries/hooks';
 export * from './queries/labelLayout.queries';
 export { BarcodeLabelLayoutSection } from './ui/labelLayout/BarcodeLabelLayoutSection';
