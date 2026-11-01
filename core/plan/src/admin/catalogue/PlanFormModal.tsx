@@ -119,6 +119,10 @@ export function PlanFormModal({ open, plan, plans, onClose }: PlanFormModalProps
           </Inline>
           <Inline gap="md" flexWrap align="start">
             {field('arcPrice', 'Annual price (₹)', { required: true, numeric: true })}
+            {field('basePrice', 'Base price (₹)', {
+              numeric: true,
+              hint: 'Wallet credit never takes the plan below this. Empty for no floor.',
+            })}
             {field('price', 'Service fee (₹)', { numeric: true, hint: 'Empty for none.' })}
             {field('displayOrder', 'Display order', { numeric: true, hint: 'Lower shows first.' })}
           </Inline>
