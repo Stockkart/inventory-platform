@@ -1,20 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { SaleBanner, type SaleBannerTheme } from './SaleBanner';
-import { Button } from '../forms';
-import { Stack } from '../layout';
+import { SaleBanner } from './SaleBanner';
 
 const meta: Meta<typeof SaleBanner> = {
   title: 'Patterns/Sale banner',
   component: SaleBanner,
+  parameters: { layout: 'fullscreen' },
 };
 
 export default meta;
-
-const cta = (
-  <Button type="button" variant="brand" size="sm">
-    See plans
-  </Button>
-);
 
 export const Live: StoryObj<typeof SaleBanner> = {
   args: {
@@ -23,7 +16,8 @@ export const Live: StoryObj<typeof SaleBanner> = {
     headline: 'Monsoon sale: annual plans from ₹4,999',
     subtext: 'New yearly prices, locked in for your first term.',
     countdown: 'Ends 20 Oct',
-    action: cta,
+    actionLabel: 'See plans',
+    onActivate: () => undefined,
     onDismiss: () => undefined,
   },
 };
@@ -39,24 +33,4 @@ export const Upcoming: StoryObj<typeof SaleBanner> = {
     headline: 'Diwali sale is coming',
     countdown: 'Starts 1 Nov',
   },
-};
-
-const themes: SaleBannerTheme[] = ['default', 'monsoon', 'summer', 'diwali', 'newYear'];
-
-export const AllThemes: StoryObj<typeof SaleBanner> = {
-  render: () => (
-    <Stack gap="md">
-      {themes.map((theme) => (
-        <SaleBanner
-          key={theme}
-          theme={theme}
-          eyebrow="Sale is live"
-          headline={`Theme: ${theme}`}
-          countdown="Ends in 3d 02h"
-          action={cta}
-          onDismiss={() => undefined}
-        />
-      ))}
-    </Stack>
-  ),
 };

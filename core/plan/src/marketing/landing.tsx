@@ -17,10 +17,9 @@ export function meta() {
 export default function LandingPage() {
   return (
     <Box display="flex" flexDirection="column" minHeight="screen">
-      <Header />
+      <Header banner={<CampaignBanner />} />
       <Box as="main" flex="1">
         <FormKeyboardNavScope>
-          <CampaignBanner ctaVariant="brand" inset />
           <Hero />
           <Stats />
           <Features />
