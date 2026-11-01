@@ -4,7 +4,7 @@ import { FormKeyboardNavScope } from '@inventory-platform/routing';
 import { PlanGrid, PlanComparisonTable, Header, Footer } from '../ui';
 import { CampaignBanner } from '../campaign';
 import { useAuthStore } from '@inventory-platform/session';
-import { Alert, Box, CenteredLoader, Stack, Text } from '@inventory-platform/ui-kit';
+import { Alert, Box, CenteredLoader, Stack, Text, surfaceChrome } from '@inventory-platform/ui-kit';
 
 export function meta() {
   return [
@@ -32,11 +32,10 @@ export default function PlansPage() {
 
   return (
     <Box bg="canvas" display="flex" flexDirection="column" minHeight="screen">
-      <Header />
-      <Box as="main" padding="xl" flex="1">
+      <Header banner={<CampaignBanner />} />
+      <Box as="main" flex="1" className={surfaceChrome.planPageMain}>
         <FormKeyboardNavScope>
           <Stack gap="xl" maxWidth="lg" mx="auto">
-            <CampaignBanner ctaVariant="brand" />
             <Stack gap="sm" align="center">
               <RouterLink to="/">
                 <Text color="secondary">← Back to home</Text>
