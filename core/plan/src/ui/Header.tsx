@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router';
 import {
   Box,
@@ -10,7 +11,12 @@ import {
 } from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
 
-export function Header() {
+export interface HeaderProps {
+  /** Full-width strip fixed directly under the nav row, e.g. the sale campaign. */
+  banner?: ReactNode;
+}
+
+export function Header({ banner }: HeaderProps = {}) {
   const { isAuthenticated } = useAuthStore();
   const isMobile = useMatchMedia('(max-width: 768px)');
   const navigate = useNavigate();
@@ -67,6 +73,7 @@ export function Header() {
           )}
         </Inline>
       </Inline>
+      {banner}
     </Box>
   );
 }
