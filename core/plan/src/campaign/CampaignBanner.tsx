@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import type { CampaignTheme } from '@inventory-platform/plan/types';
-import { Box, Button, SaleBanner, type SaleBannerTheme } from '@inventory-platform/ui-kit';
+import { SaleBanner, type SaleBannerTheme } from '@inventory-platform/ui-kit';
 import { useActiveCampaignQuery } from '../queries/hooks';
 import { STATE_EYEBROW } from './countdown';
 import { dismissCampaign, isCampaignDismissed } from './dismissal';
@@ -20,19 +20,14 @@ function isAppPath(path: string | null): path is string {
 }
 
 export interface CampaignBannerProps {
-  /** `brand` on marketing pages, `solid` inside the app. */
-  ctaVariant?: 'brand' | 'solid';
-  /** Adds page-width padding, for full-bleed pages like the landing page. */
-  inset?: boolean;
   className?: string;
 }
 
-/** The active sale, if any. Renders nothing while loading, on error, or once dismissed. */
-export function CampaignBanner({
-  ctaVariant = 'solid',
-  inset = false,
-  className,
-}: CampaignBannerProps) {
+/**
+ * The active sale as a scrolling strip, if any. Marketing pages pass it to `Header` so it sits
+ * under the nav. Renders nothing while loading, on error, or once dismissed.
+ */
+export function CampaignBanner({ className }: CampaignBannerProps) {
   const navigate = useNavigate();
   const { data: campaign, dataUpdatedAt, refetch } = useActiveCampaignQuery();
   const onBoundary = useCallback(() => void refetch(), [refetch]);
@@ -49,15 +44,9 @@ export function CampaignBanner({
 
   if (!campaign || dismissed) return null;
 
-  const ctaPath = campaign.ctaPath;
-  const action =
-    campaign.ctaLabel && isAppPath(ctaPath) ? (
-      <Button type="button" size="sm" variant={ctaVariant} onClick={() => navigate(ctaPath)}>
-        {campaign.ctaLabel}
-      </Button>
-    ) : null;
+  const ctaPath = campaign.ctaLabel && isAppPath(campaign.ctaPath) ? campaign.ctaPath : null;
 
-  const banner = (
+  return (
     <SaleBanner
       className={className}
       theme={THEMES[campaign.theme] ?? 'default'}
@@ -66,7 +55,8 @@ export function CampaignBanner({
       subtext={campaign.subtext}
       countdown={countdown}
       urgent={campaign.state === 'ENDING_SOON'}
-      action={action}
+      actionLabel={ctaPath ? campaign.ctaLabel ?? undefined : undefined}
+      onActivate={ctaPath ? () => navigate(ctaPath) : undefined}
       onDismiss={
         campaign.dismissible
           ? () => {
@@ -76,13 +66,5 @@ export function CampaignBanner({
           : undefined
       }
     />
-  );
-
-  return inset ? (
-    <Box px="lg" pt="md" maxWidth="xl" mx="auto">
-      {banner}
-    </Box>
-  ) : (
-    banner
   );
 }
