@@ -19,6 +19,12 @@
       "types": "./dist/routes/index.d.ts",
       "import": "./src/routes/index.ts",
       "default": "./src/routes/index.ts"
+    },
+    "./admin-routes": {
+      "@inventory-platform/source": "./src/routes/admin.ts",
+      "types": "./dist/routes/admin.d.ts",
+      "import": "./src/routes/admin.ts",
+      "default": "./src/routes/admin.ts"
     }
   },
   "nx": {
@@ -29,6 +35,7 @@
   },
   "dependencies": {
     "@inventory-platform/accounting": "workspace:*",
+    "@inventory-platform/admin": "workspace:*",
     "@inventory-platform/analytics": "workspace:*",
     "@inventory-platform/credit": "workspace:*",
     "@inventory-platform/mis": "workspace:*",

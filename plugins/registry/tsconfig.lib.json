@@ -66,6 +66,9 @@
     },
     {
       "path": "../../core/mis/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/admin/tsconfig.lib.json"
     }
   ]
 }

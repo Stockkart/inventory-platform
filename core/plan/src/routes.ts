@@ -19,9 +19,9 @@ export const referralRoutes: RouteModule = {
   children: [{ path: '', file: 'routes/referrals.tsx', lazy: () => import('./routes/referrals') }],
 };
 
-/** StockKart operators only; the shell hides and guards these for everyone else. */
-export const platformAdminRoutes: RouteModule = {
-  path: 'platform-admin',
+/** The admin tools, mounted at the root of the separate admin app. */
+export const planAdminToolRoutes: RouteModule = {
+  path: '',
   children: [
     {
       path: 'mis',
@@ -49,6 +49,12 @@ export const platformAdminRoutes: RouteModule = {
       lazy: () => import('./routes/platform-admin-catalogue'),
     },
   ],
+};
+
+/** StockKart operators only; the shell hides and guards these for everyone else. */
+export const platformAdminRoutes: RouteModule = {
+  path: 'platform-admin',
+  children: planAdminToolRoutes.children,
 };
 
 export const planDashboardRoutes: RouteModule[] = [

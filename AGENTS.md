@@ -5,7 +5,8 @@ Use this file when starting any feature in `inventory-platform`. Prefer package 
 ## Monorepo map
 
 ```text
-apps/inventory/     → route composer, providers only
+apps/inventory/     → shop app: route composer, providers only
+apps/admin/         → StockKart admin app (separate sign-in): route composer, providers only
 platform/           → infra (shell, session, api-client, query, schema, routing, …)
 ui-kit/             → design system only (no API / session / domain imports)
 core/<domain>/      → one business domain each
@@ -19,6 +20,7 @@ plugins/<vertical>/ → vertical extras (e.g. cafe) loaded by registry
 | `core/*`         | platform, ui-kit, contracts                            | other domains’ **internals** (public barrels only if needed) |
 | `plugins/*`      | platform, ui-kit, contracts, selected core public APIs | unrelated domain private files                               |
 | `apps/inventory` | everything (composition only)                          |
+| `apps/admin`     | everything (composition only)                          |
 
 ## Domains (`core/`)
 
@@ -30,7 +32,8 @@ plugins/<vertical>/ → vertical extras (e.g. cafe) loaded by registry
 | `analytics`     | sales/profit/inventory/vendor/customer analytics                   |
 | `mis`           | vendor/customer money, sales, stock MIS reports                    |
 | `credit`        | credit balances / charges                                          |
-| `plan`          | plan status, payment, marketing plan UI                            |
+| `plan`          | plan status, payment, marketing plan UI, admin plan tools          |
+| `admin`         | admin accounts, sign-in, session, admin app layout                 |
 | `pricing`       | pricing list + price edit                                          |
 | `reminders`     | reminders + inventory alert                                        |
 | `taxation`      | GSTR tabs                                                          |
@@ -99,15 +102,15 @@ Standard layout: `api/` · `queries/` · `pages/` · `ui/` · `routes.ts` · `na
 
 Creating `core/<name>`, `platform/<name>`, or `plugins/<name>` requires wiring in the **same PR**:
 
-| File                      | What to add                                                                                |
-| ------------------------- | ------------------------------------------------------------------------------------------ |
-| `.github/labels.yml`      | `module:<name>` (plugins: `module:plugin-<dir>`)                                           |
-| `.github/labeler.yml`     | path glob → that label                                                                     |
-| `.github/CODEOWNERS`      | `/core\|platform\|plugins/<dir>/`                                                          |
-| `<pkg>/eslint.config.mjs` | package lint entry                                                                         |
-| root `eslint.config.mjs`  | ban `@inventory-platform/<pkg>` from `apps/inventory` (except scaffolds / plugin-registry) |
-| root `tsconfig.json`      | project reference                                                                          |
-| `AGENTS.md`               | domain row if user-facing                                                                  |
+| File                      | What to add                                                                                                 |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `.github/labels.yml`      | `module:<name>` (plugins: `module:plugin-<dir>`)                                                            |
+| `.github/labeler.yml`     | path glob → that label                                                                                      |
+| `.github/CODEOWNERS`      | `/core\|platform\|plugins/<dir>/`                                                                           |
+| `<pkg>/eslint.config.mjs` | package lint entry                                                                                          |
+| root `eslint.config.mjs`  | ban `@inventory-platform/<pkg>` from `apps/inventory` and `apps/admin` (except scaffolds / plugin-registry) |
+| root `tsconfig.json`      | project reference                                                                                           |
+| `AGENTS.md`               | domain row if user-facing                                                                                   |
 
 CI: `.github/workflows/package-tracking.yml` (`node .github/scripts/check-package-tracking.mjs`). Cursor rule: `stockkart-new-package.mdc`.
 

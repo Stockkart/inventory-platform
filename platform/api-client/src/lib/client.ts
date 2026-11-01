@@ -147,6 +147,13 @@ class ApiClient {
     }
   }
 
+  hasToken(): boolean {
+    if (typeof window !== 'undefined') {
+      return Boolean(localStorage.getItem('auth_token'));
+    }
+    return Boolean(this.token);
+  }
+
   setShopId(shopId: string | null) {
     this.shopId = shopId;
     if (typeof window !== 'undefined') {
