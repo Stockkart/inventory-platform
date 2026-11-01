@@ -88,7 +88,12 @@ export function PlansPanel() {
                       {p.badge ? ` · ${p.badge}` : ''}
                     </Text>
                   </TableCell>
-                  <TableCell>{formatRupees(p.arcPrice)}</TableCell>
+                  <TableCell>
+                    <Text>{formatRupees(p.arcPrice)}</Text>
+                    <Text variant="caption" color="secondary">
+                      {p.basePrice != null ? `Base ${formatRupees(p.basePrice)}` : 'No base price'}
+                    </Text>
+                  </TableCell>
                   <TableCell>{p.userLimit ?? 'No limit'}</TableCell>
                   <TableCell>{p.features?.length ?? 0}</TableCell>
                   <TableCell>
