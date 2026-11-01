@@ -96,7 +96,16 @@ describe('toPlanRequest', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(Object.keys(result.errors).sort()).toEqual(
-      ['arcPrice', 'basePrice', 'badge', 'code', 'displayOrder', 'planName', 'smsLimit', 'userLimit'].sort(),
+      [
+        'arcPrice',
+        'basePrice',
+        'badge',
+        'code',
+        'displayOrder',
+        'planName',
+        'smsLimit',
+        'userLimit',
+      ].sort(),
     );
   });
 
