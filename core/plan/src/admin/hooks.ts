@@ -1,7 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  AddOnAdminRequest,
+  AddOnGrantRequest,
   AdminActiveRequest,
   CampaignRequest,
+  PlanAdminRequest,
   VoucherGenerateRequest,
   VoucherUpdateRequest,
   ReferralApprovalRequest,
@@ -79,6 +82,88 @@ export function useAdminAddOnsQuery() {
   return useQuery({
     queryKey: planKeys.adminAddOns(),
     queryFn: () => planAdminApi.listAddOns(),
+  });
+}
+
+/** Also refreshes the shop-facing catalogue so the admin sees the effect right away. */
+function useInvalidateAddOns() {
+  const queryClient = useQueryClient();
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: planKeys.adminAddOns() }),
+      queryClient.invalidateQueries({ queryKey: planKeys.addOns() }),
+    ]);
+}
+
+export function useSaveAddOnMutation() {
+  const invalidate = useInvalidateAddOns();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string | null; body: AddOnAdminRequest }) =>
+      planAdminApi.saveAddOn(id, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useSetAddOnActiveMutation() {
+  const invalidate = useInvalidateAddOns();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: AdminActiveRequest }) =>
+      planAdminApi.setAddOnActive(id, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useShopAddOnsQuery(shopId: string | null) {
+  return useQuery({
+    queryKey: planKeys.adminShopAddOns(shopId ?? ''),
+    queryFn: () => planAdminApi.listShopAddOns(shopId ?? ''),
+    enabled: Boolean(shopId),
+    retry: false,
+  });
+}
+
+export function useGrantAddOnMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: AddOnGrantRequest) => planAdminApi.grantAddOn(body),
+    onSuccess: (_granted, body) =>
+      queryClient.invalidateQueries({ queryKey: planKeys.adminShopAddOns(body.shopId) }),
+  });
+}
+
+export function useAdminPlansQuery() {
+  return useQuery({
+    queryKey: planKeys.adminPlans(),
+    queryFn: () => planAdminApi.listPlans(),
+  });
+}
+
+/** Plan edits can change limits and features, so the admin's own plan status refreshes too. */
+function useInvalidatePlans() {
+  const queryClient = useQueryClient();
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: planKeys.adminPlans() }),
+      queryClient.invalidateQueries({ queryKey: planKeys.list() }),
+      queryClient.invalidateQueries({ queryKey: planKeys.shopStatus() }),
+    ]);
+}
+
+export function useSavePlanMutation() {
+  const invalidate = useInvalidatePlans();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string | null; body: PlanAdminRequest }) =>
+      planAdminApi.savePlan(id, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useSetPlanActiveMutation() {
+  const invalidate = useInvalidatePlans();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: AdminActiveRequest }) =>
+      planAdminApi.setPlanActive(id, body),
+    onSuccess: invalidate,
   });
 }
 
