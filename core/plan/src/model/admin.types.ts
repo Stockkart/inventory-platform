@@ -89,6 +89,8 @@ export interface AddOnAdminRequest {
 /** GET /admin/plans: the catalogue including hidden plans. */
 export interface AdminPlan extends PlanResponse {
   active: boolean;
+  /** Lowest the plan line may be charged after wallet credit; null = no floor. Admin only. */
+  basePrice: number | null;
 }
 
 /** Create or full edit; `code` is fixed after create. `listPrice` is not editable here. */
@@ -96,6 +98,8 @@ export interface PlanAdminRequest {
   code: string;
   planName: string;
   arcPrice: number;
+  /** Floor for the plan line after wallet credit; the server checks it is at most `arcPrice`. */
+  basePrice: number | null;
   price: number | null;
   billingLimit: number | null;
   billCountLimit: number | null;

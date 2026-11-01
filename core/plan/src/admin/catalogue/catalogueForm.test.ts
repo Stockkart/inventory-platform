@@ -18,6 +18,7 @@ const plan: AdminPlan = {
   planName: 'Growth',
   price: 0,
   arcPrice: 4999,
+  basePrice: 3999,
   billingLimit: null,
   billCountLimit: 5000,
   smsLimit: 500,
@@ -60,6 +61,7 @@ describe('toPlanRequest', () => {
         code: 'GROWTH',
         planName: 'Growth',
         arcPrice: 4999,
+        basePrice: 3999,
         price: 0,
         billingLimit: null,
         billCountLimit: 5000,
@@ -83,6 +85,7 @@ describe('toPlanRequest', () => {
         ...emptyPlanForm(),
         code: '1BAD',
         arcPrice: '12.345',
+        basePrice: '1.234',
         userLimit: '0',
         smsLimit: '-1',
         displayOrder: '1001',
@@ -93,8 +96,13 @@ describe('toPlanRequest', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(Object.keys(result.errors).sort()).toEqual(
-      ['arcPrice', 'badge', 'code', 'displayOrder', 'planName', 'smsLimit', 'userLimit'].sort(),
+      ['arcPrice', 'basePrice', 'badge', 'code', 'displayOrder', 'planName', 'smsLimit', 'userLimit'].sort(),
     );
+  });
+
+  it('sends an empty base price as null, meaning no floor', () => {
+    const result = toPlanRequest({ ...planFormState(plan), basePrice: ' ' }, plan.id);
+    expect(result.ok && result.request.basePrice).toBeNull();
   });
 
   it('blocks a plan from upselling to itself', () => {

@@ -74,6 +74,7 @@ export interface PlanFormState {
   code: string;
   planName: string;
   arcPrice: string;
+  basePrice: string;
   price: string;
   billingLimit: string;
   billCountLimit: string;
@@ -93,6 +94,7 @@ export const emptyPlanForm = (): PlanFormState => ({
   code: '',
   planName: '',
   arcPrice: '',
+  basePrice: '',
   price: '',
   billingLimit: '',
   billCountLimit: '',
@@ -112,6 +114,7 @@ export const planFormState = (plan: AdminPlan): PlanFormState => ({
   code: text(plan.code),
   planName: plan.planName,
   arcPrice: numberText(plan.arcPrice),
+  basePrice: numberText(plan.basePrice),
   price: numberText(plan.price),
   billingLimit: numberText(plan.billingLimit),
   billCountLimit: numberText(plan.billCountLimit),
@@ -150,6 +153,8 @@ export function toPlanRequest(
   const arcPrice = optionalMoney(form.arcPrice);
   if (arcPrice === null || arcPrice === 'invalid')
     errors.arcPrice = 'Enter a price, up to 2 decimals.';
+  const basePrice = optionalMoney(form.basePrice);
+  if (basePrice === 'invalid') errors.basePrice = 'Up to 2 decimals, or empty for no floor.';
   const price = optionalMoney(form.price);
   if (price === 'invalid') errors.price = 'Up to 2 decimals, or empty.';
   const billingLimit = optionalMoney(form.billingLimit);
@@ -179,6 +184,7 @@ export function toPlanRequest(
     code,
     planName: name,
     arcPrice: arcPrice as number,
+    basePrice: basePrice as number | null,
     price: price as number | null,
     billingLimit: billingLimit as number | null,
     ...counts,
