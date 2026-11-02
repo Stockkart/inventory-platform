@@ -1,7 +1,6 @@
 export { RateRulesSection } from './RateRulesSection';
 export {
   GeneratedRatesList,
-  isRuleRate,
   type GeneratedRatesListProps,
   type RateTermsEdit,
   type SkippedRateRule,

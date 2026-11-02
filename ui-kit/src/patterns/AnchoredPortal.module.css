@@ -6,3 +6,8 @@
   position: fixed;
   z-index: var(--sk-z-popover);
 }
+
+/* Over the modal layer (a field inside a dialog), under toasts. */
+.panelAboveModals {
+  z-index: calc(var(--sk-z-modal) + 1);
+}
