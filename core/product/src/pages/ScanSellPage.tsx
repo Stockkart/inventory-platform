@@ -360,14 +360,14 @@ interface CartLineMarginFigures {
   marginPercent: number | null;
 }
 
-/** "Taxable ₹107.42 · GST ₹5.37 (5%)" under a cart line; nothing on an untaxed bill. */
+/** "Total ₹112.79 (incl. 5% GST)" under a cart line; nothing on an untaxed bill or an older API. */
 function CartLineTax({ tax }: { tax: SaleLineTax | null }) {
-  if (!tax) return null;
-  const rate = tax.ratePercent > 0 ? ` (${formatGstRate(tax.ratePercent)}%)` : '';
+  if (tax?.totalAmount == null) return null;
+  const gst = tax.ratePercent > 0 ? ` (incl. ${formatGstRate(tax.ratePercent)}% GST)` : '';
   return (
     <Text variant="caption" color="secondary">
-      Taxable ₹{tax.taxableValue.toFixed(2)} · GST ₹{tax.taxAmount.toFixed(2)}
-      {rate}
+      Total ₹{tax.totalAmount.toFixed(2)}
+      {gst}
     </Text>
   );
 }
