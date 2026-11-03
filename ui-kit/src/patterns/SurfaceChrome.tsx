@@ -214,6 +214,7 @@ export const surfaceChrome = {
   priceEditRateRow: styles.priceEditRateRow,
   priceEditRatePrice: styles.priceEditRatePrice,
   priceEditEmptyRates: styles.priceEditEmptyRates,
+  entryRatePreviewHint: styles.entryRatePreviewHint,
   historyCaption: styles.historyCaption,
   historyHint: styles.historyHint,
   historyTable: styles.historyTable,
