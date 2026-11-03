@@ -26,6 +26,7 @@ COPY core/accounting/package.json ./core/accounting/
 COPY core/analytics/package.json ./core/analytics/
 COPY core/checkout/package.json ./core/checkout/
 COPY core/credit/package.json ./core/credit/
+COPY core/hr/package.json ./core/hr/
 COPY core/mis/package.json ./core/mis/
 COPY core/notifications/package.json ./core/notifications/
 COPY core/plan/package.json ./core/plan/

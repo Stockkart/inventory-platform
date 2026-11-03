@@ -18,6 +18,7 @@ import {
   ShopProfileForm,
   InvoiceSettingsSection,
   InvoiceSeriesSection,
+  ProfileTabPanel,
   ProfileTabs,
   useProfileTabExtensions,
   type ProfileTabKey,
@@ -111,6 +112,8 @@ export function ProfilePage() {
     () => searchParams.get('tab')?.trim() || 'shop',
   );
   const activeExtension = extensions.find((ext) => ext.id === activeTab);
+  // A deep link to a tab hidden for this shop (rate rules on a cafe) falls back to Shop.
+  const showShopTab = useCallback(() => setActiveTab('shop'), []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [shop, setShop] = useState<ShopDetailResponse | null>(null);
@@ -240,8 +243,6 @@ export function ProfilePage() {
     { label: 'PAN', value: displayValue(shop.panNo) },
     { label: 'DL No', value: displayValue(shop.dlNo) },
     { label: 'FSSAI', value: displayValue(shop.fssai) },
-    { label: 'SGST', value: displayValue(shop.sgst) },
-    { label: 'CGST', value: displayValue(shop.cgst) },
   ];
 
   return (
@@ -360,7 +361,9 @@ export function ProfilePage() {
 
       {activeTab === 'numbering' ? <InvoiceSeriesSection /> : null}
       {activeTab === 'invoice' ? <InvoiceSettingsSection /> : null}
-      {activeExtension ? activeExtension.render() : null}
+      {activeExtension ? (
+        <ProfileTabPanel extension={activeExtension} onHidden={showShopTab} />
+      ) : null}
     </Stack>
   );
 }

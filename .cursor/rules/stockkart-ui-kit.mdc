@@ -10,6 +10,10 @@ alwaysApply: false
 
 Use `@inventory-platform/ui-kit` (`Box`, `Stack`, `Text`, `Button`, `FormField`, `Link`, …). Avoid raw `<div>`, `<a>`, `<button>` when a primitive exists.
 
+## Dropdowns (guard rail)
+
+Never a native dropdown (`<select>`, `<datalist>`), not even inside ui-kit. Use ui-kit `Select` (StockKart dropdown: `ChoiceList` panel with a check mark) or `FilterDropdown` + `ChoiceList` for filter pills. ESLint enforces it.
+
 ## Chrome (prefer over new CSS systems)
 
 | Chrome | Use |

@@ -38,22 +38,32 @@ Theme: wrap with `ThemeProvider`, or `@import '@inventory-platform/ui-kit/theme/
 | Patterns | `patterns/` | `PageHeader`, `PaginationBar`, `AppShell` |
 | Chrome maps | `patterns/*Chrome*` | CSS module class bags for domains |
 
+Dense grids with shop-set column layouts use `GridColGroup` + `denseDataGrid.tableFixed` (fixed
+widths, sideways scroll), `ResizableHeaderCell` (drag or arrow-key resize, optional drag-to-reorder)
+and `ColumnManager` (drawer to reorder and show/hide columns; locked columns cannot be hidden), whose
+rows are also exported as `ColumnList` (with optional px width fields) for settings pages.
+They are presentation only: the caller owns widths, order and saving.
+
 Domain widgets and pages stay in `core/*/ui` and `core/*/pages`.
 
 **Categorical palette.** `--sk-color-category-1` … `-6` (light and dark values in `theme/tokens.css`) tell sibling groups apart, e.g. cafe menu sections. They are not status colours; use `--sk-color-success` / `-warning` / `-danger` / `-info` for state.
 
 ## Chrome map
 
-| Export               | Use for                                                                                                                                     |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `shellChrome`        | Dashboard header, sidebar, notifications, help panel                                                                                        |
-| `journeyChrome`      | Auth + onboarding / shop registration                                                                                                       |
-| `chartChrome`        | Analytics filters, KPIs, chart frames (`plot` = fixed height)                                                                               |
-| `productChrome`      | Scan Sell, carts, cafe stock lines                                                                                                          |
-| `accountingChrome`   | Ledger / journal layouts                                                                                                                    |
-| `surfaceChrome`      | Generic dashboard surfaces, profile tiles                                                                                                   |
-| `searchChrome`       | Filter strip under a search bar: `FilterStrip` + `FilterDropdown` pills, `FacetCheckboxList` inside; `CollapsibleGroup` for vertical panels |
-| `registrationChrome` | Product registration grids / vendor cards                                                                                                   |
+| Export               | Use for                                                                                                                                                                                                                                                     |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shellChrome`        | Dashboard header, sidebar, notifications, help panel                                                                                                                                                                                                        |
+| `journeyChrome`      | Auth + onboarding / shop registration                                                                                                                                                                                                                       |
+| `chartChrome`        | Analytics filters, KPIs, chart frames (`plot` = fixed height)                                                                                                                                                                                               |
+| `productChrome`      | Scan Sell, carts, cafe stock lines                                                                                                                                                                                                                          |
+| `accountingChrome`   | Ledger / journal layouts                                                                                                                                                                                                                                    |
+| `surfaceChrome`      | Generic dashboard surfaces, profile tiles, profile settings tabs (`invoiceSettings*`, `cardBuilder*`, `rateRules*`)                                                                                                                                         |
+| `searchChrome`       | Filter strip under a search bar: `FilterStrip` + `FilterDropdown` pills, `FacetCheckboxList` inside; `CollapsibleGroup` for vertical panels. `FilterDropdown block` + `ChoiceList` is the custom single-choice dropdown for a form row (no native `select`) |
+| `registrationChrome` | Product registration grids / vendor cards                                                                                                                                                                                                                   |
+
+## Dropdowns
+
+No native `<select>` or `<datalist>`, here or in any package (ESLint bans them). `Select` is the StockKart dropdown: a field-styled button that opens `ChoiceList` in an `AnchoredPortal` panel (out of scroll containers, over modals, flips up near the bottom). It keeps the native props (`value`, `onChange` with `event.target.value`, `options` or `<option>` children, `id`, `name`, `required`). Filter pills use `FilterDropdown` + `ChoiceList`.
 
 ## Button language
 

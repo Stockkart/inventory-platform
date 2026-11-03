@@ -1,14 +1,13 @@
 /**
- * How every printed document in this app reaches a printer.
- *
- * There is no local print bridge: the server renders a PDF, the browser opens it, and the
- * operator prints from the viewer. `PrintInvoiceModal` and `PrintCreditNoteModal` each
+ * How a printed document leaves the browser: a file saved to disk, or a PDF the server rendered
+ * opened in a tab for the operator to print (dot matrix alone goes through the print bridge;
+ * see the README). `PrintInvoiceModal` and `PrintCreditNoteModal` each
  * carried a byte-identical private copy of these two functions; this is that code, moved
  * once so invoices, credit notes and kitchen tickets behave the same way rather than
  * drifting apart.
  */
 
-/** Saves the document instead of opening it. Used when a popup blocker wins. */
+/** Saves the document instead of opening it. Used for printer files and when a popup blocker wins. */
 export function downloadBlob(blob: Blob, filename: string): void {
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -18,6 +17,11 @@ export function downloadBlob(blob: Blob, filename: string): void {
   link.click();
   document.body.removeChild(link);
   window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+}
+
+/** Saves a printer file the backend rendered (`PrintDownload`). */
+export function downloadPrinterFile(file: { filename: string; content: string }): void {
+  downloadBlob(new Blob([file.content], { type: 'application/octet-stream' }), file.filename);
 }
 
 /**

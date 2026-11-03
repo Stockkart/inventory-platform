@@ -50,6 +50,11 @@ export const CARD_LAYOUT_ENDPOINTS = {
     `/shops/active-shop/card-layouts/${encodeURIComponent(surfaceId)}/defaults`,
 } as const;
 
+/** Shop data grid column layouts (active-shop scoped) paths. */
+export const GRID_LAYOUT_ENDPOINTS = {
+  GRID: (gridId: string) => `/shops/active-shop/grid-layouts/${encodeURIComponent(gridId)}`,
+} as const;
+
 /** Invoice / credit-note printer layout for PDF generation. */
 export type PrinterType = 'NORMAL' | 'DOT_MATRIX' | 'THERMAL_3INCH';
 
@@ -126,6 +131,14 @@ export const INVOICE_ENDPOINTS = {
   DOT_MATRIX: (purchaseId: string) => `/invoices/${purchaseId}/dot-matrix`,
 } as const;
 
+/** Dot matrix print jobs and the local print bridge. */
+export const PRINT_ENDPOINTS = {
+  BRIDGE_CONNECTION: '/print-bridge/connection',
+  BRIDGE_STATUS: '/print-bridge/status',
+  JOBS: '/print-jobs',
+  OUTCOME: '/print-jobs/outcome',
+} as const;
+
 /** Purchase history paths. */
 export const PURCHASE_ENDPOINTS = {
   BASE: '/purchases',
@@ -150,4 +163,10 @@ export const UPLOAD_ENDPOINTS = {
   UPLOAD_IMAGE: (token: string) => `/m/upload?token=${token}`,
   STATUS: (token: string) => `/upload/status?token=${token}`,
   PARSED_ITEMS: (token: string) => `/upload/parsed-items?token=${token}`,
+} as const;
+
+/** Shop rate rules (active-shop scoped) paths. */
+export const RATE_RULES_ENDPOINTS = {
+  BASE: '/shops/active-shop/rate-rules',
+  PREVIEW: '/shops/active-shop/rate-rules/preview',
 } as const;

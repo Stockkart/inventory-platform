@@ -201,7 +201,7 @@ export function RefundPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const { success: notifySuccess, error: notifyError } = useNotify;
+  const { success: notifySuccess, error: notifyError, info: notifyInfo } = useNotify;
 
   // Search state
   const [searchParams, setSearchParams] = useState<SearchPurchasesParams>({
@@ -918,6 +918,8 @@ export function RefundPage() {
         documentId={printAfterCreate?.refundId ?? ''}
         creditNoteNo={printAfterCreate?.creditNoteNo}
         onError={(message) => notifyError(message)}
+        onSuccess={(message) => notifySuccess(message)}
+        onInfo={(message) => notifyInfo(message)}
       />
     </Stack>
   );

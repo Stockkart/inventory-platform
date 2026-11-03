@@ -22,7 +22,12 @@ export const CORE_PRODUCT_SEARCH_FIELDS = [
 
 export type CoreProductSearchFieldKey = (typeof CORE_PRODUCT_SEARCH_FIELDS)[number]['key'];
 
-/** Whether the user may edit a product-search field in the UI. */
+/**
+ * Whether the user may edit a product-search field, by its RBAC key. Mirrors
+ * `RbacService.validateProductSearchFieldUpdates`: `FULL_EDIT` (always the case for the owner)
+ * allows every field; otherwise only the member's `editableFields`. `canEditAll` only says the
+ * member holds every core field, so it grants nothing beyond them.
+ */
 export function canEditProductSearchField(
   field: string,
   access: ShopProductSearchAccess | null | undefined,
@@ -33,7 +38,7 @@ export function canEditProductSearchField(
   if (!access.canEdit) {
     return false;
   }
-  if (access.editMode === 'FULL_EDIT' || access.canEditAll) {
+  if (access.editMode === 'FULL_EDIT') {
     return true;
   }
   return access.editableFields.includes(field);
@@ -51,26 +56,24 @@ export function hasProductSearchEditAccess(
 
 /** Maps UI edit-form keys to RBAC field keys. */
 export function uiFieldToRbacKey(uiKey: string): string {
-  if (uiKey === 'conversionFactor') {
-    return 'unitsPerPack';
+  switch (uiKey) {
+    case 'conversionFactor':
+      return 'unitsPerPack';
+    case 'saleScheme':
+      return 'schemeType';
+    case 'purchaseScheme':
+      return 'purchaseSchemeType';
+    default:
+      return uiKey;
   }
-  return uiKey;
 }
 
+/** {@link canEditProductSearchField} for an Edit-form key. */
 export function canEditProductSearchUiField(
   uiKey: string,
   access: ShopProductSearchAccess | null | undefined,
 ): boolean {
-  if (!access) {
-    return true;
-  }
-  if (!access.canEdit) {
-    return false;
-  }
-  if (access.editMode === 'FULL_EDIT' || access.canEditAll) {
-    return true;
-  }
-  return access.editableFields.includes(uiFieldToRbacKey(uiKey));
+  return canEditProductSearchField(uiFieldToRbacKey(uiKey), access);
 }
 
 /**

@@ -10,7 +10,6 @@ import {
   Button,
   CenteredLoader,
   Inline,
-  Stack,
   Text,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
@@ -475,20 +474,16 @@ function LabelLayoutEditor({
         </Box>
 
         <Box className={surfaceChrome.invoiceSettingsPreview}>
-          <Stack gap="sm">
-            <LabelPreview label={sample} layout={effective} />
-            <Text
-              as="p"
-              variant="caption"
-              color="secondary"
-              className={surfaceChrome.invoicePreviewHint}
-            >
-              {sizeLabel} ·{' '}
-              {effectiveFieldNames.length > 0
-                ? effectiveFieldNames.join(', ')
-                : 'No fields enabled'}
-            </Text>
-          </Stack>
+          <LabelPreview label={sample} layout={effective} />
+          <Text
+            as="p"
+            variant="caption"
+            color="secondary"
+            className={surfaceChrome.invoicePreviewHint}
+          >
+            {sizeLabel} ·{' '}
+            {effectiveFieldNames.length > 0 ? effectiveFieldNames.join(', ') : 'No fields enabled'}
+          </Text>
         </Box>
       </Box>
     </Box>
