@@ -988,6 +988,8 @@ export interface SaleLineTax {
   taxAmount: number;
   /** Combined GST rate, e.g. 5 for 2.5 + 2.5; 0 when the line carries none. */
   ratePercent: number;
+  /** The line's amount with its GST inside. Absent from APIs that predate it. */
+  totalAmount?: number;
 }
 
 /** A bill's totals as the printed invoice states them, computed by the API from the lines. */
