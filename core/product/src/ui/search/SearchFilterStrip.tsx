@@ -39,7 +39,7 @@ export interface SearchFilterStripProps {
   fields: readonly SearchField[];
   state: SearchState;
   /**
-   * Counts from the last search. `undefined` before the first search ("setting up"): the
+   * Counts from the last search. `undefined` before the first answer arrives: the
    * dropdowns then list the known values without counts.
    */
   facets?: Record<string, FacetValue[]>;

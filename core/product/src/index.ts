@@ -32,7 +32,17 @@ export {
 export { productKeys, PRODUCT_MODULE_VERSION } from './queries/keys';
 export * from './queries/hooks';
 export * from './queries/labelLayout.queries';
+export * from './queries/rateRules.queries';
 export { BarcodeLabelLayoutSection } from './ui/labelLayout/BarcodeLabelLayoutSection';
+export {
+  RateRulesSection,
+  GeneratedRatesList,
+  type GeneratedRatesListProps,
+  type RateTermsEdit,
+  type SkippedRateRule,
+} from './ui/rateRules';
+export { isRuleRate } from './lib/pricingRate';
+export { sameRateTerms } from './lib/rateTerms';
 export {
   productEntryRoutes,
   importRoutes,
@@ -98,8 +108,22 @@ export {
 export * from './ui/scanSellStyles';
 export { CardLayoutBody, type CardLayoutBodyProps } from './ui/cardLayout/CardLayoutBody';
 export { ProductCardLayoutSection } from './ui/cardLayout/ProductCardLayoutSection';
+export {
+  ShopLayoutColumnsSection,
+  type ShopLayoutColumnsSectionProps,
+} from './ui/shopLayoutGrid/ShopLayoutColumnsSection';
+export {
+  ShopLayoutColumnsBar,
+  ShopLayoutGrid,
+  type ShopLayoutColumnsBarProps,
+  type ShopLayoutGridColumn,
+  type ShopLayoutGridProps,
+} from './ui/shopLayoutGrid/ShopLayoutGrid';
 export { cardLayoutApi } from './api/cardLayout.api';
 export * from './queries/cardLayout.queries';
+export { gridLayoutApi } from './api/gridLayout.api';
+export * from './queries/gridLayout.queries';
+export * from './model/gridLayout.types';
 export {
   useSurfaceCardLayout,
   allowAll,
