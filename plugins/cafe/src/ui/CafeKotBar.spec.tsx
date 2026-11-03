@@ -26,6 +26,8 @@ vi.mock('../api/cafe-kot.api', () => ({
   cafeKotApi: {
     punch: (...args: unknown[]) => punch(...args),
     reprint: vi.fn(),
+    // The bar lists the bill's earlier rounds too; none here, so only this screen's tickets show.
+    listBillKots: vi.fn(async () => []),
     getKotPdf: (...args: unknown[]) => getKotPdf(...args),
   },
 }));
