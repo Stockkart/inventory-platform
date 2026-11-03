@@ -19,6 +19,8 @@ export interface FeatureFlags {
    * discount-applicable still show. Backend sets MRP = PTR = Selling Price.
    */
   retailPricing?: boolean;
+  /** Shop has named rate rules enabled. */
+  rateRules?: boolean;
 }
 
 export interface PurchaseSearchConfig {

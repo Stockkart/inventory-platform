@@ -16,6 +16,11 @@ export interface ProfileTabExtension {
   render: () => ReactNode;
   /** Built-in tab to insert this tab after. Defaults to the end of the bar. */
   after?: ProfileTabId;
+  /**
+   * Optional hook deciding whether the tab shows, e.g. from the owning package's API.
+   * Called once per render of the tab button; omitted means always shown.
+   */
+  useVisible?: () => boolean;
 }
 
 type Listener = () => void;
