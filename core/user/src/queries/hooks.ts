@@ -25,6 +25,9 @@ import { customersApi, type CustomersListParams } from '../api/customers.api';
 import { invitationsApi } from '../api/invitations.api';
 import { shopAccessApi } from '../api/shop-access.api';
 import { vendorsApi, type VendorsListParams } from '../api/vendors.api';
+import { gstinApi } from '../api/gstin.api';
+import type { GstinLookupResult, GstinSettings } from '../model/gstin-lookup.types';
+import { isValidGstin, normalizeGstin } from '../model/gstin';
 import { userKeys } from './keys';
 
 export function useCustomersQuery(
@@ -159,3 +162,53 @@ export function useUpdateMemberAccessMutation(
 }
 
 export { customersApi, vendorsApi, shopAccessApi, invitationsApi };
+
+/**
+ * Whether online GSTIN verification is on. Until it is, the vendor form keeps its old behaviour
+ * (free-text GSTIN, no required state). Unknown — still loading or failed — reads as off.
+ */
+export function useGstinSettingsQuery() {
+  return useQuery<GstinSettings>({
+    queryKey: userKeys.gstinSettings(),
+    queryFn: gstinApi.settings,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+}
+
+/** True only when the server says verification is on. */
+export function useGstinVerificationEnabled(): boolean {
+  const settings = useGstinSettingsQuery();
+  return settings.data?.verificationEnabled === true;
+}
+
+/**
+ * What the GST network knows about a GSTIN, once it passes the offline check. Keyed by the
+ * normalized GSTIN and kept for the session: the server already answers repeats from its registry,
+ * so there is no reason to ask it twice from one screen.
+ */
+export function useGstinLookupQuery(
+  gstin: string | null | undefined,
+  options?: { enabled?: boolean },
+) {
+  const normalized = normalizeGstin(gstin);
+  return useQuery<GstinLookupResult>({
+    queryKey: userKeys.gstinLookup(normalized),
+    queryFn: ({ signal }) => gstinApi.lookup(normalized, signal),
+    enabled: isValidGstin(normalized) && (options?.enabled ?? true),
+    staleTime: Infinity,
+    retry: false,
+  });
+}
+
+/** Ask the GST network again for a GSTIN and refresh what the form shows. */
+export function useReverifyGstinMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<GstinLookupResult, Error, string>({
+    mutationFn: (gstin) => gstinApi.reverify(normalizeGstin(gstin)),
+    onSuccess: (result) => {
+      queryClient.setQueryData(userKeys.gstinLookup(result.gstin), result);
+      void queryClient.invalidateQueries({ queryKey: userKeys.all });
+    },
+  });
+}

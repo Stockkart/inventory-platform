@@ -1,4 +1,4 @@
-// Feature: advanced-product-search — setting-up and refining flows (R6.3, R6.3a, R6.4, R6.5, R6.8, R6.10)
+// Feature: advanced-product-search — default search on landing and refining flows (R6.3, R6.3a, R6.4, R6.5, R6.8, R6.10)
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -92,7 +92,6 @@ function Harness() {
   const location = useLocation();
   return (
     <>
-      <Text data-testid="mode">{s.mode}</Text>
       <Text data-testid="url">{location.search}</Text>
       <Text data-testid="total">{s.result ? String(s.result.page.totalItems) : '-'}</Text>
       <Text data-testid="error">{s.error ? s.error.message : ''}</Text>
@@ -181,46 +180,54 @@ beforeEach(() => {
   });
 });
 
-describe('setting up (empty URL)', () => {
-  it('lists enum values before any search, accumulates filters without requesting, then searches once', async () => {
+describe('landing (empty URL)', () => {
+  it('shows the first page of everything straight away, 20 at a time, without touching the URL', async () => {
     renderAt('/search');
-    expect(screen.getByTestId('mode').textContent).toBe('settingUp');
-    // enum values are known from the catalog alone
-    await openDropdown('Stock');
-    expect(screen.getByLabelText('In stock')).toBeTruthy();
-    expect(screen.getByLabelText('Low stock')).toBeTruthy();
-    // text facets fall back to /search/values for their options
-    await openDropdown('Company');
-    await screen.findByLabelText('GSK');
-    fireEvent.click(screen.getByLabelText('Cipla'));
-    // one panel open at a time: reopen Stock from its pill
-    await openDropdown('Stock');
-    fireEvent.click(screen.getByLabelText('Low stock'));
-
-    // chips show, nothing has been requested, URL untouched
-    const chips = screen.getByLabelText('Active filters');
-    expect(within(chips).getByText('Company')).toBeTruthy();
-    expect(within(chips).getByText('Stock')).toBeTruthy();
-    expect(api.searchAdvanced).not.toHaveBeenCalled();
-    expect(screen.getByTestId('url').textContent).toBe('');
-
-    fireEvent.click(screen.getByText('Search'));
     await waitFor(() => expect(api.searchAdvanced).toHaveBeenCalledTimes(1));
     const req = lastRequest();
     expect(req.text).toBeNull();
-    expect(req.filters).toEqual([
-      { field: 'companyName', op: 'in', values: ['Cipla'] },
-      { field: 'stockState', op: 'in', values: ['LOW_STOCK'] },
-    ]);
-    // counts only for the pills on the strip, not the whole catalog
-    expect(req.facets).toEqual(['companyName', 'stockState']);
-    expect(screen.getByTestId('mode').textContent).toBe('refining');
-    expect(screen.getByTestId('url').textContent).toContain('f=companyName');
+    expect(req.filters).toEqual([]);
+    expect(req.page).toBe(0);
+    expect(req.size).toBe(20);
+    // no pills on the strip yet, so no counts are asked for
+    expect(req.facets).toEqual([]);
+    expect(screen.getByTestId('url').textContent).toBe('');
     await waitFor(() => expect(screen.getByTestId('total').textContent).toBe('42'));
+  });
+
+  it('a filter tick refines the default search and goes to the URL', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderAt('/search');
+    await waitFor(() => expect(api.searchAdvanced).toHaveBeenCalledTimes(1));
+    // enum values are known from the catalog alone; adding the pill asks for its counts (R10.1)
+    await openDropdown('Stock');
+    expect(screen.getByLabelText('In stock')).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Low stock'));
+    await vi.advanceTimersByTimeAsync(300);
+    await waitFor(() =>
+      expect(lastRequest().filters).toEqual([
+        { field: 'stockState', op: 'in', values: ['LOW_STOCK'] },
+      ]),
+    );
+    expect(lastRequest().facets).toEqual(['stockState']);
+    expect(screen.getByTestId('url').textContent).toContain('f=stockState');
+    const chips = screen.getByLabelText('Active filters');
+    expect(within(chips).getByText('Stock')).toBeTruthy();
+  });
+
+  it('Search with a name narrows the default search', async () => {
+    renderAt('/search');
+    await waitFor(() => expect(api.searchAdvanced).toHaveBeenCalledTimes(1));
+    fireEvent.change(screen.getByLabelText('Search box'), { target: { value: 'para' } });
+    fireEvent.click(screen.getByText('Search'));
+    await waitFor(() => expect(api.searchAdvanced).toHaveBeenCalledTimes(2));
+    expect(lastRequest().text).toBe('para');
+    expect(screen.getByTestId('url').textContent).toContain('q=para');
   });
 
   it('the Any/All switch appears only with two or more filters', async () => {
     renderAt('/search');
+    await waitFor(() => expect(api.searchAdvanced).toHaveBeenCalled());
     await openDropdown('Stock');
     fireEvent.click(screen.getByLabelText('In stock'));
     expect(screen.queryByLabelText('How filters combine')).toBeNull();
@@ -237,7 +244,6 @@ describe('refining (URL has a search)', () => {
   it('starts from the URL, ticks apply after the debounce, chips and URL follow, counts come from the answer', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     renderAt('/search?q=para&f=companyName:in:Cipla');
-    expect(screen.getByTestId('mode').textContent).toBe('refining');
     await waitFor(() => expect(api.searchAdvanced).toHaveBeenCalledTimes(1));
     expect(lastRequest()).toMatchObject({
       text: 'para',
