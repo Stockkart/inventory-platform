@@ -42,6 +42,11 @@ send"). A no-op dressed as an error makes a cashier press again.
 - **A replayed ticket does not print twice.** One set of already-queued kotIds decides both
   the strip and the print queue: only `/reprint` stamps a slip REPRINT, so a second unstamped
   copy of the same KOT number is exactly what a cook reads as a second order.
+- **One row per ticket, its action at the end** (`KOT 4 · BEVERAGE · Printed  [Reprint]`). READY
+  prints, FAILED retries, and only a ticket already on paper offers Reprint — the PDF opened is the
+  blob `/reprint` returned, the only render carrying the REPRINT stamp. The bill's earlier rounds
+  (`GET /cafe/purchases/{purchaseId}/kots`) are listed below as `Sent`, so a slip lost before a
+  reload or cart switch can still be reprinted.
 
 ### Menu portions
 
@@ -49,8 +54,11 @@ An item is priced **either** by one `sellingPrice` **or** by a list of portions 
 both. `pages/MenuAdminPage.tsx` edits portions as rows of **name + price**, the same shape the
 pricing screen uses for custom rates (`core/pricing/src/pages/PriceEditPage.tsx`): Add portion,
 type a name and a price, × to remove. Once an item has a named portion the single price field
-steps aside, and its "Add to Sell" button says _Pick portion on Sell_ — that button cannot ask
-which portion, and the Sell screen's picker can.
+steps aside. Items reach a cart only from the Sell screen, whose picker asks which portion; the
+card's own button is **Save**, the same save as the header's Save menu.
+
+- **Portion rows are keyed by position.** The id freezes on the first letter typed, so a row keyed
+  by it remounted mid-keystroke and dropped the cursor after one character.
 
 - **The id is frozen, the name is not.** A portion's id is a slug of the name it was first given
   (`Half Cup` → `half-cup`, de-duplicated within the item) and is never regenerated. It is what

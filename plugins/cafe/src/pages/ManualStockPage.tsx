@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { cartApi, inventoryApi, resolveInventoryDocumentId } from '@inventory-platform/product/api';
 import type { InventoryItem } from '@inventory-platform/product/types';
@@ -16,16 +16,12 @@ import {
   CardBody,
   CenteredLoader,
   EmptyState,
-  FormField,
   Icon,
-  Input,
-  Modal,
   PageHeader,
   PaginationBar,
   SearchInput,
   Stack,
   Text,
-  Textarea,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { Search } from 'lucide-react';
@@ -51,159 +47,10 @@ function stockQty(item: InventoryItem): number {
   return item.currentBaseCount ?? item.currentCount ?? 0;
 }
 
-function displayQty(item: InventoryItem): number {
-  const count = item.currentCount;
-  if (count != null && Number.isFinite(Number(count))) {
-    return Number(count);
-  }
-  return stockQty(item);
-}
-
-function stockUnit(item: InventoryItem): string {
-  return item.baseUnit?.trim() || item.uqc?.trim() || 'units';
-}
-
 function sellPrice(item: InventoryItem): number {
   const selling = item.sellingPrice;
   if (selling != null && selling > 0) return selling;
   return item.priceToRetail ?? 0;
-}
-
-function formatDelta(current: number, next: number): string {
-  const delta = next - current;
-  if (!Number.isFinite(delta) || delta === 0) return 'No change';
-  const abs = Math.abs(delta);
-  const body = Number.isInteger(abs) ? String(abs) : abs.toFixed(2);
-  return delta > 0 ? `+${body}` : `−${body}`;
-}
-
-function StockCorrectionModal({
-  item,
-  onClose,
-  onSuccess,
-}: {
-  item: InventoryItem;
-  onClose: () => void;
-  onSuccess: (updated: InventoryItem) => void;
-}) {
-  const { success: notifySuccess, error: notifyError } = useNotify;
-  const inventoryId = resolveInventoryDocumentId(item);
-  const current = displayQty(item);
-  const unit = stockUnit(item);
-  const [newQty, setNewQty] = useState(String(current));
-  const [note, setNote] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const parsedQty = Number(newQty);
-  const isValidQty = newQty.trim() !== '' && Number.isFinite(parsedQty) && parsedQty >= 0;
-  const hasChange = isValidQty && parsedQty !== current;
-
-  const deltaColor = useMemo(() => {
-    if (!isValidQty) return undefined;
-    const delta = parsedQty - current;
-    if (delta > 0) return 'success' as const;
-    if (delta < 0) return 'danger' as const;
-    return 'secondary' as const;
-  }, [current, isValidQty, parsedQty]);
-
-  const handleSubmit = async () => {
-    if (!inventoryId) {
-      setError('Missing inventory id');
-      return;
-    }
-    if (!isValidQty) {
-      setError('Enter a valid quantity (0 or more)');
-      return;
-    }
-    if (!hasChange) {
-      setError('New quantity must differ from current stock');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError(null);
-    try {
-      const correction = await inventoryApi.createInventoryCorrection({
-        note: note.trim() || 'Ingredient stock correction',
-        lines: [{ inventoryId, requestedCurrentCount: parsedQty }],
-      });
-      const line = correction.lines?.[0];
-      if (!line?.lineId) {
-        throw new Error('Correction created but line id missing');
-      }
-      await inventoryApi.approveInventoryCorrectionLine(correction.id, line.lineId);
-
-      const updated = await inventoryApi.getById(inventoryId);
-      notifySuccess(`Stock updated for "${item.name || 'ingredient'}"`);
-      onSuccess(updated);
-      onClose();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to correct stock';
-      setError(message);
-      notifyError(message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <Modal open onClose={onClose} size="md">
-      <Modal.Header title="Correct stock" onClose={onClose} />
-      <Modal.Body>
-        <Stack gap="md">
-          <Text color="secondary">{item.name || 'Ingredient'}</Text>
-
-          <FormField label="Current stock">
-            <Input readOnly readOnlyStyle value={`${current} ${unit}`} />
-          </FormField>
-
-          <FormField label={`New quantity (${unit})`} id="correction-qty">
-            <Input
-              id="correction-qty"
-              type="number"
-              min={0}
-              step="any"
-              value={newQty}
-              onChange={(e) => setNewQty(e.target.value)}
-              disabled={isSubmitting}
-              autoFocus
-            />
-            {isValidQty ? (
-              <Text variant="caption" color={deltaColor} weight="semibold">
-                Change: {formatDelta(current, parsedQty)} {unit}
-              </Text>
-            ) : null}
-          </FormField>
-
-          <FormField label="Note (optional)" id="correction-note">
-            <Textarea
-              id="correction-note"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="e.g. Spillage, recount, waste…"
-              disabled={isSubmitting}
-            />
-          </FormField>
-
-          {error ? <Alert variant="danger">{error}</Alert> : null}
-        </Stack>
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
-          Cancel
-        </Button>
-        <Button
-          variant="solid"
-          onClick={() => void handleSubmit()}
-          disabled={isSubmitting || !hasChange}
-          loading={isSubmitting}
-        >
-          {isSubmitting ? 'Saving…' : 'Apply correction'}
-        </Button>
-      </Modal.Footer>
-    </Modal>
-  );
 }
 
 export function ManualStockPage() {
@@ -216,7 +63,6 @@ export function ManualStockPage() {
   const [searchTotalPages, setSearchTotalPages] = useState(0);
   const [searchTotalItems, setSearchTotalItems] = useState(0);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
-  const [correctionItem, setCorrectionItem] = useState<InventoryItem | null>(null);
   const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
   const [addingToCartId, setAddingToCartId] = useState<string | null>(null);
   const [businessType, setBusinessType] = useState('cafe');
@@ -451,7 +297,6 @@ export function ManualStockPage() {
                         isDetailLoading={detailLoadingId === itemId}
                         isAddingToCart={addingToCartId === itemId}
                         onViewDetails={(row) => void openIngredientDetails(row)}
-                        onCorrectStock={setCorrectionItem}
                         onAddToCart={(row) => void handleAddToCart(row)}
                       />
                     );
@@ -485,14 +330,6 @@ export function ManualStockPage() {
           setSelectedItem(updated);
         }}
       />
-
-      {correctionItem ? (
-        <StockCorrectionModal
-          item={correctionItem}
-          onClose={() => setCorrectionItem(null)}
-          onSuccess={refreshItemInList}
-        />
-      ) : null}
     </Stack>
   );
 }

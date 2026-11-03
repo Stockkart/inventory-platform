@@ -3318,7 +3318,6 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
             <ScanSellCafeStockLine
               key={cartItem.inventoryItem.id}
               name={cartItem.inventoryItem.name || 'Product'}
-              inventoryId={cartItem.inventoryItem.id}
               unitLabel={unitLabel}
               price={cartItem.price}
               quantity={cartItem.quantity}
@@ -3331,8 +3330,6 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                 ) : null
               }
               disabled={isUpdatingCart}
-              customerProductHistory={customerProductHistory}
-              customerProductHistoryLoading={customerProductHistoryLoading}
               onChangeQty={(delta) => {
                 void handleUpdateQuantity(cartItem.inventoryItem.id, delta, false);
               }}

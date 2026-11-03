@@ -21,7 +21,6 @@ import { MenuAdminPage } from './MenuAdminPage';
 
 const menuGet = vi.fn();
 const menuPut = vi.fn();
-const cartAdd = vi.fn();
 const catalogGet = vi.fn();
 
 vi.mock('@inventory-platform/product/api', () => ({
@@ -29,7 +28,6 @@ vi.mock('@inventory-platform/product/api', () => ({
     get: (...args: unknown[]) => menuGet(...args),
     put: (...args: unknown[]) => menuPut(...args),
   },
-  cartApi: { add: (...args: unknown[]) => cartAdd(...args) },
   sellCatalogApi: { get: (...args: unknown[]) => catalogGet(...args) },
 }));
 
@@ -86,7 +84,6 @@ async function renderPage(items: MenuItem[]) {
 beforeEach(() => {
   menuGet.mockReset();
   menuPut.mockReset();
-  cartAdd.mockReset();
   catalogGet.mockReset();
   catalogGet.mockResolvedValue({ menu: { sections: [] }, directStock: [] });
 });
@@ -196,25 +193,36 @@ describe('MenuAdminPage portions', () => {
     expect(item.rates).toEqual([]);
   });
 
-  it('hides the single price on a portioned item and sends the cashier to the Sell picker', async () => {
+  it('hides the single price on a portioned item', async () => {
     await renderPage([portionedItem]);
     expect(screen.queryByLabelText('Price')).toBeNull();
-
-    const addToSell = screen.getByRole('button', {
-      name: /Pick portion on Sell/i,
-    }) as HTMLButtonElement;
-    expect(addToSell.disabled).toBe(true);
-    expect(cartAdd).not.toHaveBeenCalled();
   });
 
-  it('still adds an unportioned item straight to the cart', async () => {
+  it('keeps the same portion name input while its first letters are typed', async () => {
     await renderPage([plainItem]);
-    cartAdd.mockResolvedValue({});
 
-    fireEvent.click(screen.getByRole('button', { name: 'Add to Sell' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add portion' }));
+    const input = screen.getByLabelText('Portion 1 name for Masala Chai');
+    input.focus();
+    // The first letter freezes the portion id. Keying the row by that id remounted it here,
+    // so the cashier lost the cursor after one character.
+    fireEvent.change(input, { target: { value: 'H' } });
+    fireEvent.change(input, { target: { value: 'Ha' } });
 
-    await waitFor(() => expect(cartAdd).toHaveBeenCalledTimes(1));
-    expect(cartAdd.mock.calls[0][0].items).toEqual([{ sellableRef: 'menu:m2', quantity: 1 }]);
+    expect(screen.getByLabelText('Portion 1 name for Masala Chai')).toBe(input);
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('saves the menu from the item card, and only once something changed', async () => {
+    await renderPage([plainItem]);
+    menuPut.mockImplementation(async (menu: ShopMenu) => menu);
+    const cardSave = () => screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement;
+
+    expect(cardSave().disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText('Price'), { target: { value: '35' } });
+    fireEvent.click(cardSave());
+
+    await waitFor(() => expect(menuPut).toHaveBeenCalledTimes(1));
   });
 });
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown, ChevronRight, Search } from 'lucide-react';
-import { cartApi, shopMenuApi } from '@inventory-platform/product/api';
+import { shopMenuApi } from '@inventory-platform/product/api';
 import type { InventoryItem } from '@inventory-platform/product/types';
 import type {
   MenuItem,
@@ -8,8 +8,7 @@ import type {
   MenuSection,
   ShopMenu,
 } from '@inventory-platform/plugin-cafe/types';
-import { menuSellableRef } from '@inventory-platform/product/types';
-import { useNotify, useVerticalSchemaStore } from '@inventory-platform/session';
+import { useNotify } from '@inventory-platform/session';
 import {
   Alert,
   Badge,
@@ -134,13 +133,10 @@ function menuItemMatchesSearch(item: MenuItem, sectionTitle: string, query: stri
 
 export function MenuAdminPage() {
   const { success: notifySuccess, error: notifyError } = useNotify;
-  const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
-  const [businessType, setBusinessType] = useState('cafe');
   const [menu, setMenu] = useState<ShopMenu | null>(null);
   const [sections, setSections] = useState<MenuSection[]>([]);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
-  const [addingToSell, setAddingToSell] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -172,14 +168,6 @@ export function MenuAdminPage() {
 
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const hasActiveSearch = normalizedSearch.length > 0;
-
-  useEffect(() => {
-    void fetchShopSchema('regular').then((schema) => {
-      if (schema?.verticalId) {
-        setBusinessType(schema.verticalId);
-      }
-    });
-  }, [fetchShopSchema]);
 
   const loadMenu = useCallback(async () => {
     setIsLoading(true);
@@ -251,43 +239,6 @@ export function MenuAdminPage() {
 
   const handleClearSearch = () => {
     setSearchQuery('');
-  };
-
-  const addToSellDisabledReason = (item: MenuItem): string | null => {
-    if (isDirty) return 'Save menu first';
-    if (!item.name.trim()) return 'Name required';
-    if (item.available === false) return 'Hidden from sell';
-    // A portioned item has no one price, and this button cannot ask which portion. The Sell
-    // screen's picker can, so send the cashier there rather than guessing a portion for them.
-    if (namedPortions(item).length > 0) return 'Pick portion on Sell';
-    if (!item.sellingPrice || item.sellingPrice <= 0) return 'Price not set';
-    return null;
-  };
-
-  const canAddItemToSell = (item: MenuItem): boolean => addToSellDisabledReason(item) === null;
-
-  const handleAddToSell = async (item: MenuItem) => {
-    const disabledReason = addToSellDisabledReason(item);
-    if (disabledReason) {
-      notifyError(disabledReason);
-      return;
-    }
-
-    setAddingToSell(item.id);
-    setError(null);
-    try {
-      await cartApi.add({
-        businessType,
-        items: [{ sellableRef: menuSellableRef(item.id), quantity: 1 }],
-      });
-      notifySuccess(`Added "${item.name.trim()}" to sell cart`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to add to sell';
-      setError(message);
-      notifyError(message);
-    } finally {
-      setAddingToSell(null);
-    }
   };
 
   const updateSection = (sectionId: string, patch: Partial<MenuSection>) => {
@@ -730,7 +681,11 @@ export function MenuAdminPage() {
                                 <>
                                   {portions.map((rate, i) => (
                                     <Box
-                                      key={rate.id || `new-${i}`}
+                                      // By position, not by `rate.id`: the id is frozen on the first
+                                      // letter typed, and a key that changes mid-keystroke remounts
+                                      // the row and drops focus after one character. The inputs are
+                                      // fully controlled, so a positional key loses nothing.
+                                      key={i}
                                       className={productChrome.menuAdminPortionRow}
                                     >
                                       <Input
@@ -800,18 +755,18 @@ export function MenuAdminPage() {
                               />
                             </Box>
 
+                            {/* Same save as the header: the menu is saved as one document, and a
+                                 card-level button saves it from where the cashier is editing. */}
                             <Button
                               type="button"
                               variant="solid"
                               size="sm"
                               fullWidth
-                              onClick={() => void handleAddToSell(item)}
-                              disabled={!canAddItemToSell(item) || addingToSell === item.id}
-                              title={addToSellDisabledReason(item) ?? undefined}
+                              disabled={isSaving || !isDirty}
+                              onClick={() => void handleSave()}
+                              loading={isSaving}
                             >
-                              {addingToSell === item.id
-                                ? 'Adding…'
-                                : addToSellDisabledReason(item) ?? 'Add to Sell'}
+                              {isSaving ? 'Saving…' : 'Save'}
                             </Button>
                           </Box>
                         );
