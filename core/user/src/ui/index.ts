@@ -10,6 +10,7 @@ export { ShopProfileForm } from './ShopProfileForm';
 export { InvoiceSettingsSection } from './InvoiceSettingsSection';
 export { InvoiceSeriesSection } from './InvoiceSeriesSection';
 export {
+  ProfileTabPanel,
   ProfileTabs,
   PROFILE_TABS,
   orderProfileTabs,

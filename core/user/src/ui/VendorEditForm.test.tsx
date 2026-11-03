@@ -125,7 +125,8 @@ describe('<VendorEditForm> GSTIN first', () => {
     renderForm();
     await waitFor(() => expect(api.settings).toHaveBeenCalled());
     expect(vendorIsPlaceable(current())).toBe(false);
-    fireEvent.change(screen.getByLabelText('State'), { target: { value: '10' } });
+    fireEvent.click(screen.getByLabelText('State'));
+    fireEvent.click(screen.getByRole('option', { name: /\(10\)$/ }));
     expect(current().postalAddress?.stateCode).toBe('10');
     expect(vendorIsPlaceable(current())).toBe(true);
   });

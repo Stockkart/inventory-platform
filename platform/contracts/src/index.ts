@@ -58,6 +58,7 @@ export { PLAN_EXPIRY_ALLOWED_PATHS, isPlanExpiryAllowedPath } from './plan-guard
 export type { MenuItem, MenuSection, ShopMenu, MenuSellMode } from './cafe-menu.types.js';
 export type {
   PricingRate,
+  PricingRateWarning,
   PricingResponse,
   RateRuleBase,
   RateSchemeType,
