@@ -10,6 +10,39 @@ if (import.meta.env.DEV) {
 
 const X_SHOP_ID_KEY = 'x_shop_id';
 
+/**
+ * Per-call options for the typed helpers below.
+ *
+ * `headers` exists for the one thing a shared instance cannot carry as a default: a header
+ * that is unique to a single request, such as the `Idempotency-Key` on a write that must
+ * never take effect twice. Without it those writes had to be issued through raw `axios`,
+ * which meant they never passed through the interceptors on this instance — no 401 bounce to
+ * login, no 402 plan-expired, and an `AxiosError` instead of an `ApiError`.
+ */
+export type ApiRequestOptions = RequestOptions;
+
+/**
+ * An error body read off a response whose `responseType` was `blob`.
+ *
+ * Axios hands back the raw `Blob` for the failure too, so the server's message is inside a
+ * binary the interceptor cannot read synchronously. Without this, every failed PDF request
+ * could only ever report the status text — the server's own explanation was unreachable.
+ */
+async function readErrorBody(raw: unknown): Promise<Record<string, unknown>> {
+  if (typeof Blob !== 'undefined' && raw instanceof Blob) {
+    try {
+      const text = await raw.text();
+      const parsed: unknown = text ? JSON.parse(text) : null;
+      return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {};
+    } catch {
+      // A blob that is not JSON (an HTML error page, a truncated PDF) carries no message
+      // this layer can use; the status text below still does.
+      return {};
+    }
+  }
+  return raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+}
+
 /** Auth routes where 401 is an expected credential failure, not session expiry. */
 function isPublicAuthRequest(url: string | undefined): boolean {
   if (!url) return false;
@@ -18,9 +51,15 @@ function isPublicAuthRequest(url: string | undefined): boolean {
   );
 }
 
-/** Per-call options. `signal` lets a caller (e.g. TanStack Query) cancel a superseded request. */
+/**
+ * Per-call options. `signal` lets a caller (e.g. TanStack Query) cancel a superseded request;
+ * `headers` carries a header unique to one request (an `Idempotency-Key`); `params` are query
+ * parameters. `ApiRequestOptions` (above) is the same type under the name the cafe KOT client uses.
+ */
 export interface RequestOptions {
   signal?: AbortSignal;
+  headers?: Record<string, string>;
+  params?: Record<string, string>;
 }
 
 class ApiClient {
@@ -72,9 +111,9 @@ class ApiClient {
 
     this.axiosInstance.interceptors.response.use(
       (response) => response,
-      (error: AxiosError) => {
+      async (error: AxiosError) => {
         if (error.response) {
-          const errorData = error.response.data as {
+          const errorData = (await readErrorBody(error.response.data)) as {
             message?: string;
             error?: string;
             data?: { message?: string };
@@ -184,7 +223,37 @@ class ApiClient {
   }
 
   async post<T>(endpoint: string, data?: unknown, options?: RequestOptions): Promise<T> {
-    const r = await this.axiosInstance.post<T>(endpoint, data, { signal: options?.signal });
+    const r = await this.axiosInstance.post<T>(endpoint, data, {
+      signal: options?.signal,
+      headers: options?.headers,
+      params: options?.params,
+    });
+    return r.data;
+  }
+
+  /**
+   * GET a document (a PDF slip, an export) as a `Blob`, through the same interceptors as
+   * every other call — so an expired session bounces to login instead of surfacing a raw
+   * axios message next to a print button.
+   */
+  async getBlob(endpoint: string, options?: RequestOptions): Promise<Blob> {
+    const r = await this.axiosInstance.get<Blob>(endpoint, {
+      responseType: 'blob',
+      signal: options?.signal,
+      headers: options?.headers,
+      params: options?.params,
+    });
+    return r.data;
+  }
+
+  /** POST and read the response as a document rather than JSON. See {@link getBlob}. */
+  async postBlob(endpoint: string, data?: unknown, options?: RequestOptions): Promise<Blob> {
+    const r = await this.axiosInstance.post<Blob>(endpoint, data, {
+      responseType: 'blob',
+      signal: options?.signal,
+      headers: options?.headers,
+      params: options?.params,
+    });
     return r.data;
   }
 
