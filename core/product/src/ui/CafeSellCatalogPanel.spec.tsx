@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { Box } from '@inventory-platform/ui-kit';
+import { Box, productChrome } from '@inventory-platform/ui-kit';
 import type {
   InventoryItem,
   MenuItem,
@@ -242,5 +242,80 @@ describe('portioned lines in a ref-keyed cart', () => {
     const rows = cartRows();
     expect(rows).toHaveLength(1);
     expect(rows[0].textContent).toContain('Chicken Biryani (Half) × 2');
+  });
+});
+
+describe('CafeSellCatalogPanel linked stock', () => {
+  function lot(overrides: Partial<InventoryItem> = {}): InventoryItem {
+    return {
+      id: 'inv-1',
+      name: 'Lassi',
+      currentBaseCount: 8,
+      sellingPrice: 40,
+      ...overrides,
+    } as InventoryItem;
+  }
+  function link(overrides: Partial<MenuItem> = {}): MenuItem {
+    return menuItem({
+      id: 'l1',
+      name: 'Lassi',
+      sellMode: 'direct',
+      inventoryId: 'inv-1',
+      rates: undefined,
+      sellingPrice: null,
+      ...overrides,
+    });
+  }
+  function catalog(items: MenuItem[], directStock: InventoryItem[]): SellCatalog {
+    return { menu: { sections: [{ id: 'bev', title: 'Beverages', items }] }, directStock };
+  }
+  /** Section wrapper by heading; the tab bar repeats titles, so skip matches outside a section. */
+  function sectionNamed(title: string): HTMLElement {
+    const section = screen
+      .getAllByText(title)
+      .map((el) => el.closest(`.${productChrome.cafeCatalogSection}`))
+      .find((el): el is HTMLElement => el instanceof HTMLElement);
+    if (!section) throw new Error(`no section for ${title}`);
+    return section;
+  }
+
+  it('shows a linked lot inside its section with the lot price, and not in Direct stock', () => {
+    renderPanel(catalog([link()], [lot(), lot({ id: 'inv-2', name: 'Sprite' })]));
+    expect(sectionNamed('Beverages').textContent).toContain('Lassi');
+    expect(tile('Lassi').textContent).toContain('₹40.00');
+    expect(tile('Lassi').textContent).toContain('8 in stock');
+    expect(sectionNamed('Direct stock').textContent).toContain('Sprite');
+    expect(sectionNamed('Direct stock').textContent).not.toContain('Lassi');
+  });
+
+  it('adds the lot itself when a linked tile is tapped', () => {
+    const { onAddDirectStock, onAddMenuItem } = renderPanel(catalog([link()], [lot()]));
+    fireEvent.click(tile('Lassi'));
+    expect(onAddDirectStock).toHaveBeenCalledWith(expect.objectContaining({ id: 'inv-1' }));
+    expect(onAddMenuItem).not.toHaveBeenCalled();
+  });
+
+  it('disables a link whose lot is gone, saying so', () => {
+    renderPanel(catalog([link()], []));
+    expect(tile('Lassi')).toHaveProperty('disabled', true);
+    expect(tile('Lassi').textContent).toContain('Stock item missing');
+  });
+
+  it('disables a link whose lot is empty, saying so', () => {
+    renderPanel(catalog([link()], [lot({ currentBaseCount: 0 })]));
+    expect(tile('Lassi')).toHaveProperty('disabled', true);
+    expect(tile('Lassi').textContent).toContain('Out of stock');
+  });
+
+  it('filters linked tiles by name and keeps a section that holds only stock', () => {
+    render(
+      <CafeSellCatalogPanel
+        catalog={catalog([link()], [lot()])}
+        filterQuery="lass"
+        onAddMenuItem={vi.fn()}
+        onAddDirectStock={vi.fn()}
+      />,
+    );
+    expect(sectionNamed('Beverages').textContent).toContain('Lassi');
   });
 });
