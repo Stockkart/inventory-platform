@@ -79,10 +79,10 @@
   --sk-z-modal: 9000;
   --sk-z-toast: 9500;
 
-  --sk-font-sans:
-    'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  --sk-font-display:
-    'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --sk-font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui,
+    sans-serif;
+  --sk-font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui,
+    sans-serif;
   --sk-font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', monospace;
 
   --sk-space-marketing-y: 5rem;

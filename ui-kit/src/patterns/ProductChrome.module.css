@@ -180,9 +180,7 @@
   background: var(--sk-color-bg-elevated, #fff);
   border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, #94a3b8);
   border-radius: var(--sk-radius-xl, 14px);
-  box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.04),
-    0 14px 32px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 14px 32px rgba(15, 23, 42, 0.1);
   animation: skTypeaheadIn 0.14s ease-out;
 }
 @keyframes skTypeaheadIn {
@@ -530,9 +528,7 @@
   color: inherit !important;
   font: inherit !important;
   cursor: pointer;
-  transition:
-    background-color 0.12s ease,
-    border-color 0.12s ease;
+  transition: background-color 0.12s ease, border-color 0.12s ease;
 }
 .customerPartyResult:hover:not(:disabled) {
   background: color-mix(
@@ -1236,10 +1232,7 @@
   border-radius: 10px;
   background: var(--sk-color-bg-elevated, #fff);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    opacity 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
 }
 
 .menuAdminItem:hover {
@@ -1841,10 +1834,7 @@
 
 .clickableCard {
   cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    background-color 0.15s ease,
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease,
     transform 0.15s ease;
 }
 
@@ -2364,9 +2354,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .searchResultCard:hover {
@@ -2674,10 +2662,7 @@
   box-shadow: none !important;
   color: inherit !important;
   font: inherit !important;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    background-color 0.15s ease,
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease,
     transform 0.15s ease;
 }
 
@@ -2770,10 +2755,7 @@
   border: 2px solid var(--sk-color-border-strong, #cbd5e1);
   background: var(--sk-color-bg-elevated, #fff);
   box-sizing: border-box;
-  transition:
-    border-color 0.15s ease,
-    background-color 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .printOptionSelected .printOptionRadio {
