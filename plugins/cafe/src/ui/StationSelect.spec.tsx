@@ -7,9 +7,20 @@ afterEach(() => {
   cleanup();
 });
 
+/** The ui-kit Select is a button that opens a listbox; its options exist only while it is open. */
+function openStations() {
+  fireEvent.click(screen.getByRole('button', { name: 'Station' }));
+}
+
+function pick(label: string) {
+  openStations();
+  fireEvent.click(screen.getByRole('option', { name: label }));
+}
+
 describe('StationSelect', () => {
   it('offers Kitchen, the menu stations, and No ticket', () => {
     render(<StationSelect value="" knownStations={['BAR', 'TANDOOR']} onChange={vi.fn()} />);
+    openStations();
     const labels = screen.getAllByRole('option').map((o) => o.textContent);
     expect(labels).toEqual(['Kitchen', 'BAR', 'TANDOOR', 'No ticket', 'New station…']);
   });
@@ -17,14 +28,14 @@ describe('StationSelect', () => {
   it('emits NONE for No ticket', () => {
     const onChange = vi.fn();
     render(<StationSelect value="" knownStations={[]} onChange={onChange} />);
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'NONE' } });
+    pick('No ticket');
     expect(onChange).toHaveBeenCalledWith('NONE');
   });
 
   it('takes a new station typed by hand, uppercased', () => {
     const onChange = vi.fn();
     render(<StationSelect value="" knownStations={[]} onChange={onChange} />);
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: '__new__' } });
+    pick('New station…');
     const input = screen.getByPlaceholderText('Station name');
     fireEvent.change(input, { target: { value: ' counter ' } });
     fireEvent.blur(input);
