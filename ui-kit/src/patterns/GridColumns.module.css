@@ -1,0 +1,66 @@
+/* Resizable / reorderable header cells for dense data grids. */
+
+.headerCell {
+  user-select: none;
+}
+
+.headerMovable {
+  cursor: grab;
+}
+
+.headerDragging {
+  opacity: 0.5;
+}
+
+.headerDropTarget {
+  box-shadow: inset 3px 0 0 var(--sk-color-brand-cyan, #3b82f6);
+}
+
+.resizeHandle {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 1;
+  touch-action: none;
+}
+
+.resizeHandle::after {
+  content: '';
+  position: absolute;
+  top: 20%;
+  bottom: 20%;
+  left: 3px;
+  width: 2px;
+  border-radius: 1px;
+  background: transparent;
+  transition: background 0.15s;
+}
+
+.resizeHandle:hover::after,
+.resizeHandle:focus-visible::after,
+.resizeHandleActive::after {
+  background: var(--sk-color-brand-cyan, #3b82f6);
+}
+
+.resizeHandle:focus-visible {
+  outline: none;
+}
+
+.managerList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+}
+
+.managerRow {
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--sk-color-border-default, var(--border-color));
+}
+
+.widthInput {
+  width: 5rem;
+}

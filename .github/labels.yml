@@ -37,6 +37,9 @@
 - name: module:credit
   color: '14B8A6'
   description: core/credit
+- name: module:hr
+  color: '7C3AED'
+  description: core/hr
 - name: module:mis
   color: '0F766E'
   description: core/mis

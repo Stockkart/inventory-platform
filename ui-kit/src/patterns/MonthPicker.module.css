@@ -1,0 +1,115 @@
+/* Month chooser: [‹] [Month Year ▾] [›] with a 12-month popover grid under the middle button. */
+.root {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  box-sizing: border-box;
+  height: 2.25rem;
+  min-width: 10rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--sk-color-border-default);
+  border-radius: var(--sk-radius-md, 8px);
+  background: var(--sk-color-bg-surface, #fff);
+  color: var(--sk-color-text-primary);
+  font-family: var(--sk-font-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.trigger:hover:not(:disabled) {
+  border-color: var(--sk-color-border-strong);
+}
+
+.trigger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--sk-color-focus-ring);
+}
+
+.trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.triggerOpen {
+  border-color: var(--sk-color-accent);
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 50%;
+  z-index: 30;
+  box-sizing: border-box;
+  width: 16rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.6rem;
+  border: 1px solid var(--sk-color-border-default);
+  border-radius: var(--sk-radius-lg, 12px);
+  background: var(--sk-color-bg-elevated, var(--sk-color-bg-surface, #fff));
+  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.25);
+  transform: translateX(-50%);
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.panelYear {
+  color: var(--sk-color-text-primary);
+  font-family: var(--sk-font-sans);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.month {
+  box-sizing: border-box;
+  height: 2.25rem;
+  border: 1px solid transparent;
+  border-radius: var(--sk-radius-md, 8px);
+  background: transparent;
+  color: var(--sk-color-text-primary);
+  font-family: var(--sk-font-sans);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.month:hover:not(:disabled) {
+  background: var(--sk-color-hover);
+}
+
+.month:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--sk-color-focus-ring);
+}
+
+.month:disabled {
+  color: var(--sk-color-text-muted);
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.monthSelected {
+  border-color: var(--sk-color-accent);
+  background: var(--sk-color-accent-soft);
+  color: var(--sk-color-accent);
+  font-weight: 600;
+}

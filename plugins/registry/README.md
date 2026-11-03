@@ -10,6 +10,7 @@ Composes dashboard **nav** and **routes** from core contributions + the active v
 - Composed nav (`COMPOSED_DASHBOARD_MENU_GROUPS`, role filters, merge helpers)
 - Composed dashboard routes / sell-surface helpers
 - Public routes module for journeys (login, marketing, onboarding entry)
+- Composed Profile tabs (`profile-tabs.ts`): Barcode labels, Product cards and Rate rules, registered into `core/user`'s tab registry after the Invoice tab in that order. The Rate rules tab renders `RateRulesSection` from `@inventory-platform/product` and is hidden when the API says rate rules are off for the shop's vertical (`enabled: false`, e.g. cafe), through the extension's `useVisible` hook (`useRateRulesAvailable`). While the rules load, or if they fail to load, the tab shows. A `?tab=rate-rules` link on a shop where the tab is hidden opens the Shop tab instead.
 
 ## Does not own
 

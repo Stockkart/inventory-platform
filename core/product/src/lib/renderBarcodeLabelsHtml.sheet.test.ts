@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
-import { renderBarcodeLabelsHtml } from './renderBarcodeLabelsHtml';
+import { renderBarcodeLabelsHtml, repeatLabels } from './renderBarcodeLabelsHtml';
 import type { EffectiveLabelLayout, LabelData, SheetSpec } from '../model/labelLayout.types';
 
 /**
  * Example and property tests for the `SHEET` print medium (Requirement 10.7, 10.9)
- * and the `ROLL` parity guarantee (Requirement 10.8), added with task 15.3.
+ * and the `ROLL` parity guarantee (Requirement 10.8), added with task 15.3, plus
+ * `copies` filling every label across a roll row.
  */
 
 const PER_SHEET = 4;
@@ -255,5 +256,41 @@ describe('renderBarcodeLabelsHtml ROLL parity (Req 10.8)', () => {
     expect(result.html).toContain('@page { margin: 8mm; }');
     expect(result.html).toContain('border:1px dashed #bbb');
     expect(result.html).toContain('<div class="sheet">');
+  });
+});
+
+describe('copies of each sticker', () => {
+  const rollLayout: EffectiveLabelLayout = {
+    enabledFields: [{ fieldKey: 'productName', label: 'Product', valueType: 'text' }],
+    stickerSize: '38x38',
+    showBarcodeText: true,
+    showFieldLabels: false,
+    blankValueBehavior: 'HIDE_LINE',
+    printMedia: 'ROLL',
+    rollSpec: { labelsAcross: 2, columnGapMm: 3, pageWidthMm: 79, pageHeightMm: 38, pitchMm: 41 },
+  };
+  const a: LabelData = { code: 'A1', values: { productName: 'Shaker' } };
+  const b: LabelData = { code: 'B2', values: { productName: 'Housie' } };
+
+  it('repeats each label in place and treats copies below 1 as 1', () => {
+    expect(repeatLabels([a, b], 2).map((l) => l.code)).toEqual(['A1', 'A1', 'B2', 'B2']);
+    expect(repeatLabels([a], 0).map((l) => l.code)).toEqual(['A1']);
+    expect(repeatLabels([a]).map((l) => l.code)).toEqual(['A1']);
+  });
+
+  it('fills both columns of a 2-across roll row with one label printed twice', () => {
+    const result = renderBarcodeLabelsHtml([a], rollLayout, { copies: 2 });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(countOccurrences(result.html, 'class="page"')).toBe(1);
+    expect(countOccurrences(result.html, 'data-code="A1"')).toBe(2);
+  });
+
+  it('prints one label six times as three full roll rows', () => {
+    const result = renderBarcodeLabelsHtml([a], rollLayout, { copies: 6 });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(countOccurrences(result.html, 'class="page"')).toBe(3);
+    expect(countOccurrences(result.html, 'data-code="A1"')).toBe(6);
   });
 });

@@ -4,8 +4,10 @@ import { FileText, Printer, Receipt } from 'lucide-react';
 import { cartApi } from '../api/cart.api';
 import { invoiceSettingsApi } from '../api/invoice-settings.api';
 import type { PrinterType } from '../api/endpoints';
+import { openPdfPreview } from '../lib/printDocument';
+import { PrintBridgeNotice } from './PrintBridgeNotice';
+import { useDotMatrixPrint } from './useDotMatrixPrint';
 import {
-  Alert,
   Box,
   Button,
   Icon,
@@ -26,9 +28,16 @@ interface PrintInvoiceModalProps {
   onClose: () => void;
   purchaseId: string;
   invoiceNo?: string;
-  /** Defaults to "Invoice"; use "Estimate" for quote PDFs. */
+  /** Defaults to "Invoice"; use "Estimate" for quote PDFs. Display only. */
   documentLabel?: string;
   onError?: (message: string) => void;
+  /** Called once the bridge confirms a print actually reached the printer. */
+  onSuccess?: (message: string) => void;
+  /**
+   * Called for outcomes that are neither success nor failure: the document was
+   * already on its way to the printer, or was still printing when polling stopped.
+   */
+  onInfo?: (message: string) => void;
 }
 
 const PRINTER_OPTIONS: Array<{
@@ -57,27 +66,6 @@ const PRINTER_OPTIONS: Array<{
   },
 ];
 
-function downloadBlob(blob: Blob, filename: string) {
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-}
-
-function openPdfPreview(blob: Blob, fallbackName: string) {
-  const url = window.URL.createObjectURL(blob);
-  const newWindow = window.open(url, '_blank');
-  if (!newWindow) {
-    downloadBlob(blob, fallbackName);
-  } else {
-    window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-  }
-}
-
 export function PrintInvoiceModal({
   isOpen,
   onClose,
@@ -85,6 +73,8 @@ export function PrintInvoiceModal({
   invoiceNo,
   documentLabel = 'Invoice',
   onError,
+  onSuccess,
+  onInfo,
 }: PrintInvoiceModalProps) {
   const [printerType, setPrinterType] = useState<PrinterType>('NORMAL');
   const [shopDefault, setShopDefault] = useState<PrinterType | null>(null);
@@ -130,23 +120,19 @@ export function PrintInvoiceModal({
     }
   };
 
-  const handleDownloadPrintFile = async () => {
-    setIsGenerating(true);
-    try {
-      const textBlob = await cartApi.getInvoiceDotMatrixText(purchaseId);
-      const slug = documentLabel.toLowerCase().replace(/\s+/g, '-');
-      downloadBlob(textBlob, `${slug}-${invoiceNo || purchaseId}.txt`);
-      onClose();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to download print file';
-      onError?.(message);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleClose = isGenerating ? undefined : onClose;
   const isDotMatrix = printerType === 'DOT_MATRIX';
+  const dotMatrix = useDotMatrixPrint({
+    enabled: isOpen && isDotMatrix,
+    source: 'SALE',
+    documentId: purchaseId,
+    documentLabel: documentLabel.toLowerCase(),
+    onClose,
+    onSuccess,
+    onInfo,
+    onError,
+  });
+  const isBusy = isGenerating || dotMatrix.isPrinting;
+  const handleClose = isBusy ? undefined : onClose;
 
   return (
     <Modal open={isOpen} onClose={handleClose} size="sm">
@@ -157,7 +143,7 @@ export function PrintInvoiceModal({
             Choose a print layout for this {documentLabel.toLowerCase()}.
           </Text>
           <Box
-            className={cn(productChrome.printOptionList, isGenerating && surfaceChrome.busyDim)}
+            className={cn(productChrome.printOptionList, isBusy && surfaceChrome.busyDim)}
             role="radiogroup"
             aria-label="Printer type"
           >
@@ -173,13 +159,13 @@ export function PrintInvoiceModal({
                   align="start"
                   role="radio"
                   aria-checked={selected}
-                  disabled={isGenerating}
+                  disabled={isBusy}
                   className={cn(
                     productChrome.printOption,
                     selected && productChrome.printOptionSelected,
                   )}
                   onClick={() => {
-                    if (!isGenerating) {
+                    if (!isBusy) {
                       setPrinterType(option.value);
                     }
                   }}
@@ -202,16 +188,12 @@ export function PrintInvoiceModal({
             })}
           </Box>
           {isDotMatrix ? (
-            <Alert variant="info">
-              Print the .txt at 10 CPI (Pica). Standard 80-column printers only paint 8 inches; the
-              extra 10×12 paper beside the holes cannot be used. Do not print the PDF on the
-              dot-matrix.
-            </Alert>
+            <PrintBridgeNotice status={dotMatrix.status} checking={dotMatrix.checking} />
           ) : null}
         </Stack>
       </Modal.Body>
       <Modal.Footer>
-        <Button type="button" variant="outline" onClick={onClose} disabled={isGenerating}>
+        <Button type="button" variant="outline" onClick={onClose} disabled={isBusy}>
           Cancel
         </Button>
         {isDotMatrix ? (
@@ -219,7 +201,7 @@ export function PrintInvoiceModal({
             type="button"
             variant="outline"
             onClick={() => void handlePreviewPdf()}
-            disabled={isGenerating}
+            disabled={isBusy}
           >
             {isGenerating ? (
               <Inline gap="sm" align="center">
@@ -234,16 +216,20 @@ export function PrintInvoiceModal({
         <Button
           type="button"
           variant="solid"
-          onClick={() => void (isDotMatrix ? handleDownloadPrintFile() : handlePreviewPdf())}
-          disabled={isGenerating}
+          onClick={() => void (isDotMatrix ? dotMatrix.print() : handlePreviewPdf())}
+          disabled={isBusy || (isDotMatrix && dotMatrix.checking)}
         >
-          {isGenerating ? (
+          {isBusy ? (
             <Inline gap="sm" align="center">
               <Spinner size="sm" />
-              Generating…
+              {dotMatrix.isPrinting ? 'Printing…' : 'Generating…'}
             </Inline>
           ) : isDotMatrix ? (
-            'Download print file'
+            dotMatrix.printsThroughBridge ? (
+              'Print'
+            ) : (
+              'Download printer file'
+            )
           ) : (
             'Generate PDF'
           )}

@@ -1,28 +1,19 @@
 .root {
   display: flex;
-  gap: 1rem;
+  justify-content: center;
+  align-items: center;
   width: 100%;
-  align-items: stretch;
+  min-height: 44px;
 }
 
+/* GIS wraps its iframe in two divs; centre them instead of stretching the iframe. */
 .root > div {
-  width: 100% !important;
   display: flex !important;
   justify-content: center !important;
-}
-
-.root iframe {
   width: 100% !important;
-  max-width: 100% !important;
 }
 
-.root div[role='button'] {
-  width: 100% !important;
-  max-width: 100% !important;
-}
-
-@media (max-width: 640px) {
-  .root {
-    flex-direction: column;
-  }
+.root > div > div {
+  display: flex !important;
+  justify-content: center !important;
 }

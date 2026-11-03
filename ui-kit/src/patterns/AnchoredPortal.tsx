@@ -1,6 +1,7 @@
-import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode, type Ref, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { Box } from '../layout';
+import { cn } from '../utils/cn';
 import styles from './AnchoredPortal.module.css';
 
 export interface AnchoredPortalProps {
@@ -9,6 +10,15 @@ export interface AnchoredPortalProps {
   open: boolean;
   /** Gap between the bottom of the anchor and the top of the panel, in px. */
   offset?: number;
+  /**
+   * Open above the anchor when the panel does not fit under it but does fit above (a field near
+   * the bottom of the screen).
+   */
+  flip?: boolean;
+  /** Layer the panel over modals too, for a field inside a dialog. */
+  aboveModals?: boolean;
+  /** The portalled panel element, e.g. to tell a click inside it from an outside click. */
+  panelRef?: Ref<HTMLDivElement>;
   children: ReactNode;
 }
 
@@ -28,9 +38,24 @@ export interface AnchoredPortalProps {
  * `--sk-z-popover` rather than a literal — see `PackagingFactorField`, which sits on
  * the same layer in the same grid.
  */
-export function AnchoredPortal({ anchorRef, open, offset = 6, children }: AnchoredPortalProps) {
-  const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
+export function AnchoredPortal({
+  anchorRef,
+  open,
+  offset = 6,
+  flip = false,
+  aboveModals = false,
+  panelRef,
+  children,
+}: AnchoredPortalProps) {
+  const [rect, setRect] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    anchorTop: number;
+  } | null>(null);
+  const [panelHeight, setPanelHeight] = useState(0);
   const frameRef = useRef<number | null>(null);
+  const ownPanelRef = useRef<HTMLDivElement | null>(null);
 
   useLayoutEffect(() => {
     if (!open) {
@@ -44,7 +69,7 @@ export function AnchoredPortal({ anchorRef, open, offset = 6, children }: Anchor
       const box = el.getBoundingClientRect();
       // Viewport coordinates, to be used with position: fixed. Scrolling any ancestor
       // changes these, which is why this re-runs on scroll rather than measuring once.
-      setRect({ top: box.bottom + offset, left: box.left, width: box.width });
+      setRect({ top: box.bottom + offset, left: box.left, width: box.width, anchorTop: box.top });
     };
 
     measure();
@@ -64,14 +89,33 @@ export function AnchoredPortal({ anchorRef, open, offset = 6, children }: Anchor
     };
   }, [open, anchorRef, offset]);
 
+  // The panel's height decides whether it flips; it is known only once it has rendered.
+  useLayoutEffect(() => {
+    if (!flip || !rect) return;
+    const height = ownPanelRef.current?.offsetHeight ?? 0;
+    if (height !== panelHeight) setPanelHeight(height);
+  });
+
   // Nothing to portal before the first measurement, or once the anchor is gone.
   if (!open || !rect || typeof document === 'undefined') return null;
 
+  const above =
+    flip &&
+    panelHeight > 0 &&
+    rect.top + panelHeight > window.innerHeight &&
+    rect.anchorTop - offset - panelHeight >= 0;
+  const setPanelRef = (el: HTMLDivElement | null) => {
+    ownPanelRef.current = el;
+    if (typeof panelRef === 'function') panelRef(el);
+    else if (panelRef) (panelRef as { current: HTMLDivElement | null }).current = el;
+  };
+
   return createPortal(
     <Box
-      className={styles.panel}
+      ref={setPanelRef}
+      className={cn(styles.panel, aboveModals && styles.panelAboveModals)}
       style={{
-        top: rect.top,
+        top: above ? rect.anchorTop - offset - panelHeight : rect.top,
         left: rect.left,
         // The panel's own stylesheet sets a min width and a cap; this keeps it at least
         // as wide as the field it belongs to.
