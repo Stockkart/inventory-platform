@@ -3715,13 +3715,10 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                   <DenseTableHeaderCell>Price</DenseTableHeaderCell>
                                   <DenseTableHeaderCell>Disc</DenseTableHeaderCell>
                                   <DenseTableHeaderCell>Scheme</DenseTableHeaderCell>
-                                  {showLineTax ? (
-                                    <>
-                                      <DenseTableHeaderCell>Taxable</DenseTableHeaderCell>
-                                      <DenseTableHeaderCell>GST</DenseTableHeaderCell>
-                                    </>
-                                  ) : null}
                                   <DenseTableHeaderCell>Amount</DenseTableHeaderCell>
+                                  {showLineTax ? (
+                                    <DenseTableHeaderCell>Total</DenseTableHeaderCell>
+                                  ) : null}
                                   <DenseTableHeaderCell
                                     aria-label="Actions"
                                     className={productChrome.rowActionsCell}
@@ -3950,23 +3947,23 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                             </Box>
                                           </Stack>
                                         </DenseTableCell>
-                                        {showLineTax ? (
-                                          <>
-                                            <DenseTableCell>
-                                              {lineTax ? formatPrice(lineTax.taxableValue) : '—'}
-                                            </DenseTableCell>
-                                            <DenseTableCell>
-                                              {lineTax
-                                                ? `${formatPrice(lineTax.taxAmount)}${
-                                                    lineTax.ratePercent > 0
-                                                      ? ` (${formatGstRate(lineTax.ratePercent)}%)`
-                                                      : ''
-                                                  }`
-                                                : '—'}
-                                            </DenseTableCell>
-                                          </>
-                                        ) : null}
                                         <DenseTableCell>{formatPrice(lineTotal)}</DenseTableCell>
+                                        {showLineTax ? (
+                                          <DenseTableCell>
+                                            {lineTax?.totalAmount != null ? (
+                                              <Stack>
+                                                <Text>{formatPrice(lineTax.totalAmount)}</Text>
+                                                {lineTax.ratePercent > 0 ? (
+                                                  <Text variant="caption" color="secondary">
+                                                    incl. {formatGstRate(lineTax.ratePercent)}% GST
+                                                  </Text>
+                                                ) : null}
+                                              </Stack>
+                                            ) : (
+                                              '—'
+                                            )}
+                                          </DenseTableCell>
+                                        ) : null}
                                         <DenseTableCell className={productChrome.rowActionsCell}>
                                           <IconButton
                                             type="button"
