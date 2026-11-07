@@ -1,6 +1,7 @@
 /// <reference types='vitest' />
 import { defineConfig, type PluginOption } from 'vite';
 import { reactRouter } from '@react-router/dev/vite';
+import netlifyReactRouter from '@netlify/vite-plugin-react-router';
 import * as path from 'node:path';
 import { generateInventoryWorkspaceAliases } from '../../platform/routing/vite-aliases.mts';
 
@@ -25,7 +26,10 @@ export default defineConfig({
     port: 4300,
     host: 'localhost',
   },
-  plugins: (!process.env.VITEST ? [reactRouter()] : []) as PluginOption[],
+  // netlifyReactRouter() packages the SSR server as a Netlify Function at build
+  // time. It only writes extra output under .netlify/, so local dev and the
+  // react-router-serve / Docker path are unaffected.
+  plugins: (!process.env.VITEST ? [reactRouter(), netlifyReactRouter()] : []) as PluginOption[],
   resolve: {
     // Prefer one React copy across workspace packages (do not hard-alias —
     // that bypasses package exports and breaks SSR with "module is not defined").
