@@ -1,3 +1,4 @@
+import { formatDocumentDate } from '../lib/documentDate';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router';
 import { inventoryApi } from '@inventory-platform/product/api';
@@ -70,18 +71,6 @@ function formatMoney(n: number | null | undefined): string {
     currency: 'INR',
     maximumFractionDigits: 2,
   }).format(n);
-}
-
-function formatDate(iso: string | null | undefined): string {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleString(undefined, {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    });
-  } catch {
-    return iso;
-  }
 }
 
 /** Same factor semantics as VendorPurchaseReturnService.getDisplayToBaseFactor (pack size → base). */
@@ -791,7 +780,7 @@ export function VendorReturnPage() {
                                     <Box className={productChrome.salePickGrid}>
                                       <InvoicePickField
                                         label="Date"
-                                        value={formatDate(inv.invoiceDate)}
+                                        value={formatDocumentDate(inv.invoiceDate)}
                                       />
                                       <InvoicePickField label="Vendor" value={vendorNameLabel} />
                                       <InvoicePickField
