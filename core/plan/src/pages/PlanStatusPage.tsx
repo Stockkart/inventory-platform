@@ -58,7 +58,7 @@ export function PlanStatusPage() {
   const formatDate = (iso: string | null) =>
     iso ? new Date(iso).toLocaleDateString('en-IN') : '—';
   const currentPlanIndex = status.plan ? plans.findIndex((p) => p.id === status.planId) : -1;
-  const planName = status.trial ? 'Base (Trial)' : status.plan?.planName ?? 'No active plan';
+  const planName = status.trial ? 'Free trial' : status.plan?.planName ?? 'No active plan';
   const planStateLabel = status.trial
     ? status.trialExpired
       ? 'Trial ended'

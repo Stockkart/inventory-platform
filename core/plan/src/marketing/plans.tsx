@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router';
-import { plansApi } from '../api';
+import { usePlansQuery } from '../queries/hooks';
 import { FormKeyboardNavScope } from '@inventory-platform/routing';
 import { PlanGrid, Header, Footer } from '../ui';
 import { useAuthStore } from '@inventory-platform/session';
@@ -19,23 +18,8 @@ export function meta() {
 export default function PlansPage() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
-  const [plans, setPlans] = useState<Awaited<ReturnType<typeof plansApi.list>>>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        const data = await plansApi.list();
-        setPlans(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load plans');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPlans();
-  }, []);
+  const { data: plans = [], isPending: loading, error: queryError } = usePlansQuery();
+  const error = queryError ? queryError.message || 'Failed to load plans' : null;
 
   const handleSelectPlan = (plan: { id: string }) => {
     if (isAuthenticated) {

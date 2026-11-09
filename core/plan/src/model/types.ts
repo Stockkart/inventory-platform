@@ -1,6 +1,7 @@
 import type { PlanResponse } from '@inventory-platform/contracts';
 
 export type {
+  PlanFeature,
   PlanResponse,
   UsageResponse,
   ShopPlanStatusResponse,
