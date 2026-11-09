@@ -24,7 +24,6 @@ export {
   isDateInRange,
   paginateLocal,
   matchesRegexField,
-  buildVendorInvoiceSearchQuery,
 } from './historyFilters';
 export type { HistoryFilters, HistoryTab } from './historyFilters';
 export { HistoryListSummary } from './HistoryListSummary';
