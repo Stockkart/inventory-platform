@@ -42,6 +42,11 @@ send"). A no-op dressed as an error makes a cashier press again.
 - **A replayed ticket does not print twice.** One set of already-queued kotIds decides both
   the strip and the print queue: only `/reprint` stamps a slip REPRINT, so a second unstamped
   copy of the same KOT number is exactly what a cook reads as a second order.
+- **One row per ticket, its action at the end** (`KOT 4 · BEVERAGE · Printed  [Reprint]`). READY
+  prints, FAILED retries, and only a ticket already on paper offers Reprint — the PDF opened is the
+  blob `/reprint` returned, the only render carrying the REPRINT stamp. The bill's earlier rounds
+  (`GET /cafe/purchases/{purchaseId}/kots`) are listed below as `Sent`, so a slip lost before a
+  reload or cart switch can still be reprinted.
 
 ### Menu portions
 
@@ -49,8 +54,11 @@ An item is priced **either** by one `sellingPrice` **or** by a list of portions 
 both. `pages/MenuAdminPage.tsx` edits portions as rows of **name + price**, the same shape the
 pricing screen uses for custom rates (`core/pricing/src/pages/PriceEditPage.tsx`): Add portion,
 type a name and a price, × to remove. Once an item has a named portion the single price field
-steps aside, and its "Add to Sell" button says _Pick portion on Sell_ — that button cannot ask
-which portion, and the Sell screen's picker can.
+steps aside. Items reach a cart only from the Sell screen, whose picker asks which portion; the
+card's own button is **Save**, the same save as the header's Save menu.
+
+- **Portion rows are keyed by position.** The id freezes on the first letter typed, so a row keyed
+  by it remounted mid-keystroke and dropped the cursor after one character.
 
 - **The id is frozen, the name is not.** A portion's id is a slug of the name it was first given
   (`Half Cup` → `half-cup`, de-duplicated within the item) and is never regenerated. It is what
@@ -61,6 +69,27 @@ which portion, and the Sell screen's picker can.
   when `department` was added. `pages/MenuAdminPage.test.tsx` asserts it against the real
   button's real disabled state, and the assertion was confirmed to fail when `rates` is dropped
   from the comparison.
+
+### Stock items in menu sections
+
+A sell-direct stock lot (Lassi, Coca-Cola) can be **placed** in a menu section from Menu admin
+("+ Add stock item"). A placement is a `MenuItem` with `sellMode: 'direct'` and `inventoryId`;
+no new collection. The lot keeps owning price and stock: a placed row
+(`ui/LinkedStockRow.tsx`) shows them read-only and edits only **Station** and availability, and
+the server strips any price, portions or GST sent on a placement.
+
+- **The Sell screen still sells the lot, not the placement.** `CafeSellCatalogPanel` renders the
+  lot inside its section and adds it by its `inventory:` ref, so checkout, stock decrement and
+  refunds are unchanged. A lot placed anywhere drops out of the Direct stock group. A placement's
+  `menu:` ref is refused for sale — priced from the menu it would be free.
+- **Station is frozen on the cart line** when the line is written, from the placement; an
+  unplaced lot keeps `KITCHEN`. A later menu edit never re-routes a line already on the bill.
+- **"No ticket" is a real station (`NONE`).** The item is billed and claimed by the punch like any
+  other, but no KOT is created and no number is burned. `ui/StationSelect.tsx` offers Kitchen,
+  the stations the menu already uses, No ticket, and New station….
+- **One placement per lot**, enforced on save; a placement whose lot was deleted stays saveable
+  and shows "Stock item missing". The picker lists only unplaced sell-direct lots, read through
+  `queries/sellDirectLots.ts`.
 
 ### Known gap — a withdrawal is not told to the kitchen
 

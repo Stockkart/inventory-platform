@@ -11,15 +11,32 @@ import {
   Modal,
   Stack,
   Text,
+  cn,
   productChrome,
 } from '@inventory-platform/ui-kit';
-import { getShopAvailableDisplayCount } from '../lib/inventoryAvailability';
 
 function money(n: number): string {
   return `₹${n.toFixed(2)}`;
 }
 
-type CafeTab = { id: string; label: string; kind: 'all' | 'menu' | 'stock' };
+type CafeTab = { id: string; label: string; kind: 'all' | 'menu' | 'stock'; tone?: string };
+
+const SECTION_TONES = [
+  productChrome.cafeTone0,
+  productChrome.cafeTone1,
+  productChrome.cafeTone2,
+  productChrome.cafeTone3,
+  productChrome.cafeTone4,
+  productChrome.cafeTone5,
+];
+
+/**
+ * A section's tone follows its position in the whole menu, not in the filtered view, so a search
+ * or a tab switch never repaints Starter in Main Course's colour.
+ */
+export function sectionTone(position: number): string {
+  return SECTION_TONES[position % SECTION_TONES.length];
+}
 
 /**
  * The portions a cashier may actually pick: a row with no frozen id or no name is a half-typed
@@ -54,8 +71,29 @@ function stockPrice(item: InventoryItem): number {
 }
 
 function stockAvailable(item: InventoryItem): number {
-  return getShopAvailableDisplayCount(item);
+  return item.currentBaseCount ?? item.currentCount ?? 0;
 }
+
+export type LinkedStockBlock = 'missing' | 'outOfStock';
+
+/**
+ * What a menu placement of a stock lot can sell right now. The lot comes from `directStock`, which
+ * holds only sell-direct lots: a lot deleted or no longer sell-direct is simply absent, and reads
+ * as missing.
+ */
+export function linkedStockState(
+  item: MenuItem,
+  lotsById: Map<string, InventoryItem>,
+): { lot: InventoryItem | null; blocked: LinkedStockBlock | null } {
+  const lot = item.inventoryId ? lotsById.get(item.inventoryId) ?? null : null;
+  if (!lot) return { lot: null, blocked: 'missing' };
+  return { lot, blocked: stockAvailable(lot) <= 0 ? 'outOfStock' : null };
+}
+
+const BLOCKED_LABEL: Record<LinkedStockBlock, string> = {
+  missing: 'Stock item missing',
+  outOfStock: 'Out of stock',
+};
 
 export function CafeSellCatalogPanel({
   catalog,
@@ -65,8 +103,8 @@ export function CafeSellCatalogPanel({
   onAddMenuItem,
   onAddDirectStock,
 }: CafeSellCatalogPanelProps) {
-  const sections = catalog?.menu?.sections ?? [];
-  const directStock = catalog?.directStock ?? [];
+  const sections = useMemo(() => catalog?.menu?.sections ?? [], [catalog]);
+  const directStock = useMemo(() => catalog?.directStock ?? [], [catalog]);
   const normalizedFilter = filterQuery.trim().toLowerCase();
 
   const visibleSections = useMemo(
@@ -88,10 +126,28 @@ export function CafeSellCatalogPanel({
     [sections, normalizedFilter],
   );
 
+  const lotsById = useMemo(
+    () => new Map(directStock.map((lot) => [lot.id, lot] as const)),
+    [directStock],
+  );
+
+  /** Lots placed in a section. They sell from there, so Direct stock does not list them twice. */
+  const linkedIds = useMemo(
+    () =>
+      new Set(
+        sections.flatMap((section) =>
+          (section.items ?? [])
+            .filter((item) => item.sellMode === 'direct' && item.inventoryId)
+            .map((item) => item.inventoryId as string),
+        ),
+      ),
+    [sections],
+  );
+
   const filteredDirectStock = useMemo(
     () =>
       directStock.filter((item) => {
-        if (!item.name?.trim()) {
+        if (!item.name?.trim() || linkedIds.has(item.id)) {
           return false;
         }
         if (!normalizedFilter) {
@@ -99,7 +155,12 @@ export function CafeSellCatalogPanel({
         }
         return item.name.toLowerCase().includes(normalizedFilter);
       }),
-    [directStock, normalizedFilter],
+    [directStock, normalizedFilter, linkedIds],
+  );
+
+  const tonesBySectionId = useMemo(
+    () => new Map(sections.map((section, position) => [section.id, sectionTone(position)])),
+    [sections],
   );
 
   const tabs = useMemo((): CafeTab[] => {
@@ -109,13 +170,19 @@ export function CafeSellCatalogPanel({
         id: section.id,
         label: section.title || 'Menu',
         kind: 'menu',
+        tone: tonesBySectionId.get(section.id),
       });
     }
     if (filteredDirectStock.length > 0) {
-      next.push({ id: '__stock__', label: 'Stock', kind: 'stock' });
+      next.push({
+        id: '__stock__',
+        label: 'Stock',
+        kind: 'stock',
+        tone: productChrome.cafeToneStock,
+      });
     }
     return next;
-  }, [visibleSections, filteredDirectStock.length]);
+  }, [visibleSections, filteredDirectStock.length, tonesBySectionId]);
 
   const [activeTab, setActiveTab] = useState('all');
   /** The item whose portion picker is open. Null means no picker. */
@@ -183,7 +250,11 @@ export function CafeSellCatalogPanel({
                 role="tab"
                 aria-selected={isActive}
                 onClick={() => setActiveTab(tab.id)}
-                className={productChrome.cafeCatalogTab}
+                className={cn(
+                  productChrome.cafeCatalogTab,
+                  tab.tone && productChrome.cafeCatalogTabToned,
+                  tab.tone,
+                )}
               >
                 {tab.label}
               </Button>
@@ -194,25 +265,57 @@ export function CafeSellCatalogPanel({
 
       <Box padding="md" className={productChrome.cafeCatalogScroll}>
         {menuSectionsToRender.map((section) => (
-          <Box key={section.id} className={productChrome.cafeCatalogSection}>
+          <Box
+            key={section.id}
+            className={cn(productChrome.cafeCatalogSection, tonesBySectionId.get(section.id))}
+          >
             <Inline
               justify="between"
               align="center"
               gap="sm"
               className={productChrome.cafeCatalogSectionHeader}
             >
-              <Text
-                variant="caption"
-                weight="bold"
-                color="secondary"
-                className={productChrome.sectionLabel}
-              >
+              <Text weight="bold" className={productChrome.cafeCatalogSectionTitle}>
                 {section.title || 'Menu'}
               </Text>
-              <Badge variant="neutral">{section.items.length}</Badge>
+              <Badge variant="neutral" className={productChrome.cafeCatalogCount}>
+                {section.items.length}
+              </Badge>
             </Inline>
             <Box className={productChrome.cafeCatalogGrid}>
               {section.items.map((item) => {
+                if (item.sellMode === 'direct') {
+                  const { lot, blocked } = linkedStockState(item, lotsById);
+                  return (
+                    <Button
+                      key={item.id}
+                      type="button"
+                      variant="outline"
+                      disabled={disabled || blocked !== null}
+                      onClick={() => {
+                        if (lot) onAddDirectStock(lot);
+                      }}
+                      className={productChrome.cafeCatalogTileStock}
+                    >
+                      <Stack gap="xs" width="full">
+                        <Text weight="semibold" truncate>
+                          {lot?.name || item.name}
+                        </Text>
+                        <Text variant="caption" color="secondary">
+                          {blocked
+                            ? BLOCKED_LABEL[blocked]
+                            : `${stockAvailable(lot as InventoryItem)} in stock`}
+                        </Text>
+                        <Inline justify="between" align="center" width="full">
+                          <Text weight="semibold">{lot ? money(stockPrice(lot)) : '—'}</Text>
+                          <Text aria-hidden className={productChrome.cafeCatalogAddBadgeStock}>
+                            +
+                          </Text>
+                        </Inline>
+                      </Stack>
+                    </Button>
+                  );
+                }
                 const portions = sellablePortions(item);
                 const isPortioned = portions.length > 0;
                 return (
@@ -256,22 +359,19 @@ export function CafeSellCatalogPanel({
         ))}
 
         {showStock && hasDirectStock ? (
-          <Box>
+          <Box className={cn(productChrome.cafeCatalogSection, productChrome.cafeToneStock)}>
             <Inline
               justify="between"
               align="center"
               gap="sm"
               className={productChrome.cafeCatalogSectionHeader}
             >
-              <Text
-                variant="caption"
-                weight="bold"
-                color="secondary"
-                className={productChrome.sectionLabel}
-              >
+              <Text weight="bold" className={productChrome.cafeCatalogSectionTitle}>
                 Direct stock
               </Text>
-              <Badge variant="neutral">{filteredDirectStock.length}</Badge>
+              <Badge variant="neutral" className={productChrome.cafeCatalogCount}>
+                {filteredDirectStock.length}
+              </Badge>
             </Inline>
             <Box className={productChrome.cafeCatalogGrid}>
               {filteredDirectStock.map((item) => {

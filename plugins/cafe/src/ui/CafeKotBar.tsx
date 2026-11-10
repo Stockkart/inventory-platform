@@ -14,10 +14,9 @@ import {
 import { printKot } from '../lib/printKot';
 import { createPrintQueue } from '../lib/printQueue';
 import { readParkedAttempt } from '../lib/punchKeyStore';
-import { usePunchMutation } from '../queries/hooks';
+import { useBillKotsQuery, usePunchMutation } from '../queries/hooks';
 import type { CafeKot } from '../types/kot';
 import { KotTicketStrip } from './KotTicketStrip';
-import { SentRounds } from './SentRounds';
 
 /**
  * Print KOT for the cafe Sell screen.
@@ -35,6 +34,12 @@ export function CafeKotBar({ purchaseId, disabled = false }: SellActionSlotProps
   const [tickets, setTickets] = useState<KotTicketView[]>([]);
   const [notice, setNotice] = useState<PunchNotice | null>(null);
   const punch = usePunchMutation(purchaseId ?? '');
+  const billKots = useBillKotsQuery(purchaseId ?? null);
+  /** Rounds this bill sent before the bar mounted, so a lost slip can still be reprinted. */
+  const earlier = useMemo(() => {
+    const shown = new Set(tickets.map((ticket) => ticket.kot.kotId));
+    return (billKots.data ?? []).filter((kot) => !shown.has(kot.kotId));
+  }, [billKots.data, tickets]);
 
   /**
    * The listener is a bare `setState` and stays that way. `createPrintQueue` calls it
@@ -177,7 +182,7 @@ export function CafeKotBar({ purchaseId, disabled = false }: SellActionSlotProps
           </Button>
         </Inline>
       </Box>
-      {/* Same inset as the cart lines and sent rounds, so every box in the column is one width. */}
+      {/* Same inset as the cart lines and tickets, so every box in the column is one width. */}
       {notice ? (
         <Box px="md" width="full">
           <Alert variant={notice.tone} role={notice.tone === 'danger' ? 'alert' : 'status'}>
@@ -185,14 +190,11 @@ export function CafeKotBar({ purchaseId, disabled = false }: SellActionSlotProps
           </Alert>
         </Box>
       ) : null}
-      {tickets.length > 0 ? (
+      {tickets.length > 0 || earlier.length > 0 ? (
         <Box px="md" width="full">
-          <KotTicketStrip tickets={tickets} onRetry={handleRetry} />
+          <KotTicketStrip tickets={tickets} earlier={earlier} onRetry={handleRetry} />
         </Box>
       ) : null}
-      {/* Below the tickets of this screen, because the rounds already on paper are the rarer
-          need: the cashier reaches for them only when the kitchen says a slip never arrived. */}
-      <SentRounds purchaseId={purchaseId ?? null} />
     </Stack>
   );
 }

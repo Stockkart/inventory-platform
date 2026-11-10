@@ -1,7 +1,8 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { MenuItem, ShopMenu } from '../types/menu';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MenuAdminPage } from './MenuAdminPage';
 
 /**
@@ -20,14 +21,14 @@ import { MenuAdminPage } from './MenuAdminPage';
 
 const menuGet = vi.fn();
 const menuPut = vi.fn();
-const cartAdd = vi.fn();
+const catalogGet = vi.fn();
 
 vi.mock('@inventory-platform/product/api', () => ({
   shopMenuApi: {
     get: (...args: unknown[]) => menuGet(...args),
     put: (...args: unknown[]) => menuPut(...args),
   },
-  cartApi: { add: (...args: unknown[]) => cartAdd(...args) },
+  sellCatalogApi: { get: (...args: unknown[]) => catalogGet(...args) },
 }));
 
 vi.mock('@inventory-platform/session', () => ({
@@ -71,14 +72,20 @@ function saveButton(): HTMLButtonElement {
 
 async function renderPage(items: MenuItem[]) {
   menuGet.mockResolvedValue(savedMenu(items));
-  render(<MenuAdminPage />);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <QueryClientProvider client={client}>
+      <MenuAdminPage />
+    </QueryClientProvider>,
+  );
   await waitFor(() => expect(saveButton()).toBeTruthy());
 }
 
 beforeEach(() => {
   menuGet.mockReset();
   menuPut.mockReset();
-  cartAdd.mockReset();
+  catalogGet.mockReset();
+  catalogGet.mockResolvedValue({ menu: { sections: [] }, directStock: [] });
 });
 
 afterEach(() => {
@@ -186,24 +193,96 @@ describe('MenuAdminPage portions', () => {
     expect(item.rates).toEqual([]);
   });
 
-  it('hides the single price on a portioned item and sends the cashier to the Sell picker', async () => {
+  it('hides the single price on a portioned item', async () => {
     await renderPage([portionedItem]);
     expect(screen.queryByLabelText('Price')).toBeNull();
-
-    const addToSell = screen.getByRole('button', {
-      name: /Pick portion on Sell/i,
-    }) as HTMLButtonElement;
-    expect(addToSell.disabled).toBe(true);
-    expect(cartAdd).not.toHaveBeenCalled();
   });
 
-  it('still adds an unportioned item straight to the cart', async () => {
+  it('keeps the same portion name input while its first letters are typed', async () => {
     await renderPage([plainItem]);
-    cartAdd.mockResolvedValue({});
 
-    fireEvent.click(screen.getByRole('button', { name: 'Add to Sell' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add portion' }));
+    const input = screen.getByLabelText('Portion 1 name for Masala Chai');
+    input.focus();
+    // The first letter freezes the portion id. Keying the row by that id remounted it here,
+    // so the cashier lost the cursor after one character.
+    fireEvent.change(input, { target: { value: 'H' } });
+    fireEvent.change(input, { target: { value: 'Ha' } });
 
-    await waitFor(() => expect(cartAdd).toHaveBeenCalledTimes(1));
-    expect(cartAdd.mock.calls[0][0].items).toEqual([{ sellableRef: 'menu:m2', quantity: 1 }]);
+    expect(screen.getByLabelText('Portion 1 name for Masala Chai')).toBe(input);
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('saves the menu from the item card, and only once something changed', async () => {
+    await renderPage([plainItem]);
+    menuPut.mockImplementation(async (menu: ShopMenu) => menu);
+    const cardSave = () => screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement;
+
+    expect(cardSave().disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText('Price'), { target: { value: '35' } });
+    fireEvent.click(cardSave());
+
+    await waitFor(() => expect(menuPut).toHaveBeenCalledTimes(1));
+  });
+});
+
+describe('MenuAdminPage linked stock', () => {
+  const lassiLot = { id: 'inv-1', name: 'Lassi', currentBaseCount: 8, sellingPrice: 40 };
+  const cokeLot = { id: 'inv-2', name: 'Coke', currentBaseCount: 5, sellingPrice: 20 };
+
+  function linked(inventoryId: string, name: string): MenuItem {
+    return {
+      id: `link-${inventoryId}`,
+      name,
+      sellingPrice: null,
+      sellMode: 'direct',
+      inventoryId,
+      available: true,
+    };
+  }
+
+  async function renderWithLots(items: MenuItem[], lots: object[]) {
+    catalogGet.mockResolvedValue({ menu: { sections: [] }, directStock: lots });
+    await renderPage(items);
+    await waitFor(() => expect(catalogGet).toHaveBeenCalled());
+  }
+
+  it('offers only unlinked stock in the picker', async () => {
+    await renderWithLots([plainItem, linked('inv-1', 'Lassi')], [lassiLot, cokeLot]);
+    fireEvent.click(screen.getByRole('button', { name: /Add stock item/i }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog.textContent).toContain('Coke');
+    expect(dialog.textContent).not.toContain('Lassi');
+  });
+
+  it('adding a stock item enables Save and saves it as a direct link without a price', async () => {
+    await renderWithLots([plainItem], [lassiLot, cokeLot]);
+    menuPut.mockImplementation(async (menu: ShopMenu) => menu);
+
+    fireEvent.click(screen.getByRole('button', { name: /Add stock item/i }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: /Coke/ }));
+    expect(saveButton().disabled).toBe(false);
+    fireEvent.click(saveButton());
+
+    await waitFor(() => expect(menuPut).toHaveBeenCalledTimes(1));
+    const sent = menuPut.mock.calls[0][0] as ShopMenu;
+    const item = sent.sections[0].items.find((i) => i.inventoryId === 'inv-2');
+    expect(item).toMatchObject({ sellMode: 'direct', inventoryId: 'inv-2', sellingPrice: null });
+    expect(typeof sent.revision).toBe('number');
+  });
+
+  it("a linked row shows the lot's price and stock read-only", async () => {
+    await renderWithLots([linked('inv-2', 'Coke')], [cokeLot]);
+    expect(await screen.findByText('₹20.00')).toBeTruthy();
+    expect(screen.getByText('5 in stock')).toBeTruthy();
+    expect(screen.queryByLabelText('Price')).toBeNull();
+  });
+
+  it('a link whose lot is gone says so and can still be removed', async () => {
+    await renderWithLots([plainItem, linked('inv-9', 'Old Juice')], [cokeLot]);
+    expect(await screen.findByText('Stock item missing')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Old Juice' }));
+    expect(screen.queryByText('Stock item missing')).toBeNull();
   });
 });
