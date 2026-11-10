@@ -14,7 +14,7 @@ export default defineConfig({
     // Component specs opt into jsdom with a `@vitest-environment jsdom` docblock; the pure
     // logic modules that make up most of this package do not need a DOM.
     environment: 'node',
-    include: ['src/**/*.{test,spec}.{js,ts,jsx,tsx}'],
+    include: ['src/**/*.test.{ts,tsx}'],
     reporters: ['default'],
   },
 });

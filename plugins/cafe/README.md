@@ -58,7 +58,7 @@ which portion, and the Sell screen's picker can.
   shop reads; every cart line and kitchen ticket still points at the same portion.
 - **The dirty check includes `rates`.** `normalizeSectionsForCompare` must compare the portions
   or Save stays grey over an edit the cashier can see on screen — exactly the bug that shipped
-  when `department` was added. `pages/MenuAdminPage.spec.tsx` asserts it against the real
+  when `department` was added. `pages/MenuAdminPage.test.tsx` asserts it against the real
   button's real disabled state, and the assertion was confirmed to fail when `rates` is dropped
   from the comparison.
 
