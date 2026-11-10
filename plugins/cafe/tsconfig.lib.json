@@ -55,6 +55,12 @@
     },
     {
       "path": "../../core/user/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/query/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/api-client/tsconfig.lib.json"
     }
   ]
 }
