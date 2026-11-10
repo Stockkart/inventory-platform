@@ -1,7 +1,10 @@
 /**
- * How a printed document leaves the browser: a file saved to disk, or a PDF opened in a tab.
- * `PrintInvoiceModal` and `PrintCreditNoteModal` each carried a private copy of these; this is
- * that code, once.
+ * How a printed document leaves the browser: a file saved to disk, or a PDF the server rendered
+ * opened in a tab for the operator to print (dot matrix alone goes through the print bridge;
+ * see the README). `PrintInvoiceModal` and `PrintCreditNoteModal` each
+ * carried a byte-identical private copy of these two functions; this is that code, moved
+ * once so invoices, credit notes and kitchen tickets behave the same way rather than
+ * drifting apart.
  */
 
 /** Saves the document instead of opening it. Used for printer files and when a popup blocker wins. */
@@ -22,8 +25,15 @@ export function downloadPrinterFile(file: { filename: string; content: string })
 }
 
 /**
- * Opens the document in a new tab for the operator to print. Falls back to a download when a
- * popup blocker refuses the tab, so the document is never silently lost.
+ * Opens the document in a new tab for the operator to print.
+ *
+ * Deliberately does **not** call `window.print()`. The thermal invoice has always opened a
+ * preview and let the operator choose the printer and the paper — a kitchen ticket that
+ * forces a dialog behaves unlike every other document in the app, and on a counter with
+ * one browser and two printers it fires at whichever happens to be default.
+ *
+ * Falls back to a download when a popup blocker refuses the tab, so the document is never
+ * silently lost.
  */
 export function openPdfPreview(blob: Blob, fallbackName: string): void {
   const url = window.URL.createObjectURL(blob);
