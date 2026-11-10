@@ -7,8 +7,7 @@ import { generateInventoryWorkspaceAliases } from '../../platform/routing/vite-a
 const workspaceRoot = path.resolve(__dirname, '../..');
 const appDir = __dirname;
 
-// `.spec` files (the cafe sell catalog's) run alongside `.test` files.
-const TEST_FILES = ['src/**/*.{test,spec}.{ts,tsx}'];
+const TEST_FILES = ['src/**/*.test.{ts,tsx}'];
 const UI_DIR = 'src/ui/**';
 
 export default defineConfig({
@@ -40,7 +39,7 @@ export default defineConfig({
         test: {
           name: 'jsdom',
           environment: 'jsdom',
-          include: [`${UI_DIR}/*.{test,spec}.{ts,tsx}`],
+          include: [`${UI_DIR}/*.test.{ts,tsx}`],
         },
       },
     ],
