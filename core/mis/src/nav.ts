@@ -10,5 +10,6 @@ export const misNav: NavContribution = {
     { path: '/dashboard/mis/vendor-money', label: 'Vendor Money', icon: 'circle-dollar-sign' },
     { path: '/dashboard/mis/customer-money', label: 'Customer MIS', icon: 'users' },
     { path: '/dashboard/mis/stock', label: 'Stock', icon: 'package' },
+    { path: '/dashboard/mis/bank-summary', label: 'Bank Summary', icon: 'scale' },
   ],
 };

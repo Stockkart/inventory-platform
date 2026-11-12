@@ -1,9 +1,12 @@
 import { apiClient } from '@inventory-platform/api-client';
 import type {
+  MisBankSummaryReportParams,
+  MisBankSummaryReportResponse,
   MisMoneyReportParams,
   MisMoneyReportResponse,
   MisSalesReportParams,
   MisSalesReportResponse,
+  MisStockPeriodSnapshot,
   MisStockReportParams,
   MisStockReportResponse,
 } from '@inventory-platform/mis/types';
@@ -110,6 +113,64 @@ function stockQuery(
     lowStockOnly: params.lowStockOnly === true ? true : undefined,
     deadStockOnly: params.deadStockOnly === true ? true : undefined,
   });
+}
+
+function bankSummaryQuery(
+  params: MisBankSummaryReportParams,
+  opts?: { paging?: boolean },
+): Record<string, string> {
+  const includePaging = opts?.paging !== false;
+  return toQuery({
+    from: params.from,
+    to: params.to,
+    ...(includePaging
+      ? {
+          page: params.page,
+          size: params.size,
+        }
+      : {}),
+    q: params.q,
+  });
+}
+
+function emptyBankSummaryTotals(): MisBankSummaryReportResponse['totals'] {
+  return {
+    companyCount: 0,
+    opening: 0,
+    purchase: 0,
+    sale: 0,
+    adjustment: 0,
+    closing: 0,
+  };
+}
+
+function normalizeBankSummary(res: MisBankSummaryReportResponse): MisBankSummaryReportResponse {
+  const totals = res.totals;
+  return {
+    ...res,
+    openingSource: res.openingSource === 'SNAPSHOT' ? 'SNAPSHOT' : 'DERIVED',
+    hasAdjustments: Boolean(res.hasAdjustments),
+    periodClosed: Boolean(res.periodClosed),
+    page: asLong(res.page),
+    size: asLong(res.size),
+    totalItems: asLong(res.totalItems),
+    rows: (res.rows ?? []).map((r) => ({
+      ...r,
+      opening: asNum(r.opening),
+      purchase: asNum(r.purchase),
+      sale: asNum(r.sale),
+      adjustment: asNum(r.adjustment),
+      closing: asNum(r.closing),
+    })),
+    totals: {
+      companyCount: asLong(totals?.companyCount),
+      opening: asNum(totals?.opening),
+      purchase: asNum(totals?.purchase),
+      sale: asNum(totals?.sale),
+      adjustment: asNum(totals?.adjustment),
+      closing: asNum(totals?.closing),
+    },
+  };
 }
 
 function emptyMoneySummary(): MisMoneyReportResponse['summary'] {
@@ -403,5 +464,61 @@ export const misApi = {
   ): Promise<{ blob: Blob; filename: string }> => {
     const query = stockQuery(params, { paging: false });
     return downloadMisBlob(MIS_ENDPOINTS.STOCK_PDF, query, 'stock-mis.pdf');
+  },
+
+  bankSummary: async (
+    params: MisBankSummaryReportParams = {},
+  ): Promise<MisBankSummaryReportResponse> => {
+    const query = bankSummaryQuery(params);
+    const raw = await apiClient.get<unknown>(MIS_ENDPOINTS.BANK_SUMMARY, query);
+    const inner = unwrap<MisBankSummaryReportResponse>(raw);
+    if (!inner) {
+      return {
+        from: params.from ?? null,
+        to: params.to ?? null,
+        openingSource: 'DERIVED',
+        openingSnapshotDate: null,
+        hasAdjustments: false,
+        periodClosed: false,
+        totals: emptyBankSummaryTotals(),
+        rows: [],
+        page: 0,
+        size: 0,
+        totalItems: 0,
+      };
+    }
+    return normalizeBankSummary(inner);
+  },
+
+  bankSummaryExcel: async (
+    params: MisBankSummaryReportParams = {},
+  ): Promise<{ blob: Blob; filename: string }> => {
+    const query = bankSummaryQuery(params, { paging: false });
+    const from = query.from ?? 'from';
+    const to = query.to ?? 'to';
+    return downloadMisBlob(
+      MIS_ENDPOINTS.BANK_SUMMARY_EXCEL,
+      query,
+      `bank-summary-${from}-${to}.xlsx`,
+    );
+  },
+
+  bankSummaryPdf: async (
+    params: MisBankSummaryReportParams = {},
+  ): Promise<{ blob: Blob; filename: string }> => {
+    const query = bankSummaryQuery(params, { paging: false });
+    const from = query.from ?? 'from';
+    const to = query.to ?? 'to';
+    return downloadMisBlob(MIS_ENDPOINTS.BANK_SUMMARY_PDF, query, `bank-summary-${from}-${to}.pdf`);
+  },
+
+  /** Freeze a period's closing stock value, which the next period then opens from. */
+  closeStockPeriod: async (
+    periodEnd: string,
+    force = false,
+  ): Promise<MisStockPeriodSnapshot | undefined> => {
+    const qs = new URLSearchParams({ periodEnd, force: force ? 'true' : 'false' }).toString();
+    const raw = await apiClient.post<unknown>(`${MIS_ENDPOINTS.BANK_SUMMARY_CLOSE}?${qs}`);
+    return unwrap<MisStockPeriodSnapshot>(raw);
   },
 };

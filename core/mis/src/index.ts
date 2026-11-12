@@ -11,5 +11,6 @@ export { MisExportButtons } from './ui/MisExportButtons';
 export { VendorMoneyMisPage } from './pages/VendorMoneyMisPage';
 export { CustomerMoneyMisPage } from './pages/CustomerMoneyMisPage';
 export { StockMisPage } from './pages/StockMisPage';
+export { BankSummaryPage } from './pages/BankSummaryPage';
 
 export { formatDateShort, formatMoney, todayLocalDate } from './model/format';

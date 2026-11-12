@@ -12,4 +12,8 @@ export const MIS_ENDPOINTS = {
   STOCK: '/mis/stock',
   STOCK_EXCEL: '/mis/stock/excel',
   STOCK_PDF: '/mis/stock/pdf',
+  BANK_SUMMARY: '/mis/bank-summary',
+  BANK_SUMMARY_EXCEL: '/mis/bank-summary/excel',
+  BANK_SUMMARY_PDF: '/mis/bank-summary/pdf',
+  BANK_SUMMARY_CLOSE: '/mis/bank-summary/close',
 } as const;

@@ -24,6 +24,11 @@ export const misRoutes: RouteModule = {
       file: 'routes/stock.tsx',
       lazy: () => import('./routes/stock'),
     },
+    {
+      path: 'bank-summary',
+      file: 'routes/bank-summary.tsx',
+      lazy: () => import('./routes/bank-summary'),
+    },
   ],
 };
 
