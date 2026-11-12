@@ -71,6 +71,7 @@ import {
   X,
 } from 'lucide-react';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
+import { canEditAnyPriceField, priceEditPath } from '../lib/priceEdit';
 import type { FacetValue } from '../model/search.types';
 import { CompanyChips, chipIndexForKey, visibleCompanyChips } from '../ui/search/CompanyChips';
 import { cartApi } from '../api/cart.api';
@@ -182,6 +183,7 @@ import { ScanSellCafeStockLine } from '../ui/ScanSellCafeStockLine';
 import {
   useNotify,
   useAuthStore,
+  useShopAccessStore,
   useShopCapabilitiesStore,
   useVerticalSchemaStore,
 } from '@inventory-platform/session';
@@ -967,6 +969,9 @@ function CustomerSectionBlock({
 export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?: boolean }) {
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
+  const productSearchAccess = useShopAccessStore((s) =>
+    activeShopId ? s.byShopId[activeShopId]?.productSearch : undefined,
+  );
   const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
   /** Rate rules on (`features.rateRules`): MRP / PTR / Cost picks send their system name. */
   const rateRulesOn = useShopCapabilitiesStore((s) =>
@@ -4754,17 +4759,15 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                           </Text>
                         </DetailField>
                       </Grid>
-                      {detailModalItem.inventoryItem.pricingId ? (
+                      {detailModalItem.inventoryItem.pricingId &&
+                      canEditAnyPriceField(productSearchAccess) ? (
                         <Box mt="md">
                           <Link
-                            to={`/dashboard/price-edit/${detailModalItem.inventoryItem.pricingId}`}
-                            state={{
-                              priceToRetail: detailModalItem.inventoryItem.priceToRetail,
-                              maximumRetailPrice: detailModalItem.inventoryItem.maximumRetailPrice,
-                              productName: detailModalItem.inventoryItem.name,
-                              rates: detailModalItem.inventoryItem.rates ?? undefined,
-                              defaultRate: detailModalItem.inventoryItem.defaultRate ?? undefined,
-                            }}
+                            to={priceEditPath(
+                              detailModalItem.inventoryItem.pricingId,
+                              resolveInventoryDocumentId(detailModalItem.inventoryItem),
+                            )}
+                            state={{ productName: detailModalItem.inventoryItem.name }}
                           >
                             <Text color="primary">Edit price</Text>
                           </Link>

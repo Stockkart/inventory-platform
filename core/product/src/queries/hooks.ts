@@ -11,12 +11,14 @@ import type {
   CartResponse,
   CreatePrintJobRequest,
   HsnGstRates,
+  InventoryItem,
   PrintBridgeConnection,
   PrintJobPlan,
   PrintOutcomeResult,
   PurchaseTaxPreviewRequest,
   ReportPrintOutcomeRequest,
   StockEntryEstimateResponse,
+  UpdateInventoryRequest,
 } from '@inventory-platform/product/types';
 import { inventoryApi } from '../api/inventory.api';
 import { estimatesApi } from '../api/estimates.api';
@@ -146,6 +148,36 @@ export function useInvoiceAmendmentPreviewQuery(
 }
 
 /** Corrects a purchase invoice header; refreshes the invoice lists and details. */
+/** One lot by its inventory document id (GET /inventory/{id}), with its prices. */
+export function useInventoryLotQuery(inventoryId: string | null | undefined) {
+  return useQuery({
+    queryKey: productKeys.inventoryDetail(inventoryId ?? ''),
+    queryFn: () => inventoryApi.getById(inventoryId as string),
+    enabled: !!inventoryId,
+  });
+}
+
+/**
+ * Updates one lot (PUT /inventory/{id}). The answer replaces the cached lot, and every product
+ * read is marked stale so product search and scan-sell show the new values.
+ */
+export function useUpdateInventoryLotMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      inventoryId,
+      payload,
+    }: {
+      inventoryId: string;
+      payload: UpdateInventoryRequest;
+    }) => inventoryApi.update(inventoryId, payload),
+    onSuccess: (updated: InventoryItem, { inventoryId }) => {
+      queryClient.setQueryData(productKeys.inventoryDetail(inventoryId), updated);
+      void queryClient.invalidateQueries({ queryKey: productKeys.all });
+    },
+  });
+}
+
 export function useAmendVendorPurchaseInvoiceMutation() {
   const queryClient = useQueryClient();
   return useMutation({

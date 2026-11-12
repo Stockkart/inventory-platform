@@ -82,7 +82,7 @@ scripts/deploy/      Vercel deploy and verify scripts
 - Platform: access (capabilities), api-client (HTTP), contracts (shared types), query (QueryClient, key factory), routing (`RouteModule`, nav types), schema (vertical fields), session (auth, shop, toasts), shell (dashboard chrome).
 - Standard domain layout: `api/ model/ queries/ pages/ ui/ routes/ routes.ts nav.ts index.ts`. Example: `core/reminders/src/routes.ts`.
   - `core/checkout` and `core/notifications` have only `queries/` (keys only) and `index.ts`.
-  - `core/pricing` has no `ui/`. Its hooks in `core/pricing/src/queries/hooks.ts` have no consumers.
+  - `core/pricing` has no `ui/`.
   - `core/product` adds `lib/`, `search/`, `cardLayout/`, `vertical/`. `core/user` adds `journey/`. `core/plan` adds `marketing/`, `payment/`.
 - ui-kit layers: `layout/ forms/ feedback/ overlay/ data-display/ patterns/ theme/ tokens/`. Source: `ui-kit/README.md`.
 

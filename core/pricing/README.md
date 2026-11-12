@@ -2,7 +2,32 @@
 
 **Status:** Migrated
 
-Inventory pricing search and edit (PTR, MRP, rates).
+Inventory pricing search and edit (PTR, MRP, PTS, GST, sale add. discount, rates, default rate).
+
+### Edit price (`/dashboard/price-edit/:pricingId?lot=<inventoryId>`)
+
+- **The only place a lot's prices are edited.** The product search Edit dialog shows prices
+  read-only; its "Edit price" link (and the ones in Scan & Sell and Pricing) opens this page with
+  the lot id in `?lot=`.
+- **Saves in two parts, each only when it changed.**
+  - The single prices (PTR, MRP, PTS, GST, sale add. discount) go through `PUT /inventory/{id}`
+    (`useUpdateInventoryLotMutation` from `@inventory-platform/product`). That endpoint applies
+    the product-search grants and the lot's GST rules, and the mutation marks every product read
+    stale, so product search and Scan & Sell show the new prices. `PATCH /pricing/{id}` ignores
+    PTR and MRP, so they never go there.
+  - The rates, the default rate and rule-rate resets go through `PATCH /pricing/{id}`
+    (`useUpdatePricingMutation`), the one endpoint that takes `resetRates` and answers with
+    `warnings` and `defaultRateOptions`. The page loads them with `usePricingQuery`.
+  - Prices are written first: a new PTR or MRP regenerates rule rates, so the rates write that
+    follows answers with the final rates. When only prices changed, the page reloads the pricing.
+- **Follows RBAC.** Each input is enabled only when the user may edit that field
+  (`canEditPriceField`); the Edit price links show only when the user may edit at least one
+  (`canEditAnyPriceField`). GST is hidden for BASIC lots. The payload and its checks are
+  `buildPriceUpdate` (only changed fields; an emptied sale add. discount is sent as `clearFields`)
+  and `buildRatesUpdate` (null when the rates part is unchanged, so a member granted only MRP never
+  writes pricing), both in `@inventory-platform/product`. Rule-rate terms follow the
+  `rateRulesEdit` grant, hand-typed rates the `rates` field grant.
+- Opened without `?lot=` (an old link), the page explains where to open it from instead of saving.
 
 ## Owns
 

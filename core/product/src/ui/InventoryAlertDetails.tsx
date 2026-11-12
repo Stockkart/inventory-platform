@@ -3,6 +3,7 @@ import { Link as RouterLink } from 'react-router';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import { getShopAvailableDisplayCount } from '../lib/inventoryAvailability';
 import { splitUpdateByAccess } from '../lib/productEditPermissions';
+import { canEditAnyPriceField, priceEditPath } from '../lib/priceEdit';
 import { barcodesApi } from '../api/barcodes.api';
 import { openLocalBarcodeLabelPrint } from '../lib/printBarcodeLabels';
 import { vendorsApi } from '@inventory-platform/user/vendors';
@@ -256,8 +257,6 @@ export function InventoryAlertDetails({
   const initEditForm = useCallback(() => {
     if (!item) return;
     const d = item;
-    const fmtNum = (n: number | null | undefined) =>
-      n != null && !Number.isNaN(n) ? String(n) : '';
     const packFactor = d.unitConversions?.factor ?? d.unitsPerPack ?? null;
     setEditForm({
       name: d.name ?? '',
@@ -266,16 +265,9 @@ export function InventoryAlertDetails({
       companyName: d.companyName ?? '',
       location: d.location ?? '',
       hsn: d.hsn ?? '',
-      maximumRetailPrice: fmtNum(d.maximumRetailPrice),
-      costPrice: fmtNum(d.costPrice),
-      priceToRetail: fmtNum(d.priceToRetail),
-      sgst: d.sgst ?? '',
-      cgst: d.cgst ?? '',
       conversionFactor: packFactor != null && packFactor > 0 ? String(packFactor) : '',
       schemeType: d.schemeType ?? 'FIXED_UNITS',
       saleScheme: formatSaleSchemeDisplay(d),
-      saleAdditionalDiscount:
-        d.saleAdditionalDiscount != null ? String(d.saleAdditionalDiscount) : '',
       purchaseSchemeType: d.purchaseSchemeType ?? 'FIXED_UNITS',
       purchaseScheme: formatPurchaseSchemeDisplay(d),
       purchaseAdditionalDiscount:
@@ -361,39 +353,7 @@ export function InventoryAlertDetails({
         payload.verticalFields = schemaUpdate.extension;
       }
 
-      const mrp =
-        editForm.maximumRetailPrice != null && String(editForm.maximumRetailPrice).trim() !== ''
-          ? parseFloat(String(editForm.maximumRetailPrice))
-          : NaN;
-      const cost =
-        editForm.costPrice != null && String(editForm.costPrice).trim() !== ''
-          ? parseFloat(String(editForm.costPrice))
-          : NaN;
-      const ptr =
-        editForm.priceToRetail != null && String(editForm.priceToRetail).trim() !== ''
-          ? parseFloat(String(editForm.priceToRetail))
-          : NaN;
-      if (!Number.isNaN(mrp) && mrp !== currentItem.maximumRetailPrice)
-        payload.maximumRetailPrice = mrp;
-      if (!Number.isNaN(cost) && cost !== currentItem.costPrice) payload.costPrice = cost;
-      if (!Number.isNaN(ptr) && ptr !== currentItem.priceToRetail) payload.priceToRetail = ptr;
-      if (
-        editForm.sgst !== undefined &&
-        String(editForm.sgst).trim() !== String(currentItem.sgst ?? '').trim()
-      )
-        payload.sgst = String(editForm.sgst).trim() || undefined;
-      if (
-        editForm.cgst !== undefined &&
-        String(editForm.cgst).trim() !== String(currentItem.cgst ?? '').trim()
-      )
-        payload.cgst = String(editForm.cgst).trim() || undefined;
-      const addDiscStr = String(editForm.saleAdditionalDiscount ?? '').trim();
-      const addDisc = addDiscStr !== '' ? parseFloat(addDiscStr) : null;
-      const currentAddDisc = currentItem.saleAdditionalDiscount ?? null;
-      if (addDisc !== currentAddDisc) {
-        if (addDisc != null) payload.saleAdditionalDiscount = addDisc;
-        else clearFields.push('saleAdditionalDiscount');
-      }
+      // Prices are edited on the Edit price page only (see the Pricing section).
       const threshold = editForm.thresholdCount != null ? Number(editForm.thresholdCount) : null;
       if (threshold !== (currentItem.thresholdCount ?? null)) {
         if (threshold != null) payload.thresholdCount = threshold;
@@ -936,117 +896,42 @@ export function InventoryAlertDetails({
             <SectionHeader icon={IndianRupee} title="Pricing" />
             <Grid columns={2} gap="sm">
               <DetailField icon={Banknote} label="Selling Price (PTR)">
-                {showEditor('priceToRetail') ? (
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    value={editForm.priceToRetail ?? ''}
-                    onChange={(e) =>
-                      updateEditField('priceToRetail', stripLeadingZeros(e.target.value))
-                    }
-                    placeholder="0.00"
-                  />
-                ) : (
-                  <DetailValue weight="semibold">
-                    ₹
-                    {(item?.sellingPrice ?? item?.priceToRetail) != null
-                      ? (item?.sellingPrice ?? item?.priceToRetail)!.toFixed(2)
-                      : '—'}
-                  </DetailValue>
-                )}
+                <DetailValue weight="semibold">
+                  ₹
+                  {(item?.sellingPrice ?? item?.priceToRetail) != null
+                    ? (item?.sellingPrice ?? item?.priceToRetail)!.toFixed(2)
+                    : '—'}
+                </DetailValue>
               </DetailField>
               <DetailField icon={Tag} label="MRP">
-                {showEditor('maximumRetailPrice') ? (
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    value={editForm.maximumRetailPrice ?? ''}
-                    onChange={(e) =>
-                      updateEditField('maximumRetailPrice', stripLeadingZeros(e.target.value))
-                    }
-                    placeholder="0.00"
-                  />
-                ) : (
-                  <DetailValue weight="semibold">
-                    ₹{item?.maximumRetailPrice?.toFixed(2) ?? '—'}
-                  </DetailValue>
-                )}
+                <DetailValue weight="semibold">
+                  ₹{item?.maximumRetailPrice?.toFixed(2) ?? '—'}
+                </DetailValue>
               </DetailField>
               <DetailField icon={IndianRupee} label="Price to stockist (PTS)">
-                {showEditor('costPrice') ? (
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    value={editForm.costPrice ?? ''}
-                    onChange={(e) =>
-                      updateEditField('costPrice', stripLeadingZeros(e.target.value))
-                    }
-                    placeholder="0.00"
-                  />
-                ) : (
-                  <DetailValue weight="semibold">₹{item?.costPrice?.toFixed(2) ?? '—'}</DetailValue>
-                )}
+                <DetailValue weight="semibold">₹{item?.costPrice?.toFixed(2) ?? '—'}</DetailValue>
               </DetailField>
               {item?.billingMode !== 'BASIC' ? (
                 <DetailField icon={Percent} label="SGST (%)">
-                  {showEditor('sgst') ? (
-                    <Input
-                      type="text"
-                      inputMode="decimal"
-                      value={String(editForm.sgst ?? '')}
-                      onChange={(e) => updateEditField('sgst', stripLeadingZeros(e.target.value))}
-                      placeholder="e.g. 2.5"
-                    />
-                  ) : (
-                    <DetailValue>{item?.sgst ? `${item.sgst}%` : '—'}</DetailValue>
-                  )}
+                  <DetailValue>{item?.sgst ? `${item.sgst}%` : '—'}</DetailValue>
                 </DetailField>
               ) : null}
               {item?.billingMode !== 'BASIC' ? (
                 <DetailField icon={Percent} label="CGST (%)">
-                  {showEditor('cgst') ? (
-                    <Input
-                      type="text"
-                      inputMode="decimal"
-                      value={String(editForm.cgst ?? '')}
-                      onChange={(e) => updateEditField('cgst', stripLeadingZeros(e.target.value))}
-                      placeholder="e.g. 2.5"
-                    />
-                  ) : (
-                    <DetailValue>{item?.cgst ? `${item.cgst}%` : '—'}</DetailValue>
-                  )}
+                  <DetailValue>{item?.cgst ? `${item.cgst}%` : '—'}</DetailValue>
                 </DetailField>
               ) : null}
               <DetailField icon={Percent} label="Sale add. discount (%)">
-                {showEditor('saleAdditionalDiscount') ? (
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    value={editForm.saleAdditionalDiscount ?? ''}
-                    onChange={(e) => {
-                      const v = stripLeadingZeros(e.target.value);
-                      updateEditField('saleAdditionalDiscount', v === '' ? '' : v);
-                    }}
-                    placeholder="0"
-                  />
-                ) : (
-                  <DetailValue>
-                    {item?.saleAdditionalDiscount != null ? `${item.saleAdditionalDiscount}%` : '—'}
-                  </DetailValue>
-                )}
+                <DetailValue>
+                  {item?.saleAdditionalDiscount != null ? `${item.saleAdditionalDiscount}%` : '—'}
+                </DetailValue>
               </DetailField>
             </Grid>
-            {item?.pricingId ? (
+            {item?.pricingId && allowEditMode && canEditAnyPriceField(productSearchAccess) ? (
               <Box mt="md">
                 <RouterLink
-                  to={`/dashboard/price-edit/${item.pricingId}`}
-                  state={{
-                    priceToRetail: item.priceToRetail,
-                    maximumRetailPrice: item.maximumRetailPrice,
-                    productName: item.name,
-                    rates: item.rates ?? undefined,
-                    defaultRate: item.defaultRate ?? undefined,
-                  }}
+                  to={priceEditPath(item.pricingId, resolveInventoryDocumentId(item))}
+                  state={{ productName: item.name }}
                 >
                   <Text className={surfaceChrome.linkStrong}>Edit price</Text>
                 </RouterLink>

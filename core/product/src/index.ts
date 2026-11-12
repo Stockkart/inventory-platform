@@ -30,6 +30,19 @@ export {
   clearLabelLayoutSession,
 } from './lib/labelLayoutSession';
 export { productKeys, PRODUCT_MODULE_VERSION } from './queries/keys';
+export {
+  PRICE_FIELDS,
+  buildPriceUpdate,
+  buildRatesUpdate,
+  canEditAnyPriceField,
+  canEditPriceField,
+  priceDraftFrom,
+  priceEditPath,
+  type PriceDraft,
+  type PriceField,
+  type RatesDraft,
+  type RatesPatch,
+} from './lib/priceEdit';
 export * from './queries/hooks';
 export * from './queries/labelLayout.queries';
 export * from './queries/rateRules.queries';
