@@ -95,6 +95,10 @@ export {
   type PopoverProps,
   type TooltipProps,
   type DropdownMenuProps,
+  FloatingPanel,
+  clampToViewport,
+  type FloatingPanelProps,
+  type FloatingPanelPosition,
 } from './overlay';
 
 // Data display — Layer 5
@@ -283,6 +287,11 @@ export {
   type PermissionGridColumn,
   type PermissionGridProps,
   type PermissionGridRow,
+  CalculatorPanel,
+  CALCULATOR_KEYBOARD_SCOPE,
+  type CalculatorKey,
+  type CalculatorPanelProps,
+  type CalculatorTapeRow,
 } from './patterns';
 
 // Hooks

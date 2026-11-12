@@ -15,6 +15,9 @@ export const DASHBOARD_HOTKEY = {
   toggleFullscreenModKey: 'f',
   /** Shown in help; US layout: Shift + ` (backquote) produces ~ */
   scanSellHidePurchaseKeyLabel: '~',
+  /** Used as Alt + C. Cmd/Ctrl + Shift + C is Chrome's inspect-element and never
+   *  reaches the page, so Alt is the only combo free on every platform. */
+  calculatorToggleAltKey: 'c',
 } as const;
 
 export function getDashboardModLabel(): '⌘' | 'Ctrl' {
@@ -46,6 +49,10 @@ export function getShortcutHelpRows(modLabel: string): ShortcutHelpRow[] {
     {
       action: 'Close dialog / palette',
       alternatives: [['Esc']],
+    },
+    {
+      action: 'Open calculator',
+      alternatives: [['Alt', h.calculatorToggleAltKey.toUpperCase()]],
     },
     {
       action: 'Toggle full screen',
@@ -90,6 +97,15 @@ export function isModLetter(e: KeyboardEvent, letter: string): boolean {
 export function isFullscreenHotkey(e: KeyboardEvent): boolean {
   if (!e.shiftKey) return false;
   return isModLetter(e, DASHBOARD_HOTKEY.toggleFullscreenModKey);
+}
+
+/**
+ * Match Alt+C. Compared on `e.code` because macOS turns Alt+C into 'ç', so the
+ * letter never appears in `e.key` — which is why this cannot reuse `isModLetter`.
+ */
+export function isCalculatorToggle(e: KeyboardEvent): boolean {
+  if (e.metaKey || e.ctrlKey || !e.altKey) return false;
+  return e.code === `Key${DASHBOARD_HOTKEY.calculatorToggleAltKey.toUpperCase()}`;
 }
 
 export function isQuickNavSlash(e: KeyboardEvent): boolean {

@@ -227,3 +227,104 @@
   position: relative;
   display: inline-block;
 }
+
+/* FloatingPanel — persistent, non-modal, draggable. */
+
+.floatingPanel {
+  position: fixed;
+  z-index: var(--sk-z-floating, 8000);
+  display: flex;
+  flex-direction: column;
+  background: var(--sk-color-bg-elevated, #ffffff);
+  border: 1px solid var(--sk-color-border-default, #e2e8f0);
+  border-radius: var(--sk-radius-lg, 12px);
+  box-shadow: var(--sk-shadow-lg, 0 12px 32px rgba(15, 23, 42, 0.12));
+  max-height: calc(100vh - 2 * var(--sk-space-md, 16px));
+  overflow: hidden;
+  animation: floatingPanelIn 0.16s ease-out;
+}
+
+.floatingPanel:focus-visible {
+  outline: none;
+  box-shadow: var(--sk-shadow-lg, 0 12px 32px rgba(15, 23, 42, 0.12)),
+    0 0 0 3px var(--sk-color-focus-ring, rgba(30, 58, 95, 0.35));
+}
+
+.floatingPanelDragging {
+  animation: none;
+  user-select: none;
+}
+
+/* The drag surface. `touch-action: none` is scoped to the header so the body of
+   the panel (the tape list) still scrolls with a finger. */
+.floatingPanelHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-sm, 8px);
+  padding: var(--sk-space-sm, 8px);
+  border-bottom: 1px solid var(--sk-color-border-default, #e2e8f0);
+  background: var(--sk-color-bg-header, #f3f6fb);
+  cursor: grab;
+  touch-action: none;
+  border-radius: var(--sk-radius-lg, 12px) var(--sk-radius-lg, 12px) 0 0;
+}
+
+.floatingPanelHeaderDragging {
+  cursor: grabbing;
+}
+
+/* Keyboard move handle: the grip, focusable on its own so the close button is
+   not nested inside another interactive element. */
+.floatingPanelHandle {
+  display: flex;
+  flex: 0 0 auto;
+  padding: var(--sk-space-xs, 4px);
+  border-radius: var(--sk-radius-sm, 4px);
+  color: var(--sk-color-text-muted, #64748b);
+}
+
+.floatingPanelHandle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--sk-color-focus-ring, rgba(30, 58, 95, 0.35));
+}
+
+.floatingPanelTitle {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: var(--sk-text-caption, 0.8125rem);
+  font-weight: 600;
+  color: var(--sk-color-text-primary, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.floatingPanelActions {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-xs, 4px);
+  flex: 0 0 auto;
+}
+
+.floatingPanelBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+@keyframes floatingPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floatingPanel {
+    animation: none;
+  }
+}

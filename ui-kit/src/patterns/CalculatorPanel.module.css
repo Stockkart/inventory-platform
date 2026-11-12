@@ -1,0 +1,77 @@
+/* Only what Box / Text props cannot express: the readout's numeric type, the
+   keypad grid, and the tape's scroll box. Spacing, colour, borders and
+   alignment all come from primitive props. */
+
+.pending {
+  display: block;
+  min-height: var(--sk-space-md, 16px);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.value {
+  font-size: var(--sk-text-page-title, 1.5rem);
+  line-height: 1.2;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+}
+
+.value::-webkit-scrollbar {
+  display: none;
+}
+
+.valueError {
+  color: var(--sk-color-danger, #dc2626);
+  font-size: var(--sk-text-body, 0.9375rem);
+}
+
+.flags {
+  min-height: var(--sk-space-md, 16px);
+  margin-top: var(--sk-space-xs, 4px);
+}
+
+.memoryFlag {
+  color: var(--sk-color-accent, #1e3a5f);
+  font-variant-numeric: tabular-nums;
+}
+
+.keypad {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.key {
+  padding-left: 0;
+  padding-right: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.keyCompact {
+  font-size: var(--sk-text-caption, 0.8125rem);
+}
+
+.tapeList {
+  list-style: none;
+  margin: 0;
+  max-height: 176px;
+}
+
+.tapeRow {
+  display: block;
+  width: 100%;
+  height: auto;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tapeExpression,
+.tapeResult {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

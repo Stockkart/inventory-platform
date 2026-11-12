@@ -10,3 +10,9 @@ export {
   type TooltipProps,
   type DropdownMenuProps,
 } from './Modal';
+export {
+  FloatingPanel,
+  clampToViewport,
+  type FloatingPanelProps,
+  type FloatingPanelPosition,
+} from './FloatingPanel';

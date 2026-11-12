@@ -175,3 +175,11 @@ export {
   vendorStyles,
   uploadLayoutStyles,
 } from './RegistrationChrome';
+
+export {
+  CalculatorPanel,
+  CALCULATOR_KEYBOARD_SCOPE,
+  type CalculatorKey,
+  type CalculatorPanelProps,
+  type CalculatorTapeRow,
+} from './CalculatorPanel';
