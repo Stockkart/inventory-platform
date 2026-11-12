@@ -33,16 +33,29 @@ export { productKeys, PRODUCT_MODULE_VERSION } from './queries/keys';
 export {
   PRICE_FIELDS,
   buildPriceUpdate,
+  buildRatesUpdate,
   canEditAnyPriceField,
   canEditPriceField,
   priceDraftFrom,
   priceEditPath,
   type PriceDraft,
   type PriceField,
+  type RatesDraft,
+  type RatesPatch,
 } from './lib/priceEdit';
 export * from './queries/hooks';
 export * from './queries/labelLayout.queries';
+export * from './queries/rateRules.queries';
 export { BarcodeLabelLayoutSection } from './ui/labelLayout/BarcodeLabelLayoutSection';
+export {
+  RateRulesSection,
+  GeneratedRatesList,
+  type GeneratedRatesListProps,
+  type RateTermsEdit,
+  type SkippedRateRule,
+} from './ui/rateRules';
+export { isRuleRate } from './lib/pricingRate';
+export { sameRateTerms } from './lib/rateTerms';
 export {
   productEntryRoutes,
   importRoutes,

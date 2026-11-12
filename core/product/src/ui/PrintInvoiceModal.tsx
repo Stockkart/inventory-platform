@@ -4,7 +4,6 @@ import { FileText, Printer, Receipt } from 'lucide-react';
 import { cartApi } from '../api/cart.api';
 import { invoiceSettingsApi } from '../api/invoice-settings.api';
 import type { PrinterType } from '../api/endpoints';
-import { openPdfPreview } from '../lib/printDocument';
 import { PrintBridgeNotice } from './PrintBridgeNotice';
 import { useDotMatrixPrint } from './useDotMatrixPrint';
 import {
@@ -20,6 +19,7 @@ import {
   productChrome,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
+import { openPdfPreview } from '../lib/printDocument';
 
 export type { PrinterType };
 

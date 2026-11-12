@@ -277,7 +277,7 @@ export interface BulkCreateInventoryItem {
   unitsPerPack?: number | null;
   unitConversions?: UnitConversion | null;
   /** Optional. Array of custom rates { name, price }. */
-  rates?: Array<{ name: string; price: number }> | null;
+  rates?: PricingRate[] | null;
   /** Optional. Must be empty/null or one of: rates[].name, "priceToRetail", "maximumRetailPrice", "costPrice". */
   defaultRate?: string | null;
   /** Extension vertical fields (sport, brand, model, storageTemp, …). */
@@ -695,7 +695,7 @@ export interface ParseInvoiceItem {
   baseUnit?: string | null;
   unitsPerPack?: number | null;
   unitConversions?: UnitConversion | null;
-  rates?: Array<{ name: string; price: number }> | null;
+  rates?: PricingRate[] | null;
   defaultRate?: string | null;
 }
 
@@ -894,8 +894,22 @@ export interface CheckoutItem {
   /** @deprecated use {@code sellableRef} with {@code menu:…} prefix */
   menuItemId?: string;
   unit?: string;
+  /**
+   * Rate to bill the line at: a batch rate's name, or a system option (`priceToRetail`,
+   * `maximumRetailPrice`, `costPrice`), which puts that batch field on the line with the batch's
+   * own sale disc and scheme. Not combinable with a unit change or a quantity decrease.
+   */
+  rateName?: string;
   quantity?: number;
   baseQuantity?: number;
+  /**
+   * Cafe only: preparation instruction printed on the kitchen ticket, e.g. `no onion`.
+   *
+   * It rides the add that *creates* the line. The cart merges by `sellableRef` and a merge
+   * keeps the existing line's note, so re-sending a note for a line that is already in the
+   * cart is a no-op on the server — the line has to be replaced for a new note to land.
+   */
+  note?: string | null;
   priceToRetail?: number;
   saleAdditionalDiscount?: number | null;
   // Scheme can be represented either as fixed units or percentage
@@ -951,6 +965,16 @@ export interface CheckoutItemResponse {
   profit?: number | null;
   marginPercent?: number | null;
   billingMode?: BillingMode;
+  /**
+   * Cafe only: how much of {@link baseQuantity} the kitchen has already been sent.
+   * A line is fully sent when `baseQuantity === kotSentQuantity`; absent on
+   * verticals that never punch.
+   */
+  kotSentQuantity?: number | null;
+  /** Cafe only: kitchen station frozen onto the line at add time (e.g. `KITCHEN`, `BAR`). */
+  department?: string | null;
+  /** Cafe only: preparation instruction printed on the kitchen ticket, e.g. `no onion`. */
+  note?: string | null;
   /** From registration: additional discount % (read-only at sale) */
   purchaseAdditionalDiscount?: number | null;
   /** From registration: scheme (read-only at sale) */
@@ -958,6 +982,12 @@ export interface CheckoutItemResponse {
   purchaseSchemePayFor?: number | null;
   purchaseSchemeFree?: number | null;
   purchaseSchemePercentage?: number | null;
+  /**
+   * Rate the line is billed at, as the cart stored it: a picked rate's name, a system key
+   * (`priceToRetail`, `maximumRetailPrice`, `costPrice`) or the batch's default rule rate on a
+   * first add. Null after a manual price, disc or scheme edit, and on older lines.
+   */
+  appliedRateName?: string | null;
 }
 
 /** GST at one rate on a bill, as the API works it out. */
@@ -976,6 +1006,8 @@ export interface SaleLineTax {
   taxAmount: number;
   /** Combined GST rate, e.g. 5 for 2.5 + 2.5; 0 when the line carries none. */
   ratePercent: number;
+  /** The line's amount with its GST inside. Absent from APIs that predate it. */
+  totalAmount?: number;
 }
 
 /** A bill's totals as the printed invoice states them, computed by the API from the lines. */

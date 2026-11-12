@@ -2,10 +2,14 @@ import { canEditProductSearchField } from '@inventory-platform/access';
 import type { ShopProductSearchAccess } from '@inventory-platform/access';
 import type { PricingRate } from '@inventory-platform/contracts';
 import type { InventoryItem, UpdateInventoryRequest } from '@inventory-platform/product/types';
+import { isRuleRate } from './pricingRate';
+import { sameRateTerms } from './rateTerms';
 
 /**
  * Price fields of a lot. They are edited on the Edit price page only (not in the product search
- * Edit dialog), and saved through `PUT /inventory/{id}`, which applies the product-search grants.
+ * Edit dialog). The single prices are saved through `PUT /inventory/{id}`, which applies the
+ * product-search grants; the rates and default rate through `PATCH /pricing/{id}`, which also
+ * takes rule-rate resets and answers with the rates' warnings and default-rate choices.
  */
 export const PRICE_FIELDS = [
   'priceToRetail',
@@ -29,7 +33,7 @@ export function priceEditPath(pricingId: string, inventoryId: string | null | un
   return inventoryId ? `${base}?lot=${encodeURIComponent(inventoryId)}` : base;
 }
 
-/** The Edit price form, as typed. */
+/** The Edit price form's single prices, as typed. Rates are a {@link RatesDraft}. */
 export interface PriceDraft {
   priceToRetail: string;
   maximumRetailPrice: string;
@@ -37,8 +41,6 @@ export interface PriceDraft {
   sgst: string;
   cgst: string;
   saleAdditionalDiscount: string;
-  rates: PricingRate[];
-  defaultRate: string;
 }
 
 /** Whether the user may change one price field (the API checks the same grant). */
@@ -69,8 +71,6 @@ export function priceDraftFrom(lot: InventoryItem): PriceDraft {
     sgst: text(lot.sgst),
     cgst: text(lot.cgst),
     saleAdditionalDiscount: text(lot.saleAdditionalDiscount),
-    rates: lot.rates ?? [],
-    defaultRate: lot.defaultRate ?? '',
   };
 }
 
@@ -91,14 +91,10 @@ function amount(label: string, raw: string, errors: string[]): number | null {
   return value;
 }
 
-function sameRates(a: PricingRate[], b: PricingRate[]): boolean {
-  return a.length === b.length && a.every((r, i) => r.name === b[i].name && r.price === b[i].price);
-}
-
 /**
- * The update for the fields that changed. A price can be changed but not emptied, except the
- * sale additional discount, which is cleared through `clearFields`. The API validates GST and
- * the default rate and works out every derived figure.
+ * The `PUT /inventory/{id}` update for the single prices that changed. A price can be changed but
+ * not emptied, except the sale additional discount, which is cleared through `clearFields`. The
+ * API validates GST and works out every derived figure.
  */
 export function buildPriceUpdate(lot: InventoryItem, draft: PriceDraft): PriceUpdate {
   const errors: string[] = [];
@@ -140,19 +136,76 @@ export function buildPriceUpdate(lot: InventoryItem, draft: PriceDraft): PriceUp
     }
   }
 
+  return { payload, errors };
+}
+
+/** The rates part of the Edit price form. */
+export interface RatesDraft {
+  rates: PricingRate[];
+  defaultRate: string;
+  /** Rule rates to regenerate from their rule on save. */
+  resetNames: string[];
+}
+
+/** The `PATCH /pricing/{id}` body for the rates part; same shape as the pricing package's DTO. */
+export interface RatesPatch {
+  rates?: PricingRate[];
+  defaultRate?: string;
+  resetRates?: string[];
+}
+
+export interface RatesUpdate {
+  /** Null when nothing in the rates part changed, so no pricing write is made. */
+  payload: RatesPatch | null;
+  errors: string[];
+}
+
+function sameRate(a: PricingRate, b: PricingRate | undefined): boolean {
+  return (
+    b !== undefined &&
+    a.name === b.name &&
+    a.price === b.price &&
+    isRuleRate(a) === isRuleRate(b) &&
+    (!isRuleRate(a) || sameRateTerms(a, b))
+  );
+}
+
+/**
+ * The `PATCH /pricing/{id}` update for the rates part, only when it changed: the full rate list
+ * (a hand-typed rate as name and price; a rule rate as it is, with its new terms, for the server
+ * to reprice), the default rate, and the rule rates to reset. Rows without a name are dropped.
+ * `allowedDefaultRates` is the server's `defaultRateOptions`.
+ */
+export function buildRatesUpdate(
+  saved: { rates: PricingRate[]; defaultRate: string },
+  draft: RatesDraft,
+  allowedDefaultRates: readonly string[],
+): RatesUpdate {
+  const errors: string[] = [];
+  const payload: RatesPatch = {};
+
   const rates = draft.rates
     .filter((r) => r.name.trim())
-    .map((r) => ({ name: r.name.trim(), price: r.price }));
+    .map((r) => (isRuleRate(r) ? r : { name: r.name.trim(), price: r.price }));
   if (rates.some((r) => !Number.isFinite(r.price) || r.price < 0)) {
     errors.push('Each rate needs a price of 0 or more');
-  } else if (!sameRates(rates, before.rates)) {
+  } else if (
+    rates.length !== saved.rates.length ||
+    rates.some((r, i) => !sameRate(r, saved.rates[i]))
+  ) {
     payload.rates = rates;
   }
 
   const defaultRate = draft.defaultRate.trim();
-  if (defaultRate !== before.defaultRate.trim() && defaultRate !== '') {
-    payload.defaultRate = defaultRate;
+  if (defaultRate !== saved.defaultRate.trim() && defaultRate !== '') {
+    if (allowedDefaultRates.includes(defaultRate)) {
+      payload.defaultRate = defaultRate;
+    } else {
+      errors.push('Choose a default rate from the list');
+    }
   }
 
-  return { payload, errors };
+  if (draft.resetNames.length > 0) payload.resetRates = [...draft.resetNames];
+
+  return { payload: Object.keys(payload).length > 0 ? payload : null, errors };
 }

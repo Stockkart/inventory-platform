@@ -21,6 +21,37 @@ Inventory and sell flows: product registration, search, stock corrections, scan-
 
 `api/` · `queries/` · `pages/` · `ui/` · `vertical/` · `lib/` · `routes.ts` · `nav.ts`
 
+### Public entry points
+
+`@inventory-platform/product` (the barrel) · `/types` · `/api` · `/print`
+
+`/print` is deliberately narrow. `lib/printDocument.ts` is how every PDF document in this app
+reaches a printer (dot matrix is the exception, below) — the server renders a PDF, `openPdfPreview` opens it, and the operator
+prints from the viewer, falling back to a download when a popup blocker refuses the tab.
+Invoices, credit notes and cafe kitchen tickets all go through it, so they cannot drift apart.
+It is its own subpath rather than part of the barrel because the barrel pulls in `api/` and so
+`apiClient`, which reads `localStorage` at module load — importing it from a plugin (or a test)
+that only wants to print would drag a session dependency along with it.
+
+### Menu portions on the Sell screen
+
+A menu item may be sold in named portions — Qtr / Half / Full, each with its own name and price,
+set in cafe Menu admin. `ui/CafeSellCatalogPanel.tsx` is the only place they are chosen.
+
+- A portioned tile shows a **price range** (`₹180.00 – ₹320.00`) and how many portions there are,
+  never one price that is only true of one portion.
+- Tapping it opens a small `Modal` listing every portion as its **own name beside its own price**
+  (`Half  ₹180.00`). A bare name next to a range would make the cashier infer the price, and an
+  inference at the counter becomes a wrong bill. Dismissed by Escape, the backdrop, the header ×
+  or Cancel; dismissing adds nothing.
+- Choosing a portion calls `onAddMenuItem(item, rate)`. `ScanSellPage`'s `handleAddMenuItem`
+  refuses a portioned item that arrives with no portion, so the picker really is the only way in.
+- The portion rides **inside the sellable ref**: `menu:<itemId>@<rateId>` (`menuSellableRef`).
+  Only the frozen rate id travels — never the display name (a rename must orphan nothing) and
+  never the price (resolved server-side from the menu). Because the cart keys lines by ref, Half
+  and Full of one dish are two separate lines with no further arrangement.
+- An unportioned item is unchanged: one price on the tile, one tap, no modal.
+
 ### Dot matrix printing (local print bridge)
 
 Normal and thermal invoices print from a PDF the server renders. Dot matrix is the exception:
@@ -97,6 +128,44 @@ Product Search and Scan & Sell call `POST /inventory/search` (`inventoryApi.sear
   (`useInvoiceAmendmentPreviewQuery`), marks the ones that change and says the journal will be
   reposted; Save is off when nothing would change. After saving, the toast and the "Last
   corrected" line give the invoice total and tax before and after.
+
+### Rate rules (`ui/rateRules/`, `queries/rateRules.queries.ts`)
+
+- **Profile → Rate rules** (`RateRulesSection`, registered by `plugins/registry`) edits the shop's
+  ordered rate rules: name, base, discount % and scheme (`SchemeInput`, shared with Scan & Sell).
+  Rules keep the order they were added in; "Save rules" (the only save button) sends
+  `PUT /shops/active-shop/rate-rules` and then refetches the rules and reloads this shop's
+  capabilities (`features.rateRules`) in place, keeping the old value until the new one arrives
+  (`fetchCapabilities({ force: true })`). A 403 reloads the rules, so the section turns
+  read-only; a 409 (`RATE_RULES_CONFLICT`, someone else saved first) shows the server's message
+  and loads the rules now saved. The draft helpers live in `lib/rateRulesDraft.ts`.
+- **The backend decides; this package carries.** Base choices come only from the API's
+  `baseOptions` (the picker is hidden when there is one), never from the shop type. Each rule's
+  row shows its sample, matched by name from what `POST /rate-rules/preview` returns for the
+  draft, price, GST label and `termsText` as sent; the screen does no rate, discount, scheme or
+  tax arithmetic. A rule that cannot be generated shows "Not generated" with the server's reason
+  in words (`skippedReasonText`).
+- **Access.** When `enabled` is false (cafe) the registry hides the Profile tab
+  (`useRateRulesAvailable`) and the section renders nothing; it is read-only (no inputs, no
+  Save) when `canEdit` is false. The owner grants editing per person under Access Control
+  ("Edit rate rules and rates", `rateRulesEdit`).
+
+### Rate rules display (`ui/rateRules/`)
+
+`GeneratedRatesList` shows rule-generated rates exactly as the API returns them: price, `termsText`, a GST label (`INCLUSIVE` "incl. GST", `EXCLUSIVE` "+ GST"), an "overridden" marker when `manual` is set, an "unsaved" marker on rates whose terms were edited and not saved (`pendingEdit`), and rules skipped or left below cost (`BELOW_COST` is worded "below cost"; a `REPLACED_BY_RULE` warning says the rule now sets a rate that was typed by hand). Input ids come from `useId`, never from rate names. Given `canEdit` (the `rateRulesEdit` grant) a rule rate offers its discount % and scheme (`SchemeInput`), never its price, plus "Reset to rule" on an overridden rate. Those sit on one row under the rate's name and terms (it wraps on a narrow screen, Reset at its end), with the "schemes can't be removed by override" note under the row. Nothing here works out a price.
+
+- `EntryRatePreview` is the Product Entry block: it fetches the preview itself (debounced `useRateRulesPreviewQuery` on the typed PTR / MRP / selling price / cost / GST, plus `costPriceIncludesTax` from the bill's server-resolved tax treatment; `lib/ratePreviewRequest.ts` builds the request) and shows the result read-only. Overrides cannot clear a discount or scheme (the server treats blank as unchanged), so the editor restores the saved value and points to "Reset to rule". Term overrides exist only on a saved batch, so a new batch has no edit action (the backend ignores terms on create).
+- On Product Entry the hand-typed "Rates (optional)" editor and "Default rate" select stay distributor-only. Any non-cafe shop whose backend flag `features.rateRules` is true (never by counting rules), retailers included, sees `EntryRatePreview` instead (`lib/entryRateFlags.ts`).
+- `core/pricing` imports `GeneratedRatesList` (and `isRuleRate`, exported from `lib/pricingRate.ts`) from the barrel for the price edit page; the Profile → Rate rules sample rows use it read-only too.
+
+### Scan & Sell rate picker (`ui/scanSell/`, `lib/scanSellRatePick.ts`)
+
+- `RatePicker` is the rate dropdown on each cart line (list and grid views): ui-kit `FilterDropdown block` with a `ChoiceList`, as Product Search's sort, not a native `select`. It reads `Rate: <option>`, or `Rate: Custom` when the line's price matches no option (Custom is not offered as a choice); picking the option already shown does nothing. Options come from `buildRateOptions`: MRP / PTR / Cost and the batch's rates. Each option's value is unique (`system:priceToRetail`, `rate:Rate-A`), so a rate named like a system option can never be taken for it (the API also reserves MRP / PTR / Cost as rule names). A rule rate is labelled `Rate-A · 83.64/unit + GST · PTR less 8%, 10+1` from the API's `price`, `gstMode` and `termsText`. System options and legacy rates keep the labels they had before rate rules: `PTR (₹100.00)` in the grid (table) view and `PTR · ₹100.00` in the list (card) view. Formatting only, no arithmetic.
+- **A pick sends `{ id, unit, rateName }` and nothing else** (`ratePickRequest`). On a shop with rate rules (`features.rateRules` from the shop capabilities store) MRP / PTR / Cost send their system name (`maximumRetailPrice`, `priceToRetail`, `costPrice`): the cart puts that batch field on the line, per sale unit; on a line at a rule rate disc and scheme go back to the batch's own sale defaults, on any other line they stay (a typed disc survives a PTR pick). On a shop without rate rules MRP / PTR / Cost send what they sent before rate rules, the option's batch price as `{ priceToRetail }` (the price path), so those shops do not depend on an API that knows system names. A rule rate sends its name: the cart puts the rate's base price, disc and scheme on the line. The page takes price, disc and scheme from the response, and the line's typed disc is dropped (`clearDiscountOverride`) so the next quantity sync does not resend it. A legacy hand-typed rate keeps the price path (`priceToRetail`). `rateName` is never sent with a unit change (the API returns 400).
+- **What the picker shows** comes from the cart line's `appliedRateName` (`appliedRateNamesByLine`, `selectedRateValue`): a system key shows MRP / PTR / Cost, a rate name shows that rate, even though the line carries the base (PTR 100) or a per-tablet price rather than the option's figure. When it is null (a manual price, disc or scheme edit cleared it, or the line is on the batch's own price) the picker matches system and legacy options by the line price, as before; rule rates are never matched by price. Only for a cart response without the field (an older API) does the page fall back to the rule rate picked here (`pickedRateNames`, dropped for lines no longer in the cart by `prunePickedRateNames`). Only rule-rate names are stored there (`pickedRuleRateName`); an MRP / PTR / Cost pick forgets the line's entry and is never stored as a system key.
+- **Every shop gets the picker, rules or not** (it is not gated on `features.rateRules`). Since the API keeps a line's own price, disc and scheme on +, scan-again and unit switch for all shops, picking MRP / PTR / Cost is how a line goes back to the batch's price after a manual price edit. With rate rules on it also takes a rule-rate line back to the batch's disc and scheme, and the system pick bills per sale unit on a sub-unit line.
+- **First add of a lot** sends only a disc the user typed, never the batch's own (`saleDiscountToSend`), and no scheme, so the backend applies the batch's default rule rate (or, without one, the batch's own disc and scheme, as before). Lines already in the cart keep resending their disc as today.
+- Cart errors (400 / 404, such as an unknown rate, a unit switch under one whole unit or a lot missing from the cart) show the server's message in a toast and reload the cart.
 
 ### Barcode sticker printing (`lib/renderBarcodeLabelsHtml.ts`, `ui/labelLayout/`)
 

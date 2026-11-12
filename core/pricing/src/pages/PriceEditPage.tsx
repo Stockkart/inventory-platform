@@ -1,16 +1,22 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import {
+  GeneratedRatesList,
   buildPriceUpdate,
+  buildRatesUpdate,
   canEditAnyPriceField,
   canEditPriceField,
+  isRuleRate,
   priceDraftFrom,
+  sameRateTerms,
   useInventoryLotQuery,
   useUpdateInventoryLotMutation,
   type PriceDraft,
   type PriceField,
+  type RateTermsEdit,
 } from '@inventory-platform/product';
 import { useAuthStore, useNotify, useShopAccessStore } from '@inventory-platform/session';
+import type { PricingRate, PricingRateWarning } from '@inventory-platform/pricing/types';
 import {
   Alert,
   Box,
@@ -32,6 +38,7 @@ import {
   type SelectOptionDef,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
+import { usePricingQuery, useUpdatePricingMutation } from '../queries/hooks';
 
 export function meta() {
   return [
@@ -50,12 +57,21 @@ function normalizeDefaultRate(value: string): string {
   return PASCAL_TO_CAMEL[value] ?? value;
 }
 
-const SYSTEM_DEFAULT_RATE_OPTIONS: readonly SelectOptionDef[] = [
-  { value: '', label: '— None —' },
-  { value: 'priceToRetail', label: 'PTR (Price to Retailer)' },
-  { value: 'maximumRetailPrice', label: 'MRP (Maximum Retail Price)' },
-  { value: 'costPrice', label: 'Cost price' },
-];
+const NO_DEFAULT_RATE: SelectOptionDef = { value: '', label: '— None —' };
+
+/** Labels for the built-in default-rate names; other names show as they are. */
+const SYSTEM_DEFAULT_RATE_LABELS: Record<string, string> = {
+  priceToRetail: 'PTR (Price to Retailer)',
+  maximumRetailPrice: 'MRP (Maximum Retail Price)',
+  costPrice: 'Cost price',
+};
+
+/** Offered when the pricing response has no `defaultRateOptions`. */
+const SYSTEM_DEFAULT_RATE_NAMES = Object.keys(SYSTEM_DEFAULT_RATE_LABELS);
+
+interface PageShellProps {
+  children: ReactNode;
+}
 
 /** Single-value price inputs, in display order. */
 const PRICE_INPUTS: {
@@ -80,7 +96,7 @@ interface LocationState {
   productName?: string | null;
 }
 
-function PageShell({ children }: { children: ReactNode }) {
+function PageShell({ children }: PageShellProps) {
   return (
     <Stack gap="md" width="full" maxWidth="sm" mx="auto">
       {children}
@@ -89,12 +105,15 @@ function PageShell({ children }: { children: ReactNode }) {
 }
 
 /**
- * Edits one lot's prices: PTR, MRP, PTS, GST, sale add. discount, custom rates and the default
- * rate. This is the only place prices are edited from product search. It saves through
- * `PUT /inventory/{id}`, which applies the product-search grants and GST rules, and marks
- * product reads stale so product search and scan-sell show the new prices.
+ * Edits one lot's prices: PTR, MRP, PTS, GST, sale add. discount, custom rates, rule-rate terms
+ * and the default rate. This is the only place prices are edited from product search. The single
+ * prices save through `PUT /inventory/{id}`, which applies the product-search grants and GST
+ * rules and marks product reads stale. The rates part saves through `PATCH /pricing/{id}`, only
+ * when it changed: it takes rule-rate resets and answers with below-cost warnings and the
+ * default-rate choices.
  */
 export function PriceEditPage() {
+  const { pricingId } = useParams<{ pricingId: string }>();
   const [searchParams] = useSearchParams();
   const lotId = searchParams.get('lot');
   const location = useLocation();
@@ -106,34 +125,102 @@ export function PriceEditPage() {
   const access = useShopAccessStore((s) =>
     shopId ? s.byShopId[shopId]?.productSearch : undefined,
   );
+  const canEditRateRules = useShopAccessStore((s) =>
+    shopId ? s.byShopId[shopId]?.modules?.rateRulesEdit ?? false : false,
+  );
+
   const lotQuery = useInventoryLotQuery(lotId);
   const updateLot = useUpdateInventoryLotMutation();
   const lot = lotQuery.data ?? null;
+  const pricingQuery = usePricingQuery(pricingId);
+  const updatePricing = useUpdatePricingMutation();
+  const pricing = pricingQuery.data ?? null;
 
   const [draft, setDraft] = useState<PriceDraft | null>(null);
+  const [rates, setRates] = useState<PricingRate[]>([]);
+  const [resetNames, setResetNames] = useState<string[]>([]);
+  const [defaultRate, setDefaultRate] = useState('');
+  const [warnings, setWarnings] = useState<PricingRateWarning[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
 
   useEffect(() => {
-    if (lot) {
-      const loaded = priceDraftFrom(lot);
-      setDraft({ ...loaded, defaultRate: normalizeDefaultRate(loaded.defaultRate) });
-    }
+    if (lot) setDraft(priceDraftFrom(lot));
   }, [lot]);
 
-  const defaultRateOptions = useMemo((): SelectOptionDef[] => {
-    const custom = (draft?.rates ?? [])
-      .filter((r) => r.name.trim())
-      .map((r) => ({ value: r.name, label: r.name }));
-    return [...SYSTEM_DEFAULT_RATE_OPTIONS, ...custom];
-  }, [draft?.rates]);
+  /** Rates and default rate as last loaded or saved; a reset puts a rate's terms back to these. */
+  const savedRates = useMemo(() => pricing?.rates ?? [], [pricing]);
+  const savedDefaultRate = normalizeDefaultRate(pricing?.defaultRate ?? '');
+  useEffect(() => {
+    if (pricing) {
+      setRates(pricing.rates ?? []);
+      setDefaultRate(normalizeDefaultRate(pricing.defaultRate ?? ''));
+      setResetNames([]);
+    }
+  }, [pricing]);
+
+  // Which rates may be the default is the server's call (`defaultRateOptions`); a rate added
+  // here is offered once saved. The current value stays listed so it is not silently rewritten.
+  const allowedDefaultRates = useMemo(() => {
+    const names = pricing?.defaultRateOptions ?? SYSTEM_DEFAULT_RATE_NAMES;
+    return defaultRate && !names.includes(defaultRate) ? [...names, defaultRate] : names;
+  }, [pricing, defaultRate]);
+  const defaultRateOptions = useMemo(
+    (): SelectOptionDef[] => [
+      NO_DEFAULT_RATE,
+      ...allowedDefaultRates.map((name) => ({
+        value: name,
+        label: SYSTEM_DEFAULT_RATE_LABELS[name] ?? name,
+      })),
+    ],
+    [allowedDefaultRates],
+  );
+
+  // Rule rates whose terms were changed here and not saved yet.
+  const pendingEdit = useMemo(
+    () =>
+      rates
+        .filter(
+          (r) =>
+            isRuleRate(r) &&
+            !resetNames.includes(r.name) &&
+            !sameRateTerms(
+              r,
+              savedRates.find((saved) => saved.name === r.name),
+            ),
+        )
+        .map((r) => r.name),
+    [rates, savedRates, resetNames],
+  );
 
   const canEdit = (field: PriceField) => canEditPriceField(field, access);
   const update = (patch: Partial<PriceDraft>) =>
     setDraft((prev) => (prev ? { ...prev, ...patch } : prev));
 
+  const editRateTerms = (name: string, terms: RateTermsEdit) => {
+    setRates((prev) =>
+      prev.map((r) =>
+        r.name === name
+          ? { ...r, discountPercent: terms.discountPercent, scheme: terms.scheme }
+          : r,
+      ),
+    );
+  };
+
+  const resetRateToRule = (name: string) => {
+    const saved = savedRates.find((r) => r.name === name);
+    setRates((prev) =>
+      prev.map((r) =>
+        r.name === name
+          ? { ...r, discountPercent: saved?.discountPercent, scheme: saved?.scheme }
+          : r,
+      ),
+    );
+    setResetNames((prev) => (prev.includes(name) ? prev : [...prev, name]));
+  };
+
   const goBack = () => navigate(-1);
 
-  if (!lotId) {
+  if (!lotId || !pricingId) {
     return (
       <PageShell>
         <Alert variant="warning">
@@ -147,11 +234,12 @@ export function PriceEditPage() {
     );
   }
 
-  if (lotQuery.isError) {
+  const loadError = lotQuery.error ?? pricingQuery.error;
+  if (loadError) {
     return (
       <PageShell>
         <Alert variant="danger">
-          {lotQuery.error instanceof Error ? lotQuery.error.message : 'Could not load the product'}
+          {loadError instanceof Error ? loadError.message : 'Could not load the product'}
         </Alert>
         <Button type="button" variant="ghost" onClick={goBack}>
           Back
@@ -160,7 +248,7 @@ export function PriceEditPage() {
     );
   }
 
-  if (!lot || !draft) {
+  if (!lot || !draft || !pricing) {
     return (
       <PageShell>
         <Card>
@@ -173,26 +261,46 @@ export function PriceEditPage() {
   }
 
   const isBasic = lot.billingMode === 'BASIC';
-  const mayEditAny = canEditAnyPriceField(access);
+  const mayEditAny = canEditAnyPriceField(access) || canEditRateRules;
+  const saving = updateLot.isPending || updatePricing.isPending;
 
-  const handleSubmit = () => {
-    const { payload, errors: found } = buildPriceUpdate(lot, draft);
+  const handleSubmit = async () => {
+    const prices = buildPriceUpdate(lot, draft);
+    const ratesPart = buildRatesUpdate(
+      { rates: savedRates, defaultRate: savedDefaultRate },
+      { rates, defaultRate, resetNames },
+      allowedDefaultRates,
+    );
+    const found = [...prices.errors, ...ratesPart.errors];
     setErrors(found);
     if (found.length > 0) return;
-    if (Object.keys(payload).length === 0) {
+    const pricesChanged = Object.keys(prices.payload).length > 0;
+    if (!pricesChanged && !ratesPart.payload) {
       notifySuccess('Nothing to save');
       return;
     }
-    updateLot.mutate(
-      { inventoryId: lotId, payload },
-      {
-        onSuccess: () => notifySuccess('Prices updated'),
-        onError: (err) =>
-          notifyError(err instanceof Error ? err.message : 'Failed to update prices'),
-      },
-    );
+    try {
+      // Prices first: a new PTR or MRP regenerates rule rates, and the rates write that follows
+      // then answers with the final rates and their warnings.
+      if (pricesChanged) {
+        await updateLot.mutateAsync({ inventoryId: lotId, payload: prices.payload });
+      }
+      if (ratesPart.payload) {
+        const saved = await updatePricing.mutateAsync({ pricingId, data: ratesPart.payload });
+        setWarnings(saved.warnings ?? []);
+      } else {
+        setWarnings([]);
+        // The prices write may have repriced rule rates; reload them.
+        void pricingQuery.refetch();
+      }
+      notifySuccess('Prices updated');
+    } catch (err) {
+      notifyError(err instanceof Error ? err.message : 'Failed to update prices');
+    }
   };
 
+  const ruleRates = rates.filter(isRuleRate);
+  const legacyRateCount = rates.length - ruleRates.length;
   const productTitle = lot.name?.trim() || state?.productName?.trim() || 'Pricing';
 
   return (
@@ -252,7 +360,7 @@ export function PriceEditPage() {
                   variant="outline"
                   size="sm"
                   disabled={!canEdit('rates')}
-                  onClick={() => update({ rates: [...draft.rates, { name: '', price: 0 }] })}
+                  onClick={() => setRates((prev) => [...prev, { name: '', price: 0 }])}
                 >
                   Add rate
                 </Button>
@@ -261,61 +369,73 @@ export function PriceEditPage() {
                 Saving replaces the full rate list—keep every rate you still need.
               </Text>
 
-              {draft.rates.length === 0 ? (
+              {ruleRates.length > 0 ? (
+                <GeneratedRatesList
+                  rates={ruleRates}
+                  warnings={warnings}
+                  canEdit={canEditRateRules}
+                  pendingReset={resetNames}
+                  pendingEdit={pendingEdit}
+                  onEditTerms={editRateTerms}
+                  onReset={resetRateToRule}
+                />
+              ) : null}
+
+              {rates.length === 0 ? (
                 <Box className={surfaceChrome.priceEditEmptyRates}>
                   No custom rates yet. Add one if this product uses named price tiers.
                 </Box>
-              ) : (
+              ) : legacyRateCount === 0 ? null : (
                 <Stack gap="sm">
                   <Box className={surfaceChrome.priceEditRateHead} aria-hidden>
                     <Text as="span">Name</Text>
                     <Text as="span">Price</Text>
                     <Box as="span" />
                   </Box>
-                  {draft.rates.map((rate, i) => (
-                    <Box key={i} className={surfaceChrome.priceEditRateRow}>
-                      <Input
-                        type="text"
-                        value={rate.name}
-                        disabled={!canEdit('rates')}
-                        onChange={(e) =>
-                          update({
-                            rates: draft.rates.map((r, j) =>
-                              j === i ? { ...r, name: e.target.value } : r,
-                            ),
-                          })
-                        }
-                        placeholder="e.g. RATE-A"
-                        aria-label={`Rate ${i + 1} name`}
-                      />
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={rate.price || ''}
-                        disabled={!canEdit('rates')}
-                        onChange={(e) =>
-                          update({
-                            rates: draft.rates.map((r, j) =>
-                              j === i ? { ...r, price: Number(e.target.value) || 0 } : r,
-                            ),
-                          })
-                        }
-                        className={surfaceChrome.priceEditRatePrice}
-                        placeholder="0.00"
-                        aria-label={`Rate ${i + 1} price`}
-                      />
-                      <IconButton
-                        type="button"
-                        size="sm"
-                        disabled={!canEdit('rates')}
-                        onClick={() => update({ rates: draft.rates.filter((_, j) => j !== i) })}
-                        label={`Remove rate ${rate.name || i + 1}`}
-                      >
-                        ×
-                      </IconButton>
-                    </Box>
-                  ))}
+                  {rates.map((rate, i) =>
+                    isRuleRate(rate) ? null : (
+                      <Box key={i} className={surfaceChrome.priceEditRateRow}>
+                        <Input
+                          type="text"
+                          value={rate.name}
+                          disabled={!canEdit('rates')}
+                          onChange={(e) =>
+                            setRates((prev) =>
+                              prev.map((r, j) => (j === i ? { ...r, name: e.target.value } : r)),
+                            )
+                          }
+                          placeholder="e.g. RATE-A"
+                          aria-label={`Rate ${i + 1} name`}
+                        />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={rate.price || ''}
+                          disabled={!canEdit('rates')}
+                          onChange={(e) =>
+                            setRates((prev) =>
+                              prev.map((r, j) =>
+                                j === i ? { ...r, price: Number(e.target.value) || 0 } : r,
+                              ),
+                            )
+                          }
+                          className={surfaceChrome.priceEditRatePrice}
+                          placeholder="0.00"
+                          aria-label={`Rate ${i + 1} price`}
+                        />
+                        <IconButton
+                          type="button"
+                          size="sm"
+                          disabled={!canEdit('rates')}
+                          onClick={() => setRates((prev) => prev.filter((_, j) => j !== i))}
+                          label={`Remove rate ${rate.name || i + 1}`}
+                        >
+                          ×
+                        </IconButton>
+                      </Box>
+                    ),
+                  )}
                 </Stack>
               )}
             </Box>
@@ -329,13 +449,13 @@ export function PriceEditPage() {
               <FormField
                 label="Applied by default"
                 htmlFor="defaultRate"
-                hint="Choose PTR, MRP, cost, or a custom rate name above."
+                hint="Choose PTR, MRP, cost, or a saved rate. A rate added above is offered after you save."
               >
                 <Select
                   id="defaultRate"
-                  value={draft.defaultRate}
+                  value={defaultRate}
                   disabled={!canEdit('defaultRate')}
-                  onChange={(e) => update({ defaultRate: e.target.value })}
+                  onChange={(e) => setDefaultRate(e.target.value)}
                   options={defaultRateOptions}
                 />
               </FormField>
@@ -347,10 +467,10 @@ export function PriceEditPage() {
             <Button
               type="button"
               variant="solid"
-              disabled={!mayEditAny || updateLot.isPending}
-              onClick={handleSubmit}
+              disabled={!mayEditAny || saving}
+              onClick={() => void handleSubmit()}
             >
-              {updateLot.isPending ? 'Saving…' : 'Save'}
+              {saving ? 'Saving…' : 'Save'}
             </Button>
             <Button type="button" variant="ghost" onClick={goBack}>
               Back

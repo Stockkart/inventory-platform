@@ -112,7 +112,7 @@ import type {
 } from '@inventory-platform/product/types';
 import type { PricingResponse } from '@inventory-platform/contracts';
 import type { CustomerResponse } from '@inventory-platform/user/types';
-import type { MenuItem, SellCatalog } from '@inventory-platform/product/types';
+import type { MenuItem, MenuRate, SellCatalog } from '@inventory-platform/product/types';
 import {
   inventoryLotIdFromSellableRef,
   inventorySellableRef,
@@ -184,9 +184,11 @@ import {
   useNotify,
   useAuthStore,
   useShopAccessStore,
+  useShopCapabilitiesStore,
   useVerticalSchemaStore,
 } from '@inventory-platform/session';
 import {
+  VerticalSellActions,
   isScanSellHidePurchaseKey,
   shouldSkipScanSellHidePurchaseKey,
 } from '@inventory-platform/routing';
@@ -205,6 +207,20 @@ import {
 } from '../ui';
 import { CustomerSearchPanel } from '../ui/CustomerSearchPanel';
 import { ScanSellQuotationStack } from '../ui/ScanSellQuotationStack';
+import { SchemeInput, type SchemeTypeCart } from '../ui/scheme';
+import { RatePicker } from '../ui/scanSell';
+import {
+  appliedRateNamesByLine,
+  buildRateOptions,
+  clearDiscountOverride,
+  lineSaleDiscountFromResponse,
+  pickedRuleRateName,
+  prunePickedRateNames,
+  ratePickRequest,
+  saleDiscountToSend,
+  selectedRateValue,
+  type RateOption,
+} from '../lib/scanSellRatePick';
 import type { CustomerPartyType } from '@inventory-platform/user/types';
 import { GUEST_CUSTOMER_LABEL, isDefaultGuestCustomerName } from '../lib/customerDisplay';
 
@@ -214,8 +230,6 @@ export function meta() {
     { name: 'description', content: 'Speed up sales with barcode scanning' },
   ];
 }
-
-type SchemeTypeCart = 'FIXED_UNITS' | 'PERCENTAGE';
 
 /** Header chip for the customer section — hide backend general placeholder name. */
 function customerSectionSummary(name: string, phone: string): string {
@@ -232,28 +246,18 @@ function isMenuLine(line: CheckoutItemResponse): boolean {
   return menuItemIdFromSellableRef(lineSellableRef(line)) != null;
 }
 
-/** Rate option for the price selector: label + price */
-interface RateOption {
-  label: string;
-  price: number;
-}
-
-/** Build available rate options from inventory item and/or pricing API response */
+/**
+ * Rate options for the price selector: MRP / PTR / Cost then the batch's rates as the API sent
+ * them (rule rates keep their terms and GST mode). Shown for every shop, rules or not: MRP / PTR /
+ * Cost picks send their system name, which also puts a line back on the batch's own terms.
+ */
 function getRateOptions(item: InventoryItem, pricing?: PricingResponse | null): RateOption[] {
-  const opts: RateOption[] = [];
-  const mrp = pricing?.maximumRetailPrice ?? item.maximumRetailPrice;
-  const ptr = pricing?.priceToRetail ?? item.priceToRetail;
-  const cost = pricing?.costPrice ?? item.costPrice;
-  const rates = pricing?.rates ?? item.rates ?? [];
-  if (mrp != null) opts.push({ label: 'MRP', price: mrp });
-  if (ptr != null) opts.push({ label: 'PTR', price: ptr });
-  if (cost != null && cost > 0) opts.push({ label: 'Cost', price: cost });
-  rates.forEach((r) => {
-    if (r?.name?.trim() && r?.price != null) {
-      opts.push({ label: r.name.trim(), price: r.price });
-    }
+  return buildRateOptions({
+    maximumRetailPrice: pricing?.maximumRetailPrice ?? item.maximumRetailPrice,
+    priceToRetail: pricing?.priceToRetail ?? item.priceToRetail,
+    costPrice: pricing?.costPrice ?? item.costPrice,
+    rates: pricing?.rates ?? item.rates ?? [],
   });
-  return opts;
 }
 
 interface CartItem {
@@ -359,14 +363,14 @@ interface CartLineMarginFigures {
   marginPercent: number | null;
 }
 
-/** "Taxable ₹107.42 · GST ₹5.37 (5%)" under a cart line; nothing on an untaxed bill. */
+/** "Total ₹112.79 (incl. 5% GST)" under a cart line; nothing on an untaxed bill or an older API. */
 function CartLineTax({ tax }: { tax: SaleLineTax | null }) {
-  if (!tax) return null;
-  const rate = tax.ratePercent > 0 ? ` (${formatGstRate(tax.ratePercent)}%)` : '';
+  if (tax?.totalAmount == null) return null;
+  const gst = tax.ratePercent > 0 ? ` (incl. ${formatGstRate(tax.ratePercent)}% GST)` : '';
   return (
     <Text variant="caption" color="secondary">
-      Taxable ₹{tax.taxableValue.toFixed(2)} · GST ₹{tax.taxAmount.toFixed(2)}
-      {rate}
+      Total ₹{tax.totalAmount.toFixed(2)}
+      {gst}
     </Text>
   );
 }
@@ -589,145 +593,6 @@ function CartAdditionalDiscountInput({
       }}
       onBlur={() => {
         focusedRef.current = false;
-        if (skipNextBlurCommitRef.current) {
-          skipNextBlurCommitRef.current = false;
-          return;
-        }
-        commit();
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          skipNextBlurCommitRef.current = true;
-          commit();
-          e.currentTarget.blur();
-        }
-      }}
-    />
-  );
-}
-
-function CartSchemeInput({
-  id,
-  schemeType,
-  payFor,
-  free,
-  percentage,
-  onCommitUnits,
-  onCommitPercentage,
-  disabled,
-}: {
-  id?: string;
-  schemeType: SchemeTypeCart | null;
-  payFor: number | null;
-  free: number | null;
-  percentage: number | null;
-  onCommitUnits: (payFor: number | null, free: number | null) => void;
-  onCommitPercentage: (percentage: number | null) => void;
-  disabled: boolean;
-}) {
-  const formatFromProps = () => {
-    // Use schemeType first to decide what to show (API can return both values)
-    if (schemeType === 'PERCENTAGE' && percentage != null && percentage !== undefined) {
-      return `${percentage}%`;
-    }
-    if ((schemeType === 'FIXED_UNITS' || schemeType == null) && (payFor != null || free != null)) {
-      const payStr = (payFor ?? 0).toString();
-      const freeStr = (free ?? 0).toString();
-      return `${payStr} + ${freeStr}`;
-    }
-    return '';
-  };
-
-  const [draft, setDraft] = useState(formatFromProps());
-  const skipNextBlurCommitRef = useRef(false);
-
-  useEffect(() => {
-    setDraft(formatFromProps());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schemeType, payFor, free, percentage]);
-
-  const handleChange = (value: string) => {
-    // Allow only digits, spaces, '+', and '%'
-    if (!/^[0-9+%\s]*$/.test(value)) {
-      return;
-    }
-    const plusCount = (value.match(/\+/g) ?? []).length;
-    const percCount = (value.match(/%/g) ?? []).length;
-    // At most one '+' and at most one '%'
-    if (plusCount > 1 || percCount > 1) {
-      return;
-    }
-    // Do not allow mixing '+' and '%'
-    if (plusCount > 0 && percCount > 0) {
-      return;
-    }
-    setDraft(value);
-  };
-
-  const commit = () => {
-    const trimmed = draft.trim();
-    if (trimmed === '') {
-      onCommitUnits(null, null);
-      onCommitPercentage(null);
-      return;
-    }
-
-    // Percentage format e.g. "10%" or "10 %"
-    if (trimmed.includes('%')) {
-      const numStr = trimmed.replace('%', '').trim();
-      const num = parseFloat(numStr);
-      if (!isNaN(num) && num >= 0 && num <= 100) {
-        onCommitPercentage(num);
-        return;
-      }
-      setDraft(formatFromProps());
-      return;
-    }
-
-    // Fixed units format e.g. "10 + 1" or "10+1"
-    const plusIndex = trimmed.indexOf('+');
-    if (plusIndex !== -1) {
-      const left = trimmed.slice(0, plusIndex).trim();
-      const right = trimmed.slice(plusIndex + 1).trim();
-      const pay = parseInt(left, 10);
-      const freeVal = parseInt(right, 10);
-      if (
-        !isNaN(pay) &&
-        !isNaN(freeVal) &&
-        pay >= 0 &&
-        freeVal >= 0 &&
-        Number.isInteger(pay) &&
-        Number.isInteger(freeVal)
-      ) {
-        onCommitUnits(pay, freeVal);
-        return;
-      }
-      setDraft(formatFromProps());
-      return;
-    }
-
-    // Plain number: treat as percentage (e.g. 0, 5, 10 → schemeType PERCENTAGE, schemePercentage that number)
-    const num = parseFloat(trimmed);
-    if (!isNaN(num) && num >= 0 && num <= 100) {
-      onCommitUnits(null, null);
-      onCommitPercentage(num);
-      return;
-    }
-
-    // Invalid format, reset to last valid representation
-    setDraft(formatFromProps());
-  };
-
-  return (
-    <Input
-      id={id}
-      type="text"
-      className={itemAdditionalInputStyle}
-      value={draft}
-      placeholder="0, 10, 10 + 1 (number = %)"
-      disabled={disabled}
-      onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange(e.target.value)}
-      onBlur={() => {
         if (skipNextBlurCommitRef.current) {
           skipNextBlurCommitRef.current = false;
           return;
@@ -1107,6 +972,14 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   const productSearchAccess = useShopAccessStore((s) =>
     activeShopId ? s.byShopId[activeShopId]?.productSearch : undefined,
   );
+  const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
+  /** Rate rules on (`features.rateRules`): MRP / PTR / Cost picks send their system name. */
+  const rateRulesOn = useShopCapabilitiesStore((s) =>
+    activeShopId ? s.byShopId[activeShopId]?.features?.rateRules === true : false,
+  );
+  useEffect(() => {
+    void fetchCapabilities();
+  }, [fetchCapabilities]);
   const [cartBusinessType, setCartBusinessType] = useState('medical');
   const isCafeSell = cartBusinessType === 'cafe';
   const [sellCatalog, setSellCatalog] = useState<SellCatalog | null>(null);
@@ -1171,6 +1044,23 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   const [additionalDiscountOverrides, setAdditionalDiscountOverrides] = useState<
     Record<string, number | null>
   >({});
+  /**
+   * Rate picked per line; only read when the cart response has no `appliedRateName` (an older
+   * API), so the picker can still show a picked rule rate (the line carries its base price).
+   */
+  const [pickedRateNames, setPickedRateNames] = useState<Record<string, string>>({});
+  // Whenever the cart lines change (merge, remove, qty 0, quotation switch, checkout), drop picks
+  // for lines that are gone so a later add of the same lot starts from price matching again.
+  useEffect(() => {
+    setPickedRateNames((prev) =>
+      prunePickedRateNames(
+        prev,
+        cartItems.map((item) => item.inventoryItem.id),
+      ),
+    );
+  }, [cartItems]);
+  /** The rate each cart line is billed at, as the cart stored it (`appliedRateName`). */
+  const appliedRateNames = useMemo(() => appliedRateNamesByLine(cartData?.items), [cartData]);
   const [detailModalItem, setDetailModalItem] = useState<CartItem | null>(null);
   const [detailModalFullItem, setDetailModalFullItem] = useState<InventoryItem | null>(null);
   const [detailModalFullItemLoading, setDetailModalFullItemLoading] = useState(false);
@@ -2254,8 +2144,10 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
           const inventoryItem: InventoryItem = existing
             ? {
                 ...existing.inventoryItem,
-                saleAdditionalDiscount:
-                  resItem.saleAdditionalDiscount ?? existing.inventoryItem.saleAdditionalDiscount,
+                saleAdditionalDiscount: lineSaleDiscountFromResponse(
+                  resItem.saleAdditionalDiscount,
+                  existing.inventoryItem.saleAdditionalDiscount,
+                ),
                 sgst: resItem.sgst ?? existing.inventoryItem.sgst,
                 cgst: resItem.cgst ?? existing.inventoryItem.cgst,
                 billingMode: normalizeBillingMode(
@@ -2388,10 +2280,14 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     },
     priceToRetailUpdate?: { inventoryId: string; priceToRetail: number },
     baseQuantityDeltaMode = false,
+    rateNameUpdate?: { inventoryId: string; rateName: string },
   ) => {
-    // Prevent duplicate full-cart syncs; allow item-specific updates (scheme, discount, price) so they are not dropped
+    // Prevent duplicate full-cart syncs; allow item-specific updates (scheme, discount, price, rate) so they are not dropped
     const isItemSpecificUpdate =
-      schemeUpdate != null || saleAdditionalDiscountUpdate != null || priceToRetailUpdate != null;
+      schemeUpdate != null ||
+      saleAdditionalDiscountUpdate != null ||
+      priceToRetailUpdate != null ||
+      rateNameUpdate != null;
     if (isUpdatingRef.current && !isItemSpecificUpdate) {
       return;
     }
@@ -2409,17 +2305,26 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       schemeFree?: number | null;
       schemeType?: 'FIXED_UNITS' | 'PERCENTAGE' | null;
       schemePercentage?: number | null;
+      rateName?: string;
     };
 
     const effectiveOverrides = overrides ?? additionalDiscountOverrides;
-    const withItemFields = (base: CartItemPayload, cartItem?: CartItem): CartItemPayload => {
+    // A lot new to the cart sends only a disc the user typed, so the backend can apply the
+    // batch's default rule rate (or the batch's own disc) itself.
+    const withItemFields = (
+      base: CartItemPayload,
+      cartItem?: CartItem,
+      isNewLine = false,
+    ): CartItemPayload => {
       let result = { ...base };
       if (cartItem != null) {
-        const addDisc =
-          effectiveOverrides[cartItem.inventoryItem.id] ??
-          cartItem.inventoryItem.saleAdditionalDiscount ??
-          undefined;
-        if (addDisc !== undefined && addDisc !== null) {
+        const addDisc = saleDiscountToSend(
+          effectiveOverrides,
+          cartItem.inventoryItem.id,
+          cartItem.inventoryItem.saleAdditionalDiscount,
+          isNewLine,
+        );
+        if (addDisc !== undefined) {
           result = { ...result, saleAdditionalDiscount: addDisc };
         }
         const hasPercentage =
@@ -2453,7 +2358,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       baseQuantity: number,
       priceToRetail: number,
       cartItem?: CartItem,
-    ) => withItemFields({ id, unit, quantity, baseQuantity, priceToRetail }, cartItem);
+      isNewLine = false,
+    ) => withItemFields({ id, unit, quantity, baseQuantity, priceToRetail }, cartItem, isNewLine);
 
     isUpdatingRef.current = true;
     setIsUpdatingCart(true);
@@ -2469,7 +2375,19 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
 
       let itemsToSend: CartItemPayload[];
 
-      if (priceToRetailUpdate) {
+      if (rateNameUpdate) {
+        // Rate picked: send id + unit + rateName only; the cart puts the rate's price, disc and
+        // scheme on the line and the merge below takes them from the response.
+        const item = items.find((i) => i.inventoryItem.id === rateNameUpdate.inventoryId);
+        if (!item) {
+          isUpdatingRef.current = false;
+          setIsUpdatingCart(false);
+          return;
+        }
+        itemsToSend = [
+          { id: item.inventoryItem.id, unit: item.unit, rateName: rateNameUpdate.rateName },
+        ];
+      } else if (priceToRetailUpdate) {
         // Only price to retail changed: send id + priceToRetail (no quantity/baseQuantity)
         const item = items.find((i) => i.inventoryItem.id === priceToRetailUpdate.inventoryId);
         if (!item) {
@@ -2546,6 +2464,11 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
             ? quantityDelta
             : quantityDelta * Math.max(1, changedItem.unitFactor);
           const effectiveQuantityDelta = baseQuantityDeltaMode ? 0 : quantityDelta;
+          const isNewLine =
+            quantityDelta > 0 &&
+            !(cartData?.items ?? []).some(
+              (ci: CheckoutItemResponse) => ci.inventoryId === changedItemId,
+            );
           // Send the actual delta value (1 for +, -1 for -)
           itemsToSend = [
             withAdditionalDiscount(
@@ -2555,6 +2478,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
               effectiveBaseDelta,
               changedItem.price,
               changedItem,
+              isNewLine,
             ),
           ];
         } else {
@@ -2847,9 +2771,11 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
    * inventory-centric syncCartToAPI path and post deltas directly, then
    * reconcile from the server response.
    */
-  const applyMenuCartDelta = async (sellableRef: string, delta: number) => {
+  // Resolves false when the write failed, so a caller (the KOT withdrawal confirm) can tell a
+  // reduction that landed from one that did not.
+  const applyMenuCartDelta = async (sellableRef: string, delta: number): Promise<boolean> => {
     if (delta === 0 || isUpdatingRef.current) {
-      return;
+      return true;
     }
     isUpdatingRef.current = true;
     setIsUpdatingCart(true);
@@ -2857,9 +2783,9 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     try {
       let targetPurchaseId = activePurchaseId;
       if (!targetPurchaseId) {
-        if (delta <= 0) return;
+        if (delta <= 0) return true;
         targetPurchaseId = await ensureActiveQuotationId();
-        if (!targetPurchaseId) return;
+        if (!targetPurchaseId) return true;
       }
       const updated = await cartApi.add({
         businessType: cartBusinessType,
@@ -2869,50 +2795,69 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       applyCartToState(updated, cartItems);
       await refreshQuotationList();
       refreshSellCatalog();
+      return true;
     } catch (err) {
       notifyError(err instanceof Error ? err.message : 'Failed to update order');
+      return false;
     } finally {
       isUpdatingRef.current = false;
       setIsUpdatingCart(false);
     }
   };
 
-  const handleAddMenuItem = async (item: MenuItem) => {
+  const handleAddMenuItem = async (item: MenuItem, rate?: MenuRate) => {
     if (item.available === false) {
       notifyError('This item is unavailable');
       return;
     }
+    // A portioned item has no single price, so adding one without a portion would bill an
+    // amount nobody chose. The catalog's picker supplies the portion; nothing else may.
+    const hasPortions = (item.rates ?? []).some((r) => r.id?.trim() && r.name?.trim());
+    if (hasPortions && !rate?.id?.trim()) {
+      notifyError(`Choose a portion for "${item.name}"`);
+      return;
+    }
     setShowSearchDropdown(false);
-    await applyMenuCartDelta(menuSellableRef(item.id), 1);
+    // Only the frozen rate id goes on the wire; the price is resolved server-side from the menu.
+    await applyMenuCartDelta(menuSellableRef(item.id, rate?.id), 1);
   };
 
   const handleAddDirectStock = (item: InventoryItem) => {
     void handleAddToCart(item);
   };
 
-  const handleMenuQtyChange = (sellableRef: string, delta: number) => {
-    void applyMenuCartDelta(sellableRef, delta);
-  };
+  const handleMenuQtyChange = (sellableRef: string, delta: number): Promise<boolean> =>
+    applyMenuCartDelta(sellableRef, delta);
 
-  const handleMenuSetQuantity = async (sellableRef: string, newQty: number) => {
+  const handleMenuSetQuantity = async (sellableRef: string, newQty: number): Promise<boolean> => {
     const line = (cartData?.items ?? []).find((row) => lineSellableRef(row) === sellableRef);
-    if (!line) return;
+    if (!line) return true;
     const current = Math.trunc(Number(line.quantity));
     const next = Math.trunc(newQty);
     const delta = next - current;
-    if (delta === 0) return;
-    await applyMenuCartDelta(sellableRef, delta);
+    if (delta === 0) return true;
+    return applyMenuCartDelta(sellableRef, delta);
   };
 
-  const handleMenuRemove = (sellableRef: string) => {
+  const handleMenuRemove = (sellableRef: string): Promise<boolean> => {
     const line = (cartData?.items ?? []).find((row) => lineSellableRef(row) === sellableRef);
-    if (!line) return;
+    if (!line) return Promise.resolve(true);
     const qty = Math.trunc(Number(line.quantity));
-    if (qty <= 0) return;
-    void applyMenuCartDelta(sellableRef, -qty);
+    if (qty <= 0) return Promise.resolve(true);
+    return applyMenuCartDelta(sellableRef, -qty);
+  };
+
+  const forgetPickedRate = (inventoryId: string) => {
+    setPickedRateNames((prev) => {
+      if (!(inventoryId in prev)) return prev;
+      const next = { ...prev };
+      delete next[inventoryId];
+      return next;
+    });
   };
 
   const handleAdditionalDiscountChange = (inventoryId: string, value: number | null) => {
+    forgetPickedRate(inventoryId);
     const next = { ...additionalDiscountOverrides, [inventoryId]: value };
     setAdditionalDiscountOverrides(next);
     // Send only this item to API (id + additionalDiscount), like quantity update
@@ -2927,6 +2872,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     schemePayFor: number | null,
     schemeFree: number | null,
   ) => {
+    forgetPickedRate(inventoryId);
     setCartItems((prev) =>
       prev.map((item) =>
         item.inventoryItem.id === inventoryId
@@ -2949,6 +2895,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   };
 
   const handleSchemePercentageChange = (inventoryId: string, schemePercentage: number | null) => {
+    forgetPickedRate(inventoryId);
     setCartItems((prev) =>
       prev.map((item) =>
         item.inventoryItem.id === inventoryId
@@ -2971,6 +2918,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   };
 
   const handleSellingPriceChange = (inventoryId: string, priceToRetail: number) => {
+    forgetPickedRate(inventoryId);
     setCartItems((prev) =>
       prev.map((item) =>
         item.inventoryItem.id === inventoryId ? { ...item, price: priceToRetail } : item,
@@ -2982,7 +2930,44 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     });
   };
 
+  /**
+   * A rule rate sends its name, and with rate rules on MRP / PTR / Cost send their system name
+   * (`rateName` only); the line takes price, disc and scheme from the cart response, and the
+   * line's typed disc is dropped so the next sync does not resend it over the new one. Without
+   * rate rules MRP / PTR / Cost send the batch price, as before rate rules; legacy rates keep the
+   * price path. Only a rule rate's name is remembered in `pickedRateNames`.
+   */
+  const handleRatePick = (inventoryId: string, options: RateOption[], value: string) => {
+    const request = ratePickRequest(options, value, rateRulesOn);
+    if (!request) return;
+    if ('priceToRetail' in request) {
+      handleSellingPriceChange(inventoryId, request.priceToRetail);
+      return;
+    }
+    const nextOverrides = clearDiscountOverride(additionalDiscountOverrides, inventoryId);
+    setAdditionalDiscountOverrides(nextOverrides);
+    const ruleRateName = pickedRuleRateName(options, value);
+    if (ruleRateName) {
+      setPickedRateNames((prev) => ({ ...prev, [inventoryId]: ruleRateName }));
+    } else {
+      forgetPickedRate(inventoryId);
+    }
+    syncCartToAPI(
+      cartItems,
+      undefined,
+      undefined,
+      undefined,
+      nextOverrides,
+      undefined,
+      undefined,
+      undefined,
+      false,
+      { inventoryId, rateName: request.rateName },
+    ).catch(() => forgetPickedRate(inventoryId));
+  };
+
   const handleUnitChange = (inventoryId: string, unit: string) => {
+    forgetPickedRate(inventoryId);
     setCartItems((prev) => {
       const updatedItems = prev.map((item) => {
         if (item.inventoryItem.id !== inventoryId) return item;
@@ -3027,6 +3012,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     // Clear local state
     setCartItems([]);
     setAdditionalDiscountOverrides({});
+    setPickedRateNames({});
     setError(null);
 
     // Send all items with negative quantities to remove them from cart
@@ -3337,7 +3323,6 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
             <ScanSellCafeStockLine
               key={cartItem.inventoryItem.id}
               name={cartItem.inventoryItem.name || 'Product'}
-              inventoryId={cartItem.inventoryItem.id}
               unitLabel={unitLabel}
               price={cartItem.price}
               quantity={cartItem.quantity}
@@ -3350,8 +3335,6 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                 ) : null
               }
               disabled={isUpdatingCart}
-              customerProductHistory={customerProductHistory}
-              customerProductHistoryLoading={customerProductHistoryLoading}
               onChangeQty={(delta) => {
                 void handleUpdateQuantity(cartItem.inventoryItem.id, delta, false);
               }}
@@ -3583,7 +3566,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                           loading={isLoadingCatalog}
                           disabled={isUpdatingCart || isLoadingCart}
                           filterQuery={searchQuery}
-                          onAddMenuItem={(item) => void handleAddMenuItem(item)}
+                          onAddMenuItem={(item, rate) => void handleAddMenuItem(item, rate)}
                           onAddDirectStock={handleAddDirectStock}
                         />
                       </Box>
@@ -3625,6 +3608,16 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                         </Stack>
                       </CardBody>
                     </Card>
+
+                    {/* Vertical-contributed sell actions (cafe: Print KOT). Sits with the
+                        order it punches rather than in the checkout bar, which has no room
+                        for the ticket strip. Estimates are not orders, so they get none. */}
+                    {!isEstimateMode ? (
+                      <VerticalSellActions
+                        purchaseId={activePurchaseId ?? cartData?.purchaseId ?? null}
+                        disabled={isUpdatingCart || isLoadingCart}
+                      />
+                    ) : null}
 
                     {/* Same figures as the Margins block below, in the cafe layout —
                         hidden by `~` too, or the numbers would just leak here instead. */}
@@ -3746,13 +3739,10 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                   <DenseTableHeaderCell>Price</DenseTableHeaderCell>
                                   <DenseTableHeaderCell>Disc</DenseTableHeaderCell>
                                   <DenseTableHeaderCell>Scheme</DenseTableHeaderCell>
-                                  {showLineTax ? (
-                                    <>
-                                      <DenseTableHeaderCell>Taxable</DenseTableHeaderCell>
-                                      <DenseTableHeaderCell>GST</DenseTableHeaderCell>
-                                    </>
-                                  ) : null}
                                   <DenseTableHeaderCell>Amount</DenseTableHeaderCell>
+                                  {showLineTax ? (
+                                    <DenseTableHeaderCell>Total</DenseTableHeaderCell>
+                                  ) : null}
                                   <DenseTableHeaderCell
                                     aria-label="Actions"
                                     className={productChrome.rowActionsCell}
@@ -3796,9 +3786,6 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                   const rateOpts = getRateOptions(cartItem.inventoryItem, pricing);
                                   const showRateDropdown =
                                     pricingId || cartItem.inventoryItem.id || rateOpts.length > 1;
-                                  const matched = rateOpts.find(
-                                    (o) => Math.abs(o.price - cartItem.price) < 0.01,
-                                  );
                                   const isLoading =
                                     pricingLoading[pricingId ?? ''] ||
                                     pricingLoading[`inv:${cartItem.inventoryItem.id}`];
@@ -3889,35 +3876,31 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                               disabled={isUpdatingCart}
                                             />
                                             {showRateDropdown ? (
-                                              <Select
+                                              <RatePicker
+                                                layout="grid"
                                                 className={denseTableClassNames.rateSelect}
-                                                value={matched ? matched.label : '__custom__'}
-                                                onChange={(e) => {
-                                                  const sel = e.target.value;
-                                                  if (sel === '__custom__') return;
-                                                  const opt = rateOpts.find((o) => o.label === sel);
-                                                  if (opt)
-                                                    handleSellingPriceChange(
-                                                      cartItem.inventoryItem.id,
-                                                      opt.price,
-                                                    );
-                                                }}
-                                                onMouseDown={() =>
+                                                options={rateOpts}
+                                                value={selectedRateValue(
+                                                  rateOpts,
+                                                  cartItem.price,
+                                                  appliedRateNames[cartItem.inventoryItem.id],
+                                                  pickedRateNames[cartItem.inventoryItem.id],
+                                                )}
+                                                onPick={(value) =>
+                                                  handleRatePick(
+                                                    cartItem.inventoryItem.id,
+                                                    rateOpts,
+                                                    value,
+                                                  )
+                                                }
+                                                onOpen={() =>
                                                   loadPricingOnDropdownClick(
                                                     cartItem.inventoryItem.pricingId ?? undefined,
                                                     cartItem.inventoryItem.id,
                                                   )
                                                 }
                                                 disabled={isUpdatingCart || isLoading}
-                                                options={[
-                                                  { value: '__custom__', label: 'Custom' },
-                                                  ...rateOpts.map((opt) => ({
-                                                    value: opt.label,
-                                                    label: `${opt.label} (${formatPrice(
-                                                      opt.price,
-                                                    )})`,
-                                                  })),
-                                                ]}
+                                                loading={isLoading}
                                               />
                                             ) : null}
                                           </Stack>
@@ -3965,7 +3948,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                               </Text>
                                             ) : null}
                                             <Box className={productChrome.fontSemibold}>
-                                              <CartSchemeInput
+                                              <SchemeInput
                                                 schemeType={cartItem.schemeType ?? null}
                                                 payFor={cartItem.schemePayFor ?? null}
                                                 free={cartItem.schemeFree ?? null}
@@ -3988,23 +3971,23 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                             </Box>
                                           </Stack>
                                         </DenseTableCell>
-                                        {showLineTax ? (
-                                          <>
-                                            <DenseTableCell>
-                                              {lineTax ? formatPrice(lineTax.taxableValue) : '—'}
-                                            </DenseTableCell>
-                                            <DenseTableCell>
-                                              {lineTax
-                                                ? `${formatPrice(lineTax.taxAmount)}${
-                                                    lineTax.ratePercent > 0
-                                                      ? ` (${formatGstRate(lineTax.ratePercent)}%)`
-                                                      : ''
-                                                  }`
-                                                : '—'}
-                                            </DenseTableCell>
-                                          </>
-                                        ) : null}
                                         <DenseTableCell>{formatPrice(lineTotal)}</DenseTableCell>
+                                        {showLineTax ? (
+                                          <DenseTableCell>
+                                            {lineTax?.totalAmount != null ? (
+                                              <Stack>
+                                                <Text>{formatPrice(lineTax.totalAmount)}</Text>
+                                                {lineTax.ratePercent > 0 ? (
+                                                  <Text variant="caption" color="secondary">
+                                                    incl. {formatGstRate(lineTax.ratePercent)}% GST
+                                                  </Text>
+                                                ) : null}
+                                              </Stack>
+                                            ) : (
+                                              '—'
+                                            )}
+                                          </DenseTableCell>
+                                        ) : null}
                                         <DenseTableCell className={productChrome.rowActionsCell}>
                                           <IconButton
                                             type="button"
@@ -4164,48 +4147,24 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                                   cartItem.inventoryItem,
                                                   pricing,
                                                 );
-                                                const formatPrice = (n: number) =>
-                                                  new Intl.NumberFormat('en-IN', {
-                                                    style: 'currency',
-                                                    currency: 'INR',
-                                                    minimumFractionDigits: 2,
-                                                    maximumFractionDigits: 2,
-                                                  }).format(n);
                                                 const showDropdown =
                                                   pricingId || invId || rateOpts.length > 1;
                                                 if (!showDropdown) return null;
-                                                const matched = rateOpts.find(
-                                                  (o) => Math.abs(o.price - cartItem.price) < 0.01,
-                                                );
-                                                const selectValue = matched
-                                                  ? matched.label
-                                                  : '__custom__';
-                                                // Never switch select value to loading - keep current selection to avoid flicker
-                                                const displayValue =
-                                                  isLoading && rateOpts.length === 0
-                                                    ? '__custom__'
-                                                    : selectValue;
-                                                const selectedOpt = rateOpts.find(
-                                                  (o) => o.label === displayValue,
-                                                );
                                                 return (
-                                                  <Select
+                                                  <RatePicker
+                                                    layout="list"
                                                     className={itemRateSelectStyle}
-                                                    value={displayValue}
-                                                    onChange={(e) => {
-                                                      const sel = e.target.value;
-                                                      if (sel === '__custom__') return;
-                                                      const opt = rateOpts.find(
-                                                        (o) => o.label === sel,
-                                                      );
-                                                      if (opt) {
-                                                        handleSellingPriceChange(
-                                                          cartItem.inventoryItem.id,
-                                                          opt.price,
-                                                        );
-                                                      }
-                                                    }}
-                                                    onMouseDown={() => {
+                                                    options={rateOpts}
+                                                    value={selectedRateValue(
+                                                      rateOpts,
+                                                      cartItem.price,
+                                                      appliedRateNames[invId],
+                                                      pickedRateNames[invId],
+                                                    )}
+                                                    onPick={(value) =>
+                                                      handleRatePick(invId, rateOpts, value)
+                                                    }
+                                                    onOpen={() => {
                                                       loadPricingOnDropdownClick(
                                                         cartItem.inventoryItem.pricingId ??
                                                           undefined,
@@ -4213,24 +4172,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                                       );
                                                     }}
                                                     disabled={isUpdatingCart || isLoading}
-                                                    aria-label={
-                                                      isLoading
-                                                        ? 'Loading rates'
-                                                        : selectedOpt
-                                                        ? `Rate: ${
-                                                            selectedOpt.label
-                                                          }, ${formatPrice(selectedOpt.price)}`
-                                                        : 'Select selling rate'
-                                                    }
-                                                    options={[
-                                                      { value: '__custom__', label: 'Custom' },
-                                                      ...rateOpts.map((opt) => ({
-                                                        value: opt.label,
-                                                        label: `${opt.label} · ${formatPrice(
-                                                          opt.price,
-                                                        )}`,
-                                                      })),
-                                                    ]}
+                                                    loading={isLoading}
                                                   />
                                                 );
                                               })()}
@@ -4287,7 +4229,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                                   </Text>
                                                 ) : null}
                                                 <Box className={productChrome.fontSemibold}>
-                                                  <CartSchemeInput
+                                                  <SchemeInput
                                                     schemeType={cartItem.schemeType ?? null}
                                                     payFor={cartItem.schemePayFor ?? null}
                                                     free={cartItem.schemeFree ?? null}

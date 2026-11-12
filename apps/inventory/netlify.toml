@@ -1,0 +1,22 @@
+# Netlify site config for the inventory frontend (React Router SSR).
+#
+# Netlify UI settings this file expects:
+#   Base directory:    (empty — repo root, where pnpm-lock.yaml lives)
+#   Package directory: apps/inventory   (UI-only setting; this file lives here)
+#
+# The build runs from the repo root, so paths below are relative to the root.
+# @netlify/vite-plugin-react-router (apps/inventory/vite.config.mts) writes the
+# SSR handler to apps/inventory/.netlify/v1/functions, which Netlify picks up
+# from the package directory.
+
+[build]
+  # COMMIT_REF is set by Netlify; it renders <meta name="build-sha"> so
+  # scripts/deploy/verify-frontend.sh can confirm which commit is live.
+  command = "VITE_BUILD_SHA=$COMMIT_REF pnpm nx build inventory"
+  publish = "apps/inventory/build/client"
+
+[build.environment]
+  # Match the GitHub Actions deploy (.github/workflows/_deploy.yml).
+  NODE_VERSION = "20"
+  PNPM_VERSION = "9.8.0"
+  NX_DAEMON = "false"

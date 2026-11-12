@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown, ChevronRight, Search } from 'lucide-react';
-import { cartApi, shopMenuApi } from '@inventory-platform/product/api';
-import type { MenuItem, MenuSection, ShopMenu } from '@inventory-platform/plugin-cafe/types';
-import { menuSellableRef } from '@inventory-platform/product/types';
-import { useNotify, useVerticalSchemaStore } from '@inventory-platform/session';
+import { shopMenuApi } from '@inventory-platform/product/api';
+import type { InventoryItem } from '@inventory-platform/product/types';
+import type {
+  MenuItem,
+  MenuRate,
+  MenuSection,
+  ShopMenu,
+} from '@inventory-platform/plugin-cafe/types';
+import { useNotify } from '@inventory-platform/session';
 import {
   Alert,
   Badge,
@@ -24,6 +29,10 @@ import {
   productChrome,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
+import { StationSelect, stationsInMenu } from '../ui/StationSelect';
+import { LinkedStockRow } from '../ui/LinkedStockRow';
+import { StockItemPicker } from '../ui/StockItemPicker';
+import { useSellDirectLotsQuery } from '../queries/sellDirectLots';
 
 export function meta() {
   return [{ title: 'Menu - StockKart' }, { name: 'description', content: 'Manage your cafe menu' }];
@@ -52,6 +61,36 @@ function emptySection(): MenuSection {
   };
 }
 
+/**
+ * A portion's id is a slug frozen the moment the portion is first named, and never regenerated.
+ * It is what rides in the sellable ref (`menu:<itemId>@<rateId>`), so a later rename — "Half" to
+ * "Half plate" — must leave it alone or every cart line and kitchen ticket pointing at it is
+ * orphaned.
+ */
+function slugifyPortion(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function freezePortionId(name: string, siblings: MenuRate[]): string {
+  const base = slugifyPortion(name) || 'portion';
+  let candidate = base;
+  let suffix = 2;
+  while (siblings.some((r) => r.id === candidate)) {
+    candidate = `${base}-${suffix}`;
+    suffix += 1;
+  }
+  return candidate;
+}
+
+/** The portions that are real enough to save and to offer on Sell. */
+function namedPortions(item: Pick<MenuItem, 'rates'>): MenuRate[] {
+  return (item.rates ?? []).filter((r) => r.name.trim());
+}
+
 function normalizeSectionsForCompare(sections: MenuSection[]): string {
   return JSON.stringify(
     sections.map((s, idx) => ({
@@ -62,9 +101,22 @@ function normalizeSectionsForCompare(sections: MenuSection[]): string {
         .map((i) => ({
           id: i.id,
           name: i.name.trim(),
-          sellingPrice: Number(i.sellingPrice) || 0,
-          sellMode: 'menu' as const,
+          sellingPrice: i.sellMode === 'direct' ? null : Number(i.sellingPrice) || 0,
+          // A placed stock lot differs from a dish only by these two; leave them out and adding or
+          // removing a placement leaves Save greyed out.
+          sellMode: i.sellMode === 'direct' ? ('direct' as const) : ('menu' as const),
+          inventoryId: i.sellMode === 'direct' ? i.inventoryId ?? null : null,
           available: i.available !== false,
+          // Must be compared too: without it, editing only the station leaves the menu looking
+          // unchanged and Save stays disabled.
+          department: (i.department ?? '').trim().toUpperCase(),
+          // Same trap, same cost: leave the portions out and a cashier who renames Half or
+          // reprices Full finds Save greyed out with their edit sitting on screen.
+          rates: namedPortions(i).map((r) => ({
+            id: r.id,
+            name: r.name.trim(),
+            price: Number(r.price) || 0,
+          })),
         })),
     })),
   );
@@ -81,30 +133,41 @@ function menuItemMatchesSearch(item: MenuItem, sectionTitle: string, query: stri
 
 export function MenuAdminPage() {
   const { success: notifySuccess, error: notifyError } = useNotify;
-  const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
-  const [businessType, setBusinessType] = useState('cafe');
   const [menu, setMenu] = useState<ShopMenu | null>(null);
   const [sections, setSections] = useState<MenuSection[]>([]);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
-  const [addingToSell, setAddingToSell] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const loadedRef = useRef(false);
   const savedSnapshotRef = useRef('');
+  const knownStations = useMemo(() => stationsInMenu(sections), [sections]);
+  const lotsQuery = useSellDirectLotsQuery();
+  const lots = useMemo(() => lotsQuery.data ?? [], [lotsQuery.data]);
+  const lotsError = lotsQuery.isError
+    ? lotsQuery.error instanceof Error
+      ? lotsQuery.error.message
+      : 'Failed to load stock items'
+    : null;
+  /** Section whose "Add stock item" picker is open. */
+  const [pickerSectionId, setPickerSectionId] = useState<string | null>(null);
+  const lotsById = useMemo(() => new Map(lots.map((lot) => [lot.id, lot] as const)), [lots]);
+  const linkedIds = useMemo(
+    () =>
+      new Set(
+        sections.flatMap((s) =>
+          s.items
+            .filter((i) => i.sellMode === 'direct' && i.inventoryId)
+            .map((i) => i.inventoryId as string),
+        ),
+      ),
+    [sections],
+  );
 
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const hasActiveSearch = normalizedSearch.length > 0;
-
-  useEffect(() => {
-    void fetchShopSchema('regular').then((schema) => {
-      if (schema?.verticalId) {
-        setBusinessType(schema.verticalId);
-      }
-    });
-  }, [fetchShopSchema]);
 
   const loadMenu = useCallback(async () => {
     setIsLoading(true);
@@ -178,46 +241,6 @@ export function MenuAdminPage() {
     setSearchQuery('');
   };
 
-  const canAddItemToSell = (item: MenuItem): boolean => {
-    if (isDirty) return false;
-    if (!item.name.trim()) return false;
-    if (item.available === false) return false;
-    if (!item.sellingPrice || item.sellingPrice <= 0) return false;
-    return true;
-  };
-
-  const addToSellDisabledReason = (item: MenuItem): string | null => {
-    if (isDirty) return 'Save menu first';
-    if (!item.name.trim()) return 'Name required';
-    if (item.available === false) return 'Hidden from sell';
-    if (!item.sellingPrice || item.sellingPrice <= 0) return 'Price not set';
-    return null;
-  };
-
-  const handleAddToSell = async (item: MenuItem) => {
-    const disabledReason = addToSellDisabledReason(item);
-    if (disabledReason) {
-      notifyError(disabledReason);
-      return;
-    }
-
-    setAddingToSell(item.id);
-    setError(null);
-    try {
-      await cartApi.add({
-        businessType,
-        items: [{ sellableRef: menuSellableRef(item.id), quantity: 1 }],
-      });
-      notifySuccess(`Added "${item.name.trim()}" to sell cart`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to add to sell';
-      setError(message);
-      notifyError(message);
-    } finally {
-      setAddingToSell(null);
-    }
-  };
-
   const updateSection = (sectionId: string, patch: Partial<MenuSection>) => {
     setSections((prev) => prev.map((s) => (s.id === sectionId ? { ...s, ...patch } : s)));
   };
@@ -235,6 +258,32 @@ export function MenuAdminPage() {
     );
   };
 
+  const addStockItem = (sectionId: string, lot: InventoryItem) => {
+    setSections((prev) =>
+      prev.map((s) => {
+        if (s.id !== sectionId) return s;
+        // An untouched blank row is dropped rather than left beside the placement.
+        const kept = s.items.filter((i) => i.name.trim() || i.sellMode === 'direct');
+        return {
+          ...s,
+          items: [
+            ...kept,
+            {
+              id: newId(),
+              name: lot.name ?? 'Stock item',
+              sellingPrice: null,
+              sellMode: 'direct' as const,
+              inventoryId: lot.id,
+              available: true,
+              department: '',
+            },
+          ],
+        };
+      }),
+    );
+    setPickerSectionId(null);
+  };
+
   const addItem = (sectionId: string) => {
     setSections((prev) =>
       prev.map((s) => (s.id === sectionId ? { ...s, items: [...s.items, emptyItem()] } : s)),
@@ -248,6 +297,58 @@ export function MenuAdminPage() {
         const next = s.items.filter((i) => i.id !== itemId);
         return { ...s, items: next.length ? next : [emptyItem()] };
       }),
+    );
+  };
+
+  const updatePortions = (
+    sectionId: string,
+    itemId: string,
+    change: (rates: MenuRate[]) => MenuRate[],
+  ) => {
+    setSections((prev) =>
+      prev.map((s) =>
+        s.id !== sectionId
+          ? s
+          : {
+              ...s,
+              items: s.items.map((item) =>
+                item.id === itemId ? { ...item, rates: change(item.rates ?? []) } : item,
+              ),
+            },
+      ),
+    );
+  };
+
+  const addPortion = (sectionId: string, itemId: string) => {
+    updatePortions(sectionId, itemId, (rates) => [...rates, { id: '', name: '', price: 0 }]);
+  };
+
+  const removePortion = (sectionId: string, itemId: string, index: number) => {
+    updatePortions(sectionId, itemId, (rates) => rates.filter((_, i) => i !== index));
+  };
+
+  const renamePortion = (sectionId: string, itemId: string, index: number, name: string) => {
+    updatePortions(sectionId, itemId, (rates) =>
+      rates.map((rate, i) => {
+        if (i !== index) return rate;
+        // Freeze the id on the first real name and never touch it again, so renaming later
+        // changes only what the shop reads — not what the cart and the kitchen point at.
+        const id =
+          rate.id ||
+          (name.trim()
+            ? freezePortionId(
+                name,
+                rates.filter((_, j) => j !== index),
+              )
+            : '');
+        return { ...rate, id, name };
+      }),
+    );
+  };
+
+  const repricePortion = (sectionId: string, itemId: string, index: number, price: string) => {
+    updatePortions(sectionId, itemId, (rates) =>
+      rates.map((rate, i) => (i === index ? { ...rate, price: Number(price) || 0 } : rate)),
     );
   };
 
@@ -284,13 +385,33 @@ export function MenuAdminPage() {
           title: s.title.trim() || 'Untitled',
           items: s.items
             .filter((i) => i.name.trim())
-            .map((i) => ({
-              ...i,
-              name: i.name.trim(),
-              sellingPrice: Number(i.sellingPrice) || 0,
-              sellMode: 'menu' as const,
-              inventoryId: null,
-            })),
+            .map((i) => {
+              if (i.sellMode === 'direct') {
+                // The lot owns price and tax; the server clears them anyway.
+                return {
+                  ...i,
+                  name: i.name.trim(),
+                  sellingPrice: null,
+                  rates: [],
+                  sellMode: 'direct' as const,
+                  inventoryId: i.inventoryId ?? null,
+                };
+              }
+              const rates = namedPortions(i).map((r) => ({
+                id: r.id || freezePortionId(r.name, []),
+                name: r.name.trim(),
+                price: Number(r.price) || 0,
+              }));
+              return {
+                ...i,
+                name: i.name.trim(),
+                // One or the other, never both: a portioned item's price lives in its portions.
+                sellingPrice: rates.length ? null : Number(i.sellingPrice) || 0,
+                rates,
+                sellMode: 'menu' as const,
+                inventoryId: null,
+              };
+            }),
         }))
         .filter((s) => s.items.length > 0);
 
@@ -465,7 +586,21 @@ export function MenuAdminPage() {
                   <Box className={productChrome.menuAdminSectionBody}>
                     <Box className={productChrome.menuAdminItemGrid}>
                       {section.items.map((item) => {
+                        if (item.sellMode === 'direct') {
+                          return (
+                            <LinkedStockRow
+                              key={item.id}
+                              item={item}
+                              lot={item.inventoryId ? lotsById.get(item.inventoryId) ?? null : null}
+                              knownStations={knownStations}
+                              onChange={(patch) => updateItem(section.id, item.id, patch)}
+                              onRemove={() => removeItem(section.id, item.id)}
+                            />
+                          );
+                        }
                         const isAvailable = item.available !== false;
+                        const portions = item.rates ?? [];
+                        const isPortioned = namedPortions(item).length > 0;
                         return (
                           <Box
                             key={item.id}
@@ -495,23 +630,112 @@ export function MenuAdminPage() {
                               </IconButton>
                             </Inline>
 
+                            {isPortioned ? null : (
+                              <Box className={productChrome.menuAdminItemPriceRow}>
+                                <Text as="span" className={productChrome.menuAdminItemPricePrefix}>
+                                  ₹
+                                </Text>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  step="0.01"
+                                  value={item.sellingPrice || ''}
+                                  onChange={(e) =>
+                                    updateItem(section.id, item.id, {
+                                      sellingPrice: Number(e.target.value),
+                                    })
+                                  }
+                                  placeholder="0.00"
+                                  className={productChrome.menuAdminItemPrice}
+                                  aria-label="Price"
+                                />
+                              </Box>
+                            )}
+
+                            {/*
+                              Portions are named and priced here exactly as custom rates are on
+                              the pricing screen: a row of name + price, added and removed one at
+                              a time. An item is priced one way or the other — once a portion is
+                              named, the single price above steps aside.
+                            */}
+                            <Box className={productChrome.menuAdminPortionSection}>
+                              <Box className={productChrome.menuAdminPortionHead}>
+                                <Text as="span" className={productChrome.menuAdminItemPricePrefix}>
+                                  Portions
+                                </Text>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => addPortion(section.id, item.id)}
+                                >
+                                  Add portion
+                                </Button>
+                              </Box>
+                              {portions.length === 0 ? (
+                                <Text as="p" className={productChrome.menuAdminPortionHint}>
+                                  None — this item sells at the single price above. Add Qtr, Half or
+                                  Full to price it by portion instead.
+                                </Text>
+                              ) : (
+                                <>
+                                  {portions.map((rate, i) => (
+                                    <Box
+                                      // By position, not by `rate.id`: the id is frozen on the first
+                                      // letter typed, and a key that changes mid-keystroke remounts
+                                      // the row and drops focus after one character. The inputs are
+                                      // fully controlled, so a positional key loses nothing.
+                                      key={i}
+                                      className={productChrome.menuAdminPortionRow}
+                                    >
+                                      <Input
+                                        value={rate.name}
+                                        onChange={(e) =>
+                                          renamePortion(section.id, item.id, i, e.target.value)
+                                        }
+                                        placeholder="e.g. Half"
+                                        aria-label={`Portion ${i + 1} name for ${
+                                          item.name.trim() || 'new item'
+                                        }`}
+                                      />
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        step="0.01"
+                                        value={rate.price || ''}
+                                        onChange={(e) =>
+                                          repricePortion(section.id, item.id, i, e.target.value)
+                                        }
+                                        placeholder="0.00"
+                                        className={productChrome.menuAdminPortionPrice}
+                                        aria-label={`Portion ${i + 1} price for ${
+                                          item.name.trim() || 'new item'
+                                        }`}
+                                      />
+                                      <IconButton
+                                        size="sm"
+                                        label={`Remove portion ${rate.name.trim() || i + 1}`}
+                                        onClick={() => removePortion(section.id, item.id, i)}
+                                      >
+                                        ×
+                                      </IconButton>
+                                    </Box>
+                                  ))}
+                                </>
+                              )}
+                            </Box>
+
                             <Box className={productChrome.menuAdminItemPriceRow}>
                               <Text as="span" className={productChrome.menuAdminItemPricePrefix}>
-                                ₹
+                                Station
                               </Text>
-                              <Input
-                                type="number"
-                                min={0}
-                                step="0.01"
-                                value={item.sellingPrice || ''}
-                                onChange={(e) =>
-                                  updateItem(section.id, item.id, {
-                                    sellingPrice: Number(e.target.value),
-                                  })
+                              <StationSelect
+                                value={item.department ?? ''}
+                                knownStations={knownStations}
+                                ariaLabel={`Station for ${item.name || 'this item'}`}
+                                onChange={(next) =>
+                                  updateItem(section.id, item.id, { department: next })
                                 }
-                                placeholder="0.00"
-                                className={productChrome.menuAdminItemPrice}
-                                aria-label="Price"
                               />
                             </Box>
 
@@ -531,18 +755,18 @@ export function MenuAdminPage() {
                               />
                             </Box>
 
+                            {/* Same save as the header: the menu is saved as one document, and a
+                                 card-level button saves it from where the cashier is editing. */}
                             <Button
                               type="button"
                               variant="solid"
                               size="sm"
                               fullWidth
-                              onClick={() => void handleAddToSell(item)}
-                              disabled={!canAddItemToSell(item) || addingToSell === item.id}
-                              title={addToSellDisabledReason(item) ?? undefined}
+                              disabled={isSaving || !isDirty}
+                              onClick={() => void handleSave()}
+                              loading={isSaving}
                             >
-                              {addingToSell === item.id
-                                ? 'Adding…'
-                                : addToSellDisabledReason(item) ?? 'Add to Sell'}
+                              {isSaving ? 'Saving…' : 'Save'}
                             </Button>
                           </Box>
                         );
@@ -558,6 +782,15 @@ export function MenuAdminPage() {
                     >
                       + Add item to {sectionTitle}
                     </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className={productChrome.menuAdminAddItem}
+                      onClick={() => setPickerSectionId(section.id)}
+                    >
+                      + Add stock item to {sectionTitle}
+                    </Button>
                   </Box>
                 ) : null}
               </Box>
@@ -565,6 +798,16 @@ export function MenuAdminPage() {
           })}
         </Box>
       )}
+      <StockItemPicker
+        open={pickerSectionId !== null}
+        lots={lots}
+        linkedIds={linkedIds}
+        loadError={lotsError}
+        onPick={(lot) => {
+          if (pickerSectionId) addStockItem(pickerSectionId, lot);
+        }}
+        onClose={() => setPickerSectionId(null)}
+      />
     </Stack>
   );
 }

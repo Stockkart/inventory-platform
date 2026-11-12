@@ -272,9 +272,9 @@ describe('ProductCardLayoutSection (Req 9.2–9.11)', () => {
     });
     expect(screen.getByLabelText('Card preview')).toHaveTextContent('Max price: ₹200.00');
     fireEvent.click(within(inspector).getByRole('button', { name: 'Normal' }));
-    fireEvent.change(within(inspector).getByLabelText('Section for MRP'), {
-      target: { value: 'identity' },
-    });
+    // The section list opens in a portal, outside the inspector; identity is the first section.
+    fireEvent.click(within(inspector).getByLabelText('Section for MRP'));
+    fireEvent.click(screen.getAllByRole('option')[0]);
     // MRP now sits in the identity section (first in the preview), before the divider
     const preview = screen.getByLabelText('Card preview').textContent ?? '';
     expect(preview.indexOf('Max price')).toBeLessThan(preview.indexOf('Available'));

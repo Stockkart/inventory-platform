@@ -452,6 +452,17 @@ describe('future days from the server flag (runs F7, F8)', () => {
 });
 
 describe('AttendanceMonthPage Excel download (run F5)', () => {
+  // The page opens on the current month; pin the clock to the fixture's month
+  // so the test does not depend on the day it runs. Only Date is faked, so
+  // userEvent's timers stay real.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-15T12:00:00Z'));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('downloads the shown month as Excel', async () => {
     const user = userEvent.setup();
     signIn(['VIEW_ATTENDANCE']);

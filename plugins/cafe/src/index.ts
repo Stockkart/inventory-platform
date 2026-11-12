@@ -15,6 +15,14 @@ const cafePlugin: VerticalPlugin = {
         })),
     },
   ],
+  // Defined here at module scope, not inline in a render: `VerticalSellActions` memoises
+  // `lazy(action.load)` on this array's identity.
+  sellActions: [
+    {
+      id: 'cafe-print-kot',
+      load: () => import('./ui/CafeKotBar').then((m) => ({ default: m.CafeKotBar })),
+    },
+  ],
 };
 
 export default cafePlugin;

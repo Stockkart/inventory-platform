@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { ShopProductSearchAccess } from '@inventory-platform/access';
 import type { InventoryItem } from '@inventory-platform/product/types';
-import { buildPriceUpdate, canEditAnyPriceField, priceDraftFrom } from './priceEdit';
+import {
+  buildPriceUpdate,
+  buildRatesUpdate,
+  canEditAnyPriceField,
+  priceDraftFrom,
+} from './priceEdit';
 
 const lot = {
   id: 'lot-1',
@@ -57,25 +62,66 @@ describe('buildPriceUpdate', () => {
       'PTS must be a number of 0 or more',
     ]);
   });
+});
 
-  it('sends the rate list and default rate when they change', () => {
+describe('buildRatesUpdate', () => {
+  const ruleRate = {
+    name: 'WHOLESALE',
+    price: 90,
+    base: 'priceToRetail',
+    baseValue: 100,
+    discountPercent: 10,
+    scheme: null,
+  } as const;
+  const saved = { rates: [{ name: 'RATE-A', price: 70 }, ruleRate], defaultRate: 'priceToRetail' };
+  const allowed = ['priceToRetail', 'maximumRetailPrice', 'costPrice', 'RATE-A', 'WHOLESALE'];
+  const untouched = { rates: saved.rates, defaultRate: saved.defaultRate, resetNames: [] };
+
+  it('makes no pricing write when nothing changed', () => {
+    expect(buildRatesUpdate(saved, untouched, allowed)).toEqual({ payload: null, errors: [] });
+  });
+
+  it('sends the full list when a hand-typed rate changes, a rule rate as it is', () => {
     const draft = {
-      ...priceDraftFrom(lot),
-      rates: [
-        { name: 'RATE-A', price: 70 },
-        { name: ' RATE-B ', price: 72 },
-        { name: '', price: 0 },
-      ],
-      defaultRate: 'RATE-B',
+      ...untouched,
+      rates: [{ name: ' RATE-A ', price: 72 }, ruleRate, { name: '', price: 0 }],
     };
 
-    expect(buildPriceUpdate(lot, draft).payload).toEqual({
-      rates: [
-        { name: 'RATE-A', price: 70 },
-        { name: 'RATE-B', price: 72 },
-      ],
-      defaultRate: 'RATE-B',
+    expect(buildRatesUpdate(saved, draft, allowed)).toEqual({
+      payload: { rates: [{ name: 'RATE-A', price: 72 }, ruleRate] },
+      errors: [],
     });
+  });
+
+  it("sends the list when only a rule rate's terms change", () => {
+    const edited = { ...ruleRate, discountPercent: 12 };
+    const draft = { ...untouched, rates: [saved.rates[0], edited] };
+
+    expect(buildRatesUpdate(saved, draft, allowed).payload).toEqual({
+      rates: [saved.rates[0], edited],
+    });
+  });
+
+  it('sends resets and a changed default rate on their own', () => {
+    const draft = { ...untouched, defaultRate: 'WHOLESALE', resetNames: ['WHOLESALE'] };
+
+    expect(buildRatesUpdate(saved, draft, allowed).payload).toEqual({
+      defaultRate: 'WHOLESALE',
+      resetRates: ['WHOLESALE'],
+    });
+  });
+
+  it('refuses a default rate the server does not offer, and a negative price', () => {
+    const draft = {
+      ...untouched,
+      rates: [{ name: 'RATE-A', price: -1 }, ruleRate],
+      defaultRate: 'RATE-NEW',
+    };
+
+    expect(buildRatesUpdate(saved, draft, allowed).errors).toEqual([
+      'Each rate needs a price of 0 or more',
+      'Choose a default rate from the list',
+    ]);
   });
 });
 
