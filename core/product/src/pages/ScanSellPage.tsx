@@ -1038,6 +1038,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerResponse | null>(null);
   const [customerGstin, setCustomerGstin] = useState('');
   const [customerDlNo, setCustomerDlNo] = useState('');
+  const [customerDlExpiry, setCustomerDlExpiry] = useState('');
   const [customerPan, setCustomerPan] = useState('');
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [customerSectionOpen, setCustomerSectionOpen] = useState(false);
@@ -1603,6 +1604,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       customerId: cart.customerId ?? '',
       gstin: cart.customerGstin ?? '',
       dlNo: cart.customerDlNo ?? '',
+      dlExpiry: cart.customerDlExpiry ?? '',
+      dlExpired: cart.customerDlExpired ?? null,
       pan: cart.customerPan ?? '',
     };
   };
@@ -1617,6 +1620,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       setCustomerAddress('');
       setCustomerGstin('');
       setCustomerDlNo('');
+      setCustomerDlExpiry('');
       setCustomerPan('');
       setCustomerPartyType('CONSUMER');
       return;
@@ -1629,6 +1633,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     setCustomerAddress(customer.address || '');
     setCustomerGstin(customer.gstin || '');
     setCustomerDlNo(customer.dlNo || '');
+    setCustomerDlExpiry(customer.dlExpiry || '');
     setCustomerPan(customer.pan || customer.panNo || '');
     setCustomerPartyType(customer.partyType ?? 'CONSUMER');
   };
@@ -1658,6 +1663,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     setCustomerEmail(email);
     setCustomerGstin(gstin);
     setCustomerDlNo(dl);
+    setCustomerDlExpiry(resolved.dlExpiry);
     setCustomerPan(pan);
     if (resolved.customerId && (phone || email || gstin || dl || pan)) {
       setSelectedCustomer({
@@ -1668,6 +1674,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
         address: address || null,
         gstin: gstin || null,
         dlNo: dl || null,
+        dlExpiry: resolved.dlExpiry || null,
+        dlExpired: resolved.dlExpired,
         pan: pan || null,
         partyType: customerPartyType,
         createdAt: '',
@@ -1705,6 +1713,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     customerAddress?: string;
     customerGstin?: string;
     customerDlNo?: string;
+    customerDlExpiry?: string;
     customerPan?: string;
     customerPartyType?: CustomerPartyType;
   }): Promise<void> => {
@@ -1725,6 +1734,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     const address = overrides?.customerAddress ?? customerAddress;
     const gstin = overrides?.customerGstin ?? customerGstin;
     const dlNo = overrides?.customerDlNo ?? customerDlNo;
+    const dlExpiry = overrides?.customerDlExpiry ?? customerDlExpiry;
     const pan = overrides?.customerPan ?? customerPan;
     const partyType = overrides?.customerPartyType ?? customerPartyType;
 
@@ -1767,6 +1777,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
         ...(email.trim() && { customerEmail: email.trim() }),
         ...(gstin.trim() && { customerGstin: gstin.trim() }),
         ...(dlNo.trim() && { customerDlNo: dlNo.trim() }),
+        ...(dlNo.trim() && dlExpiry && { customerDlExpiry: dlExpiry }),
         ...(pan.trim() && { customerPan: pan.trim() }),
         ...(partyType && { customerPartyType: partyType }),
       });
@@ -1798,6 +1809,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       customerAddress: customer.address || '',
       customerGstin: customer.gstin || '',
       customerDlNo: customer.dlNo || '',
+      customerDlExpiry: customer.dlExpiry || '',
       customerPan: customer.pan || customer.panNo || '',
       customerPartyType: customer.partyType ?? 'CONSUMER',
     });
@@ -1813,6 +1825,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       customerAddress: '',
       customerGstin: '',
       customerDlNo: '',
+      customerDlExpiry: '',
       customerPan: '',
       customerPartyType: 'CONSUMER',
     });
@@ -2084,6 +2097,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       customerAddress: c.address ?? '',
       customerGstin: c.gstin ?? '',
       customerDlNo: c.dlNo ?? '',
+      customerDlExpiry: c.dlExpiry ?? '',
       customerPan: c.pan ?? c.panNo ?? '',
       customerPartyType: c.partyType ?? 'CONSUMER',
     });
@@ -2576,6 +2590,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
         ...(customerId.trim() && { customerId: customerId.trim() }),
         ...(customerGstin && { customerGstin }),
         ...(customerDlNo && { customerDlNo }),
+        ...(customerDlNo && customerDlExpiry && { customerDlExpiry }),
         ...(customerPan && { customerPan }),
         ...(customerPartyType && { customerPartyType }),
       };
@@ -3041,6 +3056,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
           ...(customerEmail && { customerEmail }),
           ...(customerGstin && { customerGstin }),
           ...(customerDlNo && { customerDlNo }),
+          ...(customerDlNo && customerDlExpiry && { customerDlExpiry }),
           ...(customerPan && { customerPan }),
           ...(customerPartyType && { customerPartyType }),
         };
@@ -3169,6 +3185,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
         ...(customerId.trim() && { customerId: customerId.trim() }),
         ...(customerGstin.trim() && { customerGstin: customerGstin.trim() }),
         ...(customerDlNo.trim() && { customerDlNo: customerDlNo.trim() }),
+        ...(customerDlNo.trim() && customerDlExpiry && { customerDlExpiry }),
         ...(customerPan.trim() && { customerPan: customerPan.trim() }),
         ...(customerPartyType && { customerPartyType }),
       };

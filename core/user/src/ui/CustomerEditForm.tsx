@@ -19,6 +19,7 @@ import {
   pickFilled,
   prefillAddressFromGstin,
 } from '../model/gstin-prefill';
+import { DrugLicenceFields } from './DrugLicenceFields';
 import { GstinField, stateImpliedBy } from './GstinField';
 
 /** Derive PAN from GSTIN: 10 chars from 3rd character (1-based). */
@@ -65,6 +66,8 @@ interface CustomerEditFormProps<T extends UpdateCustomerDto> {
   onChange: (value: T) => void;
   /** Display-only PAN from API (derived from GSTIN). Shown read-only. */
   panNo?: string | null;
+  /** Server's `dlExpired` for the saved customer; flags the expiry date when true. */
+  dlExpired?: boolean | null;
   disabled?: boolean;
   /** Prefix for element ids, so two forms on one page do not collide. */
   idPrefix?: string;
@@ -79,6 +82,7 @@ export function CustomerEditForm<T extends UpdateCustomerDto>({
   value,
   onChange,
   panNo,
+  dlExpired,
   disabled = false,
   idPrefix = 'customer',
 }: CustomerEditFormProps<T>) {
@@ -205,22 +209,20 @@ export function CustomerEditForm<T extends UpdateCustomerDto>({
         <Text as="h3" className={surfaceChrome.priceEditSectionTitle}>
           Licence & PAN
         </Text>
-        <FormRow>
-          <FormField
-            label="DL No"
-            value={value.dlNo ?? ''}
-            onChange={(v) => onChange({ ...value, dlNo: v })}
-            placeholder="Drug licence number"
-            disabled={disabled}
-          />
-          <FormField
-            label="PAN"
-            value={value.pan ?? panDisplay}
-            onChange={(v) => onChange({ ...value, pan: v })}
-            placeholder="PAN"
-            disabled={disabled}
-          />
-        </FormRow>
+        <DrugLicenceFields
+          value={value}
+          onChange={onChange}
+          expired={dlExpired}
+          disabled={disabled}
+          idPrefix={idPrefix}
+        />
+        <FormField
+          label="PAN"
+          value={value.pan ?? panDisplay}
+          onChange={(v) => onChange({ ...value, pan: v })}
+          placeholder="PAN"
+          disabled={disabled}
+        />
         <Text variant="caption" color="muted">
           At least one of phone, email, GSTIN, PAN, or DL is required for a unique customer.
         </Text>

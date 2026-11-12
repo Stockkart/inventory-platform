@@ -17,11 +17,14 @@ import {
   pickFilled,
   prefillAddressFromGstin,
 } from '../model/gstin-prefill';
+import { DrugLicenceFields } from './DrugLicenceFields';
 import { GstinField, stateImpliedBy } from './GstinField';
 
 interface VendorEditFormProps {
   value: UpdateVendorDto;
   onChange: (value: UpdateVendorDto) => void;
+  /** Server's `dlExpired` for the saved vendor; flags the expiry date when true. */
+  dlExpired?: boolean | null;
   disabled?: boolean;
 }
 
@@ -73,7 +76,12 @@ export function prefillFromGstin(
   };
 }
 
-export function VendorEditForm({ value, onChange, disabled = false }: VendorEditFormProps) {
+export function VendorEditForm({
+  value,
+  onChange,
+  dlExpired,
+  disabled = false,
+}: VendorEditFormProps) {
   const [showCustom, setShowCustom] = useState(false);
   const [customType, setCustomType] = useState('');
 
@@ -238,12 +246,12 @@ export function VendorEditForm({ value, onChange, disabled = false }: VendorEdit
             }}
           />
         ) : null}
-        <FormField
-          label="DL no."
-          value={value.dlNo ?? ''}
-          onChange={(v) => onChange({ ...value, dlNo: v })}
-          placeholder="Drug licence number"
+        <DrugLicenceFields
+          value={value}
+          onChange={onChange}
+          expired={dlExpired}
           disabled={disabled}
+          idPrefix="vendor"
         />
       </Stack>
     </Stack>

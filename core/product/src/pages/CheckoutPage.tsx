@@ -38,6 +38,7 @@ import {
   validatePaymentSplit,
 } from '../ui';
 import { schemeLabel } from '../lib/billedLineLabels';
+import { DrugLicenceSummary } from '@inventory-platform/user/ui';
 import { useResolvedSellPath } from '@inventory-platform/routing';
 import { useAuthStore, useNotify, useShopCapabilitiesStore } from '@inventory-platform/session';
 
@@ -422,7 +423,16 @@ export function CheckoutPage() {
                   <InfoField label="Customer GSTIN" value={checkoutData.customerGstin} />
                 ) : null}
                 {checkoutData.customerDlNo && checkoutData.customerDlNo.trim() ? (
-                  <InfoField label="Customer DL No" value={checkoutData.customerDlNo} />
+                  <InfoField
+                    label="Customer DL No"
+                    value={
+                      <DrugLicenceSummary
+                        dlNo={checkoutData.customerDlNo}
+                        dlExpiry={checkoutData.customerDlExpiry}
+                        expired={checkoutData.customerDlExpired}
+                      />
+                    }
+                  />
                 ) : null}
                 {checkoutData.customerPan && checkoutData.customerPan.trim() ? (
                   <InfoField label="Customer PAN" value={checkoutData.customerPan} />

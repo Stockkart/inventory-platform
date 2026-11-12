@@ -107,6 +107,10 @@ export interface Vendor {
   gstinStatus?: string | null;
   /** Drug licence number, as printed on a pharmacy bill. */
   dlNo?: string | null;
+  /** Last day the D.L. is valid, `yyyy-MM-dd`; set whenever `dlNo` is (older records may lack it). */
+  dlExpiry?: string | null;
+  /** Server's verdict: true once the expiry date has passed, null when there is no expiry. */
+  dlExpired?: boolean | null;
   /**
    * How this supplier states the amounts on their bills.
    *
@@ -133,6 +137,8 @@ export interface CreateVendorDto {
   businessType: VendorBusinessType;
   gstinUin?: string;
   dlNo?: string;
+  /** Last day the D.L. is valid, `yyyy-MM-dd`. Required when `dlNo` is given. */
+  dlExpiry?: string;
   /**
    * How this supplier states the amounts on their bills.
    *
@@ -161,6 +167,10 @@ export interface VendorResponse {
   gstinStatus?: string | null;
   /** Drug licence number, as printed on a pharmacy bill. */
   dlNo?: string | null;
+  /** Last day the D.L. is valid, `yyyy-MM-dd`; set whenever `dlNo` is (older records may lack it). */
+  dlExpiry?: string | null;
+  /** Server's verdict: true once the expiry date has passed, null when there is no expiry. */
+  dlExpired?: boolean | null;
   /** Optional. Set when vendor is linked to a registered user. */
   userId?: string | null;
   createdAt: string;
@@ -181,6 +191,10 @@ export interface Customer {
   gstinVerifiedAt?: string | null;
   gstinStatus?: string | null;
   dlNo?: string | null;
+  /** Last day the D.L. is valid, `yyyy-MM-dd`; set whenever `dlNo` is (older records may lack it). */
+  dlExpiry?: string | null;
+  /** Server's verdict: true once the expiry date has passed, null when there is no expiry. */
+  dlExpired?: boolean | null;
   pan?: string | null;
   partyType?: CustomerPartyType | null;
   isGeneral?: boolean | null;
@@ -201,6 +215,10 @@ export interface CustomerResponse {
   gstinVerifiedAt?: string | null;
   gstinStatus?: string | null;
   dlNo?: string | null;
+  /** Last day the D.L. is valid, `yyyy-MM-dd`; set whenever `dlNo` is (older records may lack it). */
+  dlExpiry?: string | null;
+  /** Server's verdict: true once the expiry date has passed, null when there is no expiry. */
+  dlExpired?: boolean | null;
   pan?: string | null;
   /** PAN derived from GSTIN: 10 chars from 3rd character (1-based). */
   panNo?: string | null;
@@ -229,6 +247,8 @@ export interface CreateCustomerDto {
   postalAddress?: PostalAddress;
   gstin?: string;
   dlNo?: string;
+  /** Last day the D.L. is valid, `yyyy-MM-dd`. Required when `dlNo` is given. */
+  dlExpiry?: string;
   pan?: string;
   partyType?: CustomerPartyType;
 }
@@ -241,6 +261,8 @@ export interface UpdateCustomerDto {
   postalAddress?: PostalAddress;
   gstin?: string;
   dlNo?: string;
+  /** Last day the D.L. is valid, `yyyy-MM-dd`. Required when `dlNo` is given. */
+  dlExpiry?: string;
   pan?: string;
   partyType?: CustomerPartyType;
 }
@@ -263,6 +285,8 @@ export interface UpdateVendorDto {
   businessType?: string;
   gstinUin?: string;
   dlNo?: string;
+  /** Last day the D.L. is valid, `yyyy-MM-dd`. Required when `dlNo` is given. */
+  dlExpiry?: string;
   /**
    * How this supplier states the amounts on their bills.
    *

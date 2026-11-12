@@ -25,7 +25,14 @@ import {
 } from '@inventory-platform/ui-kit';
 import { partyNameHasLetters, PARTY_NAME_LETTERS_MESSAGE } from '../api/customers.api';
 import { vendorsApi } from '../api/vendors.api';
-import { VENDOR_PLACE_REQUIRED_MESSAGE, VendorEditForm, vendorIsPlaceable } from '../ui';
+import {
+  DL_EXPIRY_REQUIRED_MESSAGE,
+  DrugLicenceSummary,
+  VENDOR_PLACE_REQUIRED_MESSAGE,
+  VendorEditForm,
+  drugLicenceComplete,
+  vendorIsPlaceable,
+} from '../ui';
 import { gstinProblem, normalizeGstin } from '../model/gstin';
 import { gstStateName } from '../model/gst-states';
 import type {
@@ -106,6 +113,7 @@ export function VendorsPage() {
       businessType: vendor.businessType ?? '',
       gstinUin: vendor.gstinUin ?? '',
       dlNo: vendor.dlNo ?? '',
+      dlExpiry: vendor.dlExpiry ?? '',
     });
     setSaveError(null);
   };
@@ -151,6 +159,10 @@ export function VendorsPage() {
       setSaveError(VENDOR_PLACE_REQUIRED_MESSAGE);
       return;
     }
+    if (!drugLicenceComplete(createForm)) {
+      setSaveError(DL_EXPIRY_REQUIRED_MESSAGE);
+      return;
+    }
     setSaving(true);
     setSaveError(null);
     try {
@@ -164,6 +176,7 @@ export function VendorsPage() {
         businessType: createForm.businessType ?? 'RETAIL',
         gstinUin: normalizeGstin(createForm.gstinUin) || undefined,
         dlNo: createForm.dlNo?.trim() || undefined,
+        dlExpiry: (createForm.dlNo?.trim() && createForm.dlExpiry) || undefined,
       });
       void load();
       handleCloseCreate();
@@ -188,12 +201,17 @@ export function VendorsPage() {
       setSaveError(VENDOR_PLACE_REQUIRED_MESSAGE);
       return;
     }
+    if (!drugLicenceComplete(editForm)) {
+      setSaveError(DL_EXPIRY_REQUIRED_MESSAGE);
+      return;
+    }
     setSaving(true);
     setSaveError(null);
     try {
       await vendorsApi.update(editModal.vendorId, {
         ...editForm,
         gstinUin: editForm.gstinUin === undefined ? undefined : normalizeGstin(editForm.gstinUin),
+        dlExpiry: editForm.dlExpiry || undefined,
       });
       void load();
       handleCloseEdit();
@@ -302,7 +320,11 @@ export function VendorsPage() {
                       {formatAddress(vendor)}
                     </TableCell>
                     <TableCell className={surfaceChrome.customersIdCell}>
-                      {vendor.dlNo ?? '—'}
+                      <DrugLicenceSummary
+                        dlNo={vendor.dlNo}
+                        dlExpiry={vendor.dlExpiry}
+                        expired={vendor.dlExpired}
+                      />
                     </TableCell>
                     <TableCell className={surfaceChrome.customersIdCell}>
                       {vendor.gstinUin ?? '—'}
@@ -379,6 +401,7 @@ export function VendorsPage() {
                 businessType: v.businessType as UpdateVendorDto['businessType'],
               }))
             }
+            dlExpired={editModal.dlExpired}
             disabled={saving}
           />
         </EditModal>
