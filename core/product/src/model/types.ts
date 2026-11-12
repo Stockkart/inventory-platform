@@ -1078,6 +1078,10 @@ export interface CartResponse {
   customerEmail?: string;
   customerGstin?: string;
   customerDlNo?: string;
+  /** Linked customer's D.L. expiry, `yyyy-MM-dd`; null without one. */
+  customerDlExpiry?: string | null;
+  /** Server's verdict: true once that date has passed; null without an expiry. */
+  customerDlExpired?: boolean | null;
   customerPan?: string;
   customerId?: string;
   paymentMethod?: PaymentMethod | string;
@@ -1115,6 +1119,8 @@ export interface AddToCartDto {
   customerEmail?: string;
   customerGstin?: string;
   customerDlNo?: string;
+  /** `yyyy-MM-dd`; needed when this gives the customer a new D.L. No. */
+  customerDlExpiry?: string;
   customerPan?: string;
   customerId?: string;
   customerPartyType?: string;
@@ -1131,6 +1137,8 @@ export interface CreateQuotationDto {
   customerEmail?: string;
   customerGstin?: string;
   customerDlNo?: string;
+  /** `yyyy-MM-dd`; needed when this gives the customer a new D.L. No. */
+  customerDlExpiry?: string;
   customerPan?: string;
   customerPartyType?: string;
   customerUserId?: string;
@@ -1145,6 +1153,8 @@ export interface CreateEstimateDto {
   customerEmail?: string;
   customerGstin?: string;
   customerDlNo?: string;
+  /** `yyyy-MM-dd`; needed when this gives the customer a new D.L. No. */
+  customerDlExpiry?: string;
   customerPan?: string;
   customerPartyType?: string;
   customerUserId?: string;
