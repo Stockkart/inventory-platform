@@ -1,4 +1,12 @@
 export { CustomerEditForm, prefillCustomerFromGstin } from './CustomerEditForm';
+export {
+  DL_EXPIRY_REQUIRED_MESSAGE,
+  DrugLicenceFields,
+  DrugLicenceSummary,
+  drugLicenceComplete,
+  formatDlExpiry,
+  type DrugLicenceValue,
+} from './DrugLicenceFields';
 export { GstinField, stateImpliedBy, type GstinFieldProps, type GstinParty } from './GstinField';
 export {
   VENDOR_PLACE_REQUIRED_MESSAGE,

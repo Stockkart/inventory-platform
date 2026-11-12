@@ -30,8 +30,10 @@ import {
 } from '../lib/invoiceImage';
 import { vendorsApi } from '@inventory-platform/user/vendors';
 import {
+  DL_EXPIRY_REQUIRED_MESSAGE,
   VENDOR_PLACE_REQUIRED_MESSAGE,
   VendorEditForm,
+  drugLicenceComplete,
   vendorIsPlaceable,
 } from '@inventory-platform/user/ui';
 import { gstinProblem, normalizeGstin } from '@inventory-platform/user/types';
@@ -3212,6 +3214,11 @@ export function ProductEntryPage() {
         setIsCreatingVendor(false);
         return;
       }
+      if (!drugLicenceComplete(vendorFormData)) {
+        notifyError(DL_EXPIRY_REQUIRED_MESSAGE);
+        setIsCreatingVendor(false);
+        return;
+      }
 
       const vendorPayload: CreateVendorDto = {
         name: vendorFormData.name,
@@ -3226,7 +3233,10 @@ export function ProductEntryPage() {
         ...(vendorFormData.gstinUin?.trim() && {
           gstinUin: normalizeGstin(vendorFormData.gstinUin),
         }),
-        ...(vendorFormData.dlNo?.trim() && { dlNo: vendorFormData.dlNo.trim() }),
+        ...(vendorFormData.dlNo?.trim() && {
+          dlNo: vendorFormData.dlNo.trim(),
+          dlExpiry: vendorFormData.dlExpiry || undefined,
+        }),
         ...(linkedUser && { userId: linkedUser.userId }),
       };
       const vendor = await vendorsApi.create(vendorPayload);

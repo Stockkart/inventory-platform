@@ -31,7 +31,12 @@ import {
   partyNameHasLetters,
   PARTY_NAME_LETTERS_MESSAGE,
 } from '../api/customers.api';
-import { CustomerEditForm } from '../ui';
+import {
+  CustomerEditForm,
+  DL_EXPIRY_REQUIRED_MESSAGE,
+  DrugLicenceSummary,
+  drugLicenceComplete,
+} from '../ui';
 import type {
   CustomerResponse,
   CreateCustomerDto,
@@ -118,6 +123,7 @@ export function CustomersPage() {
       postalAddress: customer.postalAddress ?? undefined,
       gstin: customer.gstin ?? undefined,
       dlNo: customer.dlNo ?? undefined,
+      dlExpiry: customer.dlExpiry ?? undefined,
       pan: customer.pan ?? undefined,
       partyType: customer.partyType ?? 'CONSUMER',
     });
@@ -155,6 +161,10 @@ export function CustomersPage() {
       );
       return;
     }
+    if (!drugLicenceComplete(createForm)) {
+      setSaveError(DL_EXPIRY_REQUIRED_MESSAGE);
+      return;
+    }
     const partyType = createForm.partyType ?? 'CONSUMER';
     setSaving(true);
     setSaveError(null);
@@ -168,6 +178,7 @@ export function CustomersPage() {
         postalAddress: createForm.postalAddress,
         gstin: createForm.gstin?.trim() || undefined,
         dlNo: createForm.dlNo?.trim() || undefined,
+        dlExpiry: (createForm.dlNo?.trim() && createForm.dlExpiry) || undefined,
         pan: createForm.pan?.trim() || undefined,
       });
       void load();
@@ -189,10 +200,17 @@ export function CustomersPage() {
       setSaveError('Keep at least one of phone, email, GSTIN, PAN, or DL');
       return;
     }
+    if (!drugLicenceComplete(editForm)) {
+      setSaveError(DL_EXPIRY_REQUIRED_MESSAGE);
+      return;
+    }
     setSaving(true);
     setSaveError(null);
     try {
-      await customersApi.update(editModal.customerId, editForm);
+      await customersApi.update(editModal.customerId, {
+        ...editForm,
+        dlExpiry: editForm.dlExpiry || undefined,
+      });
       void load();
       handleCloseEdit();
     } catch (err) {
@@ -274,7 +292,13 @@ export function CustomersPage() {
                     <TableCell>{customer.name}</TableCell>
                     <TableCell>{customer.phone || '—'}</TableCell>
                     <TableCell>{formatAddress(customer.address)}</TableCell>
-                    <TableCell>{customer.dlNo || '—'}</TableCell>
+                    <TableCell>
+                      <DrugLicenceSummary
+                        dlNo={customer.dlNo}
+                        dlExpiry={customer.dlExpiry}
+                        expired={customer.dlExpired}
+                      />
+                    </TableCell>
                     <TableCell>
                       <Inline gap="sm">
                         <Button
@@ -347,6 +371,7 @@ export function CustomersPage() {
             value={editForm}
             onChange={setEditForm}
             panNo={editModal.panNo}
+            dlExpired={editModal.dlExpired}
             disabled={saving}
           />
         ) : null}

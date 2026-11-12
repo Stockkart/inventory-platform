@@ -11,7 +11,12 @@ import type {
   CustomerPartyType,
   CustomerResponse,
 } from '@inventory-platform/user/types';
-import { CustomerEditForm } from '@inventory-platform/user/ui';
+import {
+  CustomerEditForm,
+  DL_EXPIRY_REQUIRED_MESSAGE,
+  drugLicenceComplete,
+  formatDlExpiry,
+} from '@inventory-platform/user/ui';
 import {
   Alert,
   Box,
@@ -135,6 +140,7 @@ export function CustomerSearchPanel({
       gstin: '',
       pan: '',
       dlNo: '',
+      dlExpiry: '',
     });
     setShowCreateModal(true);
   };
@@ -157,6 +163,10 @@ export function CustomerSearchPanel({
       );
       return;
     }
+    if (!drugLicenceComplete(form)) {
+      setCreateError(DL_EXPIRY_REQUIRED_MESSAGE);
+      return;
+    }
     setIsCreating(true);
     setCreateError(null);
     try {
@@ -170,6 +180,7 @@ export function CustomerSearchPanel({
         gstin: form.gstin?.trim() || undefined,
         pan: form.pan?.trim() || undefined,
         dlNo: form.dlNo?.trim() || undefined,
+        dlExpiry: (form.dlNo?.trim() && form.dlExpiry) || undefined,
       });
       onSelect(created);
       setShowCreateModal(false);
@@ -294,11 +305,22 @@ export function CustomerSearchPanel({
               {[
                 selected.gstin ? `GSTIN ${selected.gstin}` : null,
                 selected.pan ? `PAN ${selected.pan}` : null,
-                selected.dlNo ? `DL ${selected.dlNo}` : null,
+                selected.dlNo
+                  ? `DL ${selected.dlNo}${
+                      selected.dlExpiry ? ` (exp ${formatDlExpiry(selected.dlExpiry)})` : ''
+                    }`
+                  : null,
               ]
                 .filter(Boolean)
                 .join(' · ')}
             </Text>
+          ) : null}
+          {selected.dlNo && selected.dlExpired ? (
+            <Alert variant="warning">
+              This customer&apos;s drug licence expired
+              {selected.dlExpiry ? ` on ${formatDlExpiry(selected.dlExpiry)}` : ''}. Check a current
+              licence before billing scheduled drugs.
+            </Alert>
           ) : null}
           <Box className={productChrome.customerPartyActions}>
             <Button
