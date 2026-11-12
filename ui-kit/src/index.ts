@@ -289,19 +289,9 @@ export {
   type PermissionGridRow,
   CalculatorPanel,
   CALCULATOR_KEYBOARD_SCOPE,
-  calculatorReducer,
-  createCalculatorState,
-  formatDisplay,
-  formatPending,
-  formatNumber,
-  MAX_ENTRY_DIGITS,
-  MAX_TAPE_ENTRIES,
-  DIVIDE_BY_ZERO,
+  type CalculatorKey,
   type CalculatorPanelProps,
-  type CalculatorState,
-  type CalculatorAction,
-  type CalculatorOp,
-  type TapeEntry,
+  type CalculatorTapeRow,
 } from './patterns';
 
 // Hooks

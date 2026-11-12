@@ -14,7 +14,7 @@ import { createPortal } from 'react-dom';
 import { GripHorizontal, X } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { IconButton } from '../forms/IconButton';
-import styles from './floatingPanel.module.css';
+import styles from './overlay.module.css';
 
 export interface FloatingPanelPosition {
   x: number;
@@ -32,6 +32,12 @@ export interface FloatingPanelProps {
   /** Marks the panel's DOM subtree so a host keydown guard can detect it. */
   keyboardScope?: string;
   initialFocusRef?: RefObject<HTMLElement | null>;
+  /**
+   * Move focus into the panel when it opens (default). Pass false when the host
+   * restores a panel that was left open, so a page load does not pull focus — and
+   * a barcode scanner's keystrokes — away from the page.
+   */
+  autoFocus?: boolean;
   headerActions?: ReactNode;
   width?: number;
   className?: string;
@@ -82,6 +88,7 @@ export function FloatingPanel({
   onPositionChange,
   keyboardScope,
   initialFocusRef,
+  autoFocus = true,
   headerActions,
   width = DEFAULT_WIDTH,
   className,
@@ -146,9 +153,12 @@ export function FloatingPanel({
     };
   }, [open, measure]);
 
-  // Focus the panel on open, hand focus back to the opener on close.
+  // Focus the panel on open, hand focus back to the opener on close. A panel
+  // opened without focus never took it, so it has nothing to hand back.
+  // `mounted` is a dependency because the portal does not exist on the first
+  // render; without it a panel that mounts already open never gets focus.
   useEffect(() => {
-    if (!open) return;
+    if (!open || !mounted || !autoFocus) return;
     returnFocusRef.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const target = initialFocusRef?.current ?? panelRef.current;
@@ -157,8 +167,7 @@ export function FloatingPanel({
       returnFocusRef.current?.focus({ preventScroll: true });
       returnFocusRef.current = null;
     };
-    // initialFocusRef is a ref container; re-running on `open` alone is intended.
-  }, [open]);
+  }, [open, mounted, autoFocus, initialFocusRef]);
 
   useEffect(
     () => () => {
@@ -221,7 +230,7 @@ export function FloatingPanel({
     if (rect) onPositionChange?.({ x: rect.left, y: rect.top });
   };
 
-  const onHeaderKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+  const onHandleKeyDown = (event: ReactKeyboardEvent<HTMLSpanElement>) => {
     const step = event.shiftKey ? ARROW_STEP_FINE : ARROW_STEP;
     const current = livePos ?? defaultPosition(measure());
     let next: FloatingPanelPosition | null = null;
@@ -258,36 +267,42 @@ export function FloatingPanel({
       aria-labelledby={titleId}
       tabIndex={-1}
       data-sk-keyboard-scope={keyboardScope}
-      className={cn(styles.panel, dragging && styles.dragging, className)}
+      className={cn(styles.floatingPanel, dragging && styles.floatingPanelDragging, className)}
+      // Runtime coordinates cannot be a class. Same approach as AnchoredPortal,
+      // the other ui-kit surface positioned from JavaScript.
       style={{ left: pos.x, top: pos.y, width }}
       onKeyDown={onPanelKeyDown}
     >
+      {/* Pointer drag surface only. Keyboard moving lives on the handle below, so
+          the header holds no interactive element inside another one. */}
       <div
-        className={styles.header}
-        role="button"
-        tabIndex={0}
-        aria-label={`Move ${title} — arrow keys`}
+        className={cn(styles.floatingPanelHeader, dragging && styles.floatingPanelHeaderDragging)}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
         onLostPointerCapture={endDrag}
-        onKeyDown={onHeaderKeyDown}
       >
-        <span className={styles.grip} aria-hidden>
-          <GripHorizontal size={14} />
+        <span
+          className={styles.floatingPanelHandle}
+          role="button"
+          tabIndex={0}
+          aria-label={`Move ${title}. Use the arrow keys; Home resets.`}
+          onKeyDown={onHandleKeyDown}
+        >
+          <GripHorizontal size={14} aria-hidden />
         </span>
-        <h2 id={titleId} className={styles.title}>
+        <h2 id={titleId} className={styles.floatingPanelTitle}>
           {title}
         </h2>
-        <span className={styles.headerActions}>
+        <span className={styles.floatingPanelActions}>
           {headerActions}
           <IconButton label={`Close ${title}`} size="sm" shape="circle" onClick={onClose}>
             <X size={16} aria-hidden />
           </IconButton>
         </span>
       </div>
-      <div className={styles.body}>{children}</div>
+      <div className={styles.floatingPanelBody}>{children}</div>
     </div>,
     document.body,
   );

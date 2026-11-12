@@ -94,6 +94,10 @@ No native `<select>` or `<datalist>`, here or in any package (ESLint bans them).
 
 Reach for `FloatingPanel` only when the user needs the page while the surface is open (the calculator is the case it was built for). Anything exclusive is a `Modal`. Its `--sk-z-floating` sits below `--sk-z-modal`, so a real dialog covers it.
 
+`FloatingPanel` takes focus when it opens; pass `autoFocus={false}` when restoring a panel that was left open, so a page load does not pull focus away from the page. The title bar drags it; the grip is a separate focusable handle that moves it with the arrow keys.
+
+`CalculatorPanel` is a `FloatingPanel` with a keypad, readout and tape. It is presentation only: the host passes the formatted `display`, `pending`, `memory` and `tape`, and receives each press as a `CalculatorKey` through `onKey`. The arithmetic and persistence live in `platform/shell` (`calculatorEngine.ts`, `DashboardCalculator.tsx`).
+
 ## Storybook
 
 Public exports should have stories under `src/**/*.stories.tsx`. Prefer `--sk-*` tokens in new CSS modules.

@@ -135,6 +135,9 @@
 }
 
 [data-theme='dark'] {
+  /* Same value as light. AGENTS.md (Styling) asks for new tokens in both blocks. */
+  --sk-z-floating: 8000;
+
   --sk-color-bg-canvas: #0f172a;
   --sk-color-bg-surface: #111827;
   --sk-color-bg-elevated: #1e293b;

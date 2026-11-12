@@ -57,7 +57,6 @@ import {
   isShortcutsHelp,
 } from './dashboardHotkeys';
 import { DashboardCalculator } from './DashboardCalculator';
-import { loadCalculatorPanelState } from './calculatorPanelState';
 import { UserMenuShopSection } from './UserMenuShopSection';
 import {
   favoriteShortcutMatches,
@@ -355,12 +354,6 @@ export function DashboardLayout({
 
   const currentPath = location.pathname;
 
-  // Read after mount: this tree is server-rendered, so touching localStorage in a
-  // `useState` initializer would be a hydration mismatch.
-  useEffect(() => {
-    if (loadCalculatorPanelState()?.open) setCalculatorOpen(true);
-  }, []);
-
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       // Cmd/Ctrl+Shift+F drives the Fullscreen API, so the header icon and the
@@ -593,7 +586,13 @@ export function DashboardLayout({
         pageLabel={currentPageLabel}
       />
       <ToastProvider />
-      <DashboardCalculator open={calculatorOpen} onOpenChange={setCalculatorOpen} />
+      {/* Keyed by shop: a switch saves the old shop's tape and loads the new one's. */}
+      <DashboardCalculator
+        key={user?.shopId ?? 'no-shop'}
+        shopId={user?.shopId ?? null}
+        open={calculatorOpen}
+        onOpenChange={setCalculatorOpen}
+      />
       <AppShell
         collapsed={!sidebarOpen}
         mobileOpen={sidebarOpen && isMobile}

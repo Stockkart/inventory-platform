@@ -1,46 +1,105 @@
-import { useEffect, useReducer, useRef, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { type KeyboardEvent as ReactKeyboardEvent, useRef } from 'react';
 import { cn } from '../utils/cn';
 import { Button } from '../forms/Button';
 import { Box } from '../layout/Box';
 import { Inline } from '../layout/Stack';
 import { Text } from '../layout/Text';
 import { FloatingPanel, type FloatingPanelPosition } from '../overlay/FloatingPanel';
-import {
-  calculatorReducer,
-  createCalculatorState,
-  formatDisplay,
-  formatPending,
-  formatNumber,
-  type CalculatorAction,
-  type CalculatorOp,
-  type TapeEntry,
-} from './calculatorEngine';
 import styles from './CalculatorPanel.module.css';
 
 export const CALCULATOR_KEYBOARD_SCOPE = 'calculator';
+
+type CalculatorDigit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
+
+/** Every key the panel can emit. What a key does is the host's business. */
+export type CalculatorKey =
+  | CalculatorDigit
+  | '.'
+  | '+'
+  | '-'
+  | '*'
+  | '/'
+  | '='
+  | '%'
+  | '±'
+  | 'backspace'
+  | 'CE'
+  | 'AC'
+  | 'MC'
+  | 'MR'
+  | 'M+'
+  | 'M-';
+
+export interface CalculatorTapeRow {
+  id: string;
+  expression: string;
+  result: string;
+}
 
 export interface CalculatorPanelProps {
   open: boolean;
   onClose: () => void;
   position?: FloatingPanelPosition | null;
   onPositionChange?: (next: FloatingPanelPosition) => void;
-  initialMemory?: number;
-  initialTape?: TapeEntry[];
-  /** Fired after every committed change; the host debounces before persisting. */
-  onStateChange?: (snapshot: { memory: number; tape: TapeEntry[] }) => void;
+  /** False when the panel is restored on page load, so it does not take focus from the page. */
+  autoFocus?: boolean;
+  /** The readout, already formatted by the host. */
+  display: string;
+  /** Shown in the danger colour when the readout is an error message. */
+  error?: boolean;
+  /** The pending step above the readout, e.g. "1,200 ×". */
+  pending?: string;
+  /** Memory register, formatted; omit or null to hide the M flag. */
+  memory?: string | null;
+  tape: CalculatorTapeRow[];
+  onKey: (key: CalculatorKey) => void;
+  onRecallTape: (row: CalculatorTapeRow) => void;
+  onClearTape: () => void;
 }
 
-type KeyDef = {
+interface KeyDef {
+  key: CalculatorKey;
   label: string;
   /** Spoken name — the glyphs read badly aloud. */
   aria?: string;
-  action: CalculatorAction;
   /** In-app actions only, so `brand` never appears here. */
   variant?: 'solid' | 'outline' | 'ghost' | 'danger';
   compact?: boolean;
-};
+}
 
-const OPERATOR: Record<string, CalculatorOp> = {
+const KEYS: KeyDef[] = [
+  { key: 'MC', label: 'MC', aria: 'Memory clear', compact: true },
+  { key: 'MR', label: 'MR', aria: 'Memory recall', compact: true },
+  { key: 'M+', label: 'M+', aria: 'Memory add', compact: true },
+  { key: 'M-', label: 'M−', aria: 'Memory subtract', compact: true },
+
+  { key: 'AC', label: 'AC', aria: 'Clear all', variant: 'danger', compact: true },
+  { key: 'CE', label: 'CE', aria: 'Clear entry', compact: true },
+  { key: '%', label: '%', aria: 'Percent', compact: true },
+  { key: '/', label: '÷', aria: 'Divide', variant: 'outline' },
+
+  { key: '7', label: '7' },
+  { key: '8', label: '8' },
+  { key: '9', label: '9' },
+  { key: '*', label: '×', aria: 'Multiply', variant: 'outline' },
+
+  { key: '4', label: '4' },
+  { key: '5', label: '5' },
+  { key: '6', label: '6' },
+  { key: '-', label: '−', aria: 'Subtract', variant: 'outline' },
+
+  { key: '1', label: '1' },
+  { key: '2', label: '2' },
+  { key: '3', label: '3' },
+  { key: '+', label: '+', aria: 'Add', variant: 'outline' },
+
+  { key: '±', label: '±', aria: 'Toggle sign', compact: true },
+  { key: '0', label: '0' },
+  { key: '.', label: '.', aria: 'Decimal point' },
+  { key: '=', label: '=', aria: 'Equals', variant: 'solid' },
+];
+
+const TYPED_OPERATOR: Record<string, CalculatorKey> = {
   '+': '+',
   '-': '-',
   '*': '*',
@@ -49,68 +108,39 @@ const OPERATOR: Record<string, CalculatorOp> = {
   X: '*',
 };
 
-const KEYS: KeyDef[] = [
-  { label: 'MC', aria: 'Memory clear', action: { type: 'memoryClear' }, compact: true },
-  { label: 'MR', aria: 'Memory recall', action: { type: 'memoryRecall' }, compact: true },
-  { label: 'M+', aria: 'Memory add', action: { type: 'memoryAdd' }, compact: true },
-  { label: 'M−', aria: 'Memory subtract', action: { type: 'memorySubtract' }, compact: true },
+/** Physical keyboard to panel key. `AC` is button-only: no key wipes the accumulator. */
+function keyFromEvent(event: ReactKeyboardEvent<HTMLElement>): CalculatorKey | null {
+  const { key, code } = event;
+  if (/^[0-9]$/.test(key)) return key as CalculatorDigit;
+  if (key === '.' || key === ',' || code === 'NumpadDecimal') return '.';
+  if (TYPED_OPERATOR[key]) return TYPED_OPERATOR[key];
+  if (key === 'Enter' || key === '=') return '=';
+  if (key === '%') return '%';
+  if (key === 'Backspace') return 'backspace';
+  if (key === 'Delete') return 'CE';
+  return null;
+}
 
-  {
-    label: 'AC',
-    aria: 'Clear all',
-    action: { type: 'clearAll' },
-    variant: 'danger',
-    compact: true,
-  },
-  { label: 'CE', aria: 'Clear entry', action: { type: 'clearEntry' }, compact: true },
-  { label: '%', aria: 'Percent', action: { type: 'percent' }, compact: true },
-  { label: '÷', aria: 'Divide', action: { type: 'operator', op: '/' }, variant: 'outline' },
-
-  { label: '7', action: { type: 'digit', digit: '7' } },
-  { label: '8', action: { type: 'digit', digit: '8' } },
-  { label: '9', action: { type: 'digit', digit: '9' } },
-  { label: '×', aria: 'Multiply', action: { type: 'operator', op: '*' }, variant: 'outline' },
-
-  { label: '4', action: { type: 'digit', digit: '4' } },
-  { label: '5', action: { type: 'digit', digit: '5' } },
-  { label: '6', action: { type: 'digit', digit: '6' } },
-  { label: '−', aria: 'Subtract', action: { type: 'operator', op: '-' }, variant: 'outline' },
-
-  { label: '1', action: { type: 'digit', digit: '1' } },
-  { label: '2', action: { type: 'digit', digit: '2' } },
-  { label: '3', action: { type: 'digit', digit: '3' } },
-  { label: '+', aria: 'Add', action: { type: 'operator', op: '+' }, variant: 'outline' },
-
-  { label: '±', aria: 'Toggle sign', action: { type: 'negate' }, compact: true },
-  { label: '0', action: { type: 'digit', digit: '0' } },
-  { label: '.', aria: 'Decimal point', action: { type: 'decimal' } },
-  { label: '=', aria: 'Equals', action: { type: 'equals' }, variant: 'solid' },
-];
-
+/**
+ * Desk calculator in a `FloatingPanel`. Presentation only: the host owns the
+ * arithmetic, formatting and persistence, and gets every key press via `onKey`.
+ */
 export function CalculatorPanel({
   open,
   onClose,
   position = null,
   onPositionChange,
-  initialMemory = 0,
-  initialTape,
-  onStateChange,
+  autoFocus = true,
+  display,
+  error = false,
+  pending = '',
+  memory = null,
+  tape,
+  onKey,
+  onRecallTape,
+  onClearTape,
 }: CalculatorPanelProps) {
-  const [state, dispatch] = useReducer(
-    calculatorReducer,
-    { memory: initialMemory, tape: initialTape },
-    createCalculatorState,
-  );
   const displayRef = useRef<HTMLElement>(null);
-  const onStateChangeRef = useRef(onStateChange);
-
-  useEffect(() => {
-    onStateChangeRef.current = onStateChange;
-  }, [onStateChange]);
-
-  useEffect(() => {
-    onStateChangeRef.current?.({ memory: state.memory, tape: state.tape });
-  }, [state.memory, state.tape]);
 
   /**
    * Bound to the panel, never to `document`: digits reach the calculator only when
@@ -118,21 +148,11 @@ export function CalculatorPanel({
    */
   const onKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
     if (event.metaKey || event.ctrlKey || event.altKey) return;
-    const { key, code } = event;
-    let action: CalculatorAction | null = null;
-
-    if (/^[0-9]$/.test(key)) action = { type: 'digit', digit: key };
-    else if (key === '.' || key === ',' || code === 'NumpadDecimal') action = { type: 'decimal' };
-    else if (OPERATOR[key]) action = { type: 'operator', op: OPERATOR[key] };
-    else if (key === 'Enter' || key === '=') action = { type: 'equals' };
-    else if (key === '%') action = { type: 'percent' };
-    else if (key === 'Backspace') action = { type: 'backspace' };
-    else if (key === 'Delete') action = { type: 'clearEntry' };
-
-    if (!action) return;
+    const key = keyFromEvent(event);
+    if (!key) return;
     event.preventDefault();
     event.stopPropagation();
-    dispatch(action);
+    onKey(key);
   };
 
   return (
@@ -144,6 +164,7 @@ export function CalculatorPanel({
       onPositionChange={onPositionChange}
       keyboardScope={CALCULATOR_KEYBOARD_SCOPE}
       initialFocusRef={displayRef}
+      autoFocus={autoFocus}
       width={288}
     >
       {/* The whole body is the key surface: keys are handled here, never on document. */}
@@ -158,36 +179,36 @@ export function CalculatorPanel({
           textAlign="right"
         >
           <Text variant="micro" color="muted" className={styles.pending} aria-hidden>
-            {formatPending(state) || ' '}
+            {pending || ' '}
           </Text>
           <Box
             role="status"
             aria-live="polite"
             aria-atomic
-            className={cn(styles.value, state.error && styles.valueError)}
+            className={cn(styles.value, error && styles.valueError)}
           >
-            {state.error ?? formatDisplay(state)}
+            {display}
           </Box>
           <Box className={styles.flags}>
-            {state.memory !== 0 ? (
+            {memory !== null ? (
               <Text variant="overline" weight="bold" className={styles.memoryFlag}>
-                M {formatNumber(state.memory)}
+                M {memory}
               </Text>
             ) : null}
           </Box>
         </Box>
 
         <Box display="grid" gap="xs" padding="sm" className={styles.keypad}>
-          {KEYS.map((key) => (
+          {KEYS.map((def) => (
             <Button
-              key={key.label}
+              key={def.key}
               size="sm"
-              variant={key.variant ?? 'ghost'}
-              aria-label={key.aria}
-              className={cn(styles.key, key.compact && styles.keyCompact)}
-              onClick={() => dispatch(key.action)}
+              variant={def.variant ?? 'ghost'}
+              aria-label={def.aria}
+              className={cn(styles.key, def.compact && styles.keyCompact)}
+              onClick={() => onKey(def.key)}
             >
-              {key.label}
+              {def.label}
             </Button>
           ))}
         </Box>
@@ -197,21 +218,28 @@ export function CalculatorPanel({
             <Text variant="overline" color="muted" weight="bold">
               Tape
             </Text>
-            {state.tape.length > 0 ? (
-              <Button size="sm" variant="ghost" onClick={() => dispatch({ type: 'clearTape' })}>
+            {tape.length > 0 ? (
+              <Button size="sm" variant="ghost" onClick={onClearTape}>
                 Clear
               </Button>
             ) : null}
           </Inline>
-          {state.tape.length === 0 ? (
+          {tape.length === 0 ? (
             <Box px="md" pb="md" pt="xs">
               <Text variant="micro" color="muted" as="p">
                 Results land here and stay after a reload. Tap one to reuse it.
               </Text>
             </Box>
           ) : (
-            <Box as="ul" px="sm" pb="sm" overflowY="auto" className={styles.tapeList}>
-              {state.tape.map((row) => (
+            <Box
+              as="ul"
+              aria-label="Calculator tape"
+              px="sm"
+              pb="sm"
+              overflowY="auto"
+              className={styles.tapeList}
+            >
+              {tape.map((row) => (
                 <Box as="li" key={row.id}>
                   <Button
                     size="sm"
@@ -219,7 +247,7 @@ export function CalculatorPanel({
                     fullWidth
                     className={styles.tapeRow}
                     title={`Use ${row.result}`}
-                    onClick={() => dispatch({ type: 'recallTape', value: row.result })}
+                    onClick={() => onRecallTape(row)}
                   >
                     <Text variant="overline" color="muted" className={styles.tapeExpression}>
                       {row.expression}

@@ -17,13 +17,13 @@ function Demo({ withLongBody = false }: { withLongBody?: boolean }) {
   const [position, setPosition] = useState<FloatingPanelPosition | null>(null);
 
   return (
-    <Box padding="lg" style={{ minHeight: '100vh' }}>
-      <Stack gap="md" style={{ maxWidth: 520 }}>
+    <Box padding="lg" minHeight="screen">
+      <Stack gap="md" maxWidth="sm">
         <Text variant="heading3">The page keeps working</Text>
         <Text color="muted">
-          Unlike <code>Modal</code>, a floating panel has no backdrop, traps no focus and does not
-          lock scrolling. Everything below stays clickable and typable while it is open — which is
-          the whole reason it exists.
+          Unlike Modal, a floating panel has no backdrop, traps no focus and does not lock
+          scrolling. Everything below stays clickable and typable while it is open — which is the
+          whole reason it exists.
         </Text>
         <Input placeholder="Type here with the panel open" />
         <Stack direction="row" gap="sm">
@@ -33,8 +33,9 @@ function Demo({ withLongBody = false }: { withLongBody?: boolean }) {
           </Button>
         </Stack>
         <Text variant="caption" color="muted">
-          Drag the title bar, or focus it and use the arrow keys (Shift for fine steps, Home to
-          re-dock). Drop it past an edge and it clamps back; resize the window and it clamps again.
+          Drag the title bar, or focus the grip and use the arrow keys (Shift for fine steps, Home
+          to re-dock). Drop it past an edge and it clamps back; resize the window and it clamps
+          again.
         </Text>
         <Text variant="caption" color="muted">
           Position: {position ? `${Math.round(position.x)}, ${Math.round(position.y)}` : 'default'}

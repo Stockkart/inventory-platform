@@ -1,5 +1,4 @@
-import { MAX_TAPE_ENTRIES, type TapeEntry } from '@inventory-platform/ui-kit';
-import { apiClient } from '@inventory-platform/api-client';
+import { MAX_TAPE_ENTRIES, type TapeEntry } from './calculatorEngine';
 
 /**
  * Calculator panel persistence. Client-only: the tape, memory register, panel
@@ -19,22 +18,14 @@ export interface CalculatorPanelSnapshot {
 }
 
 /**
- * The shop the tape belongs to. Read from the same source the API layer sends as
- * X-Shop-Id: counter machines are shared, so one shop's working numbers must not
- * surface for the next.
+ * One storage key per shop: counter machines are shared, so one shop's working
+ * numbers must not surface for the next. The caller passes the shop id it got
+ * from the session store, so a save always lands under the shop the state was
+ * loaded for — even when it runs just after a shop switch.
  */
-function calculatorKey(): string | null {
-  if (typeof localStorage === 'undefined') return null;
-  try {
-    // apiClient owns the shop id; reading its accessor rather than the raw
-    // 'x_shop_id' key keeps that ownership in one place and picks up the
-    // in-memory value before localStorage has been written.
-    const shopId = apiClient.getShopId()?.trim();
-    return shopId ? `${CALC_KEY_PREFIX}:${shopId}` : null;
-  } catch {
-    // Browsers set to block site data throw on access rather than returning null.
-    return null;
-  }
+function calculatorKey(shopId: string | null | undefined): string | null {
+  const id = shopId?.trim();
+  return id ? `${CALC_KEY_PREFIX}:${id}` : null;
 }
 
 function isTapeEntry(value: unknown): value is TapeEntry {
@@ -56,11 +47,14 @@ function finiteOrNull(value: unknown): number | null {
  * product-entry draft there is no max age: a stale tape is an inert scratchpad, and
  * ageing it out would only destroy history the user may still want.
  */
-export function loadCalculatorPanelState(): CalculatorPanelSnapshot | null {
-  const key = calculatorKey();
+export function loadCalculatorPanelState(
+  shopId: string | null | undefined,
+): CalculatorPanelSnapshot | null {
+  const key = calculatorKey(shopId);
   if (!key) return null;
   let raw: string | null;
   try {
+    // Browsers set to block site data throw on access rather than returning null.
     raw = localStorage.getItem(key);
   } catch {
     return null;
@@ -93,9 +87,10 @@ export function loadCalculatorPanelState(): CalculatorPanelSnapshot | null {
  * calculator that stops working because storage is full would be the worse bug.
  */
 export function saveCalculatorPanelState(
+  shopId: string | null | undefined,
   snapshot: Omit<CalculatorPanelSnapshot, 'version' | 'savedAt'>,
 ): void {
-  const key = calculatorKey();
+  const key = calculatorKey(shopId);
   if (!key) return;
   try {
     const payload: CalculatorPanelSnapshot = {
@@ -107,16 +102,5 @@ export function saveCalculatorPanelState(
     localStorage.setItem(key, JSON.stringify(payload));
   } catch {
     /* nothing further we can do; the calculator keeps working in memory */
-  }
-}
-
-/** Forget everything the calculator has stored for the current shop. */
-export function clearCalculatorPanelState(): void {
-  const key = calculatorKey();
-  if (!key) return;
-  try {
-    localStorage.removeItem(key);
-  } catch {
-    /* nothing further we can do */
   }
 }

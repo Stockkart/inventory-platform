@@ -1,5 +1,9 @@
+import type { CalculatorKey, CalculatorTapeRow } from '@inventory-platform/ui-kit';
+
 /**
  * Desk-calculator engine — pure, DOM-free and React-free so it can be unit tested.
+ * Lives in the shell, not ui-kit: ui-kit is presentation only, and this is the
+ * calculator's behaviour. `CalculatorPanel` (ui-kit) only renders what it is given.
  *
  * Chain arithmetic, left to right, with no operator precedence: `2 + 3 × 4 =` is
  * 20, not 14. That is what a calculator beside a billing screen is expected to do,
@@ -8,11 +12,7 @@
 
 export type CalculatorOp = '+' | '-' | '*' | '/';
 
-export interface TapeEntry {
-  id: string;
-  expression: string;
-  result: string;
-}
+export type TapeEntry = CalculatorTapeRow;
 
 export interface CalculatorState {
   /** Exactly as typed, so "12." and "-0" survive round trips. */
@@ -46,8 +46,7 @@ export type CalculatorAction =
   | { type: 'memoryAdd' }
   | { type: 'memorySubtract' }
   | { type: 'clearTape' }
-  | { type: 'recallTape'; value: string }
-  | { type: 'hydrate'; memory: number; tape: TapeEntry[] };
+  | { type: 'recallTape'; value: string };
 
 export const MAX_ENTRY_DIGITS = 12;
 export const MAX_TAPE_ENTRIES = 50;
@@ -56,10 +55,24 @@ export const OVERFLOW = 'Result is out of range';
 
 const OP_GLYPH: Record<CalculatorOp, string> = { '+': '+', '-': '−', '*': '×', '/': '÷' };
 
+/**
+ * Tape ids are `t<n>`. A restored tape already holds ids, so numbering resumes
+ * above the highest one; restarting at 1 would hand out duplicate React keys.
+ */
+function nextIdAfter(tape: TapeEntry[]): number {
+  let highest = 0;
+  for (const row of tape) {
+    const match = /^t(\d+)$/.exec(row.id);
+    if (match) highest = Math.max(highest, Number(match[1]));
+  }
+  return highest + 1;
+}
+
 export function createCalculatorState(init?: {
   memory?: number;
   tape?: TapeEntry[];
 }): CalculatorState {
+  const tape = init?.tape ? init.tape.slice(0, MAX_TAPE_ENTRIES) : [];
   return {
     entry: '0',
     accumulator: null,
@@ -69,8 +82,8 @@ export function createCalculatorState(init?: {
     overwrite: true,
     memory: Number.isFinite(init?.memory) ? (init?.memory as number) : 0,
     error: null,
-    tape: init?.tape ? init.tape.slice(0, MAX_TAPE_ENTRIES) : [],
-    nextId: 1,
+    tape,
+    nextId: nextIdAfter(tape),
   };
 }
 
@@ -81,9 +94,19 @@ export function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 10 }).format(trimmed);
 }
 
-/** The same number without grouping — used when a value re-enters the calculator. */
+const ENTRY_FORMAT = new Intl.NumberFormat('en-US', {
+  useGrouping: false,
+  maximumFractionDigits: 10,
+});
+
+/**
+ * The same number without grouping — used when a value re-enters the calculator.
+ * Never exponent notation: `String(1.5e-7)` is "1.5e-7", which the readout would
+ * split on "." and show as-is.
+ */
 function toEntryString(value: number): string {
-  return String(Number(value.toPrecision(12)));
+  const formatted = ENTRY_FORMAT.format(Number(value.toPrecision(12)));
+  return formatted === '-0' ? '0' : formatted;
 }
 
 export function toNumber(entry: string): number {
@@ -182,15 +205,14 @@ export function calculatorReducer(
   state: CalculatorState,
   action: CalculatorAction,
 ): CalculatorState {
-  // While in error only the clears and a hydrate get through, so a stray digit
+  // While in error only the clears get through, so a stray digit
   // cannot silently resume against a garbage accumulator.
   if (
     state.error &&
     action.type !== 'clearAll' &&
     action.type !== 'clearEntry' &&
     action.type !== 'memoryClear' &&
-    action.type !== 'clearTape' &&
-    action.type !== 'hydrate'
+    action.type !== 'clearTape'
   ) {
     return state;
   }
@@ -263,9 +285,11 @@ export function calculatorReducer(
     }
 
     case 'negate': {
-      const current = toNumber(state.entry);
-      if (current === 0) return state;
-      return { ...state, entry: toEntryString(-current) };
+      if (toNumber(state.entry) === 0) return state;
+      // Flip the sign on the text, so an entry being typed ("12.") keeps its
+      // trailing point and the next digit still lands after it.
+      const entry = state.entry.startsWith('-') ? state.entry.slice(1) : `-${state.entry}`;
+      return { ...state, entry };
     }
 
     case 'backspace': {
@@ -312,12 +336,40 @@ export function calculatorReducer(
       if (!Number.isFinite(value)) return state;
       return { ...state, entry: toEntryString(value), overwrite: true, error: null };
     }
+  }
+}
 
-    case 'hydrate':
-      return {
-        ...state,
-        memory: Number.isFinite(action.memory) ? action.memory : 0,
-        tape: action.tape.slice(0, MAX_TAPE_ENTRIES),
-      };
+/** What each `CalculatorPanel` key does. */
+export function keyToAction(key: CalculatorKey): CalculatorAction {
+  switch (key) {
+    case '+':
+    case '-':
+    case '*':
+    case '/':
+      return { type: 'operator', op: key };
+    case '.':
+      return { type: 'decimal' };
+    case '=':
+      return { type: 'equals' };
+    case '%':
+      return { type: 'percent' };
+    case '±':
+      return { type: 'negate' };
+    case 'backspace':
+      return { type: 'backspace' };
+    case 'CE':
+      return { type: 'clearEntry' };
+    case 'AC':
+      return { type: 'clearAll' };
+    case 'MC':
+      return { type: 'memoryClear' };
+    case 'MR':
+      return { type: 'memoryRecall' };
+    case 'M+':
+      return { type: 'memoryAdd' };
+    case 'M-':
+      return { type: 'memorySubtract' };
+    default:
+      return { type: 'digit', digit: key };
   }
 }
