@@ -1,0 +1,98 @@
+# Promote: build and deploy any commit to production, after approval — the way to
+# roll back (promote the previous sha printed in the last production summary).
+# Like every other path, it goes through staging first: nothing reaches production
+# that was not verified on staging in the same run (or, for the PR label path,
+# currently serving on staging).
+#
+# Any commit in the repository can be promoted, including ones from before the
+# pipeline existed. Those do not render the build-sha tag, so the deploy proves
+# only that the site answers (see _deploy.yml) rather than which commit it serves.
+#
+# TODO(temporary-old-commit-deploys): deploying commits that predate the build-sha tag
+# is a stop-gap while older builds still need to be deployable. To remove it:
+# restore the "Commit must be verifiable" step here (fail when
+# `git show "$SHA:apps/inventory/app/root.tsx"` has no name="build-sha") and
+# remove the `reachable` verification mode (grep this tag in _deploy.yml,
+# scripts/deploy/verify-frontend.sh, scripts/deploy/summary.sh).
+name: promote-to-production
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full 40-character commit sha to deploy
+        type: string
+        required: true
+      reason:
+        description: Why (hotfix for …, rollback because …). Shown to the approver and kept in the run.
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  check-artifact:
+    name: Check commit exists
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Validate inputs
+        env:
+          SHA: ${{ inputs.sha }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::sha must be the full 40-character commit hash, got '$SHA'"; exit 1; }
+          [[ -n "${REASON// /}" ]] || { echo "::error::reason must not be empty"; exit 1; }
+
+      - name: Checkout (full history)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - name: Commit must exist in this repository
+        env:
+          SHA: ${{ inputs.sha }}
+        run: |
+          if git cat-file -e "${SHA}^{commit}" 2>/dev/null; then
+            echo "found commit $SHA"
+          else
+            echo "::error::commit '$SHA' is not in this repository (unpushed branch? typo?)"
+            exit 1
+          fi
+
+      - name: Summary for the approver
+        env:
+          SHA: ${{ inputs.sha }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          {
+            echo "## Promote to production — awaiting approval"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Requested by | @${{ github.actor }} |"
+            echo "| Commit | [\`${SHA:0:12}\`](${{ github.server_url }}/${{ github.repository }}/commit/${SHA}) |"
+            echo "| Reason | ${REASON} |"
+            echo
+            echo "The commit is deployed to staging first; a reviewer of the \`production-manual\` environment must then approve the production job."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-staging:
+    name: Staging first
+    needs: check-artifact
+    uses: ./.github/workflows/_deploy.yml
+    with:
+      sha: ${{ inputs.sha }}
+      environment: staging
+    secrets: inherit
+
+  deploy-production:
+    name: Production (approval required)
+    needs: deploy-staging
+    uses: ./.github/workflows/_deploy.yml
+    with:
+      sha: ${{ inputs.sha }}
+      environment: production-manual
+      reason: ${{ inputs.reason }}
+    secrets: inherit

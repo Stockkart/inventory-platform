@@ -25,7 +25,12 @@ import {
 } from '@inventory-platform/ui-kit';
 import { useResolvedSellPath } from '@inventory-platform/routing';
 import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/session';
-import { customersApi, customerHasUniqueIdentifier } from '../api/customers.api';
+import {
+  customersApi,
+  customerHasUniqueIdentifier,
+  partyNameHasLetters,
+  PARTY_NAME_LETTERS_MESSAGE,
+} from '../api/customers.api';
 import { CustomerEditForm } from '../ui';
 import type {
   CustomerResponse,
@@ -43,11 +48,6 @@ export function meta() {
 function formatAddress(addr: string | null | undefined) {
   if (!addr?.trim()) return '—';
   return addr.trim();
-}
-
-function partyTypeLabel(partyType?: string | null) {
-  if (!partyType || partyType === 'CONSUMER') return 'Consumer';
-  return partyType.charAt(0) + partyType.slice(1).toLowerCase();
 }
 
 export function CustomersPage() {
@@ -115,6 +115,7 @@ export function CustomersPage() {
       phone: customer.phone ?? '',
       email: customer.email ?? undefined,
       address: customer.address ?? undefined,
+      postalAddress: customer.postalAddress ?? undefined,
       gstin: customer.gstin ?? undefined,
       dlNo: customer.dlNo ?? undefined,
       pan: customer.pan ?? undefined,
@@ -144,6 +145,10 @@ export function CustomersPage() {
       setSaveError('Name is required');
       return;
     }
+    if (!partyNameHasLetters(createForm.name)) {
+      setSaveError(PARTY_NAME_LETTERS_MESSAGE);
+      return;
+    }
     if (!customerHasUniqueIdentifier(createForm)) {
       setSaveError(
         'Add phone, email, GSTIN, PAN, or DL to create a unique customer. Name and address alone use the general customer on bills.',
@@ -160,6 +165,7 @@ export function CustomersPage() {
         phone: createForm.phone?.trim() || undefined,
         email: createForm.email?.trim() || undefined,
         address: createForm.address?.trim() || undefined,
+        postalAddress: createForm.postalAddress,
         gstin: createForm.gstin?.trim() || undefined,
         dlNo: createForm.dlNo?.trim() || undefined,
         pan: createForm.pan?.trim() || undefined,
@@ -175,6 +181,10 @@ export function CustomersPage() {
 
   const handleSave = async () => {
     if (!editModal) return;
+    if (editForm.name !== undefined && !partyNameHasLetters(editForm.name)) {
+      setSaveError(PARTY_NAME_LETTERS_MESSAGE);
+      return;
+    }
     if (!customerHasUniqueIdentifier(editForm)) {
       setSaveError('Keep at least one of phone, email, GSTIN, PAN, or DL');
       return;
@@ -247,7 +257,6 @@ export function CustomersPage() {
             <TableHead>
               <TableRow>
                 <TableHeaderCell>Name</TableHeaderCell>
-                <TableHeaderCell>Type</TableHeaderCell>
                 <TableHeaderCell>Phone</TableHeaderCell>
                 <TableHeaderCell>Address</TableHeaderCell>
                 <TableHeaderCell>DL no.</TableHeaderCell>
@@ -256,14 +265,13 @@ export function CustomersPage() {
             </TableHead>
             <TableBody>
               {loading ? (
-                <TableLoadingRow colSpan={6} />
+                <TableLoadingRow colSpan={5} />
               ) : data.length === 0 ? (
-                <TableEmptyRow colSpan={6} message="No customers found" />
+                <TableEmptyRow colSpan={5} message="No customers found" />
               ) : (
                 data.map((customer) => (
                   <TableRow key={customer.customerId}>
                     <TableCell>{customer.name}</TableCell>
-                    <TableCell>{partyTypeLabel(customer.partyType)}</TableCell>
                     <TableCell>{customer.phone || '—'}</TableCell>
                     <TableCell>{formatAddress(customer.address)}</TableCell>
                     <TableCell>{customer.dlNo || '—'}</TableCell>

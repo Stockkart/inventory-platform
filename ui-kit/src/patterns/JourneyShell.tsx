@@ -88,6 +88,8 @@ export const journeyChrome = {
   authForm: styles.authForm,
   authMetaRow: styles.authMetaRow,
   authMetaLink: styles.authMetaLink,
+  authCheckbox: styles.authCheckbox,
+  authConsent: styles.authConsent,
   authSubmit: styles.authSubmit,
   authFooter: styles.authFooter,
 } as const;

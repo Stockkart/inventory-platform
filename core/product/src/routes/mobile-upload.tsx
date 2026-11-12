@@ -16,9 +16,12 @@ import {
   Text,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
-
-const MAX_INVOICE_IMAGES = 20;
-const MAX_INVOICE_IMAGE_BYTES = 10 * 1024 * 1024;
+import {
+  MAX_INVOICE_IMAGES,
+  compressInvoiceImage,
+  pickedImageProblem,
+  uploadProblem,
+} from '../lib/invoiceImage';
 
 export function meta() {
   return [
@@ -106,65 +109,10 @@ export default function MobileUploadPage() {
     validateToken();
   }, [token]);
 
-  const compressImage = async (
-    file: File,
-    maxWidth = 1920,
-    maxHeight = 1920,
-    quality = 0.8,
-  ): Promise<File> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          let width = img.width;
-          let height = img.height;
-          if (width > maxWidth || height > maxHeight) {
-            const ratio = Math.min(maxWidth / width, maxHeight / height);
-            width = Math.round(width * ratio);
-            height = Math.round(height * ratio);
-          }
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            reject(new Error('Failed to get canvas context'));
-            return;
-          }
-          ctx.drawImage(img, 0, 0, width, height);
-          canvas.toBlob(
-            (blob) => {
-              if (!blob) {
-                reject(new Error('Failed to compress image'));
-                return;
-              }
-              resolve(
-                new File([blob], file.name, {
-                  type: file.type,
-                  lastModified: Date.now(),
-                }),
-              );
-            },
-            file.type,
-            quality,
-          );
-        };
-        img.onerror = () => reject(new Error('Failed to load image'));
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsDataURL(file);
-    });
-  };
-
   const validateFile = (file: File, label: string): boolean => {
-    if (!file.type.startsWith('image/')) {
-      setError(`${label}: must be an image`);
-      return false;
-    }
-    if (file.size > MAX_INVOICE_IMAGE_BYTES) {
-      setError(`${label}: must be less than 10 MB`);
+    const problem = pickedImageProblem(file, label);
+    if (problem) {
+      setError(problem);
       return false;
     }
     return true;
@@ -220,7 +168,14 @@ export default function MobileUploadPage() {
             ? 'Compressing...'
             : `Compressing ${i + 1} of ${selectedFiles.length}...`,
         );
-        compressed.push(await compressImage(selectedFiles[i]));
+        compressed.push(
+          await compressInvoiceImage(selectedFiles[i], { maxSide: 1920, quality: 0.8 }),
+        );
+      }
+      const tooMuch = uploadProblem(compressed);
+      if (tooMuch) {
+        setError(tooMuch);
+        return;
       }
 
       setUploadProgress(

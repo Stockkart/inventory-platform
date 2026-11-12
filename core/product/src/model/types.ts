@@ -1,3 +1,4 @@
+import type { PurchaseTaxTreatment } from '@inventory-platform/user/types';
 import type {
   PaymentMethod,
   CustomReminderInput,
@@ -17,7 +18,127 @@ export type BillingMode = 'REGULAR' | 'BASIC';
 /** SALE cart/invoice vs ESTIMATE quote document. Orthogonal to BillingMode. */
 export type DocumentType = 'SALE' | 'ESTIMATE';
 
-export type EstimateState = 'OPEN' | 'CONVERTED' | 'DISCARDED';
+export type EstimateState = 'OPEN' | 'LOCKED' | 'CONVERTED' | 'DISCARDED';
+
+/** Lot sell-path policy: estimate-only lots cannot complete as tax invoices. */
+export type InventorySellRestriction = 'ANY' | 'ESTIMATE_ONLY';
+
+/** Product-entry (stock-in) estimate lifecycle. */
+export type StockEntryEstimateState = 'OPEN' | 'LOCKED' | 'CONVERTED' | 'DISCARDED';
+
+export interface StockEntryEstimateLine {
+  productId?: string | null;
+  barcode?: string | null;
+  name?: string | null;
+  description?: string | null;
+  companyName?: string | null;
+  maximumRetailPrice?: number | null;
+  costPrice?: number | null;
+  priceToRetail?: number | null;
+  sellingPrice?: number | null;
+  rates?: PricingRate[] | null;
+  defaultRate?: string | null;
+  saleAdditionalDiscount?: number | null;
+  businessType?: string | null;
+  location?: string | null;
+  itemType?: ItemType | null;
+  itemTypeDegree?: number | null;
+  discountApplicable?: DiscountApplicable | null;
+  purchaseDate?: string | null;
+  count?: number | null;
+  baseUnit?: string | null;
+  unitsPerPack?: number | null;
+  unitConversions?: UnitConversion | null;
+  thresholdCount?: number | null;
+  expiryDate?: string | null;
+  hsn?: string | null;
+  batchNo?: string | null;
+  billingMode?: BillingMode | null;
+  schemeType?: SchemeType | null;
+  scheme?: number | null;
+  schemePayFor?: number | null;
+  schemeFree?: number | null;
+  schemePercentage?: number | null;
+  purchaseSchemeType?: SchemeType | null;
+  purchaseSchemePayFor?: number | null;
+  purchaseSchemeFree?: number | null;
+  purchaseSchemePercentage?: number | null;
+  purchaseAdditionalDiscount?: number | null;
+  sgst?: string | null;
+  cgst?: string | null;
+  verticalFields?: Record<string, unknown> | null;
+  inventoryId?: string | null;
+}
+
+export interface UpsertStockEntryEstimateDto {
+  vendorId?: string | null;
+  vendorInvoiceNo?: string | null;
+  vendorInvoiceDate?: string | null;
+  lineSubTotal?: number | null;
+  taxTotal?: number | null;
+  shippingCharge?: number | null;
+  otherCharges?: number | null;
+  overallDiscount?: number | null;
+  roundOff?: number | null;
+  invoiceTotal?: number | null;
+  paymentMethod?: string | null;
+  cashAmount?: number | null;
+  onlineAmount?: number | null;
+  creditAmount?: number | null;
+  paidAmount?: number | null;
+  lines?: StockEntryEstimateLine[] | null;
+}
+
+export interface StockEntryEstimateResponse {
+  id: string;
+  estimateNo?: string | null;
+  state: StockEntryEstimateState;
+  vendorId?: string | null;
+  vendorInvoiceNo?: string | null;
+  vendorInvoiceDate?: string | null;
+  lineSubTotal?: number | null;
+  taxTotal?: number | null;
+  shippingCharge?: number | null;
+  otherCharges?: number | null;
+  overallDiscount?: number | null;
+  roundOff?: number | null;
+  invoiceTotal?: number | null;
+  paymentMethod?: string | null;
+  cashAmount?: number | null;
+  onlineAmount?: number | null;
+  creditAmount?: number | null;
+  paidAmount?: number | null;
+  lines?: StockEntryEstimateLine[] | null;
+  vendorPurchaseInvoiceId?: string | null;
+  convertedToVendorPurchaseInvoiceId?: string | null;
+  lockedAt?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface StockEntryEstimateSummary {
+  id: string;
+  estimateNo?: string | null;
+  state: StockEntryEstimateState;
+  vendorId?: string | null;
+  vendorInvoiceNo?: string | null;
+  itemCount: number;
+  invoiceTotal?: number | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+  /** Lines carry HSN / CGST / SGST; Lock freezes instead of creating stock. */
+  taxable?: boolean;
+  /** LOCKED with no stock yet — convert in Product Entry to register it. */
+  awaitingConversion?: boolean;
+}
+
+export interface StockEntryEstimateListResponse {
+  estimates: StockEntryEstimateSummary[];
+  total: number;
+  page: number;
+  size: number;
+  totalPages: number;
+}
 
 export interface UnitConversion {
   unit: string;
@@ -156,22 +277,35 @@ export interface BulkCreateInventoryItem {
   unitsPerPack?: number | null;
   unitConversions?: UnitConversion | null;
   /** Optional. Array of custom rates { name, price }. */
-  rates?: Array<{ name: string; price: number }> | null;
+  rates?: PricingRate[] | null;
   /** Optional. Must be empty/null or one of: rates[].name, "priceToRetail", "maximumRetailPrice", "costPrice". */
   defaultRate?: string | null;
   /** Extension vertical fields (sport, brand, model, storageTemp, …). */
   verticalFields?: Record<string, unknown> | null;
 }
 
+/** How a vendor's bill states tax; owned by the vendor (user domain), re-exported here. */
+export type { PurchaseTaxTreatment } from '@inventory-platform/user/types';
+
 /** Optional vendor invoice header on bulk stock-in. Omit for legacy behavior. */
+
 export interface VendorPurchaseInvoicePayload {
   invoiceNo: string;
+  /**
+   * Whether the line amounts on this bill already include GST.
+   *
+   * Omitted falls back to the vendor's default, and then to EXCLUSIVE.
+   */
+  taxTreatment?: PurchaseTaxTreatment | null;
   invoiceDate?: string | null;
+  /** The operator has read the bill and confirms its tax treatment although the rows disagree. */
+  confirmTaxTreatment?: boolean;
+  /** The server's bill preview figures, sent so the bill stores them. */
   lineSubTotal?: number | null;
   taxTotal?: number | null;
   shippingCharge?: number | null;
   otherCharges?: number | null;
-  /** Bill-level discount (₹), subtracted from invoice total. */
+  /** Bill-level discount (₹), taken off the lines before tax. */
   overallDiscount?: number | null;
   roundOff?: number | null;
   invoiceTotal?: number | null;
@@ -200,6 +334,71 @@ export interface BulkCreateInventoryDto {
   /** When set, persists invoice metadata and links created inventory rows. */
   vendorPurchaseInvoice?: VendorPurchaseInvoicePayload | null;
   items: BulkCreateInventoryItem[];
+}
+
+/** One GST rate an HSN may carry, already split into the CGST and SGST a stock-in row stores. */
+export interface HsnGstRateOption {
+  gstRate: number;
+  cgst: number;
+  sgst: number;
+}
+
+/** GET /taxation/hsn-gst-rates: the rates the rate notifications allow for an HSN. */
+export interface HsnGstRates {
+  hsn: string;
+  /** The code that answered (the HSN or its six- or four-digit parent); null when not on file. */
+  matchedHsn: string | null;
+  rates: HsnGstRateOption[];
+  /** The notification entries the rates come from. */
+  ref: string | null;
+}
+
+/**
+ * The stock-in screen as it stands, sent to POST /vendor-purchase-invoices/preview-totals. The
+ * server works out tax and totals with the stock-in rules; the screen only shows them.
+ */
+export interface PurchaseTaxPreviewRequest {
+  vendorId?: string | null;
+  taxTreatment?: PurchaseTaxTreatment | null;
+  items: BulkCreateInventoryItem[];
+  shippingCharge?: number;
+  otherCharges?: number;
+  overallDiscount?: number;
+  roundOff?: number;
+}
+
+export interface PurchaseTaxPreviewLine {
+  taxable: number;
+  ratePct: number;
+  centralTax: number;
+  stateTax: number;
+  integratedTax: number;
+  tax: number;
+}
+
+export interface PurchaseTaxPreviewResponse {
+  taxTreatment: PurchaseTaxTreatment | null;
+  /**
+   * Where the treatment came from: STATED (chosen on the bill), LINES (cost at MRP is inclusive,
+   * below MRP exclusive), VENDOR (its usual convention) or NONE.
+   */
+  taxTreatmentSource?: 'STATED' | 'LINES' | 'VENDOR' | 'NONE' | null;
+  /** What cost against MRP says on the rows; null when they cannot decide. */
+  taxTreatmentFromLines?: PurchaseTaxTreatment | null;
+  /**
+   * Set when the treatment applied contradicts the rows: the message to show. Stock-in refuses
+   * such a bill unless confirmTaxTreatment is sent.
+   */
+  taxTreatmentConflict?: string | null;
+  lineSubTotal: number;
+  taxTotal: number;
+  /** Items only: taxable value plus tax, before header charges. */
+  itemsTotal: number;
+  /** Taxable value after the bill-level discount, plus tax, charges and round-off. */
+  invoiceTotal: number;
+  productCount: number;
+  totalQuantity: number;
+  lines: PurchaseTaxPreviewLine[];
 }
 
 export interface BulkCreateInventoryResponse {
@@ -273,6 +472,52 @@ export interface VendorPurchaseInvoiceDetail {
   synthetic?: boolean | null;
   legacyLotId?: string | null;
   lines: VendorPurchaseInvoiceLineDto[];
+
+  taxTreatment?: PurchaseTaxTreatment | null;
+
+  /** Set once the header has been corrected against the paper bill. */
+  amendedAt?: string | null;
+  amendedByUserId?: string | null;
+  amendmentReason?: string | null;
+  /** The header as it stood before the last correction. */
+  previousHeader?: InvoiceHeaderFigures | null;
+}
+
+/** A purchase invoice's header figures at one point in time. */
+export interface InvoiceHeaderFigures {
+  lineSubTotal: number | null;
+  taxTotal: number | null;
+  shippingCharge: number | null;
+  otherCharges: number | null;
+  overallDiscount: number | null;
+  roundOff: number | null;
+  invoiceTotal: number | null;
+  taxTreatment: PurchaseTaxTreatment | null;
+}
+
+/** POST /vendor-purchase-invoices/{id}/amend-preview: a correction worked out, not saved. */
+export interface AmendInvoicePreview {
+  saved: InvoiceHeaderFigures;
+  corrected: InvoiceHeaderFigures;
+  /** Names of the figures that move, e.g. 'taxTreatment', 'taxTotal'. */
+  changedFields: string[];
+  /** True when saving would reverse the journal entry and post a corrected one. */
+  journalReposted: boolean;
+}
+
+/**
+ * Corrections to a purchase invoice header, keyed from the paper bill.
+ *
+ * Every field is optional -- an omitted one is left as it stands. The subtotal, tax and invoice
+ * total are worked out by the server from the lines. The reason is required.
+ */
+export interface AmendVendorPurchaseInvoicePayload {
+  shippingCharge?: number | null;
+  otherCharges?: number | null;
+  overallDiscount?: number | null;
+  roundOff?: number | null;
+  taxTreatment?: PurchaseTaxTreatment | null;
+  reason: string;
 }
 
 export interface VendorPurchaseInvoiceListResponse {
@@ -450,7 +695,7 @@ export interface ParseInvoiceItem {
   baseUnit?: string | null;
   unitsPerPack?: number | null;
   unitConversions?: UnitConversion | null;
-  rates?: Array<{ name: string; price: number }> | null;
+  rates?: PricingRate[] | null;
   defaultRate?: string | null;
 }
 
@@ -476,6 +721,9 @@ export interface InventoryItem {
   soldCount: number;
   thresholdCount?: number;
   currentCount: number;
+  /** Physical stock minus open sale quotation reservations (shop-wide). */
+  availableCount?: number | null;
+  availableBaseCount?: number | null;
   location: string;
   /** Optional; medical expiry often lives in verticalFields instead of core. */
   expiryDate?: string;
@@ -498,6 +746,8 @@ export interface InventoryItem {
   itemTypeDegree?: number;
   discountApplicable?: DiscountApplicable;
   billingMode?: BillingMode;
+  /** When ESTIMATE_ONLY, lot may only be sold on sell-estimate documents. */
+  sellRestriction?: InventorySellRestriction | null;
   purchaseDate?: string;
   baseUnit?: string | null;
   uqc?: string | null;
@@ -568,6 +818,12 @@ export interface UpdateInventoryRequest {
   unitConversions?: UnitConversion | null;
   /** Extension vertical fields (batchNo, expiryDate, sport, …). */
   verticalFields?: Record<string, unknown> | null;
+  /**
+   * Fields to empty. A null field means "keep it" to the API, so clearing needs the name:
+   * barcode, description, companyName, location, hsn, discountApplicable, thresholdCount,
+   * saleAdditionalDiscount, purchaseAdditionalDiscount, saleScheme, purchaseScheme.
+   */
+  clearFields?: string[] | null;
 }
 
 export interface InventoryListResponse {
@@ -638,8 +894,22 @@ export interface CheckoutItem {
   /** @deprecated use {@code sellableRef} with {@code menu:…} prefix */
   menuItemId?: string;
   unit?: string;
+  /**
+   * Rate to bill the line at: a batch rate's name, or a system option (`priceToRetail`,
+   * `maximumRetailPrice`, `costPrice`), which puts that batch field on the line with the batch's
+   * own sale disc and scheme. Not combinable with a unit change or a quantity decrease.
+   */
+  rateName?: string;
   quantity?: number;
   baseQuantity?: number;
+  /**
+   * Cafe only: preparation instruction printed on the kitchen ticket, e.g. `no onion`.
+   *
+   * It rides the add that *creates* the line. The cart merges by `sellableRef` and a merge
+   * keeps the existing line's note, so re-sending a note for a line that is already in the
+   * cart is a no-op on the server — the line has to be replaced for a new note to land.
+   */
+  note?: string | null;
   priceToRetail?: number;
   saleAdditionalDiscount?: number | null;
   // Scheme can be represented either as fixed units or percentage
@@ -695,6 +965,16 @@ export interface CheckoutItemResponse {
   profit?: number | null;
   marginPercent?: number | null;
   billingMode?: BillingMode;
+  /**
+   * Cafe only: how much of {@link baseQuantity} the kitchen has already been sent.
+   * A line is fully sent when `baseQuantity === kotSentQuantity`; absent on
+   * verticals that never punch.
+   */
+  kotSentQuantity?: number | null;
+  /** Cafe only: kitchen station frozen onto the line at add time (e.g. `KITCHEN`, `BAR`). */
+  department?: string | null;
+  /** Cafe only: preparation instruction printed on the kitchen ticket, e.g. `no onion`. */
+  note?: string | null;
   /** From registration: additional discount % (read-only at sale) */
   purchaseAdditionalDiscount?: number | null;
   /** From registration: scheme (read-only at sale) */
@@ -702,6 +982,47 @@ export interface CheckoutItemResponse {
   purchaseSchemePayFor?: number | null;
   purchaseSchemeFree?: number | null;
   purchaseSchemePercentage?: number | null;
+  /**
+   * Rate the line is billed at, as the cart stored it: a picked rate's name, a system key
+   * (`priceToRetail`, `maximumRetailPrice`, `costPrice`) or the batch's default rule rate on a
+   * first add. Null after a manual price, disc or scheme edit, and on older lines.
+   */
+  appliedRateName?: string | null;
+}
+
+/** GST at one rate on a bill, as the API works it out. */
+export interface GstRateRow {
+  cgstPercent: number;
+  sgstPercent: number;
+  taxableValue: number;
+  cgstAmount: number;
+  sgstAmount: number;
+}
+
+/** One line's taxable value and GST, as the API works it from the line's amount at its own rate. */
+export interface SaleLineTax {
+  taxableValue: number;
+  /** Combined GST on the line (CGST + SGST, or IGST interstate); 0 on an untaxed line. */
+  taxAmount: number;
+  /** Combined GST rate, e.g. 5 for 2.5 + 2.5; 0 when the line carries none. */
+  ratePercent: number;
+  /** The line's amount with its GST inside. Absent from APIs that predate it. */
+  totalAmount?: number;
+}
+
+/** A bill's totals as the printed invoice states them, computed by the API from the lines. */
+export interface SaleTaxSummary {
+  subTotal: number;
+  additionalDiscount: number;
+  taxableValue: number;
+  rates: GstRateRow[];
+  cgstTotal: number;
+  sgstTotal: number;
+  roundOff: number;
+  /** Each line's rate before tax, in line order. */
+  lineRates: Array<number | null>;
+  /** Each line's taxable value and GST, in line order. Absent from older API builds. */
+  lines?: SaleLineTax[] | null;
 }
 
 export interface CheckoutResponse {
@@ -748,6 +1069,8 @@ export interface CartResponse {
   discountTotal: number;
   saleAdditionalDiscountTotal: number;
   grandTotal: number;
+  /** Null when no line carries tax. */
+  taxSummary?: SaleTaxSummary | null;
   status: string;
   customerName?: string;
   customerAddress?: string;
@@ -910,7 +1233,10 @@ export interface Purchase {
   sgstAmount?: number;
   cgstAmount?: number;
   discountTotal: number;
+  saleAdditionalDiscountTotal?: number | null;
   grandTotal: number;
+  /** Null when no line carries tax. */
+  taxSummary?: SaleTaxSummary | null;
   soldAt: string;
   status: string;
   paymentMethod: PaymentMethod | string;
@@ -1144,6 +1470,8 @@ export interface AttachBarcodeRequest {
 export interface BarcodeLabelsRequest {
   productIds?: string[];
   codes?: string[];
+  /** Optional code → inventoryId map so the server resolves lot values from the scanned row. */
+  inventoryIds?: Record<string, string>;
 }
 
 export interface BarcodeLabelDto {

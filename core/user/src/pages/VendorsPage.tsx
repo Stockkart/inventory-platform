@@ -23,8 +23,11 @@ import {
   Text,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
+import { partyNameHasLetters, PARTY_NAME_LETTERS_MESSAGE } from '../api/customers.api';
 import { vendorsApi } from '../api/vendors.api';
-import { VendorEditForm } from '../ui';
+import { VENDOR_PLACE_REQUIRED_MESSAGE, VendorEditForm, vendorIsPlaceable } from '../ui';
+import { gstinProblem, normalizeGstin } from '../model/gstin';
+import { gstStateName } from '../model/gst-states';
 import type {
   VendorResponse,
   CreateVendorDto,
@@ -38,22 +41,11 @@ export function meta() {
   ];
 }
 
-function formatAddress(addr: string | null | undefined) {
-  if (!addr?.trim()) return '—';
-  return addr.trim();
-}
-
-function formatBusinessType(value: string | null | undefined) {
-  if (!value) return '—';
-  const labels: Record<string, string> = {
-    WHOLESALE: 'Wholesale',
-    RETAIL: 'Retail',
-    MANUFACTURER: 'Manufacturer',
-    DISTRIBUTOR: 'Distributor',
-    'C&F': 'C&F',
-    OTHER: 'Other',
-  };
-  return labels[value] ?? value;
+function formatAddress(vendor: Pick<VendorResponse, 'address' | 'postalAddress'>) {
+  const a = vendor.postalAddress;
+  const parts = [a?.line1, a?.city, gstStateName(a?.stateCode)].filter((p) => p && p.trim());
+  if (parts.length > 0) return parts.join(', ') + (a?.pincode ? ` - ${a.pincode}` : '');
+  return vendor.address?.trim() || '—';
 }
 
 export function VendorsPage() {
@@ -109,6 +101,7 @@ export function VendorsPage() {
       contactPhone: vendor.contactPhone ?? '',
       contactEmail: vendor.contactEmail ?? '',
       address: vendor.address ?? '',
+      postalAddress: vendor.postalAddress ?? undefined,
       companyName: vendor.companyName ?? '',
       businessType: vendor.businessType ?? '',
       gstinUin: vendor.gstinUin ?? '',
@@ -142,8 +135,20 @@ export function VendorsPage() {
       setSaveError('Name is required');
       return;
     }
+    if (!partyNameHasLetters(createForm.name)) {
+      setSaveError(PARTY_NAME_LETTERS_MESSAGE);
+      return;
+    }
     if (!createForm.contactPhone?.trim() && !createForm.contactEmail?.trim()) {
       setSaveError('Either phone or email is required');
+      return;
+    }
+    if (createForm.gstinUin?.trim() && gstinProblem(createForm.gstinUin)) {
+      setSaveError(`GSTIN: ${gstinProblem(createForm.gstinUin)}`);
+      return;
+    }
+    if (!vendorIsPlaceable(createForm)) {
+      setSaveError(VENDOR_PLACE_REQUIRED_MESSAGE);
       return;
     }
     setSaving(true);
@@ -154,8 +159,10 @@ export function VendorsPage() {
         contactPhone: createForm.contactPhone?.trim() || '',
         contactEmail: createForm.contactEmail?.trim() || undefined,
         address: createForm.address?.trim() || undefined,
+        postalAddress: createForm.postalAddress,
+        companyName: createForm.companyName?.trim() || undefined,
         businessType: createForm.businessType ?? 'RETAIL',
-        gstinUin: createForm.gstinUin?.trim() || undefined,
+        gstinUin: normalizeGstin(createForm.gstinUin) || undefined,
         dlNo: createForm.dlNo?.trim() || undefined,
       });
       void load();
@@ -169,10 +176,25 @@ export function VendorsPage() {
 
   const handleSave = async () => {
     if (!editModal) return;
+    if (editForm.name !== undefined && !partyNameHasLetters(editForm.name)) {
+      setSaveError(PARTY_NAME_LETTERS_MESSAGE);
+      return;
+    }
+    if (editForm.gstinUin?.trim() && gstinProblem(editForm.gstinUin)) {
+      setSaveError(`GSTIN: ${gstinProblem(editForm.gstinUin)}`);
+      return;
+    }
+    if (!vendorIsPlaceable(editForm)) {
+      setSaveError(VENDOR_PLACE_REQUIRED_MESSAGE);
+      return;
+    }
     setSaving(true);
     setSaveError(null);
     try {
-      await vendorsApi.update(editModal.vendorId, editForm);
+      await vendorsApi.update(editModal.vendorId, {
+        ...editForm,
+        gstinUin: editForm.gstinUin === undefined ? undefined : normalizeGstin(editForm.gstinUin),
+      });
       void load();
       handleCloseEdit();
     } catch (err) {
@@ -244,9 +266,6 @@ export function VendorsPage() {
                   Address
                 </TableHeaderCell>
                 <TableHeaderCell className={surfaceChrome.customersIdCell}>DL no.</TableHeaderCell>
-                <TableHeaderCell className={surfaceChrome.vendorsBusinessCell}>
-                  Business type
-                </TableHeaderCell>
                 <TableHeaderCell className={surfaceChrome.customersIdCell}>GSTIN</TableHeaderCell>
                 <TableHeaderCell className={surfaceChrome.customersActionCell}>
                   Actions
@@ -255,10 +274,10 @@ export function VendorsPage() {
             </TableHead>
             <TableBody>
               {loading ? (
-                <TableLoadingRow colSpan={7} label="Loading vendors…" />
+                <TableLoadingRow colSpan={6} label="Loading vendors…" />
               ) : data.length === 0 ? (
                 <TableEmptyRow
-                  colSpan={7}
+                  colSpan={6}
                   message={
                     query
                       ? 'No vendors match your search.'
@@ -280,13 +299,10 @@ export function VendorsPage() {
                       className={surfaceChrome.customersAddressCell}
                       title={vendor.address ?? undefined}
                     >
-                      {formatAddress(vendor.address)}
+                      {formatAddress(vendor)}
                     </TableCell>
                     <TableCell className={surfaceChrome.customersIdCell}>
                       {vendor.dlNo ?? '—'}
-                    </TableCell>
-                    <TableCell className={surfaceChrome.vendorsBusinessCell}>
-                      {formatBusinessType(vendor.businessType)}
                     </TableCell>
                     <TableCell className={surfaceChrome.customersIdCell}>
                       {vendor.gstinUin ?? '—'}

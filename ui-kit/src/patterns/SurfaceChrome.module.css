@@ -1441,7 +1441,21 @@
 }
 
 .customersNameCell {
-  width: 13%;
+  /* Widened from 13% when the Email column (17%) was dropped from both contact
+     tables and nothing reclaimed the space. A pharmacy name like "SHREE KAILASH
+     PHARMACEUTICALS GAYA" needs more than 13% of a 1120px table. Widened again
+     when Type / Business type were dropped; the address cell gave some back,
+     since it truncates with an ellipsis and the name does not. */
+  width: 24%;
+}
+
+.customersTable :global(tbody) .customersNameCell {
+  /* A single word longer than the column - "PHARMACEUTICALS" - cannot break at a
+     space, so it painted straight over the phone column. Break inside the word
+     when there is no other option, and clip as a backstop. Same failure the
+     phone cell above was already fixed for. */
+  overflow-wrap: anywhere;
+  overflow: hidden;
 }
 
 .customersPhoneCell {
@@ -1472,7 +1486,7 @@
 }
 
 .customersAddressCell {
-  width: 22%;
+  width: 16%;
 }
 
 .customersTable :global(tbody) .customersAddressCell {
@@ -1558,6 +1572,14 @@
 
 .priceEditHint {
   margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
+/* Product Entry: hint under "Generated rates" (EntryRatePreview). */
+.entryRatePreviewHint {
+  margin: 0 0 var(--sk-space-xs, 0.25rem);
   font-size: 0.75rem;
   line-height: 1.45;
   color: var(--sk-color-text-secondary, #64748b);
@@ -2375,11 +2397,16 @@
   color: var(--sk-color-text-secondary, #64748b);
 }
 
+/* Every pane in a settings layout shares one height cap (--settings-pane-max). The
+   grid stretches each column to the row, and because no column may exceed the cap,
+   none can be taller than its neighbours: the controls no longer stop short of the
+   preview on short (Windows laptop) viewports and leave the card bottom ragged. */
 .invoiceSettingsLayout {
+  --settings-pane-max: min(78vh, 52rem);
   display: grid;
   grid-template-columns: minmax(17.5rem, 22rem) minmax(0, 1fr);
   align-items: stretch;
-  min-height: 34rem;
+  min-height: min(34rem, var(--settings-pane-max));
 }
 
 .invoiceSettingsControls {
@@ -2394,7 +2421,7 @@
     var(--sk-color-bg-muted, #f8fafc) 28%,
     var(--sk-color-bg-elevated, #fff)
   );
-  max-height: min(78vh, 52rem);
+  max-height: var(--settings-pane-max);
   overflow-y: auto;
 }
 
@@ -2586,7 +2613,9 @@
       color-mix(in srgb, var(--sk-color-bg-muted, #e8eef5) 80%, #dbe3ec) 0%,
       color-mix(in srgb, var(--sk-color-bg-muted, #f1f5f9) 90%, #e2e8f0) 100%
     );
-  min-height: 34rem;
+  min-height: min(34rem, var(--settings-pane-max, 34rem));
+  max-height: var(--settings-pane-max, none);
+  overflow-y: auto;
 }
 
 .invoiceSettingsPreviewToolbar {
@@ -2596,14 +2625,16 @@
   gap: 0.75rem;
 }
 
+/* The stage is the one scroller of the preview column: it fills whatever height the
+   column has left after the toolbar and hint (flex: 1 1 auto, explicit min-height so
+   it may shrink below its paper) and scrolls the paper inside. */
 .invoicePreviewStage {
   position: relative;
-  flex: 1;
+  flex: 1 1 auto;
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  min-height: min(68vh, 44rem);
-  max-height: min(78vh, 52rem);
+  min-height: 12rem;
   overflow: auto;
   padding: 1.35rem 1rem 1.75rem;
   border-radius: 14px;
@@ -2640,8 +2671,9 @@
     0 0 0 1px rgba(15, 23, 42, 0.07);
 }
 
+/* The dot-matrix sheet is 80 condensed columns wide: give it every pixel the stage has. */
 .invoicePreviewPaperDotMatrix {
-  width: min(100%, 36rem);
+  width: 100%;
 }
 
 .invoicePreviewPaperDotMatrix .invoicePreviewFrame {
@@ -2694,12 +2726,13 @@
   margin: 0;
   padding: 1rem 1.25rem 1.25rem;
   border-radius: 0;
+  min-height: 0;
+  max-height: none;
   overflow: auto;
 }
 
 .invoiceSettingsPreviewExpanded .invoicePreviewStage {
   min-height: 0;
-  max-height: none;
   flex: 1;
 }
 
@@ -2774,6 +2807,67 @@
   padding-top: 0.85rem;
 }
 
+/* Profile → Rate rules: padded body, one bordered box per rule, dashed empty state, card footer. */
+.rateRulesBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.15rem 1.35rem 1.35rem;
+}
+
+.rateRulesBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.rateRulesList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rateRulesRow {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+  border-radius: 12px;
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 45%,
+    var(--sk-color-bg-elevated, #fff)
+  );
+}
+
+.rateRulesEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem 1rem;
+  border: 1px dashed color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 95%, transparent);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.rateRulesFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1.35rem;
+  border-top: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 40%,
+    var(--sk-color-bg-elevated, #fff)
+  );
+}
+
 @media (max-width: 960px) {
   .invoiceSettingsLayout {
     grid-template-columns: 1fr;
@@ -2787,12 +2881,13 @@
     overflow: visible;
   }
 
+  /* Stacked: the panes flow naturally and only the stage scrolls. */
   .invoiceSettingsPreview {
-    min-height: 28rem;
+    min-height: 0;
+    max-height: none;
   }
 
   .invoicePreviewStage {
-    min-height: min(55vh, 32rem);
     max-height: min(65vh, 40rem);
   }
 }
@@ -2849,4 +2944,367 @@
 
 [data-theme='dark'] .reminderListDueOverdue {
   color: #fca5a5;
+}
+
+/* ---- Product card layout builder (Profile → Product cards) ---------------------------- */
+
+.cardBuilderToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  padding: 0.85rem 1.35rem;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 40%,
+    var(--sk-color-bg-elevated, #fff)
+  );
+}
+
+.cardBuilderToolbarGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Three columns down to a ~1000px card (a 1366px Windows laptop with the sidebar open):
+   the side columns are kept narrow so the Layout editor keeps ~460px, and the preview
+   only drops below the editor once the viewport itself is too narrow for three. The
+   earlier container query on a wrapper put the preview on its own row at exactly that
+   laptop size, which read as a broken layout next to the same page on a wider Mac. */
+.cardBuilderLayout {
+  --settings-pane-max: min(78vh, 56rem);
+  display: grid;
+  grid-template-columns: minmax(13rem, 15rem) minmax(0, 1fr) minmax(17rem, 20rem);
+  align-items: stretch;
+  min-height: min(34rem, var(--settings-pane-max));
+}
+
+.cardBuilderColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+  padding: 1rem 1.1rem 1.25rem;
+  border-right: 1px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 28%,
+    var(--sk-color-bg-elevated, #fff)
+  );
+  max-height: var(--settings-pane-max);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.cardBuilderMain {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+  padding: 1rem 1.25rem 1.25rem;
+  border-right: 1px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+  max-height: var(--settings-pane-max);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.cardBuilderColumnHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 1.75rem;
+}
+
+/* Field picker */
+.cardBuilderFieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.cardBuilderFieldItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.3rem 0.45rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+}
+
+.cardBuilderFieldItem:hover {
+  background: color-mix(in srgb, var(--sk-color-brand, #2563eb) 6%, transparent);
+}
+
+.cardBuilderFieldItemDisabled {
+  opacity: 0.55;
+}
+
+/* Sections */
+.cardBuilderSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.75rem 0.85rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 85%, transparent);
+  border-left: 3px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 85%, transparent);
+  border-radius: 12px;
+  background: var(--sk-color-bg-elevated, #fff);
+}
+
+.cardBuilderSectionSelected {
+  border-left-color: var(--sk-color-brand, #2563eb);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--sk-color-brand, #2563eb) 25%, transparent);
+}
+
+.cardBuilderSectionHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  min-width: 0;
+}
+
+.cardBuilderSectionHeadRow {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  min-width: 0;
+}
+
+.cardBuilderNoWrap {
+  white-space: nowrap;
+}
+
+.cardBuilderSectionIndex {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-secondary, #94a3b8);
+  white-space: nowrap;
+}
+
+/* Wide enough for its own placeholder; when the row cannot give it that, the
+   Divider switch wraps under it instead of the input being cut to "Title (opti". */
+.cardBuilderSectionTitleInput {
+  flex: 1 1 9rem;
+  min-width: 9rem;
+}
+
+.cardBuilderActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.cardBuilderDivider {
+  height: 1px;
+  margin: 0.1rem 0;
+  background: color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 90%, transparent);
+}
+
+/* Lines */
+.cardBuilderLines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cardBuilderLine {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.3rem 0.4rem 0.3rem 0.5rem;
+  border-radius: 10px;
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 70%,
+    var(--sk-color-bg-elevated, #fff)
+  );
+}
+
+.cardBuilderLineIndex {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--sk-color-text-secondary, #94a3b8);
+  text-align: center;
+}
+
+.cardBuilderChips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.cardBuilderChipSeparator {
+  color: var(--sk-color-text-secondary, #94a3b8);
+  font-size: 0.75rem;
+}
+
+.cardBuilderChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 100%;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 90%, transparent);
+  border-radius: 999px;
+  background: var(--sk-color-bg-elevated, #fff);
+  color: var(--sk-color-text-primary, #0f172a);
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.2;
+  cursor: pointer;
+  text-align: left;
+}
+
+.cardBuilderChip:hover {
+  border-color: color-mix(in srgb, var(--sk-color-brand, #2563eb) 45%, transparent);
+}
+
+.cardBuilderChip:focus-visible {
+  outline: 2px solid var(--sk-color-brand, #2563eb);
+  outline-offset: 1px;
+}
+
+.cardBuilderChipSelected {
+  border-color: var(--sk-color-brand, #2563eb);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-brand, #2563eb) 9%,
+    var(--sk-color-bg-elevated, #fff)
+  );
+}
+
+.cardBuilderChipStrong {
+  font-weight: 600;
+}
+
+.cardBuilderChipMuted {
+  color: var(--sk-color-text-secondary, #94a3b8);
+}
+
+.cardBuilderChipHint {
+  font-size: 0.6875rem;
+  color: var(--sk-color-text-secondary, #94a3b8);
+}
+
+/* Inspector */
+.cardBuilderInspector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid color-mix(in srgb, var(--sk-color-brand, #2563eb) 30%, transparent);
+  border-radius: 12px;
+  background: color-mix(
+    in srgb,
+    var(--sk-color-brand, #2563eb) 4%,
+    var(--sk-color-bg-elevated, #fff)
+  );
+}
+
+.cardBuilderInspectorGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem 0.9rem;
+}
+
+.cardBuilderInspectorFull {
+  grid-column: 1 / -1;
+}
+
+.cardBuilderExtras {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem 0.75rem;
+  border: 1px dashed color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 95%, transparent);
+  border-radius: 12px;
+}
+
+.cardBuilderExtrasRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.5rem;
+}
+
+.cardBuilderEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 2rem 1rem;
+  border: 1px dashed color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 95%, transparent);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.cardBuilderPreviewSticky {
+  position: sticky;
+  top: 0.5rem;
+  align-self: start;
+}
+
+/* Below 1100px the viewport cannot hold three usable columns even with the sidebar
+   collapsed: the preview drops under the two editing columns at its natural height. */
+@media (max-width: 1100px) {
+  .cardBuilderLayout {
+    grid-template-columns: minmax(14rem, 16rem) minmax(0, 1fr);
+  }
+
+  .cardBuilderLayout > :nth-child(3) {
+    grid-column: 1 / -1;
+    min-height: 0;
+    max-height: none;
+  }
+
+  .cardBuilderMain {
+    border-right: 0;
+  }
+}
+
+@media (max-width: 860px) {
+  .cardBuilderLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .cardBuilderColumn,
+  .cardBuilderMain {
+    max-height: none;
+    border-right: 0;
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+  }
+
+  .cardBuilderInspectorGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+[data-theme='dark'] .cardBuilderChip {
+  background: color-mix(in srgb, var(--sk-color-bg-elevated, #0f172a) 92%, #fff);
 }

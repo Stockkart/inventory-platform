@@ -1,23 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
 import { Search, UserRound } from 'lucide-react';
-import { customersApi, customerHasUniqueIdentifier } from '@inventory-platform/user/customers';
+import {
+  customersApi,
+  customerHasUniqueIdentifier,
+  partyNameHasLetters,
+  PARTY_NAME_LETTERS_MESSAGE,
+} from '@inventory-platform/user/customers';
 import type {
   CreateCustomerDto,
   CustomerPartyType,
   CustomerResponse,
 } from '@inventory-platform/user/types';
+import { CustomerEditForm } from '@inventory-platform/user/ui';
 import {
   Alert,
   Box,
   Button,
-  FormField,
-  FormRow,
   Icon,
   IconButton,
   Input,
   Label,
   Modal,
-  Select,
   Stack,
   Text,
   productChrome,
@@ -142,6 +145,10 @@ export function CustomerSearchPanel({
       setCreateError('Customer name is required');
       return;
     }
+    if (!partyNameHasLetters(name)) {
+      setCreateError(PARTY_NAME_LETTERS_MESSAGE);
+      return;
+    }
     const partyType = form.partyType ?? 'CONSUMER';
     const hasUnique = customerHasUniqueIdentifier(form);
     if (!hasUnique) {
@@ -159,6 +166,7 @@ export function CustomerSearchPanel({
         phone: form.phone?.trim() || undefined,
         email: form.email?.trim() || undefined,
         address: form.address?.trim() || undefined,
+        postalAddress: form.postalAddress,
         gstin: form.gstin?.trim() || undefined,
         pan: form.pan?.trim() || undefined,
         dlNo: form.dlNo?.trim() || undefined,
@@ -295,15 +303,6 @@ export function CustomerSearchPanel({
           <Box className={productChrome.customerPartyActions}>
             <Button
               type="button"
-              variant="outline"
-              fullWidth
-              onClick={openCreate}
-              disabled={disabled}
-            >
-              New customer
-            </Button>
-            <Button
-              type="button"
               variant="ghost"
               fullWidth
               onClick={clearSelection}
@@ -355,73 +354,12 @@ export function CustomerSearchPanel({
         <Modal.Body>
           <Stack gap="md">
             {createError ? <Alert variant="danger">{createError}</Alert> : null}
-            <FormField
-              label="Name"
-              required
-              value={form.name ?? ''}
-              onChange={(v) => setForm((f) => ({ ...f, name: v }))}
+            <CustomerEditForm
+              value={form}
+              onChange={setForm}
               disabled={isCreating}
+              idPrefix={`${idPrefix}-new`}
             />
-            <FormField label="Party type">
-              <Select
-                value={form.partyType ?? 'CONSUMER'}
-                options={PARTY_TYPE_OPTIONS}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    partyType: e.target.value as CustomerPartyType,
-                  }))
-                }
-                disabled={isCreating}
-              />
-            </FormField>
-            <FormRow>
-              <FormField
-                label="Phone"
-                type="tel"
-                value={form.phone ?? ''}
-                onChange={(v) => setForm((f) => ({ ...f, phone: v }))}
-                disabled={isCreating}
-              />
-              <FormField
-                label="Email"
-                type="email"
-                value={form.email ?? ''}
-                onChange={(v) => setForm((f) => ({ ...f, email: v }))}
-                disabled={isCreating}
-              />
-            </FormRow>
-            <FormField
-              label="Address"
-              value={form.address ?? ''}
-              onChange={(v) => setForm((f) => ({ ...f, address: v }))}
-              multiline
-              rows={2}
-              disabled={isCreating}
-            />
-            <FormRow>
-              <FormField
-                label="GSTIN"
-                value={form.gstin ?? ''}
-                onChange={(v) => setForm((f) => ({ ...f, gstin: v }))}
-                disabled={isCreating}
-              />
-              <FormField
-                label="PAN"
-                value={form.pan ?? ''}
-                onChange={(v) => setForm((f) => ({ ...f, pan: v }))}
-                disabled={isCreating}
-              />
-            </FormRow>
-            <FormField
-              label="DL No"
-              value={form.dlNo ?? ''}
-              onChange={(v) => setForm((f) => ({ ...f, dlNo: v }))}
-              disabled={isCreating}
-            />
-            <Text variant="caption" color="muted">
-              Need at least one of phone, email, GSTIN, PAN, or DL.
-            </Text>
           </Stack>
         </Modal.Body>
         <Modal.Footer>

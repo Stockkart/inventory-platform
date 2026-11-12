@@ -8,8 +8,9 @@ export const KEYBOARD_NAV_SKIP = 'skip' as const;
 /** Excel-style table: ArrowUp/Down move by column; handled by a local listener. */
 export const KEYBOARD_NAV_GRID = 'grid' as const;
 
+/** ui-kit `Select` renders a button marked `data-sk-select`; it is a field like a native select. */
 const LIST_FOCUSABLE_SELECTOR =
-  'input:not([disabled]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]), select:not([disabled]), textarea:not([disabled])';
+  'input:not([disabled]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]), select:not([disabled]), [data-sk-select]:not([disabled]), textarea:not([disabled])';
 
 const GRID_FOCUSABLE_SELECTOR =
   'tbody input:not([disabled]):not([type="hidden"]), tbody select:not([disabled]), tbody button:not([disabled])';

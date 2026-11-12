@@ -21,6 +21,13 @@
   border-radius: 8px;
 }
 
+/* Table always wraps itself in an overflow-x container. Disable that here so
+   this wrap is the only scroller — otherwise the bar sits between the rows
+   and the footnote instead of at the bottom of the grid. */
+.wrap > :first-child {
+  overflow: visible;
+}
+
 [data-theme='dark'] .wrap {
   color-scheme: dark;
 }
@@ -239,30 +246,6 @@
   border-color: #3b82f6;
 }
 
-.removeBtn {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
-  border: 1px solid #f87171;
-  background: #fef2f2;
-  color: #dc2626;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.removeBtn:hover:not(:disabled) {
-  background: #fee2e2;
-}
-
-[data-theme='dark'] .removeBtn {
-  background: color-mix(in srgb, #dc2626 18%, transparent);
-  border-color: #f87171;
-  color: #fca5a5;
-}
-
-[data-theme='dark'] .removeBtn:hover:not(:disabled) {
-  background: color-mix(in srgb, #dc2626 28%, transparent);
-}
-
 .cellDash {
   display: inline-block;
   min-width: 1.25rem;
@@ -272,6 +255,40 @@
 
 .footnote {
   margin: 0.5rem 0 0;
+  padding: 0 0.6rem 0.6rem;
   font-size: 0.8rem;
   color: var(--text-secondary);
+  position: sticky;
+  left: 0;
+  max-width: 100%;
+}
+
+/* Fixed column widths (spreadsheet layout). The <colgroup> sets each column; content
+   never stretches a column, it clips. The table is as wide as its columns, so the
+   wrap scrolls horizontally on smaller screens instead of squeezing columns. */
+.tableFixed {
+  table-layout: fixed;
+  width: max-content;
+}
+
+.tableFixed .th {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tableFixed .td {
+  overflow: hidden;
+}
+
+.tableFixed .tdPackaging {
+  min-width: 0;
+  overflow: visible;
+}
+
+.tableFixed .input,
+.tableFixed .inputDate,
+.tableFixed .select {
+  min-width: 0;
+  max-width: none;
+  width: 100%;
 }

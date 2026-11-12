@@ -6,6 +6,11 @@ export const productNav: NavContribution = {
   icon: 'package',
   items: [
     {
+      path: '/dashboard/entry-estimates',
+      label: 'Entry Estimate',
+      icon: 'clipboard-list',
+    },
+    {
       path: '/dashboard/product-entry',
       label: 'Product Entry',
       icon: 'package',

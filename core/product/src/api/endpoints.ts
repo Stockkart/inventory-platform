@@ -5,6 +5,8 @@ export const INVENTORY_ENDPOINTS = {
   PARSE_INVOICE: '/inventory/parse-invoice',
   PARSE_STOCK_SHEET: '/inventory/parse-stock-sheet',
   SEARCH: '/inventory/search',
+  SEARCH_FIELDS: '/inventory/search/fields',
+  SEARCH_VALUES: '/inventory/search/values',
   EXPIRY_BUCKETS: '/inventory/expiry-buckets',
   BY_IDS: '/inventory/by-ids',
   LOTS: '/inventory/lots',
@@ -16,8 +18,11 @@ export const INVENTORY_ENDPOINTS = {
 /** Catalog product paths (shop-scoped identity for registration prefill). */
 export const PRODUCT_ENDPOINTS = {
   SUGGEST: '/products/suggest',
+  BY_BARCODE: '/products/by-barcode',
   BY_ID: (id: string) => `/products/${id}`,
   LAST_INVENTORY: (id: string) => `/products/${id}/last-inventory`,
+  /** Served by taxation; the table lives beside the GSTR HSN descriptions. */
+  HSN_GST_RATES: '/taxation/hsn-gst-rates',
 } as const;
 
 /** Shop barcode generate / pool / label paths. */
@@ -27,6 +32,28 @@ export const BARCODE_ENDPOINTS = {
   LABELS: '/barcodes/labels',
   ATTACH: (code: string) => `/barcodes/${encodeURIComponent(code)}/attach`,
 } as const;
+/** Shop barcode label layout (active-shop scoped) paths. */
+export const BARCODE_LABEL_LAYOUT_ENDPOINTS = {
+  BASE: '/shops/active-shop/barcode-label-layout',
+  FIELD_CATALOG: '/shops/active-shop/barcode-label-layout/field-catalog',
+  DEFAULTS: '/shops/active-shop/barcode-label-layout/defaults',
+  PREVIEW: '/shops/active-shop/barcode-label-layout/preview',
+} as const;
+
+/** Shop product card layouts (active-shop scoped) paths. */
+export const CARD_LAYOUT_ENDPOINTS = {
+  BASE: '/shops/active-shop/card-layouts',
+  FIELD_CATALOG: '/shops/active-shop/card-layouts/field-catalog',
+  SURFACE: (surfaceId: string) =>
+    `/shops/active-shop/card-layouts/${encodeURIComponent(surfaceId)}`,
+  DEFAULTS: (surfaceId: string) =>
+    `/shops/active-shop/card-layouts/${encodeURIComponent(surfaceId)}/defaults`,
+} as const;
+
+/** Shop data grid column layouts (active-shop scoped) paths. */
+export const GRID_LAYOUT_ENDPOINTS = {
+  GRID: (gridId: string) => `/shops/active-shop/grid-layouts/${encodeURIComponent(gridId)}`,
+} as const;
 
 /** Invoice / credit-note printer layout for PDF generation. */
 export type PrinterType = 'NORMAL' | 'DOT_MATRIX' | 'THERMAL_3INCH';
@@ -35,6 +62,8 @@ export type PrinterType = 'NORMAL' | 'DOT_MATRIX' | 'THERMAL_3INCH';
 export const VENDOR_PURCHASE_INVOICES_ENDPOINTS = {
   BASE: '/vendor-purchase-invoices',
   BY_ID: (id: string) => `/vendor-purchase-invoices/${id}`,
+  PREVIEW_TOTALS: '/vendor-purchase-invoices/preview-totals',
+  AMEND_PREVIEW: (id: string) => `/vendor-purchase-invoices/${id}/amend-preview`,
 } as const;
 
 /** Vendor purchase return paths. */
@@ -70,7 +99,16 @@ export const CART_ENDPOINTS = {
 export const ESTIMATE_ENDPOINTS = {
   BASE: '/estimates',
   BY_ID: (purchaseId: string) => `/estimates/${purchaseId}`,
+  LOCK: (purchaseId: string) => `/estimates/${purchaseId}/lock`,
   CONVERT: (purchaseId: string) => `/estimates/${purchaseId}/convert`,
+} as const;
+
+/** Product-entry (stock-in) estimate drafts. */
+export const STOCK_ENTRY_ESTIMATE_ENDPOINTS = {
+  BASE: '/stock-entry-estimates',
+  BY_ID: (id: string) => `/stock-entry-estimates/${id}`,
+  LOCK: (id: string) => `/stock-entry-estimates/${id}/lock`,
+  MARK_CONVERTED: (id: string) => `/stock-entry-estimates/${id}/mark-converted`,
 } as const;
 
 /** Checkout paths. */
@@ -91,6 +129,14 @@ export const INVOICE_ENDPOINTS = {
       ? `/invoices/${purchaseId}/pdf?printerType=${printerType}`
       : `/invoices/${purchaseId}/pdf`,
   DOT_MATRIX: (purchaseId: string) => `/invoices/${purchaseId}/dot-matrix`,
+} as const;
+
+/** Dot matrix print jobs and the local print bridge. */
+export const PRINT_ENDPOINTS = {
+  BRIDGE_CONNECTION: '/print-bridge/connection',
+  BRIDGE_STATUS: '/print-bridge/status',
+  JOBS: '/print-jobs',
+  OUTCOME: '/print-jobs/outcome',
 } as const;
 
 /** Purchase history paths. */
@@ -117,4 +163,10 @@ export const UPLOAD_ENDPOINTS = {
   UPLOAD_IMAGE: (token: string) => `/m/upload?token=${token}`,
   STATUS: (token: string) => `/upload/status?token=${token}`,
   PARSED_ITEMS: (token: string) => `/upload/parsed-items?token=${token}`,
+} as const;
+
+/** Shop rate rules (active-shop scoped) paths. */
+export const RATE_RULES_ENDPOINTS = {
+  BASE: '/shops/active-shop/rate-rules',
+  PREVIEW: '/shops/active-shop/rate-rules/preview',
 } as const;

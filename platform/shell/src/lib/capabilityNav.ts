@@ -29,6 +29,7 @@ const CAPABILITY_PATH_ICONS: Partial<Record<string, NavIconName>> = {
   '/dashboard/product-search': 'search',
   '/dashboard/scan-sell': 'smartphone',
   '/dashboard/estimates': 'receipt',
+  '/dashboard/entry-estimates': 'clipboard-list',
   '/dashboard/stock-corrections': 'wrench',
   '/dashboard/pricing': 'circle-dollar-sign',
 };

@@ -50,6 +50,18 @@ export {
 } from './AsideLayout';
 export { DenseDataGridWrap, denseDataGrid, type DenseDataGridWrapProps } from './DenseDataGrid';
 export {
+  ColumnList,
+  ColumnManager,
+  GridColGroup,
+  ResizableHeaderCell,
+  type ColumnListProps,
+  type ColumnManagerItem,
+  type ColumnManagerProps,
+  type GridColGroupProps,
+  type ResizableHeaderCellProps,
+} from './GridColumns';
+export { AnchoredPortal, type AnchoredPortalProps } from './AnchoredPortal';
+export {
   FileDropzoneContainer,
   fileDropzone,
   type FileDropzoneContainerProps,
@@ -97,6 +109,42 @@ export {
 export { chartChrome } from './ChartFrame';
 export { productChrome } from './ProductChrome';
 export { surfaceChrome } from './SurfaceChrome';
+export { MonthPicker, type MonthPickerProps } from './MonthPicker';
+export { DateStepper, type DateStepperProps } from './DateStepper';
+export {
+  CalendarMonthGrid,
+  buildMonthWeeks,
+  type CalendarDay,
+  type CalendarMonthGridProps,
+} from './CalendarMonthGrid';
+export {
+  AttendanceCell,
+  ATTENDANCE_STATUS_META,
+  type AttendanceCellProps,
+  type AttendanceStatus,
+} from './AttendanceCell';
+export {
+  PermissionGrid,
+  type PermissionGridColumn,
+  type PermissionGridProps,
+  type PermissionGridRow,
+} from './PermissionGrid';
+export { hrChrome } from './HrChrome';
+export {
+  ChoiceList,
+  CollapsibleGroup,
+  FacetCheckboxList,
+  FilterDropdown,
+  FilterStrip,
+  searchChrome,
+  type ChoiceListProps,
+  type ChoiceOption,
+  type CollapsibleGroupProps,
+  type FacetCheckboxListProps,
+  type FacetOption,
+  type FilterDropdownProps,
+  type FilterStripProps,
+} from './FacetFilter';
 export {
   accountingChrome,
   journalLineGridStyle,

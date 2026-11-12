@@ -28,6 +28,9 @@
   --sk-color-accent: var(--sk-color-brand);
   --sk-color-accent-hover: var(--sk-color-brand-hover);
   --sk-color-accent-soft: var(--sk-color-brand-soft);
+  /* Clickable values inside tables and text (LinkButton, accounting entry links). */
+  --sk-color-link: #2563eb;
+  --sk-color-link-hover: #1d4ed8;
   --sk-color-success: #059669;
   --sk-color-success-soft: rgba(5, 150, 105, 0.12);
   --sk-color-warning: #d97706;
@@ -36,6 +39,13 @@
   --sk-color-danger-soft: rgba(220, 38, 38, 0.12);
   --sk-color-info: #1e3a5f;
   --sk-color-info-soft: rgba(30, 58, 95, 0.12);
+  /* Categorical palette: tells sibling groups apart (e.g. cafe menu sections). Not status colours. */
+  --sk-color-category-1: #1d4ed8;
+  --sk-color-category-2: #c2410c;
+  --sk-color-category-3: #be123c;
+  --sk-color-category-4: #0f766e;
+  --sk-color-category-5: #b45309;
+  --sk-color-category-6: #a21caf;
   --sk-color-focus-ring: rgba(30, 58, 95, 0.35);
   --sk-color-hover: rgba(15, 23, 42, 0.04);
 
@@ -62,6 +72,10 @@
 
   --sk-z-dropdown: 1000;
   --sk-z-sticky: 1100;
+  /* Menus that escape a scroll container by portalling to <body>: the registration
+     grid's unit dropdown and product typeahead. They are siblings there, so they
+     must share one declared layer rather than each picking a literal. */
+  --sk-z-popover: 1400;
   --sk-z-floating: 8000;
   --sk-z-modal: 9000;
   --sk-z-toast: 9500;
@@ -79,6 +93,24 @@
   --sk-text-section: 0.75rem;
   --sk-text-body: 0.9375rem;
   --sk-text-caption: 0.8125rem;
+
+  /* HR attendance status colours (AttendanceCell, attendance calendars). Each status has a
+     foreground (letter) and a soft background; text on the soft bg meets 4.5:1 contrast. */
+  --sk-attendance-present: #047857;
+  --sk-attendance-present-bg: rgba(5, 150, 105, 0.14);
+  --sk-attendance-absent: #b91c1c;
+  --sk-attendance-absent-bg: rgba(220, 38, 38, 0.12);
+  --sk-attendance-half-day: #b45309;
+  --sk-attendance-half-day-bg: rgba(217, 119, 6, 0.14);
+  --sk-attendance-leave: #1d4ed8;
+  --sk-attendance-leave-bg: rgba(37, 99, 235, 0.12);
+  --sk-attendance-week-off: #475569;
+  --sk-attendance-week-off-bg: rgba(100, 116, 139, 0.14);
+  --sk-attendance-holiday: #7e22ce;
+  --sk-attendance-holiday-bg: rgba(147, 51, 234, 0.12);
+  --sk-attendance-unmarked: #64748b;
+  --sk-attendance-unmarked-bg: transparent;
+  --sk-attendance-late-dot: #dc2626;
 
   /* Legacy aliases used across the app today */
   --bg-primary: var(--sk-color-bg-canvas);
@@ -110,6 +142,12 @@
   --sk-color-bg-sidebar: #0b1220;
   --sk-color-bg-header: #111827;
   --sk-color-text-primary: #f8fafc;
+  --sk-color-category-1: #60a5fa;
+  --sk-color-category-2: #fb923c;
+  --sk-color-category-3: #fb7185;
+  --sk-color-category-4: #2dd4bf;
+  --sk-color-category-5: #fbbf24;
+  --sk-color-category-6: #e879f9;
   --sk-color-text-secondary: #cbd5e1;
   --sk-color-text-muted: #94a3b8;
   --sk-color-text-inverse: #0f172a;
@@ -129,8 +167,27 @@
   --sk-color-accent: var(--sk-color-brand);
   --sk-color-accent-hover: var(--sk-color-brand-hover);
   --sk-color-accent-soft: var(--sk-color-brand-soft);
+  --sk-color-link: var(--sk-color-brand);
+  --sk-color-link-hover: var(--sk-color-brand-hover);
   --sk-color-hover: rgba(248, 250, 252, 0.06);
   --sk-color-focus-ring: rgba(147, 197, 253, 0.4);
+
+  /* HR attendance status colours — lighter foregrounds for dark surfaces. */
+  --sk-attendance-present: #6ee7b7;
+  --sk-attendance-present-bg: rgba(52, 211, 153, 0.16);
+  --sk-attendance-absent: #fca5a5;
+  --sk-attendance-absent-bg: rgba(248, 113, 113, 0.16);
+  --sk-attendance-half-day: #fcd34d;
+  --sk-attendance-half-day-bg: rgba(251, 191, 36, 0.16);
+  --sk-attendance-leave: #93c5fd;
+  --sk-attendance-leave-bg: rgba(96, 165, 250, 0.16);
+  --sk-attendance-week-off: #cbd5e1;
+  --sk-attendance-week-off-bg: rgba(148, 163, 184, 0.16);
+  --sk-attendance-holiday: #d8b4fe;
+  --sk-attendance-holiday-bg: rgba(192, 132, 252, 0.16);
+  --sk-attendance-unmarked: #94a3b8;
+  --sk-attendance-unmarked-bg: transparent;
+  --sk-attendance-late-dot: #f87171;
 
   --bg-primary: var(--sk-color-bg-canvas);
   --bg-secondary: var(--sk-color-bg-sidebar);

@@ -39,6 +39,12 @@ testem.log
 .env.local
 .env.*.local
 
+# Vercel CLI (written by `vercel pull` / `vercel build` in the deploy pipeline)
+.vercel
+
+# Netlify build output (SSR function written by @netlify/vite-plugin-react-router)
+.netlify
+
 # System Files
 .DS_Store
 Thumbs.db

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { EstimateSummary } from '@inventory-platform/product/types';
+import { useNotify } from '@inventory-platform/session';
 import { formatCustomerDisplayName } from '../lib/customerDisplay';
 import {
   Alert,
@@ -10,28 +11,13 @@ import {
   CardBody,
   CenteredLoader,
   Inline,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeaderCell,
-  TableRow,
   Text,
   cn,
   productChrome,
-  surfaceChrome,
 } from '@inventory-platform/ui-kit';
+import { SaleLineItemsTable, SaleTotals, formatCurrency } from './SaleLineItems';
 import { useEstimateDetailQuery } from '../queries/hooks';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
 
 function formatDate(dateString?: string): string {
   if (!dateString) return '—';
@@ -79,40 +65,57 @@ function HistoryField({
 }
 
 function EstimateCardActions({
-  isOpen,
+  estimateState,
   busy,
   canConvert,
+  canPrint,
   onEdit,
+  onLock,
   onConvert,
   onDiscard,
+  onPrint,
 }: {
-  isOpen: boolean;
+  estimateState: EstimateSummary['estimateState'];
   busy: boolean;
   canConvert: boolean;
+  canPrint: boolean;
   onEdit: () => void;
+  onLock: () => void;
   onConvert: () => void;
   onDiscard: () => void;
+  onPrint: () => void;
 }) {
+  const isOpen = estimateState === 'OPEN';
+  const isLocked = estimateState === 'LOCKED';
   return (
     <>
       <Button type="button" size="sm" variant="outline" disabled={busy} onClick={onEdit}>
         {isOpen ? 'Edit' : 'Open'}
       </Button>
+      {canPrint ? (
+        <Button type="button" size="sm" variant="ghost" disabled={busy} onClick={onPrint}>
+          Print
+        </Button>
+      ) : null}
       {isOpen ? (
         <>
-          <Button
-            type="button"
-            size="sm"
-            variant="solid"
-            disabled={busy || !canConvert}
-            onClick={onConvert}
-          >
-            {busy ? 'Converting…' : 'Convert to invoice'}
+          <Button type="button" size="sm" variant="solid" disabled={busy} onClick={onLock}>
+            {busy ? 'Locking…' : 'Lock'}
           </Button>
+          {canConvert ? (
+            <Button type="button" size="sm" variant="outline" disabled={busy} onClick={onConvert}>
+              Convert to invoice
+            </Button>
+          ) : null}
           <Button type="button" size="sm" variant="outline" disabled={busy} onClick={onDiscard}>
             Discard
           </Button>
         </>
+      ) : null}
+      {isLocked && canConvert ? (
+        <Button type="button" size="sm" variant="solid" disabled={busy} onClick={onConvert}>
+          {busy ? 'Converting…' : 'Convert to invoice'}
+        </Button>
       ) : null}
     </>
   );
@@ -122,18 +125,25 @@ export function EstimateListCard({
   estimate,
   busy,
   onEdit,
+  onLock,
   onConvert,
   onDiscard,
 }: {
   estimate: EstimateSummary;
   busy: boolean;
   onEdit: () => void;
+  onLock: () => void;
   onConvert: () => void;
   onDiscard: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
-  const isOpen = estimate.estimateState === 'OPEN';
+  const { error: notifyError, success: notifySuccess, info: notifyInfo } = useNotify;
+  const canPrint = estimate.estimateState === 'LOCKED' || estimate.estimateState === 'CONVERTED';
+  const canConvert =
+    estimate.itemCount > 0 &&
+    (estimate.estimateState === 'OPEN' || estimate.estimateState === 'LOCKED') &&
+    estimate.billingMode !== 'BASIC';
   const estimateNo = estimate.estimateNo?.trim() || null;
   const customer = formatCustomerDisplayName(estimate.customerName);
   const phone = estimate.customerPhone?.trim() || '—';
@@ -144,8 +154,32 @@ export function EstimateListCard({
   });
   const items = detailQuery.data?.items ?? [];
 
-  const statusVariant = isOpen ? 'success' : 'info';
-  const statusLabel = isOpen ? 'Open' : 'Converted';
+  const statusVariant =
+    estimate.estimateState === 'OPEN'
+      ? 'success'
+      : estimate.estimateState === 'LOCKED'
+      ? 'info'
+      : 'neutral';
+  const statusLabel =
+    estimate.estimateState === 'OPEN'
+      ? 'Open'
+      : estimate.estimateState === 'LOCKED'
+      ? 'Locked'
+      : estimate.estimateState === 'CONVERTED'
+      ? 'Converted'
+      : 'Discarded';
+
+  const actionProps = {
+    estimateState: estimate.estimateState,
+    busy,
+    canConvert,
+    canPrint,
+    onEdit,
+    onLock,
+    onConvert,
+    onDiscard,
+    onPrint: () => setShowPrintModal(true),
+  };
 
   return (
     <>
@@ -170,7 +204,7 @@ export function EstimateListCard({
                 {estimate.billingMode === 'REGULAR' ? (
                   <Badge variant="warning">Tax</Badge>
                 ) : estimate.billingMode === 'BASIC' ? (
-                  <Badge variant="neutral">Basic</Badge>
+                  <Badge variant="neutral">Estimate-only</Badge>
                 ) : null}
               </Box>
               <Box className={productChrome.historyRecordActions}>
@@ -178,15 +212,6 @@ export function EstimateListCard({
                   {formatCurrency(estimate.grandTotal)}
                 </Text>
                 <Inline gap="xs" align="center">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    disabled={busy}
-                    onClick={() => setShowPrintModal(true)}
-                  >
-                    Print
-                  </Button>
                   <Button
                     type="button"
                     size="sm"
@@ -217,14 +242,7 @@ export function EstimateListCard({
 
             {!expanded ? (
               <Box className={productChrome.historyRecordFooter}>
-                <EstimateCardActions
-                  isOpen={isOpen}
-                  busy={busy}
-                  canConvert={estimate.itemCount > 0}
-                  onEdit={onEdit}
-                  onConvert={onConvert}
-                  onDiscard={onDiscard}
-                />
+                <EstimateCardActions {...actionProps} />
               </Box>
             ) : null}
           </Box>
@@ -248,41 +266,21 @@ export function EstimateListCard({
                 No line items on this estimate.
               </Text>
             ) : (
-              <Box overflow="auto">
-                <Table className={cn(surfaceChrome.minW320, productChrome.historyItemsTable)}>
-                  <TableHead>
-                    <TableRow>
-                      <TableHeaderCell>Product</TableHeaderCell>
-                      <TableHeaderCell className={surfaceChrome.numericCell}>Qty</TableHeaderCell>
-                      <TableHeaderCell className={surfaceChrome.numericCell}>
-                        Unit price
-                      </TableHeaderCell>
-                      <TableHeaderCell className={surfaceChrome.numericCell}>
-                        Line total
-                      </TableHeaderCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {items.map((item, idx) => (
-                      <TableRow key={`${item.inventoryId ?? item.name}-${idx}`}>
-                        <TableCell>
-                          <Text weight="medium">{item.name ?? item.inventoryId ?? '—'}</Text>
-                        </TableCell>
-                        <TableCell className={surfaceChrome.numericCell}>
-                          {item.quantity}
-                          {item.saleUnit ? ` ${item.saleUnit}` : ''}
-                        </TableCell>
-                        <TableCell className={surfaceChrome.numericCell}>
-                          {formatCurrency(item.priceToRetail ?? 0)}
-                        </TableCell>
-                        <TableCell className={surfaceChrome.numericCell}>
-                          <Text weight="semibold">{formatCurrency(item.totalAmount ?? 0)}</Text>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Box>
+              <>
+                <SaleLineItemsTable
+                  items={items}
+                  lineRates={detailQuery.data?.taxSummary?.lineRates}
+                />
+                <SaleTotals
+                  taxSummary={detailQuery.data?.taxSummary}
+                  subTotal={detailQuery.data?.subTotal}
+                  saleAdditionalDiscountTotal={detailQuery.data?.saleAdditionalDiscountTotal}
+                  sgstAmount={detailQuery.data?.sgstAmount}
+                  cgstAmount={detailQuery.data?.cgstAmount}
+                  taxTotal={detailQuery.data?.taxTotal}
+                  grandTotal={detailQuery.data?.grandTotal}
+                />
+              </>
             )}
           </Box>
         ) : null}
@@ -294,14 +292,7 @@ export function EstimateListCard({
               productChrome.historyRecordFooterAfterItems,
             )}
           >
-            <EstimateCardActions
-              isOpen={isOpen}
-              busy={busy}
-              canConvert={estimate.itemCount > 0}
-              onEdit={onEdit}
-              onConvert={onConvert}
-              onDiscard={onDiscard}
-            />
+            <EstimateCardActions {...actionProps} />
           </Box>
         ) : null}
       </Card>
@@ -311,6 +302,9 @@ export function EstimateListCard({
         purchaseId={estimate.purchaseId}
         invoiceNo={estimate.estimateNo ?? undefined}
         documentLabel="Estimate"
+        onError={(msg) => msg && notifyError(msg)}
+        onSuccess={(msg) => msg && notifySuccess(msg)}
+        onInfo={(msg) => msg && notifyInfo(msg)}
       />
     </>
   );

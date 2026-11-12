@@ -1,0 +1,13 @@
+export { HR_ENDPOINTS } from './api/endpoints';
+export { hrSettingsApi } from './api/settings.api';
+export { employeesApi } from './api/employees.api';
+export { HR_MODULE_VERSION, hrKeys } from './queries/keys';
+export * from './queries/hooks';
+export { useHrAccess, type HrAccessView } from './access/useHrAccess';
+export { hrDashboardRoutes } from './routes';
+export { hrNav } from './nav';
+export type { HrAccess, HrPermission } from './model';
+export { HR_PERMISSIONS } from './model';
+export * from './ui';
+export { EmployeesPage } from './pages/EmployeesPage';
+export { EmployeeDetailPage } from './pages/EmployeeDetailPage';

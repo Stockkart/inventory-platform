@@ -7,6 +7,8 @@ export const denseDataGrid = {
   srOnly: styles.srOnly,
   wrap: styles.wrap,
   table: styles.table,
+  /** Add to `table` with a `GridColGroup` for fixed, resizable column widths. */
+  tableFixed: styles.tableFixed,
   th: styles.th,
   bulkRow: styles.bulkRow,
   bulkTh: styles.bulkTh,
@@ -20,7 +22,6 @@ export const denseDataGrid = {
   inputNarrow: styles.inputNarrow,
   inputDate: styles.inputDate,
   select: styles.select,
-  removeBtn: styles.removeBtn,
   cellDash: styles.cellDash,
   footnote: styles.footnote,
 } as const;

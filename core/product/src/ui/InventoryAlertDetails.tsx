@@ -1,6 +1,9 @@
-import { useEffect, useState, useCallback, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Link as RouterLink } from 'react-router';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
+import { getShopAvailableDisplayCount } from '../lib/inventoryAvailability';
+import { splitUpdateByAccess } from '../lib/productEditPermissions';
+import { canEditAnyPriceField, priceEditPath } from '../lib/priceEdit';
 import { barcodesApi } from '../api/barcodes.api';
 import { openLocalBarcodeLabelPrint } from '../lib/printBarcodeLabels';
 import { vendorsApi } from '@inventory-platform/user/vendors';
@@ -18,11 +21,16 @@ import {
   hasProductSearchEditAccess,
 } from '@inventory-platform/access';
 import { useNotify } from '@inventory-platform/session';
+import type { VerticalSchemaFieldDef } from '@inventory-platform/schema/types';
 import {
-  itemUsesExtensionBag,
-  getInventoryBatchNo,
-  formatInventoryExpiryDate,
-} from '@inventory-platform/schema';
+  buildVerticalFieldsUpdate,
+  initVerticalDraft,
+  schemaOnlyFields,
+  type VerticalDraft,
+} from '../lib/verticalFieldsEdit';
+import { useInventoryVerticalFields } from '../vertical/useInventoryVerticalFields';
+import { DetailField, DetailValue, SectionHeader } from './productDetails/DetailPrimitives';
+import { VerticalFieldsSection } from './productDetails/VerticalFieldsSection';
 import {
   Alert,
   Box,
@@ -43,16 +51,13 @@ import {
   type SelectOptionDef,
   productChrome,
   surfaceChrome,
-  cn,
 } from '@inventory-platform/ui-kit';
-import type { LucideIcon } from 'lucide-react';
 import {
   AlertTriangle,
   Banknote,
   Barcode,
   Building2,
   Calendar,
-  CalendarClock,
   ClipboardList,
   Factory,
   FileText,
@@ -93,60 +98,6 @@ const DISCOUNT_OPTIONS: readonly SelectOptionDef[] = [
   { value: 'SCHEME', label: 'Scheme' },
   { value: 'DISCOUNT_AND_SCHEME', label: 'Both' },
 ];
-
-function SectionHeader({ icon, title }: { icon: LucideIcon; title: string }) {
-  return (
-    <Box className={productChrome.detailSectionHeader}>
-      <Box className={productChrome.detailSectionIcon} aria-hidden>
-        <Icon icon={icon} size="sm" />
-      </Box>
-      <Text variant="heading4">{title}</Text>
-    </Box>
-  );
-}
-
-function DetailField({
-  icon,
-  label,
-  fullWidth,
-  children,
-}: {
-  icon?: LucideIcon;
-  label: string;
-  fullWidth?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <Box
-      className={cn(
-        productChrome.detailFieldRow,
-        fullWidth ? surfaceChrome.gridSpanFull : undefined,
-      )}
-    >
-      {icon ? (
-        <Box className={productChrome.detailFieldIcon} aria-hidden>
-          <Icon icon={icon} size="sm" />
-        </Box>
-      ) : null}
-      <Box className={productChrome.detailFieldBody}>
-        <Text variant="caption" color="secondary">
-          {label}
-        </Text>
-        {children}
-      </Box>
-    </Box>
-  );
-}
-
-function DetailValue({
-  children,
-  weight,
-}: {
-  children: ReactNode;
-  weight?: 'medium' | 'semibold' | 'bold';
-}) {
-  return <Text weight={weight}>{children}</Text>;
-}
 
 function formatSaleSchemeDisplay(item: InventoryItem): string {
   const st = item.schemeType ?? 'FIXED_UNITS';
@@ -247,11 +198,11 @@ function parsePurchaseSchemeDraft(raw: string): {
 
 function packagingFactorDisplay(item: InventoryItem): string {
   const factor = item.unitConversions?.factor ?? item.unitsPerPack ?? null;
+  const baseUnit = item.baseUnit?.trim() || item.uqc?.trim() || '';
   if (factor != null && factor > 0) {
-    const unit = item.unitConversions?.unit?.trim() || 'sale unit';
-    return `1 × ${factor} (${unit})`;
+    return `1 × ${factor} ${baseUnit || 'units'}`;
   }
-  return '—';
+  return baseUnit || '—';
 }
 
 export interface InventoryAlertDetailsProps {
@@ -281,7 +232,16 @@ export function InventoryAlertDetails({
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingBarcode, setIsGeneratingBarcode] = useState(false);
   const [editForm, setEditForm] = useState<Record<string, string | number | null>>({});
+  const [verticalDraft, setVerticalDraft] = useState<VerticalDraft>({});
   const { success: notifySuccess, error: notifyError } = useNotify;
+
+  // Vertical-owned fields the shop's schema declares for this product's billing mode. The ones
+  // this modal already renders by hand are left out; the rest get a generic schema-driven section.
+  const { fields: allVerticalFields } = useInventoryVerticalFields(item?.billingMode);
+  const extraVerticalFields = useMemo(
+    () => schemaOnlyFields(allVerticalFields),
+    [allVerticalFields],
+  );
 
   const canEditField = (uiKey: string) => canEditProductSearchUiField(uiKey, productSearchAccess);
   const allowEditMode = editable && hasProductSearchEditAccess(productSearchAccess);
@@ -297,11 +257,7 @@ export function InventoryAlertDetails({
   const initEditForm = useCallback(() => {
     if (!item) return;
     const d = item;
-    const fmtNum = (n: number | null | undefined) =>
-      n != null && !Number.isNaN(n) ? String(n) : '';
     const packFactor = d.unitConversions?.factor ?? d.unitsPerPack ?? null;
-    const batchFromBag = d.verticalFields?.batchNo;
-    const expiryFromBag = d.verticalFields?.expiryDate;
     setEditForm({
       name: d.name ?? '',
       barcode: d.barcode ?? '',
@@ -309,17 +265,9 @@ export function InventoryAlertDetails({
       companyName: d.companyName ?? '',
       location: d.location ?? '',
       hsn: d.hsn ?? '',
-      batchNo: batchFromBag != null && batchFromBag !== '' ? String(batchFromBag) : d.batchNo ?? '',
-      maximumRetailPrice: fmtNum(d.maximumRetailPrice),
-      costPrice: fmtNum(d.costPrice),
-      priceToRetail: fmtNum(d.priceToRetail),
-      sgst: d.sgst ?? '',
-      cgst: d.cgst ?? '',
       conversionFactor: packFactor != null && packFactor > 0 ? String(packFactor) : '',
       schemeType: d.schemeType ?? 'FIXED_UNITS',
       saleScheme: formatSaleSchemeDisplay(d),
-      saleAdditionalDiscount:
-        d.saleAdditionalDiscount != null ? String(d.saleAdditionalDiscount) : '',
       purchaseSchemeType: d.purchaseSchemeType ?? 'FIXED_UNITS',
       purchaseScheme: formatPurchaseSchemeDisplay(d),
       purchaseAdditionalDiscount:
@@ -328,15 +276,10 @@ export function InventoryAlertDetails({
       itemTypeDegree: d.itemTypeDegree != null ? String(d.itemTypeDegree) : '',
       discountApplicable: d.discountApplicable ?? '',
       thresholdCount: d.thresholdCount ?? null,
-      expiryDate:
-        expiryFromBag != null && expiryFromBag !== ''
-          ? String(expiryFromBag).slice(0, 10)
-          : d.expiryDate
-          ? d.expiryDate.slice(0, 10)
-          : '',
       purchaseDate: d.purchaseDate ? d.purchaseDate.slice(0, 10) : '',
     });
-  }, [item]);
+    setVerticalDraft(initVerticalDraft(d, extraVerticalFields));
+  }, [item, extraVerticalFields]);
 
   useEffect(() => {
     if (open && item) {
@@ -372,6 +315,7 @@ export function InventoryAlertDetails({
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditForm({});
+    setVerticalDraft({});
   };
 
   const handleSave = async () => {
@@ -385,74 +329,36 @@ export function InventoryAlertDetails({
     setIsSaving(true);
     try {
       const payload: UpdateInventoryRequest = {};
-      if (editForm.name !== undefined && editForm.name !== currentItem.name)
-        payload.name = String(editForm.name) || undefined;
-      if (editForm.barcode !== undefined && editForm.barcode !== currentItem.barcode)
-        payload.barcode = String(editForm.barcode) || undefined;
-      if (editForm.description !== undefined && editForm.description !== currentItem.description)
-        payload.description = String(editForm.description) || undefined;
-      if (editForm.companyName !== undefined && editForm.companyName !== currentItem.companyName)
-        payload.companyName = String(editForm.companyName) || undefined;
-      if (editForm.location !== undefined && editForm.location !== currentItem.location)
-        payload.location = String(editForm.location) || undefined;
-      if (editForm.hsn !== undefined && editForm.hsn !== currentItem.hsn)
-        payload.hsn = String(editForm.hsn) || undefined;
-
-      const usesExtension = itemUsesExtensionBag(currentItem);
-      const verticalPatch: Record<string, unknown> = usesExtension
-        ? { ...(currentItem.verticalFields ?? {}) }
-        : {};
-      let verticalChanged = false;
-
-      if (
-        editForm.batchNo !== undefined &&
-        editForm.batchNo !==
-          (usesExtension ? String(currentItem.verticalFields?.batchNo ?? '') : currentItem.batchNo)
-      ) {
-        if (usesExtension) {
-          verticalPatch.batchNo = String(editForm.batchNo) || null;
-          verticalChanged = true;
-        } else {
-          payload.batchNo = String(editForm.batchNo) || undefined;
-        }
+      // A null field means "keep it" to the API, so an emptied field is named here instead.
+      const clearFields: string[] = [];
+      const name = String(editForm.name ?? '');
+      if (name !== '' && name !== (currentItem.name ?? '')) payload.name = name;
+      for (const key of ['barcode', 'description', 'companyName', 'location', 'hsn'] as const) {
+        const next = String(editForm[key] ?? '');
+        if (next === (currentItem[key] ?? '')) continue;
+        if (next === '') clearFields.push(key);
+        else payload[key] = next;
       }
-      const mrp =
-        editForm.maximumRetailPrice != null && String(editForm.maximumRetailPrice).trim() !== ''
-          ? parseFloat(String(editForm.maximumRetailPrice))
-          : NaN;
-      const cost =
-        editForm.costPrice != null && String(editForm.costPrice).trim() !== ''
-          ? parseFloat(String(editForm.costPrice))
-          : NaN;
-      const ptr =
-        editForm.priceToRetail != null && String(editForm.priceToRetail).trim() !== ''
-          ? parseFloat(String(editForm.priceToRetail))
-          : NaN;
-      if (!Number.isNaN(mrp) && mrp !== currentItem.maximumRetailPrice)
-        payload.maximumRetailPrice = mrp;
-      if (!Number.isNaN(cost) && cost !== currentItem.costPrice) payload.costPrice = cost;
-      if (!Number.isNaN(ptr) && ptr !== currentItem.priceToRetail) payload.priceToRetail = ptr;
-      if (
-        editForm.sgst !== undefined &&
-        String(editForm.sgst).trim() !== String(currentItem.sgst ?? '').trim()
-      )
-        payload.sgst = String(editForm.sgst).trim() || undefined;
-      if (
-        editForm.cgst !== undefined &&
-        String(editForm.cgst).trim() !== String(currentItem.cgst ?? '').trim()
-      )
-        payload.cgst = String(editForm.cgst).trim() || undefined;
-      const addDiscStr = String(editForm.saleAdditionalDiscount ?? '').trim();
-      const addDisc = addDiscStr !== '' ? parseFloat(addDiscStr) : null;
-      const currentAddDisc = currentItem.saleAdditionalDiscount ?? null;
-      if (addDisc !== currentAddDisc && (addDisc != null || currentAddDisc != null))
-        payload.saleAdditionalDiscount = addDisc;
-      if (
-        editForm.thresholdCount !== undefined &&
-        editForm.thresholdCount !== currentItem.thresholdCount
-      )
-        payload.thresholdCount =
-          editForm.thresholdCount != null ? Number(editForm.thresholdCount) : null;
+
+      // Vertical fields come from the schema-driven section. Only the keys that changed are
+      // sent: the server merges the bag with what it already holds, and per-field edit
+      // permissions are checked against exactly these keys.
+      const schemaUpdate = buildVerticalFieldsUpdate(
+        currentItem,
+        extraVerticalFields,
+        verticalDraft,
+      );
+      Object.assign(payload as Record<string, unknown>, schemaUpdate.core);
+      if (Object.keys(schemaUpdate.extension).length > 0) {
+        payload.verticalFields = schemaUpdate.extension;
+      }
+
+      // Prices are edited on the Edit price page only (see the Pricing section).
+      const threshold = editForm.thresholdCount != null ? Number(editForm.thresholdCount) : null;
+      if (threshold !== (currentItem.thresholdCount ?? null)) {
+        if (threshold != null) payload.thresholdCount = threshold;
+        else clearFields.push('thresholdCount');
+      }
       if (editForm.purchaseDate) {
         const d = String(editForm.purchaseDate).trim();
         const currentPd = currentItem.purchaseDate ? currentItem.purchaseDate.slice(0, 10) : '';
@@ -485,11 +391,8 @@ export function InventoryAlertDetails({
       const currentSaleScheme = formatSaleSchemeDisplay(currentItem);
       if (saleSchemeRaw !== currentSaleScheme) {
         if (saleSchemeRaw === '') {
-          payload.schemeType = 'FIXED_UNITS';
-          payload.schemePayFor = null;
-          payload.schemeFree = null;
-          payload.schemePercentage = null;
-          payload.scheme = null;
+          delete payload.schemeType;
+          clearFields.push('saleScheme');
         } else {
           const parsed = parseSaleSchemeDraft(saleSchemeRaw);
           if (parsed) {
@@ -505,8 +408,9 @@ export function InventoryAlertDetails({
       const purchaseDiscStr = String(editForm.purchaseAdditionalDiscount ?? '').trim();
       const purchaseDisc = purchaseDiscStr !== '' ? parseFloat(purchaseDiscStr) : null;
       const curPurchaseDisc = currentItem.purchaseAdditionalDiscount ?? null;
-      if (purchaseDisc !== curPurchaseDisc && (purchaseDisc != null || curPurchaseDisc != null)) {
-        payload.purchaseAdditionalDiscount = purchaseDisc;
+      if (purchaseDisc !== curPurchaseDisc) {
+        if (purchaseDisc != null) payload.purchaseAdditionalDiscount = purchaseDisc;
+        else clearFields.push('purchaseAdditionalDiscount');
       }
 
       const editPurchaseSchemeType = String(
@@ -520,9 +424,8 @@ export function InventoryAlertDetails({
       const currentPurchaseScheme = formatPurchaseSchemeDisplay(currentItem);
       if (purchaseSchemeRaw !== currentPurchaseScheme) {
         if (purchaseSchemeRaw === '') {
-          payload.purchaseSchemePayFor = null;
-          payload.purchaseSchemeFree = null;
-          payload.purchaseSchemePercentage = null;
+          delete payload.purchaseSchemeType;
+          clearFields.push('purchaseScheme');
         } else {
           const parsed = parsePurchaseSchemeDraft(purchaseSchemeRaw);
           if (parsed) {
@@ -553,70 +456,23 @@ export function InventoryAlertDetails({
       const editDisc = String(editForm.discountApplicable ?? '').trim();
       const curDisc = currentItem.discountApplicable ?? '';
       if (editDisc !== curDisc) {
-        payload.discountApplicable = editDisc === '' ? null : (editDisc as DiscountApplicable);
+        if (editDisc !== '') payload.discountApplicable = editDisc as DiscountApplicable;
+        else clearFields.push('discountApplicable');
       }
-
-      if (editForm.expiryDate) {
-        const d = String(editForm.expiryDate).trim();
-        const currentExp = usesExtension
-          ? currentItem.verticalFields?.expiryDate
-            ? String(currentItem.verticalFields.expiryDate).slice(0, 10)
-            : ''
-          : currentItem.expiryDate
-          ? currentItem.expiryDate.slice(0, 10)
-          : '';
-        if (d !== currentExp) {
-          const iso = d ? `${d}T00:00:00Z` : undefined;
-          if (usesExtension) {
-            verticalPatch.expiryDate = iso ?? null;
-            verticalChanged = true;
-          } else {
-            payload.expiryDate = iso;
-          }
-        }
-      }
-
-      if (verticalChanged) {
-        payload.verticalFields = verticalPatch;
-      }
+      if (clearFields.length > 0) payload.clearFields = clearFields;
 
       if (Object.keys(payload).length === 0) {
         setIsEditing(false);
         return;
       }
 
-      const filtered: UpdateInventoryRequest = {};
-      const allowPayloadKey = (key: keyof UpdateInventoryRequest) => {
-        if (!productSearchAccess?.canEdit && productSearchAccess) {
-          return false;
-        }
-        if (productSearchAccess?.editMode === 'FULL_EDIT' || !productSearchAccess) {
-          return true;
-        }
-        if (key === 'unitConversions' || key === 'baseUnit') {
-          return (
-            productSearchAccess.editableFields.includes('unitsPerPack') ||
-            productSearchAccess.editableFields.includes('baseUnit')
-          );
-        }
-        if (key === 'verticalFields' && payload.verticalFields) {
-          return Object.keys(payload.verticalFields).every((k) =>
-            productSearchAccess.editableFields.includes(k),
-          );
-        }
-        return productSearchAccess.editableFields.includes(String(key));
-      };
-      for (const [key, value] of Object.entries(payload)) {
-        if (allowPayloadKey(key as keyof UpdateInventoryRequest)) {
-          (filtered as Record<string, unknown>)[key] = value;
-        }
-      }
-      if (Object.keys(filtered).length === 0) {
-        notifyError('No changes allowed with your current product edit permissions');
+      const { allowed, refused } = splitUpdateByAccess(payload, productSearchAccess);
+      if (refused.length > 0) {
+        notifyError(`You are not allowed to edit: ${refused.join(', ')}`);
         return;
       }
 
-      const updated = await inventoryApi.update(inventoryDocumentId, filtered);
+      const updated = await inventoryApi.update(inventoryDocumentId, allowed);
       notifySuccess('Product updated successfully');
       onUpdated?.(updated);
       setIsEditing(false);
@@ -629,6 +485,10 @@ export function InventoryAlertDetails({
 
   const updateEditField = (key: string, value: string | number | null) => {
     setEditForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const updateVerticalField = (field: VerticalSchemaFieldDef, value: string) => {
+    setVerticalDraft((prev) => ({ ...prev, [field.key]: value }));
   };
 
   if (!open || !item) return null;
@@ -764,7 +624,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               <DetailField icon={MapPin} label="Location">
-                {isEditing ? (
+                {showEditor('location') ? (
                   <Input
                     type="text"
                     value={String(editForm.location ?? '')}
@@ -776,7 +636,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               <DetailField icon={Hash} label="HSN">
-                {isEditing ? (
+                {showEditor('hsn') ? (
                   <Input
                     type="text"
                     value={String(editForm.hsn ?? '')}
@@ -792,18 +652,6 @@ export function InventoryAlertDetails({
                   <DetailValue>{item.sac}</DetailValue>
                 </DetailField>
               ) : null}
-              <DetailField icon={Factory} label="Batch No">
-                {isEditing ? (
-                  <Input
-                    type="text"
-                    value={String(editForm.batchNo ?? '')}
-                    onChange={(e) => updateEditField('batchNo', e.target.value)}
-                    placeholder="Batch No"
-                  />
-                ) : (
-                  <DetailValue>{getInventoryBatchNo(item)}</DetailValue>
-                )}
-              </DetailField>
               {item?.createdAt ? (
                 <DetailField icon={Calendar} label="Created At">
                   <DetailValue>
@@ -818,7 +666,7 @@ export function InventoryAlertDetails({
                 </DetailField>
               ) : null}
               <DetailField icon={FileText} label="Description" fullWidth>
-                {isEditing ? (
+                {showEditor('description') ? (
                   <Textarea
                     rows={2}
                     value={String(editForm.description ?? '')}
@@ -831,6 +679,16 @@ export function InventoryAlertDetails({
               </DetailField>
             </Grid>
           </Box>
+
+          <VerticalFieldsSection
+            title="Additional fields"
+            fields={extraVerticalFields}
+            item={item}
+            draft={verticalDraft}
+            isEditing={isEditing}
+            canEdit={canEditField}
+            onChange={updateVerticalField}
+          />
 
           <Box className={productChrome.detailSection}>
             <SectionHeader icon={Package} title="Stock & packaging" />
@@ -845,6 +703,11 @@ export function InventoryAlertDetails({
                   ) : null}
                 </DetailValue>
               </DetailField>
+              {item.availableCount != null || item.availableBaseCount != null ? (
+                <DetailField icon={Package} label="Available">
+                  <DetailValue>{getShopAvailableDisplayCount(item)}</DetailValue>
+                </DetailField>
+              ) : null}
               <DetailField icon={PackagePlus} label="Received">
                 <DetailValue>{item.receivedCount}</DetailValue>
               </DetailField>
@@ -852,7 +715,7 @@ export function InventoryAlertDetails({
                 <DetailValue>{item.soldCount}</DetailValue>
               </DetailField>
               <DetailField icon={Ruler} label="Packaging">
-                {isEditing ? (
+                {showEditor('conversionFactor') ? (
                   <Inline gap="sm" align="center">
                     <Text aria-hidden className={surfaceChrome.flexShrink0}>
                       1 ×
@@ -871,19 +734,8 @@ export function InventoryAlertDetails({
                   <DetailValue>{packagingFactorDisplay(item)}</DetailValue>
                 )}
               </DetailField>
-              <DetailField icon={CalendarClock} label="Expiry date">
-                {isEditing ? (
-                  <Input
-                    type="date"
-                    value={String(editForm.expiryDate ?? '')}
-                    onChange={(e) => updateEditField('expiryDate', e.target.value)}
-                  />
-                ) : (
-                  <DetailValue>{formatInventoryExpiryDate(item)}</DetailValue>
-                )}
-              </DetailField>
               <DetailField icon={ShoppingCart} label="Purchase date">
-                {isEditing ? (
+                {showEditor('purchaseDate') ? (
                   <Input
                     type="date"
                     value={String(editForm.purchaseDate ?? '')}
@@ -898,7 +750,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               <DetailField icon={AlertTriangle} label="Low-stock threshold">
-                {isEditing ? (
+                {showEditor('thresholdCount') ? (
                   <Input
                     type="number"
                     min={0}
@@ -922,7 +774,7 @@ export function InventoryAlertDetails({
             <SectionHeader icon={Gift} title="Schemes & attributes" />
             <Grid columns={2} gap="sm">
               <DetailField icon={Gift} label="Sale deal type">
-                {isEditing ? (
+                {showEditor('schemeType') ? (
                   <Select
                     options={SCHEME_TYPE_OPTIONS}
                     value={String(editForm.schemeType ?? 'FIXED_UNITS')}
@@ -937,7 +789,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               <DetailField icon={Percent} label="Sale scheme">
-                {isEditing ? (
+                {showEditor('saleScheme') ? (
                   <Input
                     type="text"
                     value={String(editForm.saleScheme ?? '')}
@@ -949,7 +801,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               <DetailField icon={ShoppingCart} label="Purchase deal type">
-                {isEditing ? (
+                {showEditor('purchaseSchemeType') ? (
                   <Select
                     options={SCHEME_TYPE_OPTIONS}
                     value={String(editForm.purchaseSchemeType ?? 'FIXED_UNITS')}
@@ -964,7 +816,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               <DetailField icon={Percent} label="Purchase scheme">
-                {isEditing ? (
+                {showEditor('purchaseScheme') ? (
                   <Input
                     type="text"
                     value={String(editForm.purchaseScheme ?? '')}
@@ -976,7 +828,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               <DetailField icon={Percent} label="Purchase add. discount (%)">
-                {isEditing ? (
+                {showEditor('purchaseAdditionalDiscount') ? (
                   <Input
                     type="text"
                     inputMode="decimal"
@@ -996,7 +848,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               <DetailField icon={Tag} label="Item type">
-                {isEditing ? (
+                {showEditor('itemType') ? (
                   <Select
                     options={ITEM_TYPE_OPTIONS}
                     value={String(editForm.itemType ?? 'NORMAL')}
@@ -1012,7 +864,7 @@ export function InventoryAlertDetails({
               </DetailField>
               {isEditing || item.itemType === 'DEGREE' || editForm.itemType === 'DEGREE' ? (
                 <DetailField icon={Thermometer} label="Temperature (°)">
-                  {isEditing ? (
+                  {showEditor('itemTypeDegree') ? (
                     <Input
                       type="number"
                       min={1}
@@ -1027,7 +879,7 @@ export function InventoryAlertDetails({
                 </DetailField>
               ) : null}
               <DetailField icon={Percent} label="Discount applicable">
-                {isEditing ? (
+                {showEditor('discountApplicable') ? (
                   <Select
                     options={DISCOUNT_OPTIONS}
                     value={String(editForm.discountApplicable ?? '')}
@@ -1044,117 +896,42 @@ export function InventoryAlertDetails({
             <SectionHeader icon={IndianRupee} title="Pricing" />
             <Grid columns={2} gap="sm">
               <DetailField icon={Banknote} label="Selling Price (PTR)">
-                {isEditing ? (
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    value={editForm.priceToRetail ?? ''}
-                    onChange={(e) =>
-                      updateEditField('priceToRetail', stripLeadingZeros(e.target.value))
-                    }
-                    placeholder="0.00"
-                  />
-                ) : (
-                  <DetailValue weight="semibold">
-                    ₹
-                    {(item?.sellingPrice ?? item?.priceToRetail) != null
-                      ? (item?.sellingPrice ?? item?.priceToRetail)!.toFixed(2)
-                      : '—'}
-                  </DetailValue>
-                )}
+                <DetailValue weight="semibold">
+                  ₹
+                  {(item?.sellingPrice ?? item?.priceToRetail) != null
+                    ? (item?.sellingPrice ?? item?.priceToRetail)!.toFixed(2)
+                    : '—'}
+                </DetailValue>
               </DetailField>
               <DetailField icon={Tag} label="MRP">
-                {isEditing ? (
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    value={editForm.maximumRetailPrice ?? ''}
-                    onChange={(e) =>
-                      updateEditField('maximumRetailPrice', stripLeadingZeros(e.target.value))
-                    }
-                    placeholder="0.00"
-                  />
-                ) : (
-                  <DetailValue weight="semibold">
-                    ₹{item?.maximumRetailPrice?.toFixed(2) ?? '—'}
-                  </DetailValue>
-                )}
+                <DetailValue weight="semibold">
+                  ₹{item?.maximumRetailPrice?.toFixed(2) ?? '—'}
+                </DetailValue>
               </DetailField>
               <DetailField icon={IndianRupee} label="Price to stockist (PTS)">
-                {isEditing ? (
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    value={editForm.costPrice ?? ''}
-                    onChange={(e) =>
-                      updateEditField('costPrice', stripLeadingZeros(e.target.value))
-                    }
-                    placeholder="0.00"
-                  />
-                ) : (
-                  <DetailValue weight="semibold">₹{item?.costPrice?.toFixed(2) ?? '—'}</DetailValue>
-                )}
+                <DetailValue weight="semibold">₹{item?.costPrice?.toFixed(2) ?? '—'}</DetailValue>
               </DetailField>
               {item?.billingMode !== 'BASIC' ? (
                 <DetailField icon={Percent} label="SGST (%)">
-                  {isEditing ? (
-                    <Input
-                      type="text"
-                      inputMode="decimal"
-                      value={String(editForm.sgst ?? '')}
-                      onChange={(e) => updateEditField('sgst', stripLeadingZeros(e.target.value))}
-                      placeholder="e.g. 2.5"
-                    />
-                  ) : (
-                    <DetailValue>{item?.sgst ? `${item.sgst}%` : '—'}</DetailValue>
-                  )}
+                  <DetailValue>{item?.sgst ? `${item.sgst}%` : '—'}</DetailValue>
                 </DetailField>
               ) : null}
               {item?.billingMode !== 'BASIC' ? (
                 <DetailField icon={Percent} label="CGST (%)">
-                  {isEditing ? (
-                    <Input
-                      type="text"
-                      inputMode="decimal"
-                      value={String(editForm.cgst ?? '')}
-                      onChange={(e) => updateEditField('cgst', stripLeadingZeros(e.target.value))}
-                      placeholder="e.g. 2.5"
-                    />
-                  ) : (
-                    <DetailValue>{item?.cgst ? `${item.cgst}%` : '—'}</DetailValue>
-                  )}
+                  <DetailValue>{item?.cgst ? `${item.cgst}%` : '—'}</DetailValue>
                 </DetailField>
               ) : null}
               <DetailField icon={Percent} label="Sale add. discount (%)">
-                {isEditing ? (
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    value={editForm.saleAdditionalDiscount ?? ''}
-                    onChange={(e) => {
-                      const v = stripLeadingZeros(e.target.value);
-                      updateEditField('saleAdditionalDiscount', v === '' ? '' : v);
-                    }}
-                    placeholder="0"
-                  />
-                ) : (
-                  <DetailValue>
-                    {item?.saleAdditionalDiscount != null ? `${item.saleAdditionalDiscount}%` : '—'}
-                  </DetailValue>
-                )}
+                <DetailValue>
+                  {item?.saleAdditionalDiscount != null ? `${item.saleAdditionalDiscount}%` : '—'}
+                </DetailValue>
               </DetailField>
             </Grid>
-            {item?.pricingId ? (
+            {item?.pricingId && allowEditMode && canEditAnyPriceField(productSearchAccess) ? (
               <Box mt="md">
                 <RouterLink
-                  to={`/dashboard/price-edit/${item.pricingId}`}
-                  state={{
-                    priceToRetail: item.priceToRetail,
-                    maximumRetailPrice: item.maximumRetailPrice,
-                    productName: item.name,
-                    rates: item.rates ?? undefined,
-                    defaultRate: item.defaultRate ?? undefined,
-                  }}
+                  to={priceEditPath(item.pricingId, resolveInventoryDocumentId(item))}
+                  state={{ productName: item.name }}
                 >
                   <Text className={surfaceChrome.linkStrong}>Edit price</Text>
                 </RouterLink>

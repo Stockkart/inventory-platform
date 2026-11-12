@@ -66,10 +66,14 @@ import {
   Percent,
   Receipt,
   Tag,
+  Trash2,
   TrendingDown,
   X,
 } from 'lucide-react';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
+import { canEditAnyPriceField, priceEditPath } from '../lib/priceEdit';
+import type { FacetValue } from '../model/search.types';
+import { CompanyChips, chipIndexForKey, visibleCompanyChips } from '../ui/search/CompanyChips';
 import { cartApi } from '../api/cart.api';
 import { estimatesApi } from '../api/estimates.api';
 import {
@@ -80,9 +84,23 @@ import {
   isLegacyEstimateWorkspacePath,
 } from '../lib/estimatePaths';
 import { rememberOpenQuotationId, readOpenQuotationId } from '../lib/sellSession';
+import {
+  getCartAvailableBaseCount,
+  getShopAvailableBaseCount,
+  getShopAvailableDisplayCount,
+} from '../lib/inventoryAvailability';
+import { CARD_SURFACE_IDS, type ResolvedCardLayout } from '../model/cardLayout.types';
+import {
+  allowAll,
+  hideSensitivePolicy,
+  type FieldVisibilityPolicy,
+} from '../cardLayout/fieldVisibility';
+import { useSurfaceCardLayout } from '../cardLayout/useSurfaceCardLayout';
+import { CardLayoutBody } from '../ui/cardLayout/CardLayoutBody';
 import { sellCatalogApi } from '../api/sell-catalog.api';
 import { pricingClient } from '../api/pricing-client.api';
 import { gstAmountRowLabel, uniqueGstRateLabel } from '../lib/gstRateLabel';
+import { buildCartLineTaxIndex, formatGstRate } from '../lib/cartLineTax';
 import type {
   AvailableUnit,
   BillingMode,
@@ -90,10 +108,11 @@ import type {
   CartResponse,
   CheckoutItemResponse,
   QuotationSummary,
+  SaleLineTax,
 } from '@inventory-platform/product/types';
 import type { PricingResponse } from '@inventory-platform/contracts';
 import type { CustomerResponse } from '@inventory-platform/user/types';
-import type { MenuItem, SellCatalog } from '@inventory-platform/product/types';
+import type { MenuItem, MenuRate, SellCatalog } from '@inventory-platform/product/types';
 import {
   inventoryLotIdFromSellableRef,
   inventorySellableRef,
@@ -161,8 +180,15 @@ import {
 import { CafeSellCatalogPanel } from '../ui/CafeSellCatalogPanel';
 import { ScanSellMenuCartLine } from '../ui/ScanSellMenuCartLine';
 import { ScanSellCafeStockLine } from '../ui/ScanSellCafeStockLine';
-import { useNotify, useAuthStore, useVerticalSchemaStore } from '@inventory-platform/session';
 import {
+  useNotify,
+  useAuthStore,
+  useShopAccessStore,
+  useShopCapabilitiesStore,
+  useVerticalSchemaStore,
+} from '@inventory-platform/session';
+import {
+  VerticalSellActions,
   isScanSellHidePurchaseKey,
   shouldSkipScanSellHidePurchaseKey,
 } from '@inventory-platform/routing';
@@ -170,7 +196,6 @@ import {
   formatInventoryExpiryDate,
   hasInventoryExpiryDate,
   getExtensionFieldString,
-  getInventoryBatchNo,
   sortInventoryByExpirySoonest,
 } from '@inventory-platform/schema';
 import {
@@ -182,6 +207,20 @@ import {
 } from '../ui';
 import { CustomerSearchPanel } from '../ui/CustomerSearchPanel';
 import { ScanSellQuotationStack } from '../ui/ScanSellQuotationStack';
+import { SchemeInput, type SchemeTypeCart } from '../ui/scheme';
+import { RatePicker } from '../ui/scanSell';
+import {
+  appliedRateNamesByLine,
+  buildRateOptions,
+  clearDiscountOverride,
+  lineSaleDiscountFromResponse,
+  pickedRuleRateName,
+  prunePickedRateNames,
+  ratePickRequest,
+  saleDiscountToSend,
+  selectedRateValue,
+  type RateOption,
+} from '../lib/scanSellRatePick';
 import type { CustomerPartyType } from '@inventory-platform/user/types';
 import { GUEST_CUSTOMER_LABEL, isDefaultGuestCustomerName } from '../lib/customerDisplay';
 
@@ -191,8 +230,6 @@ export function meta() {
     { name: 'description', content: 'Speed up sales with barcode scanning' },
   ];
 }
-
-type SchemeTypeCart = 'FIXED_UNITS' | 'PERCENTAGE';
 
 /** Header chip for the customer section — hide backend general placeholder name. */
 function customerSectionSummary(name: string, phone: string): string {
@@ -209,28 +246,18 @@ function isMenuLine(line: CheckoutItemResponse): boolean {
   return menuItemIdFromSellableRef(lineSellableRef(line)) != null;
 }
 
-/** Rate option for the price selector: label + price */
-interface RateOption {
-  label: string;
-  price: number;
-}
-
-/** Build available rate options from inventory item and/or pricing API response */
+/**
+ * Rate options for the price selector: MRP / PTR / Cost then the batch's rates as the API sent
+ * them (rule rates keep their terms and GST mode). Shown for every shop, rules or not: MRP / PTR /
+ * Cost picks send their system name, which also puts a line back on the batch's own terms.
+ */
 function getRateOptions(item: InventoryItem, pricing?: PricingResponse | null): RateOption[] {
-  const opts: RateOption[] = [];
-  const mrp = pricing?.maximumRetailPrice ?? item.maximumRetailPrice;
-  const ptr = pricing?.priceToRetail ?? item.priceToRetail;
-  const cost = pricing?.costPrice ?? item.costPrice;
-  const rates = pricing?.rates ?? item.rates ?? [];
-  if (mrp != null) opts.push({ label: 'MRP', price: mrp });
-  if (ptr != null) opts.push({ label: 'PTR', price: ptr });
-  if (cost != null && cost > 0) opts.push({ label: 'Cost', price: cost });
-  rates.forEach((r) => {
-    if (r?.name?.trim() && r?.price != null) {
-      opts.push({ label: r.name.trim(), price: r.price });
-    }
+  return buildRateOptions({
+    maximumRetailPrice: pricing?.maximumRetailPrice ?? item.maximumRetailPrice,
+    priceToRetail: pricing?.priceToRetail ?? item.priceToRetail,
+    costPrice: pricing?.costPrice ?? item.costPrice,
+    rates: pricing?.rates ?? item.rates ?? [],
   });
-  return opts;
 }
 
 interface CartItem {
@@ -336,6 +363,18 @@ interface CartLineMarginFigures {
   marginPercent: number | null;
 }
 
+/** "Total ₹112.79 (incl. 5% GST)" under a cart line; nothing on an untaxed bill or an older API. */
+function CartLineTax({ tax }: { tax: SaleLineTax | null }) {
+  if (tax?.totalAmount == null) return null;
+  const gst = tax.ratePercent > 0 ? ` (incl. ${formatGstRate(tax.ratePercent)}% GST)` : '';
+  return (
+    <Text variant="caption" color="secondary">
+      Total ₹{tax.totalAmount.toFixed(2)}
+      {gst}
+    </Text>
+  );
+}
+
 /**
  * Per-line cost, profit and margin keyed by inventory id. These are read rather than recomputed:
  * the server measures margin against landed cost, and a line that disagreed with the bill total
@@ -371,8 +410,16 @@ function CartQuantityInput({
   disabled: boolean;
 }) {
   const [draft, setDraft] = useState(value.toString());
+  // Enter commits and then blurs, and the blur would commit a second time. The first commit's
+  // response resets the draft from the server in between, so that second call posted the value
+  // the server already had and overwrote the one just typed.
+  const skipNextBlurCommitRef = useRef(false);
+  // While the field has focus the draft is the user's, not the server's: a response arriving
+  // mid-typing used to overwrite what was being entered, and then blur would post that back.
+  const focusedRef = useRef(false);
 
   useEffect(() => {
+    if (focusedRef.current) return;
     setDraft(value.toString());
   }, [value]);
 
@@ -398,14 +445,25 @@ function CartQuantityInput({
       min={1}
       disabled={disabled}
       onChange={(e) => setDraft(e.target.value)}
-      onBlur={commit}
+      onFocus={(e) => {
+        focusedRef.current = true;
+        e.currentTarget.select();
+      }}
+      onBlur={() => {
+        focusedRef.current = false;
+        if (skipNextBlurCommitRef.current) {
+          skipNextBlurCommitRef.current = false;
+          return;
+        }
+        commit();
+      }}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
+          skipNextBlurCommitRef.current = true;
           commit();
           e.currentTarget.blur();
         }
       }}
-      onFocus={(e) => e.currentTarget.select()}
     />
   );
 }
@@ -422,8 +480,16 @@ function CartSellingPriceInput({
   disabled: boolean;
 }) {
   const [draft, setDraft] = useState(value.toFixed(2));
+  // Enter commits and then blurs, and the blur would commit a second time. The first commit's
+  // response resets the draft from the server in between, so that second call posted the value
+  // the server already had and overwrote the one just typed.
+  const skipNextBlurCommitRef = useRef(false);
+  // While the field has focus the draft is the user's, not the server's: a response arriving
+  // mid-typing used to overwrite what was being entered, and then blur would post that back.
+  const focusedRef = useRef(false);
 
   useEffect(() => {
+    if (focusedRef.current) return;
     setDraft(value.toFixed(2));
   }, [value]);
 
@@ -447,9 +513,20 @@ function CartSellingPriceInput({
       step={0.01}
       disabled={disabled}
       onChange={(e: ChangeEvent<HTMLInputElement>) => setDraft(e.target.value)}
-      onBlur={commit}
+      onFocus={() => {
+        focusedRef.current = true;
+      }}
+      onBlur={() => {
+        focusedRef.current = false;
+        if (skipNextBlurCommitRef.current) {
+          skipNextBlurCommitRef.current = false;
+          return;
+        }
+        commit();
+      }}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
+          skipNextBlurCommitRef.current = true;
           commit();
           e.currentTarget.blur();
         }
@@ -470,8 +547,16 @@ function CartAdditionalDiscountInput({
   disabled: boolean;
 }) {
   const [draft, setDraft] = useState(value !== null && value !== undefined ? value.toString() : '');
+  // Enter commits and then blurs, and the blur would commit a second time. The first commit's
+  // response resets the draft from the server in between, so that second call posted the value
+  // the server already had and overwrote the one just typed.
+  const skipNextBlurCommitRef = useRef(false);
+  // While the field has focus the draft is the user's, not the server's: a response arriving
+  // mid-typing used to overwrite what was being entered, and then blur would post that back.
+  const focusedRef = useRef(false);
 
   useEffect(() => {
+    if (focusedRef.current) return;
     const next = value !== null && value !== undefined ? value.toString() : '';
     setDraft(next);
   }, [value]);
@@ -503,139 +588,11 @@ function CartAdditionalDiscountInput({
       step={0.01}
       disabled={disabled}
       onChange={(e: ChangeEvent<HTMLInputElement>) => setDraft(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          commit();
-          e.currentTarget.blur();
-        }
+      onFocus={() => {
+        focusedRef.current = true;
       }}
-    />
-  );
-}
-
-function CartSchemeInput({
-  id,
-  schemeType,
-  payFor,
-  free,
-  percentage,
-  onCommitUnits,
-  onCommitPercentage,
-  disabled,
-}: {
-  id?: string;
-  schemeType: SchemeTypeCart | null;
-  payFor: number | null;
-  free: number | null;
-  percentage: number | null;
-  onCommitUnits: (payFor: number | null, free: number | null) => void;
-  onCommitPercentage: (percentage: number | null) => void;
-  disabled: boolean;
-}) {
-  const formatFromProps = () => {
-    // Use schemeType first to decide what to show (API can return both values)
-    if (schemeType === 'PERCENTAGE' && percentage != null && percentage !== undefined) {
-      return `${percentage}%`;
-    }
-    if ((schemeType === 'FIXED_UNITS' || schemeType == null) && (payFor != null || free != null)) {
-      const payStr = (payFor ?? 0).toString();
-      const freeStr = (free ?? 0).toString();
-      return `${payStr} + ${freeStr}`;
-    }
-    return '';
-  };
-
-  const [draft, setDraft] = useState(formatFromProps());
-  const skipNextBlurCommitRef = useRef(false);
-
-  useEffect(() => {
-    setDraft(formatFromProps());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schemeType, payFor, free, percentage]);
-
-  const handleChange = (value: string) => {
-    // Allow only digits, spaces, '+', and '%'
-    if (!/^[0-9+%\s]*$/.test(value)) {
-      return;
-    }
-    const plusCount = (value.match(/\+/g) ?? []).length;
-    const percCount = (value.match(/%/g) ?? []).length;
-    // At most one '+' and at most one '%'
-    if (plusCount > 1 || percCount > 1) {
-      return;
-    }
-    // Do not allow mixing '+' and '%'
-    if (plusCount > 0 && percCount > 0) {
-      return;
-    }
-    setDraft(value);
-  };
-
-  const commit = () => {
-    const trimmed = draft.trim();
-    if (trimmed === '') {
-      onCommitUnits(null, null);
-      onCommitPercentage(null);
-      return;
-    }
-
-    // Percentage format e.g. "10%" or "10 %"
-    if (trimmed.includes('%')) {
-      const numStr = trimmed.replace('%', '').trim();
-      const num = parseFloat(numStr);
-      if (!isNaN(num) && num >= 0 && num <= 100) {
-        onCommitPercentage(num);
-        return;
-      }
-      setDraft(formatFromProps());
-      return;
-    }
-
-    // Fixed units format e.g. "10 + 1" or "10+1"
-    const plusIndex = trimmed.indexOf('+');
-    if (plusIndex !== -1) {
-      const left = trimmed.slice(0, plusIndex).trim();
-      const right = trimmed.slice(plusIndex + 1).trim();
-      const pay = parseInt(left, 10);
-      const freeVal = parseInt(right, 10);
-      if (
-        !isNaN(pay) &&
-        !isNaN(freeVal) &&
-        pay >= 0 &&
-        freeVal >= 0 &&
-        Number.isInteger(pay) &&
-        Number.isInteger(freeVal)
-      ) {
-        onCommitUnits(pay, freeVal);
-        return;
-      }
-      setDraft(formatFromProps());
-      return;
-    }
-
-    // Plain number: treat as percentage (e.g. 0, 5, 10 → schemeType PERCENTAGE, schemePercentage that number)
-    const num = parseFloat(trimmed);
-    if (!isNaN(num) && num >= 0 && num <= 100) {
-      onCommitUnits(null, null);
-      onCommitPercentage(num);
-      return;
-    }
-
-    // Invalid format, reset to last valid representation
-    setDraft(formatFromProps());
-  };
-
-  return (
-    <Input
-      id={id}
-      type="text"
-      className={itemAdditionalInputStyle}
-      value={draft}
-      placeholder="0, 10, 10 + 1 (number = %)"
-      disabled={disabled}
-      onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange(e.target.value)}
       onBlur={() => {
+        focusedRef.current = false;
         if (skipNextBlurCommitRef.current) {
           skipNextBlurCommitRef.current = false;
           return;
@@ -800,6 +757,11 @@ function ProductSearchBlock({
   addDisabled,
   rowClassName,
   searchWrapperRef,
+  cardLayoutFor,
+  cardVisibility,
+  companies,
+  selectedCompany,
+  onSelectCompany,
 }: {
   searchQuery: string;
   setSearchQuery: (value: string) => void;
@@ -812,11 +774,19 @@ function ProductSearchBlock({
   onSearch: () => void;
   onLoadMore: () => void;
   placeholder: string;
+  /** Company counts from the last search; chips show when more than one company matched (R7.2). */
+  companies?: readonly FacetValue[];
+  selectedCompany?: string | null;
+  onSelectCompany?: (company: string | null) => void;
   autoFocus?: boolean;
   onAddToCart: (item: InventoryItem, price?: number) => void;
   addDisabled: (item: InventoryItem) => boolean;
   rowClassName?: string;
   searchWrapperRef?: React.RefObject<HTMLDivElement | null>;
+  /** Resolved Scan & Sell card layout for an item (from `useSurfaceCardLayout`). */
+  cardLayoutFor: (item: InventoryItem) => ResolvedCardLayout;
+  /** Hides shop-internal figures while "hide purchase details" is on. */
+  cardVisibility: FieldVisibilityPolicy;
 }) {
   const [searchFocused, setSearchFocused] = useState(false);
 
@@ -868,17 +838,39 @@ function ProductSearchBlock({
               <Text color="secondary">Searching…</Text>
             </Box>
           ) : searchResults.length === 0 ? (
-            <Box padding="md" textAlign="center">
-              <Text color="secondary">No products found</Text>
-            </Box>
+            <>
+              {companies && onSelectCompany && selectedCompany ? (
+                <CompanyChips
+                  companies={companies}
+                  selected={selectedCompany}
+                  onSelect={onSelectCompany}
+                  disabled={isSearching}
+                  className={dropdownFooterStyle}
+                />
+              ) : null}
+              <Box padding="md" textAlign="center">
+                <Text color="secondary">No products found</Text>
+              </Box>
+            </>
           ) : (
             <>
+              {companies && onSelectCompany ? (
+                <CompanyChips
+                  companies={companies}
+                  selected={selectedCompany ?? null}
+                  onSelect={onSelectCompany}
+                  disabled={isSearching}
+                  className={dropdownFooterStyle}
+                />
+              ) : null}
               <SearchDropdownScroll>
                 <Stack as="ul" gap="none" className={dropdownListStyle}>
                   {searchResults.map((item) => (
                     <SearchDropdownItem
                       key={item.id}
                       item={item}
+                      layout={cardLayoutFor(item)}
+                      visibility={cardVisibility}
                       onAddToCart={onAddToCart}
                       disabled={addDisabled(item)}
                     />
@@ -977,6 +969,17 @@ function CustomerSectionBlock({
 export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?: boolean }) {
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
+  const productSearchAccess = useShopAccessStore((s) =>
+    activeShopId ? s.byShopId[activeShopId]?.productSearch : undefined,
+  );
+  const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
+  /** Rate rules on (`features.rateRules`): MRP / PTR / Cost picks send their system name. */
+  const rateRulesOn = useShopCapabilitiesStore((s) =>
+    activeShopId ? s.byShopId[activeShopId]?.features?.rateRules === true : false,
+  );
+  useEffect(() => {
+    void fetchCapabilities();
+  }, [fetchCapabilities]);
   const [cartBusinessType, setCartBusinessType] = useState('medical');
   const isCafeSell = cartBusinessType === 'cafe';
   const [sellCatalog, setSellCatalog] = useState<SellCatalog | null>(null);
@@ -1001,10 +1004,16 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   const [searchPageSize, setSearchPageSize] = useState(SCAN_SELL_SEARCH_PAGE_SIZE);
   const [searchTotalPages, setSearchTotalPages] = useState(0);
   const [searchTotalItems, setSearchTotalItems] = useState(0);
+  // Company chips over the dropdown (R7): counts from the last text search, the chosen company.
+  const [searchCompanies, setSearchCompanies] = useState<FacetValue[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
+  const lastSearchedQuery = useRef<string>('');
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartData, setCartData] = useState<CartResponse | null>(null);
   /** Built once per cart response so each line looks its margin up instead of scanning the cart. */
   const cartLineMarginById = useMemo(() => buildCartLineMarginIndex(cartData), [cartData]);
+  const cartLineTaxById = useMemo(() => buildCartLineTaxIndex(cartData), [cartData]);
+  const showLineTax = cartLineTaxById.size > 0;
   const [quotations, setQuotations] = useState<QuotationSummary[]>([]);
   const [activePurchaseId, setActivePurchaseId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -1013,6 +1022,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   const [isUpdatingCart, setIsUpdatingCart] = useState(false);
   const [printEstimateOpen, setPrintEstimateOpen] = useState(false);
   const [isConvertingEstimate, setIsConvertingEstimate] = useState(false);
+  const [isLockingEstimate, setIsLockingEstimate] = useState(false);
   const cartLoadedRef = useRef(false);
   const isUpdatingRef = useRef(false);
   const syncVersionRef = useRef(0);
@@ -1034,6 +1044,23 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   const [additionalDiscountOverrides, setAdditionalDiscountOverrides] = useState<
     Record<string, number | null>
   >({});
+  /**
+   * Rate picked per line; only read when the cart response has no `appliedRateName` (an older
+   * API), so the picker can still show a picked rule rate (the line carries its base price).
+   */
+  const [pickedRateNames, setPickedRateNames] = useState<Record<string, string>>({});
+  // Whenever the cart lines change (merge, remove, qty 0, quotation switch, checkout), drop picks
+  // for lines that are gone so a later add of the same lot starts from price matching again.
+  useEffect(() => {
+    setPickedRateNames((prev) =>
+      prunePickedRateNames(
+        prev,
+        cartItems.map((item) => item.inventoryItem.id),
+      ),
+    );
+  }, [cartItems]);
+  /** The rate each cart line is billed at, as the cart stored it (`appliedRateName`). */
+  const appliedRateNames = useMemo(() => appliedRateNamesByLine(cartData?.items), [cartData]);
   const [detailModalItem, setDetailModalItem] = useState<CartItem | null>(null);
   const [detailModalFullItem, setDetailModalFullItem] = useState<InventoryItem | null>(null);
   const [detailModalFullItemLoading, setDetailModalFullItemLoading] = useState(false);
@@ -1047,12 +1074,22 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   });
   /** When true, purchase scheme / purchase add. discount read-only rows are hidden in cart (sale inputs stay). */
   const [hidePurchaseDetailsInSell, setHidePurchaseDetailsInSell] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('scan-sell-hide-purchase-details') === '1';
+    // Hidden unless the operator has explicitly turned them on. Purchase cost and
+    // margin are the shop's own figures and are read over the counter by whoever is
+    // standing there, so the safe default is off, and only an explicit '0' shows them.
+    if (typeof window === 'undefined') return true;
+    return localStorage.getItem('scan-sell-hide-purchase-details') !== '0';
   });
+  // Scan & Sell result rows draw from the shop's configured layout; the hide-purchase preference
+  // becomes a visibility policy over SHOP_INTERNAL fields (cost, purchase discount / scheme).
+  const { layoutFor: scanSellCardLayoutFor } = useSurfaceCardLayout(CARD_SURFACE_IDS.scanSell);
+  const scanSellCardVisibility = useMemo(
+    () => (hidePurchaseDetailsInSell ? hideSensitivePolicy() : allowAll),
+    [hidePurchaseDetailsInSell],
+  );
   const [pricingCache, setPricingCache] = useState<Record<string, PricingResponse>>({});
   const [pricingLoading, setPricingLoading] = useState<Record<string, boolean>>({});
-  const { error: notifyError } = useNotify;
+  const { error: notifyError, success: notifySuccess, info: notifyInfo } = useNotify;
 
   useEffect(() => {
     if (!activeShopId) {
@@ -1095,6 +1132,16 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       cancelled = true;
     };
   }, [isCafeSell, activeShopId]);
+
+  const refreshSellCatalog = useCallback(() => {
+    if (!isCafeSell) return;
+    void sellCatalogApi
+      .get()
+      .then((catalog) => setSellCatalog(catalog))
+      .catch(() => {
+        /* keep last catalog on refresh failure */
+      });
+  }, [isCafeSell]);
 
   useEffect(() => {
     if (!detailModalItem) {
@@ -1295,12 +1342,19 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
 
   // Product search for dropdown (only on Enter or Search button)
   const runSearch = useCallback(
-    async (query: string, pageNum = 0, pageSize = SCAN_SELL_SEARCH_PAGE_SIZE, append = false) => {
+    async (
+      query: string,
+      pageNum = 0,
+      pageSize = SCAN_SELL_SEARCH_PAGE_SIZE,
+      append = false,
+      company: string | null = selectedCompany,
+    ) => {
       if (!query.trim()) {
         setSearchResults([]);
         setSearchPage(0);
         setSearchTotalPages(0);
         setSearchTotalItems(0);
+        setSearchCompanies([]);
         return;
       }
       setSearchPage(pageNum);
@@ -1312,33 +1366,26 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       }
       setError(null);
       try {
-        // Sold-out lots cannot be added to a bill, so the counter never sees them here.
-        const response = await inventoryApi.search({
-          q: query.trim(),
-          limit: pageSize,
+        // Sold-out lots cannot be added to a bill, so the counter never sees them here. The company
+        // counts ride along with the first page; "load more" reuses them (R7.1, R10.1).
+        const response = await inventoryApi.searchAdvanced({
+          text: query.trim(),
+          textMode: 'pattern',
+          filters: company ? [{ field: 'companyName', op: 'in', values: [company] }] : [],
+          match: 'all',
+          facets: append ? [] : ['companyName'],
+          sort: null,
           page: pageNum,
-          sort: 'expiryDate:asc',
+          size: pageSize,
           includeZeroStock: false,
+          surface: 'scan-sell',
         });
-        let items: InventoryItem[] = [];
-        if (response) {
-          if (Array.isArray(response)) items = response;
-          else if (response.data) {
-            if (Array.isArray(response.data)) items = response.data;
-            else if (
-              response.data &&
-              typeof response.data === 'object' &&
-              'data' in response.data
-            ) {
-              const nestedData = (response.data as { data?: InventoryItem[] }).data;
-              items = Array.isArray(nestedData) ? nestedData : [];
-            }
-          }
-        }
-        if (response?.page) {
-          setSearchTotalPages(response.page.totalPages);
-          setSearchTotalItems(response.page.totalItems);
-          setSearchPage(response.page.page);
+        const items: InventoryItem[] = response.data;
+        setSearchTotalPages(response.page.totalPages);
+        setSearchTotalItems(response.page.totalItems);
+        setSearchPage(response.page.page);
+        if (!append && response.facets.companyName) {
+          setSearchCompanies(response.facets.companyName);
         }
         const sortedItems = sortInventoryByExpirySoonest(items);
         setSearchResults((prev) => {
@@ -1364,7 +1411,18 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
         }
       }
     },
-    [searchPageSize, notifyError],
+    [searchPageSize, notifyError, selectedCompany],
+  );
+
+  /** Picking a company re-runs the same text with that company; "All" drops it (R7.3). */
+  const handleSelectCompany = useCallback(
+    (company: string | null) => {
+      setSelectedCompany(company);
+      if (!searchQuery.trim()) return;
+      setShowSearchDropdown(true);
+      void runSearch(searchQuery, 0, SCAN_SELL_SEARCH_PAGE_SIZE, false, company);
+    },
+    [searchQuery, runSearch],
   );
 
   const handleSearchSubmit = useCallback(
@@ -1379,10 +1437,36 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
         return;
       }
       setShowSearchDropdown(true);
-      runSearch(searchQuery, 0, SCAN_SELL_SEARCH_PAGE_SIZE, false);
+      // A new text starts from "All": a company chosen for the previous text is unrelated (R7.4).
+      const changed = searchQuery.trim() !== lastSearchedQuery.current;
+      lastSearchedQuery.current = searchQuery.trim();
+      if (changed) setSelectedCompany(null);
+      runSearch(
+        searchQuery,
+        0,
+        SCAN_SELL_SEARCH_PAGE_SIZE,
+        false,
+        changed ? null : selectedCompany,
+      );
     },
-    [searchQuery, runSearch],
+    [searchQuery, runSearch, selectedCompany],
   );
+
+  // Alt + 1…5 picks a company chip while the dropdown is open (R7.5).
+  useEffect(() => {
+    if (!showSearchDropdown) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      const index = chipIndexForKey(e);
+      if (index === null) return;
+      const chips = visibleCompanyChips(searchCompanies);
+      const chip = chips[index];
+      if (!chip) return;
+      e.preventDefault();
+      handleSelectCompany(selectedCompany === chip.value ? null : chip.value);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [showSearchDropdown, searchCompanies, selectedCompany, handleSelectCompany]);
 
   const handleLoadMoreSearch = useCallback(() => {
     if (!searchQuery.trim() || isSearching || isLoadingMore) return;
@@ -1983,6 +2067,11 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     if (isLoadingCart) return;
     const c = scanSellCustomerPrefillRef.current;
     if (!c || scanSellCustomerPrefillConsumedRef.current) return;
+    // The picker names its quotation in the URL, but the page only adopts it once that cart has
+    // loaded. Applying the customer before then wrote it to whichever quotation happened to be
+    // open, renaming that one and leaving two quotations under the same customer.
+    const targetPurchaseId = estimatePurchaseIdParam?.trim();
+    if (targetPurchaseId && targetPurchaseId !== activePurchaseId) return;
     scanSellCustomerPrefillConsumedRef.current = true;
     scanSellCustomerPrefillRef.current = null;
     applySelectedCustomer(c);
@@ -2002,7 +2091,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     // picker is a navigation to this same route, so the cart never reloads and
     // `isLoadingCart` never changes. Keyed only on that, this effect would not
     // run again and the customer left in the ref would never be applied.
-  }, [isLoadingCart, location.key]);
+  }, [isLoadingCart, location.key, activePurchaseId, estimatePurchaseIdParam]);
 
   /** Build CartItem[] from cart response, reusing existing inventoryItem when possible (no API calls). */
   const mergeCartResponseToItems = useCallback(
@@ -2055,8 +2144,10 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
           const inventoryItem: InventoryItem = existing
             ? {
                 ...existing.inventoryItem,
-                saleAdditionalDiscount:
-                  resItem.saleAdditionalDiscount ?? existing.inventoryItem.saleAdditionalDiscount,
+                saleAdditionalDiscount: lineSaleDiscountFromResponse(
+                  resItem.saleAdditionalDiscount,
+                  existing.inventoryItem.saleAdditionalDiscount,
+                ),
                 sgst: resItem.sgst ?? existing.inventoryItem.sgst,
                 cgst: resItem.cgst ?? existing.inventoryItem.cgst,
                 billingMode: normalizeBillingMode(
@@ -2189,10 +2280,14 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     },
     priceToRetailUpdate?: { inventoryId: string; priceToRetail: number },
     baseQuantityDeltaMode = false,
+    rateNameUpdate?: { inventoryId: string; rateName: string },
   ) => {
-    // Prevent duplicate full-cart syncs; allow item-specific updates (scheme, discount, price) so they are not dropped
+    // Prevent duplicate full-cart syncs; allow item-specific updates (scheme, discount, price, rate) so they are not dropped
     const isItemSpecificUpdate =
-      schemeUpdate != null || saleAdditionalDiscountUpdate != null || priceToRetailUpdate != null;
+      schemeUpdate != null ||
+      saleAdditionalDiscountUpdate != null ||
+      priceToRetailUpdate != null ||
+      rateNameUpdate != null;
     if (isUpdatingRef.current && !isItemSpecificUpdate) {
       return;
     }
@@ -2210,17 +2305,26 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       schemeFree?: number | null;
       schemeType?: 'FIXED_UNITS' | 'PERCENTAGE' | null;
       schemePercentage?: number | null;
+      rateName?: string;
     };
 
     const effectiveOverrides = overrides ?? additionalDiscountOverrides;
-    const withItemFields = (base: CartItemPayload, cartItem?: CartItem): CartItemPayload => {
+    // A lot new to the cart sends only a disc the user typed, so the backend can apply the
+    // batch's default rule rate (or the batch's own disc) itself.
+    const withItemFields = (
+      base: CartItemPayload,
+      cartItem?: CartItem,
+      isNewLine = false,
+    ): CartItemPayload => {
       let result = { ...base };
       if (cartItem != null) {
-        const addDisc =
-          effectiveOverrides[cartItem.inventoryItem.id] ??
-          cartItem.inventoryItem.saleAdditionalDiscount ??
-          undefined;
-        if (addDisc !== undefined && addDisc !== null) {
+        const addDisc = saleDiscountToSend(
+          effectiveOverrides,
+          cartItem.inventoryItem.id,
+          cartItem.inventoryItem.saleAdditionalDiscount,
+          isNewLine,
+        );
+        if (addDisc !== undefined) {
           result = { ...result, saleAdditionalDiscount: addDisc };
         }
         const hasPercentage =
@@ -2254,7 +2358,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       baseQuantity: number,
       priceToRetail: number,
       cartItem?: CartItem,
-    ) => withItemFields({ id, unit, quantity, baseQuantity, priceToRetail }, cartItem);
+      isNewLine = false,
+    ) => withItemFields({ id, unit, quantity, baseQuantity, priceToRetail }, cartItem, isNewLine);
 
     isUpdatingRef.current = true;
     setIsUpdatingCart(true);
@@ -2270,7 +2375,19 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
 
       let itemsToSend: CartItemPayload[];
 
-      if (priceToRetailUpdate) {
+      if (rateNameUpdate) {
+        // Rate picked: send id + unit + rateName only; the cart puts the rate's price, disc and
+        // scheme on the line and the merge below takes them from the response.
+        const item = items.find((i) => i.inventoryItem.id === rateNameUpdate.inventoryId);
+        if (!item) {
+          isUpdatingRef.current = false;
+          setIsUpdatingCart(false);
+          return;
+        }
+        itemsToSend = [
+          { id: item.inventoryItem.id, unit: item.unit, rateName: rateNameUpdate.rateName },
+        ];
+      } else if (priceToRetailUpdate) {
         // Only price to retail changed: send id + priceToRetail (no quantity/baseQuantity)
         const item = items.find((i) => i.inventoryItem.id === priceToRetailUpdate.inventoryId);
         if (!item) {
@@ -2347,6 +2464,11 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
             ? quantityDelta
             : quantityDelta * Math.max(1, changedItem.unitFactor);
           const effectiveQuantityDelta = baseQuantityDeltaMode ? 0 : quantityDelta;
+          const isNewLine =
+            quantityDelta > 0 &&
+            !(cartData?.items ?? []).some(
+              (ci: CheckoutItemResponse) => ci.inventoryId === changedItemId,
+            );
           // Send the actual delta value (1 for +, -1 for -)
           itemsToSend = [
             withAdditionalDiscount(
@@ -2356,6 +2478,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
               effectiveBaseDelta,
               changedItem.price,
               changedItem,
+              isNewLine,
             ),
           ];
         } else {
@@ -2466,6 +2589,10 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       // Merge response into local state (no extra inventory/search API calls)
       setCartItems(mergeCartResponseToItems(updatedCart, items));
       void refreshQuotationList();
+      if (searchQuery.trim()) {
+        void runSearch(searchQuery.trim(), searchPage, searchPageSize, false);
+      }
+      refreshSellCatalog();
       setError(null);
     } catch (err) {
       // Handle API errors - might include stock validation errors
@@ -2510,7 +2637,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       return;
     }
 
-    const availableBase = item.currentBaseCount ?? item.currentCount;
+    const availableBase = getShopAvailableBaseCount(item);
     if (availableBase <= 0) {
       notifyError('Product is out of stock');
       return;
@@ -2531,8 +2658,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
         // Update quantity if item already in cart
         const newQuantity = existingItem.quantity + 1;
         const newBaseQuantity = existingItem.baseQuantity + existingItem.unitFactor;
-        // Validate stock: compare base quantities (currentBaseCount is in base units)
-        const availableBase = item.currentBaseCount ?? item.currentCount;
+        const availableBase = getCartAvailableBaseCount(item, existingItem.baseQuantity);
         if (availableBase > 0 && newBaseQuantity > availableBase) {
           notifyError(`Only ${availableBase} items available in stock`);
           return prev;
@@ -2551,8 +2677,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
         const unitFactor = getUnitFactorForUnit(item, defaultUnit, 1);
         const availableUnits = getAvailableUnitsFromInventory(item);
         const baseQuantity = unitFactor;
-        // Add new item to cart: validate stock in base units (currentBaseCount)
-        const availableBase = item.currentBaseCount ?? item.currentCount;
+        const availableBase = getShopAvailableBaseCount(item);
         if (availableBase > 0 && availableBase < baseQuantity) {
           notifyError('Product is out of stock');
           return prev;
@@ -2588,8 +2713,10 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     const factor = Math.max(1, originalItem.unitFactor);
     const newQuantity = Number((newBaseQuantity / factor).toFixed(3));
 
-    const availableBase =
-      originalItem.inventoryItem.currentBaseCount ?? originalItem.inventoryItem.currentCount;
+    const availableBase = getCartAvailableBaseCount(
+      originalItem.inventoryItem,
+      originalItem.baseQuantity,
+    );
     if (availableBase < 999999 && newBaseQuantity > availableBase) {
       setError(`Only ${availableBase} items available in stock`);
       throw new Error('Stock exceeded');
@@ -2644,9 +2771,11 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
    * inventory-centric syncCartToAPI path and post deltas directly, then
    * reconcile from the server response.
    */
-  const applyMenuCartDelta = async (sellableRef: string, delta: number) => {
+  // Resolves false when the write failed, so a caller (the KOT withdrawal confirm) can tell a
+  // reduction that landed from one that did not.
+  const applyMenuCartDelta = async (sellableRef: string, delta: number): Promise<boolean> => {
     if (delta === 0 || isUpdatingRef.current) {
-      return;
+      return true;
     }
     isUpdatingRef.current = true;
     setIsUpdatingCart(true);
@@ -2654,9 +2783,9 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     try {
       let targetPurchaseId = activePurchaseId;
       if (!targetPurchaseId) {
-        if (delta <= 0) return;
+        if (delta <= 0) return true;
         targetPurchaseId = await ensureActiveQuotationId();
-        if (!targetPurchaseId) return;
+        if (!targetPurchaseId) return true;
       }
       const updated = await cartApi.add({
         businessType: cartBusinessType,
@@ -2665,50 +2794,70 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       });
       applyCartToState(updated, cartItems);
       await refreshQuotationList();
+      refreshSellCatalog();
+      return true;
     } catch (err) {
       notifyError(err instanceof Error ? err.message : 'Failed to update order');
+      return false;
     } finally {
       isUpdatingRef.current = false;
       setIsUpdatingCart(false);
     }
   };
 
-  const handleAddMenuItem = async (item: MenuItem) => {
+  const handleAddMenuItem = async (item: MenuItem, rate?: MenuRate) => {
     if (item.available === false) {
       notifyError('This item is unavailable');
       return;
     }
+    // A portioned item has no single price, so adding one without a portion would bill an
+    // amount nobody chose. The catalog's picker supplies the portion; nothing else may.
+    const hasPortions = (item.rates ?? []).some((r) => r.id?.trim() && r.name?.trim());
+    if (hasPortions && !rate?.id?.trim()) {
+      notifyError(`Choose a portion for "${item.name}"`);
+      return;
+    }
     setShowSearchDropdown(false);
-    await applyMenuCartDelta(menuSellableRef(item.id), 1);
+    // Only the frozen rate id goes on the wire; the price is resolved server-side from the menu.
+    await applyMenuCartDelta(menuSellableRef(item.id, rate?.id), 1);
   };
 
   const handleAddDirectStock = (item: InventoryItem) => {
     void handleAddToCart(item);
   };
 
-  const handleMenuQtyChange = (sellableRef: string, delta: number) => {
-    void applyMenuCartDelta(sellableRef, delta);
-  };
+  const handleMenuQtyChange = (sellableRef: string, delta: number): Promise<boolean> =>
+    applyMenuCartDelta(sellableRef, delta);
 
-  const handleMenuSetQuantity = async (sellableRef: string, newQty: number) => {
+  const handleMenuSetQuantity = async (sellableRef: string, newQty: number): Promise<boolean> => {
     const line = (cartData?.items ?? []).find((row) => lineSellableRef(row) === sellableRef);
-    if (!line) return;
+    if (!line) return true;
     const current = Math.trunc(Number(line.quantity));
     const next = Math.trunc(newQty);
     const delta = next - current;
-    if (delta === 0) return;
-    await applyMenuCartDelta(sellableRef, delta);
+    if (delta === 0) return true;
+    return applyMenuCartDelta(sellableRef, delta);
   };
 
-  const handleMenuRemove = (sellableRef: string) => {
+  const handleMenuRemove = (sellableRef: string): Promise<boolean> => {
     const line = (cartData?.items ?? []).find((row) => lineSellableRef(row) === sellableRef);
-    if (!line) return;
+    if (!line) return Promise.resolve(true);
     const qty = Math.trunc(Number(line.quantity));
-    if (qty <= 0) return;
-    void applyMenuCartDelta(sellableRef, -qty);
+    if (qty <= 0) return Promise.resolve(true);
+    return applyMenuCartDelta(sellableRef, -qty);
+  };
+
+  const forgetPickedRate = (inventoryId: string) => {
+    setPickedRateNames((prev) => {
+      if (!(inventoryId in prev)) return prev;
+      const next = { ...prev };
+      delete next[inventoryId];
+      return next;
+    });
   };
 
   const handleAdditionalDiscountChange = (inventoryId: string, value: number | null) => {
+    forgetPickedRate(inventoryId);
     const next = { ...additionalDiscountOverrides, [inventoryId]: value };
     setAdditionalDiscountOverrides(next);
     // Send only this item to API (id + additionalDiscount), like quantity update
@@ -2723,6 +2872,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     schemePayFor: number | null,
     schemeFree: number | null,
   ) => {
+    forgetPickedRate(inventoryId);
     setCartItems((prev) =>
       prev.map((item) =>
         item.inventoryItem.id === inventoryId
@@ -2745,6 +2895,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   };
 
   const handleSchemePercentageChange = (inventoryId: string, schemePercentage: number | null) => {
+    forgetPickedRate(inventoryId);
     setCartItems((prev) =>
       prev.map((item) =>
         item.inventoryItem.id === inventoryId
@@ -2767,6 +2918,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   };
 
   const handleSellingPriceChange = (inventoryId: string, priceToRetail: number) => {
+    forgetPickedRate(inventoryId);
     setCartItems((prev) =>
       prev.map((item) =>
         item.inventoryItem.id === inventoryId ? { ...item, price: priceToRetail } : item,
@@ -2778,7 +2930,44 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     });
   };
 
+  /**
+   * A rule rate sends its name, and with rate rules on MRP / PTR / Cost send their system name
+   * (`rateName` only); the line takes price, disc and scheme from the cart response, and the
+   * line's typed disc is dropped so the next sync does not resend it over the new one. Without
+   * rate rules MRP / PTR / Cost send the batch price, as before rate rules; legacy rates keep the
+   * price path. Only a rule rate's name is remembered in `pickedRateNames`.
+   */
+  const handleRatePick = (inventoryId: string, options: RateOption[], value: string) => {
+    const request = ratePickRequest(options, value, rateRulesOn);
+    if (!request) return;
+    if ('priceToRetail' in request) {
+      handleSellingPriceChange(inventoryId, request.priceToRetail);
+      return;
+    }
+    const nextOverrides = clearDiscountOverride(additionalDiscountOverrides, inventoryId);
+    setAdditionalDiscountOverrides(nextOverrides);
+    const ruleRateName = pickedRuleRateName(options, value);
+    if (ruleRateName) {
+      setPickedRateNames((prev) => ({ ...prev, [inventoryId]: ruleRateName }));
+    } else {
+      forgetPickedRate(inventoryId);
+    }
+    syncCartToAPI(
+      cartItems,
+      undefined,
+      undefined,
+      undefined,
+      nextOverrides,
+      undefined,
+      undefined,
+      undefined,
+      false,
+      { inventoryId, rateName: request.rateName },
+    ).catch(() => forgetPickedRate(inventoryId));
+  };
+
   const handleUnitChange = (inventoryId: string, unit: string) => {
+    forgetPickedRate(inventoryId);
     setCartItems((prev) => {
       const updatedItems = prev.map((item) => {
         if (item.inventoryItem.id !== inventoryId) return item;
@@ -2823,6 +3012,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     // Clear local state
     setCartItems([]);
     setAdditionalDiscountOverrides({});
+    setPickedRateNames({});
     setError(null);
 
     // Send all items with negative quantities to remove them from cart
@@ -2944,6 +3134,12 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       notifyError('Convert the estimate to an invoice before taking payment');
       return;
     }
+    if (cartBillingMode === 'BASIC') {
+      notifyError(
+        'BASIC / estimate-only stock cannot be invoiced here. Use Sell Estimate (lock + print).',
+      );
+      return;
+    }
     if (cartItems.length === 0 && menuCartLines.length === 0) {
       notifyError('Cart is empty');
       return;
@@ -3007,7 +3203,36 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     }
   };
 
-  const isEstimateEditable = !isEstimateMode || cartData?.estimateState !== 'CONVERTED';
+  const estimateState = cartData?.estimateState ?? null;
+  const isEstimateEditable = !isEstimateMode || estimateState === 'OPEN';
+  const isEstimatePrintable =
+    isEstimateMode && (estimateState === 'LOCKED' || estimateState === 'CONVERTED');
+  const isEstimateConvertible =
+    isEstimateMode &&
+    (estimateState === 'OPEN' || estimateState === 'LOCKED') &&
+    cartBillingMode === 'REGULAR';
+
+  const handleLockEstimate = async () => {
+    const estimateId = activePurchaseId ?? cartData?.purchaseId;
+    if (!estimateId) {
+      notifyError('No estimate to lock');
+      return;
+    }
+    if (cartItems.length === 0 && menuCartLines.length === 0) {
+      notifyError('Add items before locking');
+      return;
+    }
+    setIsLockingEstimate(true);
+    try {
+      await syncCustomerToQuotation();
+      const locked = await estimatesApi.lock(estimateId);
+      applyCartToState(locked, cartItems);
+    } catch (err) {
+      notifyError(err instanceof Error ? err.message : 'Failed to lock estimate');
+    } finally {
+      setIsLockingEstimate(false);
+    }
+  };
 
   const handleConvertEstimate = async () => {
     const estimateId = activePurchaseId ?? cartData?.purchaseId;
@@ -3017,6 +3242,10 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     }
     if (cartItems.length === 0 && menuCartLines.length === 0) {
       notifyError('Add items before converting');
+      return;
+    }
+    if (cartBillingMode === 'BASIC') {
+      notifyError('BASIC / estimate-only stock cannot convert to invoice. Lock and print instead.');
       return;
     }
     setIsConvertingEstimate(true);
@@ -3094,7 +3323,6 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
             <ScanSellCafeStockLine
               key={cartItem.inventoryItem.id}
               name={cartItem.inventoryItem.name || 'Product'}
-              inventoryId={cartItem.inventoryItem.id}
               unitLabel={unitLabel}
               price={cartItem.price}
               quantity={cartItem.quantity}
@@ -3107,8 +3335,6 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                 ) : null
               }
               disabled={isUpdatingCart}
-              customerProductHistory={customerProductHistory}
-              customerProductHistoryLoading={customerProductHistoryLoading}
               onChangeQty={(delta) => {
                 void handleUpdateQuantity(cartItem.inventoryItem.id, delta, false);
               }}
@@ -3161,11 +3387,29 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
           </Button>
           {isEstimateMode ? (
             <>
+              {estimateState === 'OPEN' ? (
+                <Button
+                  type="button"
+                  variant="solid"
+                  className={cafeCheckoutPayBtnStyle}
+                  onClick={() => void handleLockEstimate()}
+                  disabled={
+                    !activePurchaseId ||
+                    (cartItems.length === 0 && menuCartLines.length === 0) ||
+                    isLockingEstimate ||
+                    isUpdatingCart ||
+                    isLoadingCart
+                  }
+                >
+                  {isLockingEstimate ? 'Locking…' : 'Lock estimate'}
+                </Button>
+              ) : null}
               <Button
                 type="button"
                 variant="outline"
                 className={shellChrome.nowrap}
                 disabled={
+                  !isEstimatePrintable ||
                   !activePurchaseId ||
                   (cartItems.length === 0 && menuCartLines.length === 0) ||
                   isUpdatingCart ||
@@ -3175,21 +3419,22 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
               >
                 Print
               </Button>
-              <Button
-                type="button"
-                variant="solid"
-                className={cafeCheckoutPayBtnStyle}
-                onClick={() => void handleConvertEstimate()}
-                disabled={
-                  !isEstimateEditable ||
-                  (cartItems.length === 0 && menuCartLines.length === 0) ||
-                  isConvertingEstimate ||
-                  isUpdatingCart ||
-                  isLoadingCart
-                }
-              >
-                {isConvertingEstimate ? 'Converting…' : 'Convert to invoice'}
-              </Button>
+              {isEstimateConvertible ? (
+                <Button
+                  type="button"
+                  variant="solid"
+                  className={cafeCheckoutPayBtnStyle}
+                  onClick={() => void handleConvertEstimate()}
+                  disabled={
+                    (cartItems.length === 0 && menuCartLines.length === 0) ||
+                    isConvertingEstimate ||
+                    isUpdatingCart ||
+                    isLoadingCart
+                  }
+                >
+                  {isConvertingEstimate ? 'Converting…' : 'Convert to invoice'}
+                </Button>
+              ) : null}
             </>
           ) : (
             <Button
@@ -3201,7 +3446,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                 (cartItems.length === 0 && menuCartLines.length === 0) ||
                 isProcessing ||
                 isUpdatingCart ||
-                isLoadingCart
+                isLoadingCart ||
+                cartBillingMode === 'BASIC'
               }
             >
               {isProcessing ? 'Processing…' : isUpdatingCart ? 'Updating…' : 'Process Payment'}
@@ -3225,7 +3471,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       <PageHeader
         description={
           isEstimateMode
-            ? 'Build a printable estimate (with tax when products are Regular), then convert to invoice'
+            ? 'Lock to print. Convert REGULAR estimates to invoice anytime; BASIC stock is lock + print only.'
             : isCafeSell
             ? 'Tap menu items or direct stock to build the order'
             : 'Speed up sales with barcode scanning'
@@ -3249,9 +3495,12 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
           <Badge variant="info">{cartData.estimateNo}</Badge>
           {cartData.estimateState === 'CONVERTED' ? (
             <Badge variant="neutral">Converted — reprint only</Badge>
+          ) : cartData.estimateState === 'LOCKED' ? (
+            <Badge variant="info">Locked — printable</Badge>
           ) : (
             <Text variant="caption" color="secondary">
-              Estimates do not reserve stock. Convert to invoice when the customer confirms.
+              Lock to print. REGULAR stock can convert to invoice anytime; BASIC / estimate-only
+              stock finalizes with lock + print only.
             </Text>
           )}
         </Inline>
@@ -3296,12 +3545,17 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                         hasMoreResults={hasMoreSearchResults}
                         onSearch={() => handleSearchSubmit()}
                         onLoadMore={handleLoadMoreSearch}
+                        companies={searchCompanies}
+                        selectedCompany={selectedCompany}
+                        onSelectCompany={handleSelectCompany}
                         placeholder="Filter menu, or search more products…"
                         onAddToCart={handleAddToCart}
                         rowClassName={searchRowCafeStyle}
                         searchWrapperRef={searchWrapperRef}
+                        cardLayoutFor={scanSellCardLayoutFor}
+                        cardVisibility={scanSellCardVisibility}
                         addDisabled={(item) =>
-                          item.currentCount <= 0 ||
+                          getShopAvailableBaseCount(item) <= 0 ||
                           (item.sellingPrice ?? item.priceToRetail) == null ||
                           isUpdatingCart
                         }
@@ -3312,7 +3566,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                           loading={isLoadingCatalog}
                           disabled={isUpdatingCart || isLoadingCart}
                           filterQuery={searchQuery}
-                          onAddMenuItem={(item) => void handleAddMenuItem(item)}
+                          onAddMenuItem={(item, rate) => void handleAddMenuItem(item, rate)}
                           onAddDirectStock={handleAddDirectStock}
                         />
                       </Box>
@@ -3354,6 +3608,16 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                         </Stack>
                       </CardBody>
                     </Card>
+
+                    {/* Vertical-contributed sell actions (cafe: Print KOT). Sits with the
+                        order it punches rather than in the checkout bar, which has no room
+                        for the ticket strip. Estimates are not orders, so they get none. */}
+                    {!isEstimateMode ? (
+                      <VerticalSellActions
+                        purchaseId={activePurchaseId ?? cartData?.purchaseId ?? null}
+                        disabled={isUpdatingCart || isLoadingCart}
+                      />
+                    ) : null}
 
                     {/* Same figures as the Margins block below, in the cafe layout —
                         hidden by `~` too, or the numbers would just leak here instead. */}
@@ -3423,12 +3687,17 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                       hasMoreResults={hasMoreSearchResults}
                       onSearch={() => handleSearchSubmit()}
                       onLoadMore={handleLoadMoreSearch}
+                      companies={searchCompanies}
+                      selectedCompany={selectedCompany}
+                      onSelectCompany={handleSelectCompany}
                       placeholder="Search products..."
                       autoFocus
                       onAddToCart={handleAddToCart}
                       searchWrapperRef={searchWrapperRef}
+                      cardLayoutFor={scanSellCardLayoutFor}
+                      cardVisibility={scanSellCardVisibility}
                       addDisabled={(item) =>
-                        item.currentCount <= 0 ||
+                        getShopAvailableBaseCount(item) <= 0 ||
                         (item.sellingPrice ?? item.priceToRetail) == null ||
                         isUpdatingCart
                       }
@@ -3462,17 +3731,22 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                 <DenseTableRow>
                                   <DenseTableHeaderCell>#</DenseTableHeaderCell>
                                   <DenseTableHeaderCell>Product</DenseTableHeaderCell>
-                                  <DenseTableHeaderCell>Company</DenseTableHeaderCell>
-                                  <DenseTableHeaderCell>Qty</DenseTableHeaderCell>
                                   <DenseTableHeaderCell>Unit</DenseTableHeaderCell>
-                                  <DenseTableHeaderCell>Amount</DenseTableHeaderCell>
+                                  <DenseTableHeaderCell>Qty</DenseTableHeaderCell>
                                   {!hidePurchaseDetailsInSell ? (
                                     <DenseTableHeaderCell>Margin</DenseTableHeaderCell>
                                   ) : null}
                                   <DenseTableHeaderCell>Price</DenseTableHeaderCell>
-                                  <DenseTableHeaderCell>Discount</DenseTableHeaderCell>
+                                  <DenseTableHeaderCell>Disc</DenseTableHeaderCell>
                                   <DenseTableHeaderCell>Scheme</DenseTableHeaderCell>
-                                  <DenseTableHeaderCell>Actions</DenseTableHeaderCell>
+                                  <DenseTableHeaderCell>Amount</DenseTableHeaderCell>
+                                  {showLineTax ? (
+                                    <DenseTableHeaderCell>Total</DenseTableHeaderCell>
+                                  ) : null}
+                                  <DenseTableHeaderCell
+                                    aria-label="Actions"
+                                    className={productChrome.rowActionsCell}
+                                  />
                                 </DenseTableRow>
                               </TableHead>
                               <TableBody>
@@ -3496,6 +3770,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                       cartItem,
                                     ),
                                   );
+                                  const lineTax =
+                                    cartLineTaxById.get(cartItem.inventoryItem.id) ?? null;
                                   const formatPrice = (n: number) =>
                                     new Intl.NumberFormat('en-IN', {
                                       style: 'currency',
@@ -3510,9 +3786,6 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                   const rateOpts = getRateOptions(cartItem.inventoryItem, pricing);
                                   const showRateDropdown =
                                     pricingId || cartItem.inventoryItem.id || rateOpts.length > 1;
-                                  const matched = rateOpts.find(
-                                    (o) => Math.abs(o.price - cartItem.price) < 0.01,
-                                  );
                                   const isLoading =
                                     pricingLoading[pricingId ?? ''] ||
                                     pricingLoading[`inv:${cartItem.inventoryItem.id}`];
@@ -3534,27 +3807,6 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                           >
                                             {cartItem.inventoryItem.name || '—'}
                                           </Button>
-                                        </DenseTableCell>
-                                        <DenseTableCell>
-                                          {cartItem.inventoryItem.companyName || '—'}
-                                        </DenseTableCell>
-                                        <DenseTableCell>
-                                          <Box className={denseTableClassNames.cellInput}>
-                                            <CartQuantityInput
-                                              value={quantityInputValue}
-                                              disabled={isUpdatingCart}
-                                              onCommit={async (newQty) => {
-                                                const delta = newQty - quantityInputValue;
-                                                if (delta !== 0) {
-                                                  await handleUpdateQuantity(
-                                                    cartItem.inventoryItem.id,
-                                                    delta,
-                                                    isBaseUnitSelected,
-                                                  );
-                                                }
-                                              }}
-                                            />
-                                          </Box>
                                         </DenseTableCell>
                                         <DenseTableCell>
                                           <Select
@@ -3579,7 +3831,24 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                             }))}
                                           />
                                         </DenseTableCell>
-                                        <DenseTableCell>{formatPrice(lineTotal)}</DenseTableCell>
+                                        <DenseTableCell>
+                                          <Box className={denseTableClassNames.cellInput}>
+                                            <CartQuantityInput
+                                              value={quantityInputValue}
+                                              disabled={isUpdatingCart}
+                                              onCommit={async (newQty) => {
+                                                const delta = newQty - quantityInputValue;
+                                                if (delta !== 0) {
+                                                  await handleUpdateQuantity(
+                                                    cartItem.inventoryItem.id,
+                                                    delta,
+                                                    isBaseUnitSelected,
+                                                  );
+                                                }
+                                              }}
+                                            />
+                                          </Box>
+                                        </DenseTableCell>
                                         {!hidePurchaseDetailsInSell ? (
                                           <DenseTableCell>
                                             <CartLineMargin
@@ -3607,35 +3876,31 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                               disabled={isUpdatingCart}
                                             />
                                             {showRateDropdown ? (
-                                              <Select
+                                              <RatePicker
+                                                layout="grid"
                                                 className={denseTableClassNames.rateSelect}
-                                                value={matched ? matched.label : '__custom__'}
-                                                onChange={(e) => {
-                                                  const sel = e.target.value;
-                                                  if (sel === '__custom__') return;
-                                                  const opt = rateOpts.find((o) => o.label === sel);
-                                                  if (opt)
-                                                    handleSellingPriceChange(
-                                                      cartItem.inventoryItem.id,
-                                                      opt.price,
-                                                    );
-                                                }}
-                                                onMouseDown={() =>
+                                                options={rateOpts}
+                                                value={selectedRateValue(
+                                                  rateOpts,
+                                                  cartItem.price,
+                                                  appliedRateNames[cartItem.inventoryItem.id],
+                                                  pickedRateNames[cartItem.inventoryItem.id],
+                                                )}
+                                                onPick={(value) =>
+                                                  handleRatePick(
+                                                    cartItem.inventoryItem.id,
+                                                    rateOpts,
+                                                    value,
+                                                  )
+                                                }
+                                                onOpen={() =>
                                                   loadPricingOnDropdownClick(
                                                     cartItem.inventoryItem.pricingId ?? undefined,
                                                     cartItem.inventoryItem.id,
                                                   )
                                                 }
                                                 disabled={isUpdatingCart || isLoading}
-                                                options={[
-                                                  { value: '__custom__', label: 'Custom' },
-                                                  ...rateOpts.map((opt) => ({
-                                                    value: opt.label,
-                                                    label: `${opt.label} (${formatPrice(
-                                                      opt.price,
-                                                    )})`,
-                                                  })),
-                                                ]}
+                                                loading={isLoading}
                                               />
                                             ) : null}
                                           </Stack>
@@ -3683,7 +3948,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                               </Text>
                                             ) : null}
                                             <Box className={productChrome.fontSemibold}>
-                                              <CartSchemeInput
+                                              <SchemeInput
                                                 schemeType={cartItem.schemeType ?? null}
                                                 payFor={cartItem.schemePayFor ?? null}
                                                 free={cartItem.schemeFree ?? null}
@@ -3706,24 +3971,45 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                             </Box>
                                           </Stack>
                                         </DenseTableCell>
-                                        <DenseTableCell>
-                                          <Button
+                                        <DenseTableCell>{formatPrice(lineTotal)}</DenseTableCell>
+                                        {showLineTax ? (
+                                          <DenseTableCell>
+                                            {lineTax?.totalAmount != null ? (
+                                              <Stack>
+                                                <Text>{formatPrice(lineTax.totalAmount)}</Text>
+                                                {lineTax.ratePercent > 0 ? (
+                                                  <Text variant="caption" color="secondary">
+                                                    incl. {formatGstRate(lineTax.ratePercent)}% GST
+                                                  </Text>
+                                                ) : null}
+                                              </Stack>
+                                            ) : (
+                                              '—'
+                                            )}
+                                          </DenseTableCell>
+                                        ) : null}
+                                        <DenseTableCell className={productChrome.rowActionsCell}>
+                                          <IconButton
                                             type="button"
-                                            variant="danger"
                                             size="sm"
+                                            className={productChrome.rowRemoveButton}
                                             onClick={() =>
                                               handleRemoveItem(cartItem.inventoryItem.id)
                                             }
                                             disabled={isUpdatingCart}
+                                            label={`Remove ${
+                                              cartItem.inventoryItem.name || 'item'
+                                            }`}
+                                            title="Remove"
                                           >
-                                            Remove
-                                          </Button>
+                                            <Icon icon={Trash2} size="sm" />
+                                          </IconButton>
                                         </DenseTableCell>
                                       </DenseTableRow>
                                       {showHistorySubrow ? (
                                         <DenseTableRow className={productChrome.historySubrowTr}>
                                           <DenseTableCell
-                                            colSpan={hidePurchaseDetailsInSell ? 10 : 11}
+                                            colSpan={hidePurchaseDetailsInSell ? 9 : 10}
                                             className={productChrome.historySubrowCell}
                                           >
                                             <CustomerProductHistoryHint
@@ -3861,48 +4147,24 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                                   cartItem.inventoryItem,
                                                   pricing,
                                                 );
-                                                const formatPrice = (n: number) =>
-                                                  new Intl.NumberFormat('en-IN', {
-                                                    style: 'currency',
-                                                    currency: 'INR',
-                                                    minimumFractionDigits: 2,
-                                                    maximumFractionDigits: 2,
-                                                  }).format(n);
                                                 const showDropdown =
                                                   pricingId || invId || rateOpts.length > 1;
                                                 if (!showDropdown) return null;
-                                                const matched = rateOpts.find(
-                                                  (o) => Math.abs(o.price - cartItem.price) < 0.01,
-                                                );
-                                                const selectValue = matched
-                                                  ? matched.label
-                                                  : '__custom__';
-                                                // Never switch select value to loading - keep current selection to avoid flicker
-                                                const displayValue =
-                                                  isLoading && rateOpts.length === 0
-                                                    ? '__custom__'
-                                                    : selectValue;
-                                                const selectedOpt = rateOpts.find(
-                                                  (o) => o.label === displayValue,
-                                                );
                                                 return (
-                                                  <Select
+                                                  <RatePicker
+                                                    layout="list"
                                                     className={itemRateSelectStyle}
-                                                    value={displayValue}
-                                                    onChange={(e) => {
-                                                      const sel = e.target.value;
-                                                      if (sel === '__custom__') return;
-                                                      const opt = rateOpts.find(
-                                                        (o) => o.label === sel,
-                                                      );
-                                                      if (opt) {
-                                                        handleSellingPriceChange(
-                                                          cartItem.inventoryItem.id,
-                                                          opt.price,
-                                                        );
-                                                      }
-                                                    }}
-                                                    onMouseDown={() => {
+                                                    options={rateOpts}
+                                                    value={selectedRateValue(
+                                                      rateOpts,
+                                                      cartItem.price,
+                                                      appliedRateNames[invId],
+                                                      pickedRateNames[invId],
+                                                    )}
+                                                    onPick={(value) =>
+                                                      handleRatePick(invId, rateOpts, value)
+                                                    }
+                                                    onOpen={() => {
                                                       loadPricingOnDropdownClick(
                                                         cartItem.inventoryItem.pricingId ??
                                                           undefined,
@@ -3910,24 +4172,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                                       );
                                                     }}
                                                     disabled={isUpdatingCart || isLoading}
-                                                    aria-label={
-                                                      isLoading
-                                                        ? 'Loading rates'
-                                                        : selectedOpt
-                                                        ? `Rate: ${
-                                                            selectedOpt.label
-                                                          }, ${formatPrice(selectedOpt.price)}`
-                                                        : 'Select selling rate'
-                                                    }
-                                                    options={[
-                                                      { value: '__custom__', label: 'Custom' },
-                                                      ...rateOpts.map((opt) => ({
-                                                        value: opt.label,
-                                                        label: `${opt.label} · ${formatPrice(
-                                                          opt.price,
-                                                        )}`,
-                                                      })),
-                                                    ]}
+                                                    loading={isLoading}
                                                   />
                                                 );
                                               })()}
@@ -3984,7 +4229,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                                   </Text>
                                                 ) : null}
                                                 <Box className={productChrome.fontSemibold}>
-                                                  <CartSchemeInput
+                                                  <SchemeInput
                                                     schemeType={cartItem.schemeType ?? null}
                                                     payFor={cartItem.schemePayFor ?? null}
                                                     free={cartItem.schemeFree ?? null}
@@ -4072,18 +4317,24 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                                 }
                                               }}
                                             />
-                                            <Button
+                                            <IconButton
                                               type="button"
-                                              variant="ghost"
                                               size="sm"
-                                              className={surfaceChrome.flexShrink0}
+                                              className={cn(
+                                                surfaceChrome.flexShrink0,
+                                                productChrome.rowRemoveButton,
+                                              )}
                                               onClick={() =>
                                                 handleRemoveItem(cartItem.inventoryItem.id)
                                               }
                                               disabled={isUpdatingCart}
+                                              label={`Remove ${
+                                                cartItem.inventoryItem.name || 'item'
+                                              }`}
+                                              title="Remove"
                                             >
-                                              Remove
-                                            </Button>
+                                              <Icon icon={Trash2} size="sm" />
+                                            </IconButton>
                                           </Inline>
                                           <Text weight="semibold" className={lineTotalAmountStyle}>
                                             ₹
@@ -4095,6 +4346,11 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                               ),
                                             ).toFixed(2)}
                                           </Text>
+                                          <CartLineTax
+                                            tax={
+                                              cartLineTaxById.get(cartItem.inventoryItem.id) ?? null
+                                            }
+                                          />
                                           {!hidePurchaseDetailsInSell ? (
                                             <CartLineMargin
                                               figures={
@@ -4245,11 +4501,29 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                     </Button>
                     {isEstimateMode ? (
                       <>
+                        {estimateState === 'OPEN' ? (
+                          <Button
+                            type="button"
+                            variant="solid"
+                            className={productChrome.flexGrow2}
+                            onClick={() => void handleLockEstimate()}
+                            disabled={
+                              !activePurchaseId ||
+                              (cartItems.length === 0 && menuCartLines.length === 0) ||
+                              isLockingEstimate ||
+                              isUpdatingCart ||
+                              isLoadingCart
+                            }
+                          >
+                            {isLockingEstimate ? 'Locking…' : 'Lock estimate'}
+                          </Button>
+                        ) : null}
                         <Button
                           type="button"
                           variant="outline"
                           className={surfaceChrome.flexMin0}
                           disabled={
+                            !isEstimatePrintable ||
                             !activePurchaseId ||
                             (cartItems.length === 0 && menuCartLines.length === 0) ||
                             isUpdatingCart ||
@@ -4259,21 +4533,22 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                         >
                           Print estimate
                         </Button>
-                        <Button
-                          type="button"
-                          variant="solid"
-                          className={productChrome.flexGrow2}
-                          onClick={() => void handleConvertEstimate()}
-                          disabled={
-                            !isEstimateEditable ||
-                            (cartItems.length === 0 && menuCartLines.length === 0) ||
-                            isConvertingEstimate ||
-                            isUpdatingCart ||
-                            isLoadingCart
-                          }
-                        >
-                          {isConvertingEstimate ? 'Converting…' : 'Convert to invoice'}
-                        </Button>
+                        {isEstimateConvertible ? (
+                          <Button
+                            type="button"
+                            variant="solid"
+                            className={productChrome.flexGrow2}
+                            onClick={() => void handleConvertEstimate()}
+                            disabled={
+                              (cartItems.length === 0 && menuCartLines.length === 0) ||
+                              isConvertingEstimate ||
+                              isUpdatingCart ||
+                              isLoadingCart
+                            }
+                          >
+                            {isConvertingEstimate ? 'Converting…' : 'Convert to invoice'}
+                          </Button>
+                        ) : null}
                       </>
                     ) : (
                       <Button
@@ -4285,7 +4560,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                           (cartItems.length === 0 && menuCartLines.length === 0) ||
                           isProcessing ||
                           isUpdatingCart ||
-                          isLoadingCart
+                          isLoadingCart ||
+                          cartBillingMode === 'BASIC'
                         }
                       >
                         {isProcessing
@@ -4394,9 +4670,12 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                             {formatInventoryExpiryDate(inv)}
                           </DetailField>
                         ) : null}
-                        {inv.currentCount != null || inv.currentBaseCount != null ? (
-                          <DetailField icon={Package} label="Stock (current)">
-                            {inv.currentCount ?? inv.currentBaseCount ?? '—'}
+                        {inv.currentCount != null ||
+                        inv.currentBaseCount != null ||
+                        inv.availableCount != null ||
+                        inv.availableBaseCount != null ? (
+                          <DetailField icon={Package} label="Stock (available)">
+                            {getShopAvailableDisplayCount(inv)}
                           </DetailField>
                         ) : null}
                         <DetailField icon={Hash} label="Quantity">
@@ -4480,17 +4759,15 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                           </Text>
                         </DetailField>
                       </Grid>
-                      {detailModalItem.inventoryItem.pricingId ? (
+                      {detailModalItem.inventoryItem.pricingId &&
+                      canEditAnyPriceField(productSearchAccess) ? (
                         <Box mt="md">
                           <Link
-                            to={`/dashboard/price-edit/${detailModalItem.inventoryItem.pricingId}`}
-                            state={{
-                              priceToRetail: detailModalItem.inventoryItem.priceToRetail,
-                              maximumRetailPrice: detailModalItem.inventoryItem.maximumRetailPrice,
-                              productName: detailModalItem.inventoryItem.name,
-                              rates: detailModalItem.inventoryItem.rates ?? undefined,
-                              defaultRate: detailModalItem.inventoryItem.defaultRate ?? undefined,
-                            }}
+                            to={priceEditPath(
+                              detailModalItem.inventoryItem.pricingId,
+                              resolveInventoryDocumentId(detailModalItem.inventoryItem),
+                            )}
+                            state={{ productName: detailModalItem.inventoryItem.name }}
                           >
                             <Text color="primary">Edit price</Text>
                           </Link>
@@ -4515,6 +4792,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
             invoiceNo={cartData?.estimateNo ?? undefined}
             documentLabel="Estimate"
             onError={(message) => notifyError(message)}
+            onSuccess={(message) => notifySuccess(message)}
+            onInfo={(message) => notifyInfo(message)}
           />
         );
       })()}
@@ -4524,10 +4803,14 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
 
 function SearchDropdownItem({
   item,
+  layout,
+  visibility,
   onAddToCart,
   disabled,
 }: {
   item: InventoryItem;
+  layout: ResolvedCardLayout;
+  visibility: FieldVisibilityPolicy;
   onAddToCart: (item: InventoryItem, price?: number) => void;
   disabled: boolean;
 }) {
@@ -4535,12 +4818,6 @@ function SearchDropdownItem({
     e.preventDefault();
     onAddToCart(item);
   };
-
-  // The batch sits on the line for some verticals and in the extension fields
-  // for others, so read it through the helper that knows both. It answers '—'
-  // when there is none, which suits a fixed table row but not a card line.
-  const rawBatchNo = getInventoryBatchNo(item);
-  const batchNo = rawBatchNo && rawBatchNo !== '—' ? rawBatchNo : '';
 
   return (
     <Inline as="li" justify="between" align="start" gap="md" className={dropdownItemStyle}>
@@ -4551,38 +4828,8 @@ function SearchDropdownItem({
           </Text>
           <Badge variant="info">{item.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR'}</Badge>
         </Inline>
-        {item.companyName ? (
-          <Text variant="caption" color="secondary" truncate>
-            Company: {item.companyName}
-          </Text>
-        ) : null}
-        {batchNo ? (
-          <Text variant="caption" color="secondary" truncate>
-            Batch: {batchNo}
-          </Text>
-        ) : null}
-        {item.barcode ? (
-          <Text variant="caption" color="secondary" truncate>
-            Barcode: {item.barcode}
-          </Text>
-        ) : null}
-        <Text variant="caption" color="secondary" truncate>
-          Current: {item.currentCount}
-        </Text>
-        <Text variant="caption" weight="semibold" truncate>
-          MRP: ₹{item.maximumRetailPrice != null ? item.maximumRetailPrice.toFixed(2) : '—'}
-        </Text>
-        <Text variant="caption" weight="semibold" truncate>
-          Selling: ₹
-          {(item.sellingPrice ?? item.priceToRetail) != null
-            ? (item.sellingPrice ?? item.priceToRetail)!.toFixed(2)
-            : '—'}
-        </Text>
-        {hasInventoryExpiryDate(item) ? (
-          <Text variant="caption" weight="semibold" truncate>
-            Expires: {formatInventoryExpiryDate(item)}
-          </Text>
-        ) : null}
+        {/* The lines beneath the name are the shop's configured Scan & Sell layout. */}
+        <CardLayoutBody item={item} layout={layout} visibility={visibility} variant="compact" />
       </Stack>
       <Button type="button" variant="solid" size="sm" onClick={handleAdd} disabled={disabled}>
         Add

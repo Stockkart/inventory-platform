@@ -142,7 +142,7 @@ export function LoginForm() {
             />
 
             <Box className={journeyChrome.authMetaRow}>
-              <Checkbox label="Remember me" />
+              <Checkbox label="Remember me" className={journeyChrome.authCheckbox} />
               <Link to="/forgot-password" className={journeyChrome.authMetaLink}>
                 Forgot password?
               </Link>
@@ -166,17 +166,20 @@ export function LoginForm() {
             <Divider label="or" />
 
             <SocialAuthSlot>
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={handleGoogleError}
-                useOneTap={false}
-                auto_select={false}
-                theme="outline"
-                size="large"
-                type="standard"
-                shape="pill"
-                ux_mode="popup"
-              />
+              {({ buttonWidth }) => (
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  useOneTap={false}
+                  auto_select={false}
+                  theme="outline"
+                  size="large"
+                  type="standard"
+                  shape="pill"
+                  ux_mode="popup"
+                  width={buttonWidth}
+                />
+              )}
             </SocialAuthSlot>
           </Box>
 
