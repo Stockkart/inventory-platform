@@ -92,6 +92,7 @@ import {
 } from 'lucide-react';
 import { ContextualHelpPanel } from './ContextualHelpPanel';
 import { NavIcon } from './NavIcon';
+import { RouteChunkPreloader } from './RouteChunkPreloader';
 
 /**
  * Discovery hint, once per browser *session*. sessionStorage rather than
@@ -437,6 +438,8 @@ export function DashboardLayout({
     [filteredMenuGroups],
   );
 
+  const preloadPaths = useMemo(() => allMenuItems.map((i) => i.path), [allMenuItems]);
+
   const activeNavPath = useMemo(
     () => bestMatchingNavItemPath(allMenuItems, currentPath),
     [allMenuItems, currentPath],
@@ -586,6 +589,7 @@ export function DashboardLayout({
         pageLabel={currentPageLabel}
       />
       <ToastProvider />
+      <RouteChunkPreloader navPaths={preloadPaths} />
       {/* Keyed by shop: a switch saves the old shop's tape and loads the new one's. */}
       <DashboardCalculator
         key={user?.shopId ?? 'no-shop'}
