@@ -19,6 +19,25 @@ export function pathsToPreload(navPaths: readonly string[], currentPath: string)
   return out;
 }
 
+/**
+ * Route CSS files to prefetch. On a click React Router waits for every file in the
+ * route's manifest `css` list (`prefetchRouteCss`), but `PrefetchPageLinks` only prefetches
+ * CSS a route returns from a `links()` export, which our routes don't have. Hrefs are kept
+ * exactly as in the manifest (some end in `#`) so they match what React Router requests.
+ */
+export function routeCssToPrefetch(
+  routes: Iterable<{ css?: readonly string[] } | undefined>,
+  alreadyLoaded: ReadonlySet<string>,
+): string[] {
+  const out = new Set<string>();
+  for (const route of routes) {
+    for (const href of route?.css ?? []) {
+      if (!alreadyLoaded.has(href)) out.add(href);
+    }
+  }
+  return [...out];
+}
+
 type IdleWindow = Pick<Window, 'setTimeout' | 'clearTimeout'> & {
   requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
   cancelIdleCallback?: (id: number) => void;

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { pathsToPreload, whenBrowserIdle } from './routeChunkPreload';
+import { pathsToPreload, routeCssToPrefetch, whenBrowserIdle } from './routeChunkPreload';
 
 describe('pathsToPreload', () => {
   it('keeps nav order, drops duplicates and the screen already open', () => {
@@ -20,6 +20,31 @@ describe('pathsToPreload', () => {
     expect(
       pathsToPreload(['https://youtube.com/x', '', '/dashboard/history'], '/dashboard'),
     ).toEqual(['/dashboard/history']);
+  });
+});
+
+describe('routeCssToPrefetch', () => {
+  it('lists each route CSS file once, as written in the manifest', () => {
+    expect(
+      routeCssToPrefetch(
+        [
+          { css: ['/assets/client-a.css#', '/assets/scan-sell-b.css#'] },
+          {},
+          undefined,
+          { css: ['/assets/scan-sell-b.css#', '/assets/DenseTable-c.css#'] },
+        ],
+        new Set(),
+      ),
+    ).toEqual(['/assets/client-a.css#', '/assets/scan-sell-b.css#', '/assets/DenseTable-c.css#']);
+  });
+
+  it('skips stylesheets the page already has', () => {
+    expect(
+      routeCssToPrefetch(
+        [{ css: ['/assets/client-a.css#', '/assets/DenseTable-c.css#'] }],
+        new Set(['/assets/client-a.css#']),
+      ),
+    ).toEqual(['/assets/DenseTable-c.css#']);
   });
 });
 
