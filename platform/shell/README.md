@@ -29,6 +29,15 @@ A desk calculator opens from the header button or `Alt+C` on every dashboard scr
 
 The calculator is a scratch tool. It never computes a bill, tax or total; those come from the API.
 
+## Screen preloading
+
+`RouteChunkPreloader` (mounted by `DashboardLayout`) downloads every sidebar screen's code in the background, so the first visit to a screen opens without waiting on the network.
+
+- After `window` load and an idle callback (`routeChunkPreload.ts`; timer fallback for Safari), it renders React Router's `PrefetchPageLinks` for each path in the permission-filtered nav. Each adds `modulepreload` links for the route module and all its imports.
+- Needs `routeDiscovery: { mode: 'initial' }` in `apps/inventory/react-router.config.ts`, since `PrefetchPageLinks` only sees routes in the client manifest.
+- Files under `/assets` are cached as immutable (`apps/inventory/netlify.toml`), so this is one download per device per deploy.
+- Screens reached only from inside another screen (e.g. checkout from Scan and Sell) are not in the nav, so they still load on first visit.
+
 ## UI chrome
 
 `AppShell`, `shellChrome` from `@inventory-platform/ui-kit`.
