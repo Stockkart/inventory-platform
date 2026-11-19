@@ -201,6 +201,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.90.12
         version: 5.101.2(react@19.2.0)
+      isbot:
+        specifier: ^5
+        version: 5.1.32
       react:
         specifier: ^19.0.0
         version: 19.2.0
