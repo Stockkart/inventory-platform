@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PlanResponse } from '@inventory-platform/plan/types';
-import { buildPlanComparison, planListPriceLabel } from './planPricing';
+import { buildPlanComparison, planListPriceLabel, plansForSelection } from './planPricing';
 
 function plan(overrides: Partial<PlanResponse>): PlanResponse {
   return {
@@ -73,5 +73,16 @@ describe('buildPlanComparison', () => {
     expect(byKey.CREDIT_BALANCE).toEqual([true, true]);
     expect(byKey.ACCOUNTING).toEqual([false, true]);
     expect(byKey.SALARY).toBeUndefined();
+  });
+});
+
+describe('plansForSelection', () => {
+  it('leaves the legacy add-on plans out of plan selection; they are sold at payment', () => {
+    const starter = plan({ id: 's', planName: 'Starter' });
+    const extraUser = plan({ id: 'u', planName: 'Extra User Plan' });
+    const extraShop = plan({ id: 'x', planName: 'Extra Shop Plan' });
+    const pro = plan({ id: 'p', planName: 'Professional' });
+
+    expect(plansForSelection([starter, extraUser, pro, extraShop])).toEqual([starter, pro]);
   });
 });

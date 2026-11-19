@@ -9,11 +9,13 @@ import {
   surfaceChrome,
   cn,
 } from '@inventory-platform/ui-kit';
-import { FEATURE_LABELS, formatRupees, planListPriceLabel, planYearlyPrice } from './planPricing';
-
-const EXTRA_USER_PLAN = 'Extra User Plan';
-const EXTRA_SHOP_PLAN = 'Extra Shop Plan';
-const EXTRA_PLANS = [EXTRA_USER_PLAN, EXTRA_SHOP_PLAN];
+import {
+  FEATURE_LABELS,
+  formatRupees,
+  planListPriceLabel,
+  planYearlyPrice,
+  plansForSelection,
+} from './planPricing';
 
 /** The backend decides which plan is highlighted. */
 export function isMostPopular(plan: PlanResponse): boolean {
@@ -21,15 +23,6 @@ export function isMostPopular(plan: PlanResponse): boolean {
 }
 
 export function buildPlanFeatures(plan: PlanResponse): string[] {
-  if (EXTRA_PLANS.includes(plan.planName)) {
-    if (plan.bestFor) {
-      return [plan.bestFor];
-    }
-
-    const price = (plan.arcPrice ?? plan.price)?.toLocaleString('en-IN') ?? '0';
-    return [`₹${price} per year`];
-  }
-
   const features: string[] = [];
 
   if (plan.unlimited) {
@@ -95,7 +88,6 @@ function PlanTile({
   showTrialBadge: boolean;
 }) {
   const features = buildPlanFeatures(plan);
-  const isExtra = EXTRA_PLANS.includes(plan.planName);
   const listPriceLabel = planListPriceLabel(plan);
 
   return (
@@ -110,18 +102,16 @@ function PlanTile({
         <Box className={surfaceChrome.planCardTop}>
           {isCurrent ? <Badge variant="success">Current</Badge> : null}
           {!isCurrent && isPopular ? <Badge variant="info">Most popular</Badge> : null}
-          {showTrialBadge && !isExtra ? <Badge variant="neutral">30-day trial</Badge> : null}
+          {showTrialBadge ? <Badge variant="neutral">30-day trial</Badge> : null}
         </Box>
 
         <Text as="h3" className={surfaceChrome.planCardName}>
           {plan.planName}
         </Text>
 
-        {!isExtra ? (
-          <Text as="p" className={surfaceChrome.planCardBestFor}>
-            {plan.bestFor || 'For your business'}
-          </Text>
-        ) : null}
+        <Text as="p" className={surfaceChrome.planCardBestFor}>
+          {plan.bestFor || 'For your business'}
+        </Text>
 
         <Box className={surfaceChrome.planCardPriceRow}>
           {listPriceLabel ? (
@@ -134,11 +124,11 @@ function PlanTile({
             {formatRupees(planYearlyPrice(plan))}
           </Text>
           <Text as="span" className={surfaceChrome.planCardPeriod}>
-            {plan.planName === EXTRA_USER_PLAN ? '/user/year' : '/year'}
+            /year
           </Text>
         </Box>
 
-        {!isExtra && plan.price != null && plan.price > 0 ? (
+        {plan.price != null && plan.price > 0 ? (
           <Text as="p" className={surfaceChrome.planCardOneTime}>
             One-time ₹{plan.price.toLocaleString('en-IN')} with support
           </Text>
@@ -180,13 +170,10 @@ export function PlanGrid({
   ctaLabel = 'Get Started',
   showTrialBadge = true,
 }: PlanGridProps) {
-  const corePlans = plans.filter((plan) => !EXTRA_PLANS.includes(plan.planName));
-  const addonPlans = plans.filter((plan) => EXTRA_PLANS.includes(plan.planName));
-
   return (
     <Box className={surfaceChrome.planGridWrap}>
       <Box display="grid" gap="md" width="full" className={chartChrome.autoGridFillWide}>
-        {corePlans.map((plan) => (
+        {plansForSelection(plans).map((plan) => (
           <PlanTile
             key={plan.id}
             plan={plan}
@@ -198,27 +185,6 @@ export function PlanGrid({
           />
         ))}
       </Box>
-
-      {addonPlans.length > 0 ? (
-        <Box className={surfaceChrome.planGridWrap}>
-          <Text as="h4" className={surfaceChrome.planGridAddonsTitle}>
-            Add-ons
-          </Text>
-          <Box display="grid" gap="md" width="full" className={chartChrome.autoGridFillWide}>
-            {addonPlans.map((plan) => (
-              <PlanTile
-                key={plan.id}
-                plan={plan}
-                isCurrent={currentPlanId != null && plan.id === currentPlanId}
-                isPopular={false}
-                onSelectPlan={onSelectPlan}
-                ctaLabel={ctaLabel === 'Upgrade' ? 'Add' : ctaLabel}
-                showTrialBadge={false}
-              />
-            ))}
-          </Box>
-        </Box>
-      ) : null}
     </Box>
   );
 }
