@@ -1,4 +1,5 @@
-import type { PlanTransactionResponse } from '../model/types';
+import type { QuoteResponse } from '@inventory-platform/plan/types';
+import type { PlanTransactionResponse, PurchaseLine } from '../model/types';
 import { formatRupees } from './planPricing';
 
 /** Labels for the Past purchases list. Formatting only: every figure comes from the API. */
@@ -52,13 +53,49 @@ export function periodLabel(tx: PlanTransactionResponse): string {
 export function refundLabel(tx: PlanTransactionResponse): string {
   const parts: string[] = [];
   if (tx.refundedToPaymentMethod != null) {
-    parts.push(`Refunded ${formatRupees(tx.refundedToPaymentMethod)} to ${tx.paymentMethod}`);
+    const amount = formatRupees(tx.refundedToPaymentMethod);
+    parts.push(tx.paymentMethod ? `${amount} to ${tx.paymentMethod}` : amount);
   }
   if (tx.walletCreditReturned != null) {
     parts.push(`${formatRupees(tx.walletCreditReturned)} to wallet`);
   }
-  if (parts.length === 0 && tx.status === 'REFUNDED') return 'Refunded';
-  return parts.join(' · ');
+  if (parts.length > 0) return `Refunded ${parts.join(' · ')}`;
+  return tx.status === 'REFUNDED' ? 'Refunded' : '';
+}
+
+/** Whether the row has anything to show when expanded. */
+export function hasPurchaseDetail(tx: PlanTransactionResponse): boolean {
+  return (
+    tx.amount != null ||
+    (tx.items?.length ?? 0) > 0 ||
+    tx.subtotal != null ||
+    tx.discountTotal != null ||
+    tx.walletCredit != null
+  );
+}
+
+/** "Paid · UPI" / "Paid" (method unknown). */
+export function paidLabel(tx: PlanTransactionResponse): string {
+  return tx.paymentMethod ? `Paid · ${tx.paymentMethod}` : 'Paid';
+}
+
+/** "₹999 each" for a line bought in quantity; "" otherwise. */
+export function lineEachLabel(line: PurchaseLine): string {
+  return line.quantity > 1 && line.unitPrice != null ? `${formatRupees(line.unitPrice)} each` : '';
+}
+
+/**
+ * Text under an applied plan voucher: the discount is the quote line's own figure, never computed.
+ */
+export function planVoucherText(
+  code: string,
+  planName: string,
+  quote: QuoteResponse | undefined,
+): string {
+  const discount = quote?.items.find(
+    (item) => item.voucherCode === code && item.discount > 0,
+  )?.discount;
+  return discount != null ? `${formatRupees(discount)} off ${planName}` : `Applies to ${planName}`;
 }
 
 /** The amount paid; a dash when the API hides it (assigned plans have no verified charge). */

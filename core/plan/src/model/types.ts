@@ -97,7 +97,8 @@ export interface PlanTransactionResponse {
   amount: number | null;
   /** Null on add-on-only orders, which have no term. */
   durationMonths: number | null;
-  paymentMethod: string;
+  /** Null on order-only rows whose order recorded no method. */
+  paymentMethod: string | null;
   provider?: string | null;
   providerPaymentId?: string | null;
   /** Purchase date shown; paidAt (else createdAt) for order-only rows. */

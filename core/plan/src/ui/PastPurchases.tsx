@@ -1,9 +1,23 @@
 import { useId, useState } from 'react';
-import { Badge, Button, Divider, Inline, Stack, Text } from '@inventory-platform/ui-kit';
+import { ChevronDown } from 'lucide-react';
+import {
+  Badge,
+  Box,
+  Button,
+  Divider,
+  Inline,
+  Stack,
+  Text,
+  cn,
+  surfaceChrome,
+} from '@inventory-platform/ui-kit';
 import type { PlanTransactionResponse, PurchaseLine } from '../model/types';
 import { formatRupees } from './planPricing';
 import {
   amountLabel,
+  hasPurchaseDetail,
+  lineEachLabel,
+  paidLabel,
   periodLabel,
   purchaseDateLabel,
   purchaseTitle,
@@ -33,7 +47,9 @@ function LineRow({ line }: { line: PurchaseLine }) {
           {line.quantity > 1 ? ` × ${line.quantity}` : ''}
         </Text>
         {line.unitPrice != null ? (
-          <Text variant="caption">{formatRupees(line.unitPrice)}</Text>
+          <Text variant="caption">
+            {line.quantity > 1 ? lineEachLabel(line) : formatRupees(line.unitPrice)}
+          </Text>
         ) : null}
       </Inline>
       {line.discount != null && line.discount > 0 ? (
@@ -66,14 +82,16 @@ function PurchaseDetail({ tx }: { tx: PlanTransactionResponse }) {
       {tx.walletCredit != null && tx.walletCredit > 0 ? (
         <Row label="Wallet credit" value={`−${formatRupees(tx.walletCredit)}`} />
       ) : null}
-      <Inline justify="between" width="full" gap="md">
-        <Text variant="caption" weight="semibold">
-          Paid · {tx.paymentMethod}
-        </Text>
-        <Text variant="caption" weight="semibold">
-          {amountLabel(tx)}
-        </Text>
-      </Inline>
+      {tx.amount != null ? (
+        <Inline justify="between" width="full" gap="md">
+          <Text variant="caption" weight="semibold">
+            {paidLabel(tx)}
+          </Text>
+          <Text variant="caption" weight="semibold">
+            {amountLabel(tx)}
+          </Text>
+        </Inline>
+      ) : null}
     </Stack>
   );
 }
@@ -85,6 +103,35 @@ function PurchaseRow({ tx }: { tx: PlanTransactionResponse }) {
   const refund = refundLabel(tx);
   const status = statusTagLabel(tx);
 
+  const summary = (
+    <>
+      <Box as="span" className={surfaceChrome.planTopUpHeading}>
+        <Box as="span">
+          <Text as="span" weight="semibold">
+            {purchaseTitle(tx)}
+          </Text>{' '}
+          {status ? <Badge variant="neutral">{status}</Badge> : null}{' '}
+          {refund ? <Badge variant="warning">{refund}</Badge> : null}
+        </Box>
+        <Text as="span" variant="caption" color="secondary">
+          {purchaseDateLabel(tx.createdAt)}
+          {period ? ` · ${period}` : ''}
+        </Text>
+      </Box>
+      <Text as="span" weight="semibold">
+        {amountLabel(tx)}
+      </Text>
+    </>
+  );
+
+  if (!hasPurchaseDetail(tx)) {
+    return (
+      <Box className={surfaceChrome.planTopUpToggle} style={{ display: 'flex' }}>
+        {summary}
+      </Box>
+    );
+  }
+
   return (
     <Stack gap="sm">
       <Button
@@ -92,34 +139,21 @@ function PurchaseRow({ tx }: { tx: PlanTransactionResponse }) {
         variant="ghost"
         align="start"
         fullWidth
+        className={surfaceChrome.planTopUpToggle}
         aria-expanded={open}
         aria-controls={detailId}
         onClick={() => setOpen((value) => !value)}
       >
-        <Inline justify="between" width="full" gap="md">
-          <Stack gap="xs" align="start">
-            <Inline gap="sm" align="center">
-              <Text as="span" weight="semibold">
-                {purchaseTitle(tx)}
-              </Text>
-              {status ? <Badge variant="neutral">{status}</Badge> : null}
-              {refund ? <Badge variant="warning">{refund}</Badge> : null}
-            </Inline>
-            <Text as="span" variant="caption" color="secondary">
-              {purchaseDateLabel(tx.createdAt)}
-              {period ? ` · ${period}` : ''}
-            </Text>
-          </Stack>
-          <Text as="span" weight="semibold">
-            {amountLabel(tx)}
-          </Text>
-        </Inline>
+        {summary}
+        <ChevronDown
+          size={18}
+          aria-hidden
+          className={cn(surfaceChrome.planTopUpChevron, open && surfaceChrome.planTopUpChevronOpen)}
+        />
       </Button>
-      {open ? (
-        <Stack gap="sm" id={detailId}>
-          <PurchaseDetail tx={tx} />
-        </Stack>
-      ) : null}
+      <Box id={detailId} hidden={!open}>
+        {open ? <PurchaseDetail tx={tx} /> : null}
+      </Box>
     </Stack>
   );
 }

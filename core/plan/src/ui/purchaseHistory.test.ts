@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import type { QuoteResponse } from '@inventory-platform/plan/types';
 import type { PlanTransactionResponse } from '../model/types';
 import {
   amountLabel,
+  hasPurchaseDetail,
+  lineEachLabel,
+  paidLabel,
+  planVoucherText,
   periodLabel,
   purchaseDateLabel,
   purchaseTitle,
@@ -109,8 +114,13 @@ describe('refundLabel', () => {
   it('shows only the payment-method part on a partial refund', () => {
     expect(refundLabel(tx({ refundedToPaymentMethod: 1000 }))).toBe('Refunded ₹1,000 to UPI');
   });
+  it('drops the method when it is missing', () => {
+    expect(refundLabel(tx({ paymentMethod: null, refundedToPaymentMethod: 1000 }))).toBe(
+      'Refunded ₹1,000',
+    );
+  });
   it('shows only the wallet part when nothing went to the gateway', () => {
-    expect(refundLabel(tx({ walletCreditReturned: 2000 }))).toBe('₹2,000 to wallet');
+    expect(refundLabel(tx({ walletCreditReturned: 2000 }))).toBe('Refunded ₹2,000 to wallet');
   });
   it('is plain "Refunded" for a refunded order with no figures', () => {
     expect(refundLabel(tx({ status: 'REFUNDED' }))).toBe('Refunded');
@@ -149,5 +159,44 @@ describe('statusTagLabel', () => {
 describe('purchaseDateLabel', () => {
   it('formats the purchase day in India', () => {
     expect(purchaseDateLabel('2026-11-12T20:00:00Z')).toBe('13 Nov 2026');
+  });
+});
+
+describe('hasPurchaseDetail / paidLabel / lineEachLabel', () => {
+  it('has no detail for an assigned row with nothing to show', () => {
+    expect(hasPurchaseDetail(tx({ kind: 'ASSIGNED', amount: null }))).toBe(false);
+    expect(hasPurchaseDetail(tx())).toBe(true);
+    expect(hasPurchaseDetail(tx({ amount: null, subtotal: 100 }))).toBe(true);
+  });
+  it('omits a missing method', () => {
+    expect(paidLabel(tx())).toBe('Paid · UPI');
+    expect(paidLabel(tx({ paymentMethod: null }))).toBe('Paid');
+  });
+  it('shows the unit price of a multi-quantity line', () => {
+    expect(lineEachLabel({ ...addOnLine('Extra user', 2), unitPrice: 999 })).toBe('₹999 each');
+    expect(lineEachLabel(addOnLine('SMS pack', 1))).toBe('');
+  });
+});
+
+describe('planVoucherText', () => {
+  const quote = {
+    items: [
+      {
+        type: 'PLAN',
+        code: 'STARTER',
+        name: 'Starter',
+        quantity: 1,
+        unitPrice: 7999,
+        discount: 1000,
+        voucherCode: 'STARTER1K',
+      },
+    ],
+  } as unknown as QuoteResponse;
+  it('shows the discount of the matching quote line', () => {
+    expect(planVoucherText('STARTER1K', 'Starter', quote)).toBe('₹1,000 off Starter');
+  });
+  it('falls back when no line matches or there is no quote', () => {
+    expect(planVoucherText('OTHER', 'Starter', quote)).toBe('Applies to Starter');
+    expect(planVoucherText('STARTER1K', 'Starter', undefined)).toBe('Applies to Starter');
   });
 });

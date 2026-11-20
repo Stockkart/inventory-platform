@@ -3,7 +3,7 @@ import { Button, FormField, Inline, Input, Stack, Tag, Text } from '@inventory-p
 import type { QuoteResponse } from '@inventory-platform/plan/types';
 import { normaliseVoucherCode, voucherRejectionMessage } from '../checkout';
 import { useValidateVoucherMutation } from '../queries/hooks';
-import { formatRupees } from './planPricing';
+import { planVoucherText } from './purchaseHistory';
 
 interface VoucherFieldProps {
   applied: string[];
@@ -106,14 +106,9 @@ export function VoucherField({
           {applied.map((code) => {
             const planName = planNames[code];
             if (!planName) return null;
-            const discount = quote?.items.find(
-              (item) => item.voucherCode === code && item.discount > 0,
-            )?.discount;
             return (
               <Text key={code} variant="caption" color="success">
-                {discount != null
-                  ? `${formatRupees(discount)} off ${planName}`
-                  : `Applies to ${planName}`}
+                {planVoucherText(code, planName, quote)}
               </Text>
             );
           })}
