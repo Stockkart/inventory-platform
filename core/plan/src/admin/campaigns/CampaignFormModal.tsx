@@ -217,7 +217,7 @@ export function CampaignFormModal({ open, campaign, onClose }: CampaignFormModal
 
           <Checkbox
             id="campaign-dismissible"
-            label="Shops can dismiss the banner"
+            label="Visitors can dismiss the banner on the website (never on My Plan)"
             checked={form.dismissible}
             onChange={(e) => set('dismissible', e.target.checked)}
             disabled={busy}

@@ -4,10 +4,11 @@
 }
 
 .strip {
-  /* Deep maroon ticker; both colours derive from the danger token. */
-  --sale-strip-bg: color-mix(in srgb, var(--sk-color-danger) 30%, #000);
-  --sale-strip-text: color-mix(in srgb, var(--sk-color-danger) 60%, #fff);
+  /* Brand navy ticker with amber accents, matching the StockKart brochure. */
+  --sale-strip-bg: var(--sk-color-bg-sidebar);
+  --sale-strip-text: color-mix(in srgb, #fff 74%, var(--sk-color-bg-sidebar));
   --sale-strip-strong: #fff;
+  --sale-strip-accent: color-mix(in srgb, var(--sk-color-warning) 72%, #fff);
 
   position: relative;
   display: flex;
@@ -80,7 +81,7 @@ button.body:focus-visible {
 
 .separator {
   font-size: 0.875rem;
-  opacity: 0.8;
+  color: var(--sale-strip-accent);
 }
 
 .dismiss {

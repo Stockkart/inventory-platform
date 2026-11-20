@@ -21,13 +21,18 @@ function isAppPath(path: string | null): path is string {
 
 export interface CampaignBannerProps {
   className?: string;
+  /**
+   * Set `false` to hide the close button and ignore an earlier dismissal, whatever the campaign
+   * says. My Plan uses this: it is where the sale applies, so the offer must stay visible there.
+   */
+  dismissible?: boolean;
 }
 
 /**
  * The active sale as a scrolling strip, if any. Marketing pages pass it to `Header` so it sits
  * under the nav. Renders nothing while loading, on error, or once dismissed.
  */
-export function CampaignBanner({ className }: CampaignBannerProps) {
+export function CampaignBanner({ className, dismissible = true }: CampaignBannerProps) {
   const navigate = useNavigate();
   const { data: campaign, dataUpdatedAt, refetch } = useActiveCampaignQuery();
   const onBoundary = useCallback(() => void refetch(), [refetch]);
@@ -39,8 +44,8 @@ export function CampaignBanner({ className }: CampaignBannerProps) {
 
   // Read storage after mount so server and first client render match.
   useEffect(() => {
-    setDismissed(code != null && state != null && isCampaignDismissed(code, state));
-  }, [code, state]);
+    setDismissed(dismissible && code != null && state != null && isCampaignDismissed(code, state));
+  }, [code, state, dismissible]);
 
   if (!campaign || dismissed) return null;
 
@@ -58,7 +63,7 @@ export function CampaignBanner({ className }: CampaignBannerProps) {
       actionLabel={ctaPath ? campaign.ctaLabel ?? undefined : undefined}
       onActivate={ctaPath ? () => navigate(ctaPath) : undefined}
       onDismiss={
-        campaign.dismissible
+        dismissible && campaign.dismissible
           ? () => {
               dismissCampaign(campaign.code, campaign.state);
               setDismissed(true);

@@ -4,7 +4,7 @@ import { cn } from '../utils/cn';
 import { IconButton } from '../forms/IconButton';
 import styles from './SaleBanner.module.css';
 
-/** Kept on the strip as `data-sale-theme`; every theme currently uses the same maroon strip. */
+/** Kept on the strip as `data-sale-theme`; every theme currently uses the same navy strip. */
 export type SaleBannerTheme = 'default' | 'monsoon' | 'summer' | 'diwali' | 'newYear';
 
 export interface SaleBannerProps {
