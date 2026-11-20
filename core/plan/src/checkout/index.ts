@@ -1,5 +1,6 @@
 export {
   addOnPriceLabel,
+  buildAddOnOnlyRequest,
   buildQuoteRequest,
   maxQuantityFor,
   newIdempotencyKey,
@@ -11,3 +12,14 @@ export {
   type AddOnSelection,
   type VoucherDenial,
 } from './cart';
+export {
+  PLAN_PAYMENT_PATH,
+  PLAN_STATUS_PATH,
+  addOnGrantLabel,
+  addOnOnlyPaymentPath,
+  canBuyAddOnsAlone,
+  isComingSoonAddOn,
+  readAddOnOnlyIntent,
+  topUpAddOns,
+  type AddOnOnlyIntent,
+} from './topUp';

@@ -18,11 +18,15 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import type { CreatePlanCheckoutRequest } from '@inventory-platform/plan/types';
 import {
+  PLAN_STATUS_PATH,
+  buildAddOnOnlyRequest,
   buildQuoteRequest,
   newIdempotencyKey,
   paidFromWallet,
+  readAddOnOnlyIntent,
   readVoucherRejection,
   sellableAddOns,
+  topUpAddOns,
   type AddOnSelection,
 } from '../checkout';
 import { getPaymentCheckout } from '../payment/index.js';
@@ -42,6 +46,7 @@ import {
   usePlanQuoteQuery,
   usePlansQuery,
   usePlanTransactionsQuery,
+  useShopPlanStatusQuery,
   useVerifyPlanPaymentMutation,
   useWalletQuery,
 } from '../queries/hooks';
@@ -55,6 +60,11 @@ export function PlanPaymentPage() {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const planIdFromUrl = searchParams.get('planId');
+  /** `?addOn=CODE&qty=N` with no planId: buy add-ons on their own for the current paid plan. */
+  const addOnIntent = useMemo(() => readAddOnOnlyIntent(searchParams), [searchParams]);
+  const addOnOnly = addOnIntent != null;
+  const intentCode = addOnIntent?.code ?? null;
+  const intentQuantity = addOnIntent?.quantity ?? 0;
   const [error, setError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
 
@@ -75,6 +85,9 @@ export function PlanPaymentPage() {
   const selectedListPrice = selectedPlan ? planListPriceLabel(selectedPlan) : null;
   /** Legacy plans have no catalogue code: no add-ons, vouchers or quote, just the plan price. */
   const planCode = selectedPlan?.code ?? null;
+  /** Server-quoted cart: a catalogue plan, or add-ons on their own. Legacy plans skip the quote. */
+  const priced = planCode != null || addOnOnly;
+  const { data: planStatus } = useShopPlanStatusQuery({ enabled: addOnOnly });
 
   const [addOnSelection, setAddOnSelection] = useState<AddOnSelection>({});
   const [voucherCodes, setVoucherCodes] = useState<string[]>([]);
@@ -83,30 +96,31 @@ export function PlanPaymentPage() {
   const [useWalletCredit, setUseWalletCredit] = useState(false);
 
   useEffect(() => {
-    setAddOnSelection({});
+    setAddOnSelection(intentCode ? { [intentCode]: intentQuantity } : {});
     setVoucherCodes([]);
     setVoucherError(null);
-  }, [selectedPlan?.id]);
+  }, [selectedPlan?.id, intentCode, intentQuantity]);
 
-  const { data: wallet } = useWalletQuery({ enabled: planCode != null });
+  const { data: wallet } = useWalletQuery({ enabled: priced });
   const walletBalance = wallet?.availableBalance ?? 0;
   const applyWalletCredit = useWalletCredit && walletBalance > 0;
 
-  const { data: addOnCatalogue = [] } = useAddOnsQuery({ enabled: planCode != null });
-  const addOns = useMemo(
-    () => (selectedPlan ? sellableAddOns(addOnCatalogue, selectedPlan) : []),
-    [addOnCatalogue, selectedPlan],
-  );
+  const { data: addOnCatalogue = [] } = useAddOnsQuery({ enabled: priced });
+  const addOns = useMemo(() => {
+    if (addOnOnly) return planStatus ? topUpAddOns(addOnCatalogue, planStatus) : [];
+    return selectedPlan ? sellableAddOns(addOnCatalogue, selectedPlan) : [];
+  }, [addOnOnly, addOnCatalogue, planStatus, selectedPlan]);
 
-  const quoteRequest = useMemo(
-    () =>
-      planCode
-        ? buildQuoteRequest(planCode, addOnSelection, voucherCodes, applyWalletCredit)
-        : null,
-    [planCode, addOnSelection, voucherCodes, applyWalletCredit],
-  );
+  const quoteRequest = useMemo(() => {
+    if (addOnOnly) {
+      return buildAddOnOnlyRequest(addOnSelection, voucherCodes, applyWalletCredit);
+    }
+    return planCode
+      ? buildQuoteRequest(planCode, addOnSelection, voucherCodes, applyWalletCredit)
+      : null;
+  }, [addOnOnly, planCode, addOnSelection, voucherCodes, applyWalletCredit]);
   const quoteQuery = usePlanQuoteQuery(quoteRequest, { retry: false });
-  const quote = quoteQuery.isError ? undefined : quoteQuery.data;
+  const quote = quoteQuery.isError || !quoteRequest ? undefined : quoteQuery.data;
   const walletCoversAll = quote != null && quote.grandTotal === 0 && quote.walletCredit > 0;
 
   const dropRejectedVoucher = useCallback((err: unknown): boolean => {
@@ -141,13 +155,17 @@ export function PlanPaymentPage() {
   const verifyPaymentMutation = useVerifyPlanPaymentMutation();
 
   const handlePay = async () => {
-    if (!user?.shopId || !selectedPlan) return;
+    if (!user?.shopId) return;
+    let request: CreatePlanCheckoutRequest;
+    if (quoteRequest) {
+      request = quoteRequest;
+    } else if (selectedPlan && !addOnOnly) {
+      request = { planId: selectedPlan.id, durationMonths: 12 };
+    } else {
+      return;
+    }
     setPaying(true);
     setError(null);
-    const request: CreatePlanCheckoutRequest = quoteRequest ?? {
-      planId: selectedPlan.id,
-      durationMonths: 12,
-    };
     const cart = JSON.stringify(request);
     if (idempotency.current?.cart !== cart) {
       idempotency.current = { cart, key: newIdempotencyKey() };
@@ -177,7 +195,7 @@ export function PlanPaymentPage() {
       idempotency.current = null;
       await Promise.all([fetchPlanStatus({ force: true }), fetchEntitlements({ force: true })]);
       await refetchTransactions();
-      navigate('/dashboard', { replace: true });
+      navigate(addOnOnly ? PLAN_STATUS_PATH : '/dashboard', { replace: true });
     } catch (err) {
       if (dropRejectedVoucher(err)) return;
       setError(err instanceof Error ? err.message : 'Failed to process payment');
@@ -194,6 +212,83 @@ export function PlanPaymentPage() {
       hour: '2-digit',
       minute: '2-digit',
     });
+
+  const cartControls = (
+    <>
+      <AddOnPicker
+        addOns={addOns}
+        selection={addOnSelection}
+        onChange={changeAddOn}
+        disabled={paying}
+      />
+      <VoucherField
+        applied={voucherCodes}
+        onApply={(code) => {
+          setVoucherError(null);
+          setVoucherCodes((codes) => [...codes, code]);
+        }}
+        onRemove={(code) => {
+          setVoucherError(null);
+          setVoucherCodes((codes) => codes.filter((c) => c !== code));
+        }}
+        quoteError={voucherError}
+        disabled={paying}
+      />
+      {walletBalance > 0 ? (
+        <Switch
+          id="use-wallet-credit"
+          label={`Use wallet credit (${formatRupees(walletBalance)} available)`}
+          checked={useWalletCredit}
+          disabled={paying}
+          onChange={(event) => setUseWalletCredit(event.target.checked)}
+        />
+      ) : null}
+      <Divider />
+      <QuoteSummary quote={quote} loading={quoteQuery.isFetching} />
+      {quoteFailure ? <Alert variant="danger">{quoteFailure}</Alert> : null}
+    </>
+  );
+
+  let payLabel: string;
+  if (paying) {
+    payLabel = walletCoversAll ? 'Paying from wallet…' : 'Opening Razorpay…';
+  } else if (priced) {
+    if (!quoteRequest) {
+      payLabel = 'Choose an add-on';
+    } else if (!quote) {
+      payLabel = 'Pricing your order…';
+    } else {
+      payLabel = walletCoversAll
+        ? 'Pay with wallet credit'
+        : `Pay ${formatRupees(quote.grandTotal)}`;
+    }
+  } else if (selectedPlan) {
+    payLabel = `Pay ₹${selectedPlan.arcPrice?.toLocaleString('en-IN')}${
+      selectedPlan.planName === 'Extra User Plan' ? ' per user/year' : '/year'
+    }`;
+  } else {
+    payLabel = 'Pay';
+  }
+
+  const payAction = (
+    <Stack gap="sm">
+      <Button
+        type="button"
+        variant="solid"
+        onClick={() => void handlePay()}
+        disabled={paying || (priced && (!quoteRequest || !quote || quoteQuery.isFetching))}
+        loading={paying}
+        className={surfaceChrome.maxW400}
+      >
+        {payLabel}
+      </Button>
+      <Text variant="caption" color="secondary">
+        {walletCoversAll
+          ? 'Your wallet credit covers this order; no card or UPI payment is needed.'
+          : 'Secured by Razorpay. Choose your payment method in the checkout window.'}
+      </Text>
+    </Stack>
+  );
 
   if (transactionsLoading && transactions.length === 0) {
     return (
@@ -243,77 +338,37 @@ export function PlanPaymentPage() {
 
                 <Divider />
 
-                {planCode ? (
-                  <>
-                    <AddOnPicker
-                      addOns={addOns}
-                      selection={addOnSelection}
-                      onChange={changeAddOn}
-                      disabled={paying}
-                    />
-                    <VoucherField
-                      applied={voucherCodes}
-                      onApply={(code) => {
-                        setVoucherError(null);
-                        setVoucherCodes((codes) => [...codes, code]);
-                      }}
-                      onRemove={(code) => {
-                        setVoucherError(null);
-                        setVoucherCodes((codes) => codes.filter((c) => c !== code));
-                      }}
-                      quoteError={voucherError}
-                      disabled={paying}
-                    />
-                    {walletBalance > 0 ? (
-                      <Switch
-                        id="use-wallet-credit"
-                        label={`Use wallet credit (${formatRupees(walletBalance)} available)`}
-                        checked={useWalletCredit}
-                        disabled={paying}
-                        onChange={(event) => setUseWalletCredit(event.target.checked)}
-                      />
-                    ) : null}
-                    <Divider />
-                    <QuoteSummary quote={quote} loading={quoteQuery.isFetching} />
-                    {quoteFailure ? <Alert variant="danger">{quoteFailure}</Alert> : null}
-                  </>
-                ) : null}
+                {planCode ? cartControls : null}
 
-                <Stack gap="sm">
-                  <Button
-                    type="button"
-                    variant="solid"
-                    onClick={() => void handlePay()}
-                    disabled={paying || (planCode != null && (!quote || quoteQuery.isFetching))}
-                    loading={paying}
-                    className={surfaceChrome.maxW400}
-                  >
-                    {paying
-                      ? walletCoversAll
-                        ? 'Paying from wallet…'
-                        : 'Opening Razorpay…'
-                      : planCode
-                      ? quote
-                        ? walletCoversAll
-                          ? 'Pay with wallet credit'
-                          : `Pay ${formatRupees(quote.grandTotal)}`
-                        : 'Pricing your order…'
-                      : `Pay ₹${selectedPlan.arcPrice?.toLocaleString('en-IN')}${
-                          selectedPlan.planName === 'Extra User Plan' ? ' per user/year' : '/year'
-                        }`}
-                  </Button>
-                  <Text variant="caption" color="secondary">
-                    {walletCoversAll
-                      ? 'Your wallet credit covers this order; no card or UPI payment is needed.'
-                      : 'Secured by Razorpay. Choose your payment method in the checkout window.'}
-                  </Text>
-                </Stack>
+                {payAction}
               </Stack>
             </CardBody>
           </Card>
         ) : null}
 
-        {!selectedPlan ? (
+        {addOnOnly ? (
+          <Card>
+            <CardBody>
+              <Stack gap="md">
+                <Stack gap="xs">
+                  <Text variant="heading3" weight="semibold">
+                    Buy add-ons
+                  </Text>
+                  <Text color="secondary">
+                    {planStatus?.plan
+                      ? `Added to your current ${planStatus.plan.planName} plan.`
+                      : 'Added to your current plan.'}
+                  </Text>
+                </Stack>
+                <Divider />
+                {cartControls}
+                {payAction}
+              </Stack>
+            </CardBody>
+          </Card>
+        ) : null}
+
+        {!selectedPlan && !addOnOnly ? (
           <Card>
             <CardBody>
               <Stack gap="md" align="center" padding="lg">

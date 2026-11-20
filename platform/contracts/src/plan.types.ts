@@ -112,9 +112,12 @@ export interface QuoteAddOnLine {
   quantity: number;
 }
 
-/** Cart to price via POST /plans/orders/quote. */
+/**
+ * Cart to price via POST /plans/orders/quote. Leave `planCode` out and send `addOns` for an
+ * add-on-only order, priced against the shop's current paid plan.
+ */
 export interface QuoteRequest {
-  planCode: string;
+  planCode?: string;
   /** Plans are sold yearly; omit or send 12. */
   durationMonths?: number;
   addOns?: QuoteAddOnLine[];
@@ -192,6 +195,8 @@ export interface VoucherRejectedDetails {
  * never compute or send a total from the client.
  */
 export interface QuoteResponse {
+  /** True for an add-on-only cart: no PLAN line, priced against the shop's current paid plan. */
+  addOnOnly?: boolean;
   items: QuoteItem[];
   subtotal: number;
   discountTotal: number;
@@ -200,6 +205,7 @@ export interface QuoteResponse {
   taxInclusive: boolean;
   grandTotal: number;
   currency: string;
+  /** 0 on an add-on-only cart, which has no term; never show a duration for it. */
   durationMonths: number;
   pricingVersion: number;
   quotedAt: string;

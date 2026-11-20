@@ -47,6 +47,8 @@ export interface PlanCheckoutResponse {
   amount: number;
   currency: string;
   planName: string;
+  /** True when the order buys add-ons only, on top of the shop's current paid plan. */
+  addOnOnly?: boolean;
   items?: QuoteItem[];
   subtotal?: number;
   discountTotal?: number;
@@ -89,7 +91,8 @@ export interface PlanTransactionResponse {
   planId: string;
   planName: string;
   amount: number;
-  durationMonths: number;
+  /** Null on add-on-only orders, which have no term. */
+  durationMonths: number | null;
   paymentMethod: string;
   provider?: string | null;
   providerPaymentId?: string | null;

@@ -10,11 +10,13 @@ import {
   cn,
 } from '@inventory-platform/ui-kit';
 import {
+  COMING_SOON_FEATURES,
   FEATURE_LABELS,
   formatRupees,
   planListPriceLabel,
   planYearlyPrice,
   plansForSelection,
+  type PlanFeatureLine,
 } from './planPricing';
 
 const FEATURE_ORDER = Object.keys(FEATURE_LABELS) as PlanFeature[];
@@ -24,48 +26,57 @@ export function isMostPopular(plan: PlanResponse): boolean {
   return plan.badge === 'MOST_POPULAR';
 }
 
-export function buildPlanFeatures(plan: PlanResponse): string[] {
-  const features: string[] = [];
+/** Card lines in a fixed order; SMS / WhatsApp allowances and MARKETING are tagged coming soon. */
+export function buildPlanFeatures(plan: PlanResponse): PlanFeatureLine[] {
+  const features: PlanFeatureLine[] = [];
+  const add = (label: string, comingSoon = false) =>
+    features.push(comingSoon ? { label, comingSoon } : { label });
 
   if (plan.unlimited) {
-    features.push('Unlimited billing', 'Unlimited SMS', 'Unlimited WhatsApp');
+    add('Unlimited billing');
+    add('Unlimited SMS', true);
+    add('Unlimited WhatsApp', true);
     return features;
   }
 
   if (plan.billingLimit != null) {
-    features.push(`Billing cap ₹${(plan.billingLimit / 100000).toFixed(1)}L/month`);
+    add(`Billing cap ₹${(plan.billingLimit / 100000).toFixed(1)}L/month`);
   }
 
   if (plan.billCountLimit != null) {
-    features.push(`${plan.billCountLimit} bills/month`);
+    add(`${plan.billCountLimit} bills/month`);
   }
 
   // A null limit is unmetered on the backend, not "none".
   if (plan.smsLimit != null) {
-    features.push(plan.smsLimit > 0 ? `${plan.smsLimit} SMS/month` : 'No SMS');
+    if (plan.smsLimit > 0) add(`${plan.smsLimit} SMS/month`, true);
+    else add('No SMS');
   }
 
   if (plan.whatsappLimit != null) {
-    features.push(plan.whatsappLimit > 0 ? `${plan.whatsappLimit} WhatsApp/month` : 'No WhatsApp');
+    if (plan.whatsappLimit > 0) add(`${plan.whatsappLimit} WhatsApp/month`, true);
+    else add('No WhatsApp');
   }
 
   if (plan.userLimit != null) {
-    features.push(`${plan.userLimit} user${plan.userLimit > 1 ? 's' : ''}`);
+    add(`${plan.userLimit} user${plan.userLimit > 1 ? 's' : ''}`);
   } else if (plan.code) {
-    features.push('Unlimited users');
+    add('Unlimited users');
   }
 
   if (plan.roleLimit != null) {
-    features.push(`${plan.roleLimit} staff role${plan.roleLimit === 1 ? '' : 's'}`);
+    add(`${plan.roleLimit} staff role${plan.roleLimit === 1 ? '' : 's'}`);
   }
 
   if (plan.ocrLimit != null) {
-    features.push(`${plan.ocrLimit.toLocaleString('en-IN')} OCR invoices/month`);
+    add(`${plan.ocrLimit.toLocaleString('en-IN')} OCR invoices/month`);
   }
 
   // The API sends features as a set, so list them in one fixed order on every card.
   for (const feature of FEATURE_ORDER) {
-    if (plan.features?.includes(feature)) features.push(FEATURE_LABELS[feature]);
+    if (plan.features?.includes(feature)) {
+      add(FEATURE_LABELS[feature], COMING_SOON_FEATURES.includes(feature));
+    }
   }
 
   return features;
@@ -147,11 +158,18 @@ function PlanTile({
 
         <Box className={surfaceChrome.planCardFeatures}>
           {features.map((feature) => (
-            <Box key={feature} className={surfaceChrome.planCardFeature}>
+            <Box key={feature.label} className={surfaceChrome.planCardFeature}>
               <Box as="span" className={surfaceChrome.planCardCheck} aria-hidden>
                 <Check size={11} strokeWidth={3} />
               </Box>
-              <Text as="span">{feature}</Text>
+              <Text as="span">
+                {feature.label}
+                {feature.comingSoon ? (
+                  <Badge variant="warning" className={surfaceChrome.planComingSoon}>
+                    Coming soon
+                  </Badge>
+                ) : null}
+              </Text>
             </Box>
           ))}
         </Box>

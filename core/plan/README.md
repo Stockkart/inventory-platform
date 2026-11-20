@@ -40,3 +40,13 @@ The landing-page carousel (ui-kit `PlanCard`) and the `/plans` cards (`surfaceCh
 ## Plan comparison
 
 `buildPlanComparison` (`ui/planPricing.ts`) builds the `/plans` table in the 2026 brochure's sections. "Billing & stock" rows are fixed text because every plan includes them; every other row comes from the plan API: `features`, `roleLimit` ("Limited (2 roles)" / "Advanced") and `attendanceUserLimit` ("Up to 4 users"), needing inventory-api #341. Rows no plan includes are hidden, so the table degrades cleanly on an older API.
+
+## Add-ons & top-ups (add-on-only orders)
+
+On an active paid plan (`canBuyAddOnsAlone`: not trial, not expired, has a plan) My Plan shows a collapsed **Add-ons & top-ups** disclosure above "Available plans". It renders nothing on a trial, an expired plan or no plan. Opening it loads `GET /plans/addons` and lists `topUpAddOns` (the same filter as checkout: feature add-ons the plan already includes and seats on unlimited plans are hidden). Each card shows the catalogue price label and what one unit gives (`addOnGrantLabel`); stackable add-ons get a stepper capped at `maxQuantity` (UI bound only, the API validates).
+
+**Buy** opens `/dashboard/plan-payment?addOn=CODE&qty=N` with no `planId`. `readAddOnOnlyIntent` reads that as an add-on-only order: the page builds a cart with no plan (`buildAddOnOnlyRequest`), prices it with `POST /plans/orders/quote`, shows the server's lines and totals, and checks out through the usual Razorpay / wallet flow, then returns to My Plan. API errors (for example "Add-ons can be bought on their own only on an active paid plan") show in an Alert. A `planId` in the URL always means the plan flow, unchanged. Add-on-only orders have no term (quote `durationMonths: 0`, stored order `null`), so no duration is shown; an empty cart is never sent (the API would answer "Choose a plan or at least one add-on"). Needs the inventory-api add-on-only quote/checkout (`addOnOnly` on the responses).
+
+## Coming soon: SMS and WhatsApp
+
+StockKart does not send SMS or WhatsApp yet. Every SMS / WhatsApp allowance carries the amber "Coming soon" badge (`surfaceChrome.planComingSoon`): plan card lines (`buildPlanFeatures` returns `{ label, comingSoon }`, rendered by `PlanGrid` and the ui-kit `PlanCard`), the "SMS per month" / "WhatsApp per month" rows of the comparison table, the My Plan usage tiles, and `grantType: 'SMS'` add-ons (shown, but Buy and the checkout checkbox are disabled; the API rejects them with "SMS packs are coming soon").

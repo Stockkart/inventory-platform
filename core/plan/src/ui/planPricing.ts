@@ -18,6 +18,15 @@ export const FEATURE_LABELS: Record<PlanFeature, string> = {
 export const COMING_SOON_FEATURES: readonly PlanFeature[] = ['MARKETING'];
 
 /**
+ * One line on a plan card; matches ui-kit `PlanCardFeature`. StockKart does not send SMS or
+ * WhatsApp yet, so every SMS / WhatsApp allowance carries the same "Coming soon" tag as MARKETING.
+ */
+export interface PlanFeatureLine {
+  label: string;
+  comingSoon?: boolean;
+}
+
+/**
  * Brochure "Billing & stock" rows. The backend does not gate these (its PlanFeature enum lists
  * only what some plan lacks), so every plan includes them.
  */
@@ -161,12 +170,14 @@ export function buildPlanComparison(allPlans: PlanResponse[]): PlanComparison {
       key: 'sms',
       label: 'SMS per month',
       values: plans.map((plan) => limitValue(plan.smsLimit, plan.unlimited)),
+      comingSoon: true,
     },
     {
       group: LIMITS_GROUP,
       key: 'whatsapp',
       label: 'WhatsApp per month',
       values: plans.map((plan) => limitValue(plan.whatsappLimit, plan.unlimited)),
+      comingSoon: true,
     },
     {
       group: LIMITS_GROUP,

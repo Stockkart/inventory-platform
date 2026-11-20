@@ -3,6 +3,7 @@ import { ApiError } from '@inventory-platform/api-client';
 import type { AddOnResponse, PlanResponse } from '@inventory-platform/plan/types';
 import {
   addOnPriceLabel,
+  buildAddOnOnlyRequest,
   buildQuoteRequest,
   maxQuantityFor,
   normaliseVoucherCode,
@@ -93,6 +94,24 @@ describe('buildQuoteRequest', () => {
       applyWalletCredit: true,
     });
     expect(buildQuoteRequest('GROWTH', {}, [], false)).not.toHaveProperty('applyWalletCredit');
+  });
+});
+
+describe('buildAddOnOnlyRequest', () => {
+  it('sends add-ons with no plan code or duration', () => {
+    expect(buildAddOnOnlyRequest({ SEAT: 2, OCR: 1 }, ['B', 'A'], true)).toEqual({
+      addOns: [
+        { code: 'OCR', quantity: 1 },
+        { code: 'SEAT', quantity: 2 },
+      ],
+      voucherCodes: ['A', 'B'],
+      applyWalletCredit: true,
+    });
+  });
+
+  it('is null with nothing selected, since the server needs one add-on', () => {
+    expect(buildAddOnOnlyRequest({}, [])).toBeNull();
+    expect(buildAddOnOnlyRequest({ SEAT: 0 }, ['A'])).toBeNull();
   });
 });
 

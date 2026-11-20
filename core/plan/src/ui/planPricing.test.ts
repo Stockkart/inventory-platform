@@ -109,6 +109,16 @@ describe('buildPlanComparison', () => {
     const row = buildPlanComparison([starter, marketing]).rows.find((r) => r.key === 'MARKETING');
     expect(row).toMatchObject({ group: 'Grow your business', comingSoon: true });
   });
+
+  it('tags the SMS and WhatsApp limits coming soon, since nothing is sent yet', () => {
+    const byKey = Object.fromEntries(
+      buildPlanComparison([starter, pro]).rows.map((row) => [row.key, row]),
+    );
+    expect(byKey.sms).toMatchObject({ group: 'Plan limits', comingSoon: true });
+    expect(byKey.whatsapp).toMatchObject({ group: 'Plan limits', comingSoon: true });
+    expect(byKey.users.comingSoon).toBeFalsy();
+    expect(byKey.ocr.comingSoon).toBeFalsy();
+  });
 });
 
 describe('plansForSelection', () => {

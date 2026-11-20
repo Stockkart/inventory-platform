@@ -3,6 +3,7 @@ import type {
   AddOnResponse,
   PlanCheckoutResponse,
   PlanResponse,
+  QuoteAddOnLine,
   QuoteRequest,
   VoucherRejectedDetails,
   VoucherRejection,
@@ -41,6 +42,23 @@ export function addOnPriceLabel(addOn: AddOnResponse): string {
   return addOn.billingType === 'ANNUAL' ? `${price} / year` : `${price} one-time`;
 }
 
+function addOnLines(selection: AddOnSelection): QuoteAddOnLine[] {
+  return Object.entries(selection)
+    .filter(([, quantity]) => quantity > 0)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([code, quantity]) => ({ code, quantity }));
+}
+
+function withExtras(
+  request: QuoteRequest,
+  voucherCodes: string[],
+  applyWalletCredit: boolean,
+): QuoteRequest {
+  if (voucherCodes.length > 0) request.voucherCodes = [...voucherCodes].sort();
+  if (applyWalletCredit) request.applyWalletCredit = true;
+  return request;
+}
+
 /** Stable request (sorted, empty parts omitted) so equal carts share a quote cache entry. */
 export function buildQuoteRequest(
   planCode: string,
@@ -48,15 +66,24 @@ export function buildQuoteRequest(
   voucherCodes: string[],
   applyWalletCredit = false,
 ): QuoteRequest {
-  const addOns = Object.entries(selection)
-    .filter(([, quantity]) => quantity > 0)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([code, quantity]) => ({ code, quantity }));
+  const addOns = addOnLines(selection);
   const request: QuoteRequest = { planCode, durationMonths: 12 };
   if (addOns.length > 0) request.addOns = addOns;
-  if (voucherCodes.length > 0) request.voucherCodes = [...voucherCodes].sort();
-  if (applyWalletCredit) request.applyWalletCredit = true;
-  return request;
+  return withExtras(request, voucherCodes, applyWalletCredit);
+}
+
+/**
+ * Add-on-only cart: no plan code, priced by the server against the shop's current paid plan.
+ * Null when nothing is selected, since the server needs at least one add-on.
+ */
+export function buildAddOnOnlyRequest(
+  selection: AddOnSelection,
+  voucherCodes: string[],
+  applyWalletCredit = false,
+): QuoteRequest | null {
+  const addOns = addOnLines(selection);
+  if (addOns.length === 0) return null;
+  return withExtras({ addOns }, voucherCodes, applyWalletCredit);
 }
 
 /** The wallet covered the whole order: the server paid and fulfilled it, no gateway to open. */

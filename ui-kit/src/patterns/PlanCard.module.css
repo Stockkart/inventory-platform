@@ -132,6 +132,14 @@
   line-height: 1.45;
 }
 
+.comingSoon {
+  margin-left: 0.35rem;
+  font-size: 0.625rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
 .check {
   display: inline-flex;
   flex-shrink: 0;

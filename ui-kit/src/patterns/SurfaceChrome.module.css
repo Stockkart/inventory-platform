@@ -890,6 +890,124 @@
   color: var(--sk-color-brand, #1e3a5f);
 }
 
+/* My Plan "Add-ons & top-ups": a collapsed disclosure row that opens to a grid of add-on cards. */
+.planTopUp {
+  border-radius: var(--sk-radius-md, 8px);
+  border: 1px solid var(--sk-color-border-default, #e2e8f0);
+  background: var(--sk-color-bg-elevated, #fff);
+}
+
+.planTopUpToggle {
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  height: auto;
+  padding: 0.9rem 1rem;
+  border-radius: var(--sk-radius-md, 8px);
+  text-align: left;
+  white-space: normal;
+  color: var(--sk-color-text-primary, #0f172a);
+}
+
+.planTopUpHeading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.planTopUpSupport {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--sk-color-text-muted, #64748b);
+}
+
+.planTopUpChevron {
+  flex-shrink: 0;
+  color: var(--sk-color-text-muted, #64748b);
+  transition: transform 0.15s ease;
+}
+
+.planTopUpChevronOpen {
+  transform: rotate(180deg);
+}
+
+.planTopUpBody {
+  padding: 1rem;
+  border-top: 1px solid var(--sk-color-border-default, #e2e8f0);
+}
+
+.planTopUpGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.75rem;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.planTopUpCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  border-radius: var(--sk-radius-md, 8px);
+  border: 1px solid var(--sk-color-border-default, #e2e8f0);
+  background: var(--sk-color-bg-surface, #fff);
+}
+
+.planTopUpCardMuted {
+  background: var(--sk-color-bg-muted, #f8fafc);
+}
+
+.planTopUpCardHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.planTopUpName {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--sk-color-brand, #1e3a5f);
+}
+
+.planTopUpGrant {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--sk-color-success, #15803d);
+}
+
+.planTopUpDescription {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--sk-color-text-secondary, #475569);
+}
+
+.planTopUpPrice {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--sk-color-text-primary, #0f172a);
+}
+
+.planTopUpActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.35rem;
+}
+
 .reminderPriority {
   border-left: 4px solid transparent;
 }

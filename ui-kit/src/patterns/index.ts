@@ -76,7 +76,7 @@ export { SectionHeading, type SectionHeadingProps } from './SectionHeading';
 export { MarketingHero, type MarketingHeroProps } from './MarketingHero';
 export { MarketingCtaBand, type MarketingCtaBandProps } from './MarketingCtaBand';
 export { MarketingFooter, type MarketingFooterProps } from './MarketingFooter';
-export { PlanCard, type PlanCardProps } from './PlanCard';
+export { PlanCard, type PlanCardFeature, type PlanCardProps } from './PlanCard';
 export { PlanCardGrid, type PlanCardGridProps } from './PlanCardGrid';
 export {
   ComparisonTable,
