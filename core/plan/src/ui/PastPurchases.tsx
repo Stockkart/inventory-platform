@@ -126,7 +126,7 @@ function PurchaseRow({ tx }: { tx: PlanTransactionResponse }) {
 
   if (!hasPurchaseDetail(tx)) {
     return (
-      <Box className={surfaceChrome.planTopUpToggle} style={{ display: 'flex' }}>
+      <Box className={surfaceChrome.planTopUpToggle} display="flex">
         {summary}
       </Box>
     );
