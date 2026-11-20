@@ -108,7 +108,8 @@ export interface PlanTransactionResponse {
   kind: PurchaseKind;
   /** Order status; null for rows that have no order. */
   status: string | null;
-  items: PurchaseLine[];
+  /** Null for ASSIGNED and legacy rows that kept no line snapshot. */
+  items: PurchaseLine[] | null;
   subtotal: number | null;
   discountTotal: number | null;
   walletCredit: number | null;
