@@ -4,6 +4,8 @@ import {
   TARGET_OPTIONS,
   describeVoucherTarget,
   describeVoucherValue,
+  parseVoucherValue,
+  voucherListFilters,
   emptyVoucherForm,
   toGenerateRequest,
   toUpdateRequest,
@@ -236,5 +238,38 @@ describe('plan target', () => {
       describeVoucherTarget(voucher(), (c) => (c === 'EXTRA_SEAT' ? 'SMS pack' : undefined)),
     ).toBe('Add-on: SMS pack');
     expect(describeVoucherTarget(voucher())).toBe('Add-on: EXTRA_SEAT');
+  });
+});
+
+describe('parseVoucherValue', () => {
+  it('accepts a positive amount and a percent up to 100', () => {
+    expect(parseVoucherValue('FLAT_OFF', '1500')).toEqual({ ok: true, value: 1500 });
+    expect(parseVoucherValue('PERCENT_OFF', '100')).toEqual({ ok: true, value: 100 });
+  });
+
+  it('rejects empty, zero, negative and non-numbers', () => {
+    for (const input of ['', ' ', '0', '-5', 'abc']) {
+      expect(parseVoucherValue('FLAT_OFF', input)).toEqual({
+        ok: false,
+        error: 'Enter a value above 0.',
+      });
+    }
+  });
+
+  it('rejects a percent above 100 but allows that as a flat amount', () => {
+    expect(parseVoucherValue('PERCENT_OFF', '101')).toEqual({ ok: false, error: 'At most 100%.' });
+    expect(parseVoucherValue('FLAT_OFF', '101')).toEqual({ ok: true, value: 101 });
+  });
+});
+
+describe('voucherListFilters', () => {
+  it('sends the add-on only when the target is not Plan', () => {
+    expect(voucherListFilters('X', '')).toEqual({ target: undefined, addOnCode: 'X' });
+    expect(voucherListFilters('X', 'ADD_ON')).toEqual({ target: 'ADD_ON', addOnCode: 'X' });
+    expect(voucherListFilters('X', 'PLAN')).toEqual({ target: 'PLAN', addOnCode: undefined });
+  });
+
+  it('sends nothing for the all-all view', () => {
+    expect(voucherListFilters('', '')).toEqual({ target: undefined, addOnCode: undefined });
   });
 });

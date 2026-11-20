@@ -1,6 +1,7 @@
 import type {
   AdminVoucher,
   VoucherGenerateRequest,
+  VoucherListFilters,
   VoucherTarget,
   VoucherType,
   VoucherUpdateRequest,
@@ -89,6 +90,32 @@ function optional(input: string): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
+export type VoucherValueResult = { ok: true; value: number } | { ok: false; error: string };
+
+/** The discount a ₹ or percent voucher takes: above 0, and at most 100 for a percent. */
+export function parseVoucherValue(type: VoucherType, input: string): VoucherValueResult {
+  const parsed = Number(input);
+  if (!input.trim() || !Number.isFinite(parsed) || parsed <= 0) {
+    return { ok: false, error: 'Enter a value above 0.' };
+  }
+  if (type === 'PERCENT_OFF' && parsed > 100) return { ok: false, error: 'At most 100%.' };
+  return { ok: true, value: parsed };
+}
+
+/**
+ * The server applies only one list filter (plan, then add-on, then target), so an add-on is sent
+ * only when the target leaves room for it.
+ */
+export function voucherListFilters(
+  addOnCode: string,
+  target: VoucherTarget | '',
+): VoucherListFilters {
+  return {
+    target: target || undefined,
+    addOnCode: target !== 'PLAN' && addOnCode ? addOnCode : undefined,
+  };
+}
+
 export type VoucherFormResult =
   | { ok: true; request: VoucherGenerateRequest }
   | { ok: false; errors: Partial<Record<keyof VoucherFormState, string>> };
@@ -118,14 +145,9 @@ export function toGenerateRequest(form: VoucherFormState): VoucherFormResult {
 
   let value: number | undefined;
   if (form.type !== 'FREE_ADDON') {
-    const parsed = Number(form.value);
-    if (!form.value.trim() || !Number.isFinite(parsed) || parsed <= 0) {
-      errors.value = 'Enter a value above 0.';
-    } else if (form.type === 'PERCENT_OFF' && parsed > 100) {
-      errors.value = 'At most 100%.';
-    } else {
-      value = parsed;
-    }
+    const parsed = parseVoucherValue(form.type, form.value);
+    if (parsed.ok) value = parsed.value;
+    else errors.value = parsed.error;
   }
 
   const quantity = isPlan ? undefined : wholeNumber(form.quantity);

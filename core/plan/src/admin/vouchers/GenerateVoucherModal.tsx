@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Button,
@@ -61,9 +61,12 @@ export function GenerateVoucherModal({
   const plans = useAdminPlansQuery();
   const isPlan = form.target === 'PLAN';
   // The preview follows what was typed 300 ms ago, so it is only trusted once it has caught up.
-  const typed = previewRequestFor(form);
+  const typed = useMemo(
+    () => previewRequestFor(form),
+    [form.target, form.planCode, form.type, form.value],
+  );
   const settled = useDebouncedValue(typed, PREVIEW_DEBOUNCE_MS);
-  const caughtUp = JSON.stringify(typed) === JSON.stringify(settled);
+  const caughtUp = typed === settled;
   const preview = usePlanVoucherPreview(isPlan ? settled : null);
   const previewLine = preview.data ? describePlanVoucherPreview(preview.data) : null;
   const previewBlocks =
@@ -116,7 +119,7 @@ export function GenerateVoucherModal({
   ];
 
   const planOptions = [
-    { value: '', label: 'Choose a plan' },
+    { value: '', label: plans.isLoading ? 'Loading plans…' : 'Choose a plan' },
     ...(plans.data ?? [])
       .filter((p) => p.active && p.code)
       .map((p) => ({ value: p.code as string, label: p.planName })),
@@ -206,6 +209,11 @@ export function GenerateVoucherModal({
               )}
             </Inline>
 
+            {plans.isError ? (
+              <Alert variant="danger">
+                {adminErrorMessage(plans.error, 'Could not load plans.')}
+              </Alert>
+            ) : null}
             <Inline gap="md" flexWrap align="start">
               <FormField label="Applies to" htmlFor="voucher-target" required>
                 <Select
@@ -223,7 +231,7 @@ export function GenerateVoucherModal({
                     value={form.planCode}
                     options={planOptions}
                     onChange={(e) => set('planCode', e.target.value)}
-                    disabled={busy}
+                    disabled={busy || plans.isLoading}
                   />
                 </FormField>
               ) : (
@@ -288,7 +296,7 @@ export function GenerateVoucherModal({
                 aria-live="polite"
               >
                 {preview.isError
-                  ? 'Could not check this discount. Try again.'
+                  ? adminErrorMessage(preview.error, 'Could not check this discount. Try again.')
                   : previewLine && caughtUp && !preview.isFetching
                   ? previewLine.text
                   : 'Checking the price…'}

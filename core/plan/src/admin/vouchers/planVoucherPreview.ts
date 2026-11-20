@@ -3,15 +3,14 @@ import type {
   PlanVoucherPreviewResponse,
 } from '@inventory-platform/plan/types';
 import { formatRupees } from '../../ui/planPricing';
-import type { VoucherFormState } from './voucherForm';
+import { parseVoucherValue, type VoucherFormState } from './voucherForm';
 
 /** The request the preview needs, or null while the form cannot be priced yet. */
 export function previewRequestFor(form: VoucherFormState): PlanVoucherPreviewRequest | null {
   if (form.target !== 'PLAN' || !form.planCode || form.type === 'FREE_ADDON') return null;
-  const value = Number(form.value);
-  if (!form.value.trim() || !Number.isFinite(value) || value <= 0) return null;
-  if (form.type === 'PERCENT_OFF' && value > 100) return null;
-  return { planCode: form.planCode, type: form.type, value };
+  const parsed = parseVoucherValue(form.type, form.value);
+  if (!parsed.ok) return null;
+  return { planCode: form.planCode, type: form.type, value: parsed.value };
 }
 
 export interface PlanVoucherPreviewLine {

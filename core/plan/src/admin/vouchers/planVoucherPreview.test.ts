@@ -36,6 +36,18 @@ describe('describePlanVoucherPreview', () => {
     expect(text).toBe('Starter ₹7,999 → ₹6,999 · base ₹4,999');
   });
 
+  it('shows the max without a percent when the API sent none', () => {
+    const { text } = describePlanVoucherPreview(preview({ maxPercent: null }));
+    expect(text).toBe('Starter ₹7,999 → ₹6,999 · base ₹4,999 · max ₹3,000 off');
+  });
+
+  it('leaves out base and minimum when the API sent neither', () => {
+    const { text } = describePlanVoucherPreview(
+      preview({ basePrice: null, floor: null, maxFlat: null, maxPercent: null }),
+    );
+    expect(text).toBe('Starter ₹7,999 → ₹6,999');
+  });
+
   it('shows the API message when not allowed', () => {
     const result = describePlanVoucherPreview(
       preview({ allowed: false, message: 'Discount exceeds the maximum of ₹3,000.' }),

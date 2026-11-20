@@ -33,6 +33,7 @@ import {
   describeVoucherTarget,
   describeVoucherValue,
   TARGET_OPTIONS,
+  voucherListFilters,
   voucherUsage,
 } from '../admin/vouchers/voucherForm';
 import { GenerateVoucherModal } from '../admin/vouchers/GenerateVoucherModal';
@@ -54,10 +55,7 @@ export function VouchersAdminPage() {
   const [viewing, setViewing] = useState<AdminVoucher | null>(null);
   const [toggling, setToggling] = useState<AdminVoucher | null>(null);
   const addOns = useAdminAddOnsQuery();
-  const query = useAdminVouchersQuery({
-    addOnCode: addOnCode || undefined,
-    target: target || undefined,
-  });
+  const query = useAdminVouchersQuery(voucherListFilters(addOnCode, target));
   const activeMutation = useSetVoucherActiveMutation();
   const rows = query.data ?? [];
   const catalogue = addOns.data ?? [];
@@ -109,6 +107,7 @@ export function VouchersAdminPage() {
                     ...catalogue.map((a) => ({ value: a.code, label: a.name })),
                   ]}
                   onChange={(e) => setAddOnCode(e.target.value)}
+                  disabled={target === 'PLAN'}
                 />
               </FormField>
               <Text variant="caption" color="secondary">
