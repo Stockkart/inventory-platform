@@ -198,7 +198,7 @@ export function AddOnFormModal({ open, addOn, onClose }: AddOnFormModalProps) {
             </FormField>
             {feature ? null : (
               <FormField
-                label="Most per order"
+                label="Max quantity per purchase"
                 htmlFor="addon-max"
                 hint="Empty for no limit."
                 error={errors.maxQuantity}
