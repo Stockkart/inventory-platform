@@ -81,6 +81,8 @@ export function PlanPaymentPage() {
   const {
     data: transactions = [],
     isLoading: transactionsLoading,
+    isError: transactionsError,
+    isFetching: transactionsFetching,
     refetch: refetchTransactions,
   } = usePlanTransactionsQuery();
 
@@ -481,7 +483,22 @@ export function PlanPaymentPage() {
               <Text variant="heading3" weight="semibold">
                 Past purchases
               </Text>
-              <PastPurchases transactions={transactions} />
+              {transactionsError && transactions.length === 0 ? (
+                <Stack gap="sm" align="start">
+                  <Alert variant="danger">Could not load your past purchases.</Alert>
+                  <Button
+                    type="button"
+                    variant="solid"
+                    size="sm"
+                    loading={transactionsFetching}
+                    onClick={() => void refetchTransactions()}
+                  >
+                    Try again
+                  </Button>
+                </Stack>
+              ) : (
+                <PastPurchases transactions={transactions} />
+              )}
             </Stack>
           </CardBody>
         </Card>

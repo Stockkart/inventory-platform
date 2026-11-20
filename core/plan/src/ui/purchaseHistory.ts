@@ -17,7 +17,7 @@ function indianDay(iso: string | null | undefined, year: 'numeric' | '2-digit'):
 }
 
 /** "12 Nov 2026" */
-export function purchaseDateLabel(iso: string): string {
+export function purchaseDateLabel(iso: string | null): string {
   return indianDay(iso, 'numeric') ?? '';
 }
 

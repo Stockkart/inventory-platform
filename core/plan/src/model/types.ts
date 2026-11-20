@@ -102,7 +102,7 @@ export interface PlanTransactionResponse {
   provider?: string | null;
   providerPaymentId?: string | null;
   /** Purchase date shown; paidAt (else createdAt) for order-only rows. */
-  createdAt: string;
+  createdAt: string | null;
   /** Null unless the payment was refunded. */
   refundedAt: string | null;
   planCode: string | null;

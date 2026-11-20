@@ -186,6 +186,7 @@ export function usePlanVoucherPreview(req: PlanVoucherPreviewRequest | null) {
     ),
     queryFn: () => planAdminApi.previewPlanVoucher(req as PlanVoucherPreviewRequest),
     enabled: req !== null,
+    retry: false,
   });
 }
 
