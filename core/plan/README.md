@@ -57,3 +57,7 @@ On an active paid plan (`canBuyAddOnsAlone`: not trial, not expired, has a plan)
 ## Coming soon: SMS and WhatsApp
 
 StockKart does not send SMS or WhatsApp yet. Every SMS / WhatsApp allowance carries the amber "Coming soon" badge (`surfaceChrome.planComingSoon`): plan card lines (`buildPlanFeatures` returns `{ label, comingSoon }`, rendered by `PlanGrid` and the ui-kit `PlanCard`), the "SMS per month" / "WhatsApp per month" rows of the comparison table, the My Plan usage tiles, and `grantType: 'SMS'` add-ons (shown, but Buy and the checkout checkbox are disabled; the API rejects them with "SMS packs are coming soon").
+
+## Past purchases
+
+`PlanPaymentPage` lists purchases with `PastPurchases` (replacing "Transaction History"), newest first as the API returns them: plan orders, add-on-only orders and admin-assigned plans (amount shown as "—"). `purchaseHistory.ts` only formats labels (title, period with "≈" when the term is estimated, refund text, status tag such as "Processing" / "Needs attention"); every figure comes from `GET /plans/shop/transactions`. Expanding a row shows the line breakdown when the API kept one. `VoucherField` shows "Applies to <plan>" for a plan-target voucher and "₹X off <plan>" once the quote carries that voucher's line discount.
