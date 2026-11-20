@@ -172,12 +172,18 @@ export type VoucherRejection =
 
 export type VoucherType = 'FREE_ADDON' | 'PERCENT_OFF' | 'FLAT_OFF';
 
+/** What a voucher applies to: one add-on, or a whole plan. */
+export type VoucherTarget = 'ADD_ON' | 'PLAN';
+
 /** GET /plans/vouchers/validate. Whether a code is usable; the money comes from the quote. */
 export interface VoucherCheckResponse {
   code: string;
   valid: boolean;
   reason: VoucherRejection | null;
+  target: VoucherTarget | null;
   addOnCode: string | null;
+  planCode: string | null;
+  planName: string | null;
   type: VoucherType | null;
   value: number | null;
   quantity: number | null;

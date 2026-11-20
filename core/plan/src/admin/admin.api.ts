@@ -14,7 +14,10 @@ import type {
   AdminReferralReward,
   AdminVoucher,
   AdminVoucherRedemption,
+  PlanVoucherPreviewRequest,
+  PlanVoucherPreviewResponse,
   VoucherGenerateRequest,
+  VoucherListFilters,
   VoucherUpdateRequest,
   ReferralApprovalRequest,
   ReferralAttributionStatus,
@@ -131,10 +134,26 @@ export const planAdminApi = {
     return response.data;
   },
 
-  listVouchers: async (addOnCode: string | null): Promise<AdminVoucher[]> => {
+  listVouchers: async (filters: VoucherListFilters): Promise<AdminVoucher[]> => {
+    const { addOnCode, planCode, target } = filters;
+    const params = {
+      ...(addOnCode ? { addOnCode } : {}),
+      ...(planCode ? { planCode } : {}),
+      ...(target ? { target } : {}),
+    };
     const response = await apiClient.get<ApiResponse<AdminVoucher[]>>(
       PLAN_ENDPOINTS.ADMIN_VOUCHERS,
-      addOnCode ? { addOnCode } : undefined,
+      Object.keys(params).length > 0 ? params : undefined,
+    );
+    return response.data;
+  },
+
+  previewPlanVoucher: async (
+    body: PlanVoucherPreviewRequest,
+  ): Promise<PlanVoucherPreviewResponse> => {
+    const response = await apiClient.post<ApiResponse<PlanVoucherPreviewResponse>>(
+      PLAN_ENDPOINTS.ADMIN_VOUCHER_PLAN_PREVIEW,
+      body,
     );
     return response.data;
   },

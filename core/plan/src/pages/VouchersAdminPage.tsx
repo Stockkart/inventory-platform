@@ -48,7 +48,7 @@ export function VouchersAdminPage() {
   const [viewing, setViewing] = useState<AdminVoucher | null>(null);
   const [toggling, setToggling] = useState<AdminVoucher | null>(null);
   const addOns = useAdminAddOnsQuery();
-  const query = useAdminVouchersQuery(addOnCode || null);
+  const query = useAdminVouchersQuery({ addOnCode: addOnCode || undefined });
   const activeMutation = useSetVoucherActiveMutation();
   const rows = query.data ?? [];
   const catalogue = addOns.data ?? [];
@@ -144,7 +144,7 @@ export function VouchersAdminPage() {
                         ) : null}
                       </TableCell>
                       <TableCell>
-                        {addOnName.get(v.addOnCode) ?? v.addOnCode}
+                        {addOnName.get(v.addOnCode ?? '') ?? v.addOnCode}
                         {v.quantity > 1 ? (
                           <Text as="span" variant="caption" color="secondary">
                             {' '}

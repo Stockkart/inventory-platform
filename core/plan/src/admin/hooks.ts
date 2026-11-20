@@ -5,7 +5,9 @@ import type {
   AdminActiveRequest,
   CampaignRequest,
   PlanAdminRequest,
+  PlanVoucherPreviewRequest,
   VoucherGenerateRequest,
+  VoucherListFilters,
   VoucherUpdateRequest,
   ReferralApprovalRequest,
   ReferralAttributionStatus,
@@ -167,10 +169,23 @@ export function useSetPlanActiveMutation() {
   });
 }
 
-export function useAdminVouchersQuery(addOnCode: string | null) {
+export function useAdminVouchersQuery(filters: VoucherListFilters) {
   return useQuery({
-    queryKey: planKeys.adminVoucherList(addOnCode),
-    queryFn: () => planAdminApi.listVouchers(addOnCode),
+    queryKey: planKeys.adminVoucherList(filters),
+    queryFn: () => planAdminApi.listVouchers(filters),
+  });
+}
+
+/** Live figures for a plan voucher being typed; null request means nothing to preview yet. */
+export function usePlanVoucherPreview(req: PlanVoucherPreviewRequest | null) {
+  return useQuery({
+    queryKey: planKeys.adminVoucherPlanPreview(
+      req?.planCode ?? '',
+      req?.type ?? '',
+      req?.value ?? null,
+    ),
+    queryFn: () => planAdminApi.previewPlanVoucher(req as PlanVoucherPreviewRequest),
+    enabled: req !== null,
   });
 }
 
