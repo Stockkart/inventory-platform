@@ -42,7 +42,7 @@ export function PlanCard({
     <Box as="article" className={cn(styles.card, highlighted && styles.highlighted, className)}>
       {showPopularBadge ? (
         <Box className={styles.popular}>
-          <span className={styles.popularBadge}>Most Popular</span>
+          <span className={styles.popularBadge}>Most popular</span>
         </Box>
       ) : null}
 

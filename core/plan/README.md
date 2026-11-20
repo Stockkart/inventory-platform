@@ -26,6 +26,8 @@ Use ui-kit marketing patterns (`PlanCard`, `MarketingHero`, …) and solid butto
 
 My Plan (`PlanStatusPage`) uses the `surfaceChrome.planStatus*` / `planUsage*` / `planFeature*` classes: a brand-navy current-plan card, one row of usage tiles, and a tick-list of features, following the 2026 brochure.
 
+The landing-page carousel (ui-kit `PlanCard`) and the `/plans` cards (`surfaceChrome.planCard*`) share the brochure look: amber "Most popular" pill, 2px navy border on the highlighted plan, navy plan name, green tick circles. Change both together.
+
 ## Related
 
 - `@inventory-platform/contracts` — plan types / guards
