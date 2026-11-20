@@ -124,7 +124,7 @@ export function PlanStatusPage() {
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
       <PageHeader description="Subscription, monthly usage, and upgrade options." />
 
-      <CampaignBanner className={surfaceChrome.planCampaignStrip} dismissible={false} />
+      <CampaignBanner className={surfaceChrome.planCampaignStrip} />
 
       <Box className={surfaceChrome.planStatusSummary}>
         <Box className={surfaceChrome.planStatusSummaryMain}>

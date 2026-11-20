@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import type { CampaignTheme } from '@inventory-platform/plan/types';
 import { SaleBanner, type SaleBannerTheme } from '@inventory-platform/ui-kit';
 import { useActiveCampaignQuery } from '../queries/hooks';
 import { STATE_EYEBROW } from './countdown';
-import { dismissCampaign, isCampaignDismissed } from './dismissal';
 import { useCampaignCountdown } from './useCampaignCountdown';
 
 const THEMES: Record<CampaignTheme, SaleBannerTheme> = {
@@ -21,33 +20,20 @@ function isAppPath(path: string | null): path is string {
 
 export interface CampaignBannerProps {
   className?: string;
-  /**
-   * Set `false` to hide the close button and ignore an earlier dismissal, whatever the campaign
-   * says. My Plan uses this: it is where the sale applies, so the offer must stay visible there.
-   */
-  dismissible?: boolean;
 }
 
 /**
  * The active sale as a scrolling strip, if any. Marketing pages pass it to `Header` so it sits
- * under the nav. Renders nothing while loading, on error, or once dismissed.
+ * under the nav. Renders nothing while loading or on error. It has no close button: the offer
+ * stays visible for as long as the campaign runs.
  */
-export function CampaignBanner({ className, dismissible = true }: CampaignBannerProps) {
+export function CampaignBanner({ className }: CampaignBannerProps) {
   const navigate = useNavigate();
   const { data: campaign, dataUpdatedAt, refetch } = useActiveCampaignQuery();
   const onBoundary = useCallback(() => void refetch(), [refetch]);
   const countdown = useCampaignCountdown(campaign ?? null, dataUpdatedAt, onBoundary);
 
-  const code = campaign?.code;
-  const state = campaign?.state;
-  const [dismissed, setDismissed] = useState(false);
-
-  // Read storage after mount so server and first client render match.
-  useEffect(() => {
-    setDismissed(dismissible && code != null && state != null && isCampaignDismissed(code, state));
-  }, [code, state, dismissible]);
-
-  if (!campaign || dismissed) return null;
+  if (!campaign) return null;
 
   const ctaPath = campaign.ctaLabel && isAppPath(campaign.ctaPath) ? campaign.ctaPath : null;
 
@@ -62,14 +48,6 @@ export function CampaignBanner({ className, dismissible = true }: CampaignBanner
       urgent={campaign.state === 'ENDING_SOON'}
       actionLabel={ctaPath ? campaign.ctaLabel ?? undefined : undefined}
       onActivate={ctaPath ? () => navigate(ctaPath) : undefined}
-      onDismiss={
-        dismissible && campaign.dismissible
-          ? () => {
-              dismissCampaign(campaign.code, campaign.state);
-              setDismissed(true);
-            }
-          : undefined
-      }
     />
   );
 }

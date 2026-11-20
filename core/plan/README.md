@@ -24,9 +24,13 @@ Subscription plans: status, payment flow, and marketing/landing plan surfaces.
 
 Use ui-kit marketing patterns (`PlanCard`, `MarketingHero`, …) and solid buttons for in-dashboard actions.
 
-My Plan (`PlanStatusPage`) uses the `surfaceChrome.planStatus*` / `planUsage*` / `planFeature*` classes: a brand-navy current-plan card, one row of usage tiles, and a tick-list of features, following the 2026 brochure. Its sale strip is rendered with `CampaignBanner dismissible={false}`: the offer always shows there, whatever the campaign's dismiss setting. The setting still applies on the public website.
+My Plan (`PlanStatusPage`) uses the `surfaceChrome.planStatus*` / `planUsage*` / `planFeature*` classes: a brand-navy current-plan card, one row of usage tiles, and a tick-list of features, following the 2026 brochure.
 
 ## Related
 
 - `@inventory-platform/contracts` — plan types / guards
 - `@inventory-platform/session` — plan status for access
+
+## Sale banner
+
+`CampaignBanner` shows the active campaign as a scrolling strip on My Plan and on the public landing and plans pages. It has no close button, so the offer stays visible while the campaign runs. The campaign's `dismissible` field is still stored by the API but the UI no longer reads it, and the admin form no longer shows it.
