@@ -61,7 +61,7 @@ export function Hero() {
         actions={
           <>
             <Button
-              variant="brand"
+              variant="promo"
               size="lg"
               onClick={() => navigate('/plans')}
               rightIcon={<ChevronRight size={20} />}

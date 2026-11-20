@@ -55,6 +55,7 @@ Domain widgets and pages stay in `core/*/ui` and `core/*/pages`.
 
 - **In-app actions:** `variant="solid"`
 - **Marketing CTAs:** `variant="brand"`
+- **Headline promo CTA** (one per hero, e.g. "Start Free Trial"): `variant="promo"`, brochure amber matching the "Most popular" pill
 
 ## Migration recipes
 
