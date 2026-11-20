@@ -7,7 +7,6 @@ import {
   CardBody,
   CenteredLoader,
   Divider,
-  Inline,
   PageHeader,
   Stack,
   Switch,
@@ -38,6 +37,7 @@ import {
 import { getPaymentCheckout } from '../payment/index.js';
 import { AddOnPicker } from '../ui/AddOnPicker';
 import { formatRupees, planListPriceLabel } from '../ui/planPricing';
+import { PastPurchases } from '../ui/PastPurchases';
 import { QuoteSummary } from '../ui/QuoteSummary';
 import { VoucherField } from '../ui/VoucherField';
 import {
@@ -239,15 +239,6 @@ export function PlanPaymentPage() {
     }
   };
 
-  const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-
   const termEnd = formatTermEnd(quote?.termEndsAt);
 
   const cartControls = (
@@ -269,6 +260,7 @@ export function PlanPaymentPage() {
           setVoucherCodes((codes) => codes.filter((c) => c !== code));
         }}
         quoteError={voucherError}
+        quote={quote}
         disabled={paying}
       />
       {walletBalance > 0 ? (
@@ -487,40 +479,9 @@ export function PlanPaymentPage() {
           <CardBody>
             <Stack gap="md">
               <Text variant="heading3" weight="semibold">
-                Transaction History
+                Past purchases
               </Text>
-              {transactions.length === 0 ? (
-                <Stack gap="sm" padding="md" align="center">
-                  <Text align="center" color="secondary">
-                    No plan payments yet. Your transaction history will appear here.
-                  </Text>
-                </Stack>
-              ) : (
-                <Stack gap="sm">
-                  {transactions.map((tx) => (
-                    <Card key={tx.id}>
-                      <CardBody>
-                        <Stack gap="xs">
-                          <Inline justify="between" width="full">
-                            <Text weight="semibold">{tx.planName}</Text>
-                            <Text weight="semibold" color="success">
-                              ₹{tx.amount?.toLocaleString('en-IN')}
-                            </Text>
-                          </Inline>
-                          <Inline justify="between" width="full">
-                            <Text variant="caption" color="secondary">
-                              {tx.paymentMethod}
-                            </Text>
-                            <Text variant="caption" color="secondary">
-                              {formatDate(tx.createdAt)}
-                            </Text>
-                          </Inline>
-                        </Stack>
-                      </CardBody>
-                    </Card>
-                  ))}
-                </Stack>
-              )}
+              <PastPurchases transactions={transactions} />
             </Stack>
           </CardBody>
         </Card>
