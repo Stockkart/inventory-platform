@@ -18,13 +18,34 @@ const columns: ComparisonColumn[] = [
 const rows: ComparisonRow[] = [
   {
     key: 'price',
+    group: 'Plan limits',
     label: 'Price per year',
     cells: { starter: '₹4,999', pro: '₹9,999', ent: '₹19,999' },
   },
-  { key: 'users', label: 'Users', cells: { starter: '2', pro: '5', ent: 'Unlimited' } },
-  { key: 'sms', label: 'SMS per month', cells: { starter: '100', pro: '500', ent: 'Unlimited' } },
-  { key: 'acct', label: 'Accounting', cells: { starter: '—', pro: '✓', ent: '✓' } },
-  { key: 'salary', label: 'Salary', cells: { starter: '—', pro: '—', ent: '✓' } },
+  {
+    key: 'users',
+    group: 'Plan limits',
+    label: 'Users',
+    cells: { starter: '2', pro: '5', ent: 'Unlimited' },
+  },
+  {
+    key: 'sms',
+    group: 'Plan limits',
+    label: 'SMS per month',
+    cells: { starter: '100', pro: '500', ent: 'Unlimited' },
+  },
+  {
+    key: 'acct',
+    group: 'Features',
+    label: 'Accounting',
+    cells: { starter: '—', pro: '✓', ent: '✓' },
+  },
+  {
+    key: 'salary',
+    group: 'Features',
+    label: 'Salary',
+    cells: { starter: '—', pro: '—', ent: '✓' },
+  },
 ];
 
 export const ThreePlans: StoryObj<typeof ComparisonTable> = {

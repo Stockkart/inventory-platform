@@ -1,3 +1,4 @@
+import { Check } from 'lucide-react';
 import type { PlanResponse } from '@inventory-platform/plan/types';
 import {
   Badge,
@@ -98,10 +99,14 @@ function PlanTile({
         !isCurrent && isPopular && surfaceChrome.planCardHighlight,
       )}
     >
+      {!isCurrent && isPopular ? (
+        <Text as="span" className={surfaceChrome.planCardPopularPill}>
+          Most popular
+        </Text>
+      ) : null}
       <Box className={surfaceChrome.planCardBody}>
         <Box className={surfaceChrome.planCardTop}>
           {isCurrent ? <Badge variant="success">Current</Badge> : null}
-          {!isCurrent && isPopular ? <Badge variant="info">Most popular</Badge> : null}
           {showTrialBadge ? <Badge variant="neutral">30-day trial</Badge> : null}
         </Box>
 
@@ -137,9 +142,9 @@ function PlanTile({
         <Box className={surfaceChrome.planCardFeatures}>
           {features.map((feature) => (
             <Box key={feature} className={surfaceChrome.planCardFeature}>
-              <Text as="span" className={surfaceChrome.planCardCheck} aria-hidden>
-                ✓
-              </Text>
+              <Box as="span" className={surfaceChrome.planCardCheck} aria-hidden>
+                <Check size={11} strokeWidth={3} />
+              </Box>
               <Text as="span">{feature}</Text>
             </Box>
           ))}
