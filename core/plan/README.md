@@ -61,3 +61,9 @@ StockKart does not send SMS or WhatsApp yet. Every SMS / WhatsApp allowance carr
 ## Past purchases
 
 `PlanPaymentPage` lists purchases with `PastPurchases` (replacing "Transaction History"), newest first as the API returns them: plan orders, add-on-only orders and admin-assigned plans (amount shown as "—"). `purchaseHistory.ts` only formats labels (title, period with "≈" when the term is estimated, refund text, status tag such as "Processing" / "Needs attention"); every figure comes from `GET /plans/shop/transactions`. Expanding a row shows the line breakdown when the API kept one. `VoucherField` shows "Applies to <plan>" for a plan-target voucher and "₹X off <plan>" once the quote carries that voucher's line discount.
+
+## Plan vouchers (admin)
+
+The admin **Vouchers** page (`VouchersAdminPage`) and `GenerateVoucherModal` create vouchers for an add-on or for a plan. **Applies to** (a `FormField required` over the ui-kit `Select`) switches the form between the two; `withTarget` (`voucherForm.ts`) resets the fields that only make sense for the other target, and a plan voucher is a percent or flat discount on one plan chosen from the plan catalogue.
+
+For a plan target the modal shows a live preview from `POST /admin/vouchers/plan-preview` (`usePlanVoucherPreview`, debounced 300 ms by `useDebouncedValue`). The API decides what the discount comes to and whether it is allowed (for example a percent over the plan's allowed maximum); `describePlanVoucherPreview` only turns that answer into text. **Create** stays disabled while the preview is loading, behind what was typed, failed, or says the voucher is not allowed, so a voucher the API would reject cannot be submitted. No discount maths happens in the frontend. The list filters by **Applies to** and by add-on; the add-on filter is disabled while Plan is chosen. Rows show the target (`describeVoucherTarget`). Shops redeem a plan voucher on the payment page (see `VoucherField` under Past purchases).
