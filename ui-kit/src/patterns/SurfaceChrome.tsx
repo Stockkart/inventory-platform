@@ -124,6 +124,7 @@ export const surfaceChrome = {
   planCompareTick: styles.planCompareTick,
   planCompareDash: styles.planCompareDash,
   planComparePrice: styles.planComparePrice,
+  planComingSoon: styles.planComingSoon,
   planCardCurrent: styles.planCardCurrent,
   planCardHighlight: styles.planCardHighlight,
   reminderPriority: styles.reminderPriority,

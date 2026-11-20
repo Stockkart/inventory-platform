@@ -1,6 +1,7 @@
 import type { PlanResponse } from '@inventory-platform/plan/types';
 import { Check } from 'lucide-react';
 import {
+  Badge,
   Box,
   ComparisonTable,
   Stack,
@@ -8,7 +9,7 @@ import {
   VisuallyHidden,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
-import { FEATURE_LABELS, buildPlanComparison, type ComparisonValue } from './planPricing';
+import { buildPlanComparison, type ComparisonValue } from './planPricing';
 import { isMostPopular } from './PlanGrid';
 
 function renderValue(value: ComparisonValue) {
@@ -59,8 +60,17 @@ export function PlanComparisonTable({ plans }: PlanComparisonTableProps) {
         }))}
         rows={comparison.rows.map((row) => ({
           key: row.key,
-          group: row.key in FEATURE_LABELS ? 'Features' : 'Plan limits',
-          label: row.label,
+          group: row.group,
+          label: row.comingSoon ? (
+            <>
+              {row.label}{' '}
+              <Badge variant="warning" className={surfaceChrome.planComingSoon}>
+                Coming soon
+              </Badge>
+            </>
+          ) : (
+            row.label
+          ),
           cells: Object.fromEntries(
             comparison.plans.map((plan, index) => [
               plan.id,

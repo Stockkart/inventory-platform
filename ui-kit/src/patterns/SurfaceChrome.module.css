@@ -871,6 +871,14 @@
   color: var(--sk-color-border-strong, #cbd5e1);
 }
 
+.planComingSoon {
+  margin-left: 0.25rem;
+  font-size: 0.625rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
 .planComparePrice {
   font-size: 0.9375rem;
   font-weight: 700;
