@@ -96,7 +96,7 @@ function PlanTile({
         <Box className={surfaceChrome.planCardTop}>
           {isCurrent ? <Badge variant="success">Current</Badge> : null}
           {!isCurrent && isPopular ? <Badge variant="info">Most popular</Badge> : null}
-          {showTrialBadge && !isExtra ? <Badge variant="neutral">30-day trial</Badge> : null}
+          {showTrialBadge && !isExtra ? <Badge variant="neutral">3-day trial</Badge> : null}
         </Box>
 
         <Text as="h3" className={surfaceChrome.planCardName}>
