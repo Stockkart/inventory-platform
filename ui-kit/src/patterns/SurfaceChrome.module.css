@@ -676,6 +676,11 @@
   padding-top: 0.75rem;
 }
 
+/* Four plans fit side by side on a wide page, like the brochure; fewer columns as space runs out. */
+.planCardGrid {
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+
 .planGridAddonsTitle {
   margin: 0;
   font-size: 0.8125rem;

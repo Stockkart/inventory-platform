@@ -105,6 +105,7 @@ export const surfaceChrome = {
   planFeatureLabel: styles.planFeatureLabel,
   planCampaignStrip: styles.planCampaignStrip,
   planGridWrap: styles.planGridWrap,
+  planCardGrid: styles.planCardGrid,
   planGridAddonsTitle: styles.planGridAddonsTitle,
   planCard: styles.planCard,
   planCardBody: styles.planCardBody,
