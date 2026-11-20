@@ -86,6 +86,24 @@ describe('buildPlanComparison', () => {
     ]);
   });
 
+  it('shows the backend caps for attendance and roles', () => {
+    const basic = plan({ id: 'b', code: 'STARTER', roleLimit: 2, features: [] });
+    const top = plan({
+      id: 't',
+      code: 'ENTERPRISE',
+      attendanceUserLimit: 4,
+      features: ['BIOMETRIC_ATTENDANCE', 'ADVANCED_ACCESS_CONTROL'],
+    });
+    const byKey = Object.fromEntries(
+      buildPlanComparison([basic, top]).rows.map((row) => [row.key, row]),
+    );
+    expect(byKey.BIOMETRIC_ATTENDANCE.values).toEqual([false, 'Up to 4 users']);
+    expect(byKey.ADVANCED_ACCESS_CONTROL).toMatchObject({
+      label: 'Access control (roles & permissions)',
+      values: ['Limited (2 roles)', 'Advanced'],
+    });
+  });
+
   it('tags features that are sold but not live yet', () => {
     const marketing = plan({ id: 'e', code: 'ENTERPRISE', features: ['MARKETING'] });
     const row = buildPlanComparison([starter, marketing]).rows.find((r) => r.key === 'MARKETING');

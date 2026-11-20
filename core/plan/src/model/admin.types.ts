@@ -107,6 +107,8 @@ export interface PlanAdminRequest {
   whatsappLimit: number | null;
   userLimit: number | null;
   ocrLimit: number | null;
+  roleLimit: number | null;
+  attendanceUserLimit: number | null;
   unlimited: boolean;
   features: PlanFeature[];
   displayOrder: number | null;
