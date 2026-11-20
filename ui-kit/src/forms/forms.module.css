@@ -191,7 +191,8 @@ select.control:focus {
 
 .variant-brand.size-lg,
 .variant-onBrand.size-lg,
-.variant-inverseOutline.size-lg {
+.variant-inverseOutline.size-lg,
+.variant-promo.size-lg {
   padding: 0.9rem 1.75rem;
   font-size: 1.05rem;
   letter-spacing: 0.01em;
@@ -258,6 +259,19 @@ select.control:focus {
 
 .variant-brand:hover:not(:disabled) {
   filter: brightness(1.05);
+}
+
+/* Brochure amber, same as the "Most popular" pill: the one headline CTA on a hero. */
+.variant-promo {
+  color: #1f2937;
+  background: #f59e0b;
+  border-color: transparent;
+  border-radius: var(--sk-radius-full);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.3);
+}
+
+.variant-promo:hover:not(:disabled) {
+  background: #fbbf24;
 }
 
 .variant-onBrand {

@@ -23,7 +23,7 @@ const meta: Meta<typeof Button> = {
     },
     variant: {
       control: 'select',
-      options: ['solid', 'outline', 'ghost', 'danger'],
+      options: ['solid', 'outline', 'ghost', 'danger', 'brand', 'promo'],
       description: 'Visual style',
       table: { category: 'Appearance', defaultValue: { summary: 'solid' } },
     },
