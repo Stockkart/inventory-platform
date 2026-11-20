@@ -1,6 +1,7 @@
 import type { AddOnResponse, ShopPlanStatusResponse } from '@inventory-platform/plan/types';
+import { isPlanFeature } from '../entitlements/entitlements';
 import { FEATURE_LABELS } from '../ui/planPricing';
-import { sellableAddOns } from './cart';
+import { maxQuantityFor, sellableAddOns, type AddOnSelection } from './cart';
 
 export const PLAN_STATUS_PATH = '/dashboard/plan-status';
 export const PLAN_PAYMENT_PATH = '/dashboard/plan-payment';
@@ -28,7 +29,11 @@ export function addOnGrantLabel(addOn: AddOnResponse): string | null {
   const quantity = addOn.grantsQuantity;
   switch (addOn.grantType) {
     case 'FEATURE':
-      return addOn.grantsFeature ? `Unlocks ${FEATURE_LABELS[addOn.grantsFeature]}` : null;
+      if (!addOn.grantsFeature) return null;
+      // A feature this build has no label for yet: name the add-on rather than print "undefined".
+      return `Unlocks ${
+        isPlanFeature(addOn.grantsFeature) ? FEATURE_LABELS[addOn.grantsFeature] : addOn.name
+      }`;
     case 'SEATS': {
       const seats = quantity ?? 1;
       return `+${seats} user${seats === 1 ? '' : 's'}`;
@@ -61,4 +66,45 @@ export function readAddOnOnlyIntent(params: URLSearchParams): AddOnOnlyIntent | 
   if (!code) return null;
   const quantity = Number.parseInt(params.get('qty') ?? '', 10);
   return { code, quantity: Number.isInteger(quantity) && quantity >= 1 ? quantity : 1 };
+}
+
+/** What the payment page can do with an add-on-only link once plan status and catalogue are in. */
+export type AddOnOnlyIntentState =
+  | { kind: 'loading' }
+  /** Trial, expired or no plan: the API sells add-ons on their own only on an active paid plan. */
+  | { kind: 'planNotEligible' }
+  /** Not a top-up this plan can take (already included, unknown code) or coming soon. */
+  | { kind: 'unavailable' }
+  | { kind: 'ready'; selection: AddOnSelection };
+
+/**
+ * Checks a `?addOn=CODE&qty=N` link against the shop's plan and the catalogue before it reaches the
+ * cart, so a code the picker would hide never gets stuck in an order the API rejects. The quantity
+ * is held to the stepper bounds; the API still validates it.
+ */
+export function resolveAddOnOnlyIntent(
+  intent: AddOnOnlyIntent,
+  catalogue: AddOnResponse[] | undefined,
+  status: TopUpStatus | undefined,
+): AddOnOnlyIntentState {
+  if (!status) return { kind: 'loading' };
+  if (!canBuyAddOnsAlone(status)) return { kind: 'planNotEligible' };
+  if (!catalogue) return { kind: 'loading' };
+  const addOn = topUpAddOns(catalogue, status).find((candidate) => candidate.code === intent.code);
+  if (!addOn || isComingSoonAddOn(addOn)) return { kind: 'unavailable' };
+  const quantity = Math.min(Math.max(1, intent.quantity), maxQuantityFor(addOn));
+  return { kind: 'ready', selection: { [addOn.code]: quantity } };
+}
+
+/** "31 Mar 2027": the Indian calendar day an add-on term ends; null when absent or unreadable. */
+export function formatTermEnd(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const time = Date.parse(iso);
+  if (Number.isNaN(time)) return null;
+  return new Date(time).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'Asia/Kolkata',
+  });
 }

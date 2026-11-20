@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import {
   Alert,
@@ -21,12 +21,18 @@ import {
   PLAN_STATUS_PATH,
   buildAddOnOnlyRequest,
   buildQuoteRequest,
+  checkoutFingerprint,
+  formatTermEnd,
   newIdempotencyKey,
   paidFromWallet,
+  payCaption,
+  pricedPayLabel,
   readAddOnOnlyIntent,
   readVoucherRejection,
+  resolveAddOnOnlyIntent,
   sellableAddOns,
   topUpAddOns,
+  vouchersAfterRejection,
   type AddOnSelection,
 } from '../checkout';
 import { getPaymentCheckout } from '../payment/index.js';
@@ -50,7 +56,7 @@ import {
   useVerifyPlanPaymentMutation,
   useWalletQuery,
 } from '../queries/hooks';
-import { planKeys } from '../queries/keys';
+import { isPlanDataExceptQuote, planKeys } from '../queries/keys';
 
 export function PlanPaymentPage() {
   const { user } = useAuthStore();
@@ -87,7 +93,8 @@ export function PlanPaymentPage() {
   const planCode = selectedPlan?.code ?? null;
   /** Server-quoted cart: a catalogue plan, or add-ons on their own. Legacy plans skip the quote. */
   const priced = planCode != null || addOnOnly;
-  const { data: planStatus } = useShopPlanStatusQuery({ enabled: addOnOnly });
+  const planStatusQuery = useShopPlanStatusQuery({ enabled: addOnOnly });
+  const planStatus = planStatusQuery.data;
 
   const [addOnSelection, setAddOnSelection] = useState<AddOnSelection>({});
   const [voucherCodes, setVoucherCodes] = useState<string[]>([]);
@@ -95,8 +102,12 @@ export function PlanPaymentPage() {
 
   const [useWalletCredit, setUseWalletCredit] = useState(false);
 
+  /** The add-on link already put in the cart, so a catalogue refetch never overwrites the shopper's edits. */
+  const seededIntent = useRef<string | null>(null);
+
   useEffect(() => {
-    setAddOnSelection(intentCode ? { [intentCode]: intentQuantity } : {});
+    seededIntent.current = null;
+    setAddOnSelection({});
     setVoucherCodes([]);
     setVoucherError(null);
   }, [selectedPlan?.id, intentCode, intentQuantity]);
@@ -105,11 +116,30 @@ export function PlanPaymentPage() {
   const walletBalance = wallet?.availableBalance ?? 0;
   const applyWalletCredit = useWalletCredit && walletBalance > 0;
 
-  const { data: addOnCatalogue = [] } = useAddOnsQuery({ enabled: priced });
+  const addOnsQuery = useAddOnsQuery({ enabled: priced });
+  const addOnCatalogue = addOnsQuery.data;
   const addOns = useMemo(() => {
-    if (addOnOnly) return planStatus ? topUpAddOns(addOnCatalogue, planStatus) : [];
-    return selectedPlan ? sellableAddOns(addOnCatalogue, selectedPlan) : [];
+    const catalogue = addOnCatalogue ?? [];
+    if (addOnOnly) return planStatus ? topUpAddOns(catalogue, planStatus) : [];
+    return selectedPlan ? sellableAddOns(catalogue, selectedPlan) : [];
   }, [addOnOnly, addOnCatalogue, planStatus, selectedPlan]);
+
+  /** An add-on link is checked against the plan and catalogue before it reaches the cart. */
+  const intentState = useMemo(
+    () => (addOnIntent ? resolveAddOnOnlyIntent(addOnIntent, addOnCatalogue, planStatus) : null),
+    [addOnIntent, addOnCatalogue, planStatus],
+  );
+  /** Still waiting on a request that failed; an ineligible plan never needs the catalogue. */
+  const addOnOnlyLoadFailed =
+    intentState?.kind === 'loading' && (planStatusQuery.isError || addOnsQuery.isError);
+
+  useEffect(() => {
+    if (intentState?.kind !== 'ready') return;
+    const seed = JSON.stringify(intentState.selection);
+    if (seededIntent.current === seed) return;
+    seededIntent.current = seed;
+    setAddOnSelection(intentState.selection);
+  }, [intentState]);
 
   const quoteRequest = useMemo(() => {
     if (addOnOnly) {
@@ -121,14 +151,14 @@ export function PlanPaymentPage() {
   }, [addOnOnly, planCode, addOnSelection, voucherCodes, applyWalletCredit]);
   const quoteQuery = usePlanQuoteQuery(quoteRequest, { retry: false });
   const quote = quoteQuery.isError || !quoteRequest ? undefined : quoteQuery.data;
-  const walletCoversAll = quote != null && quote.grandTotal === 0 && quote.walletCredit > 0;
 
   const dropRejectedVoucher = useCallback((err: unknown): boolean => {
     const rejection = readVoucherRejection(err);
     if (!rejection) return false;
-    if (rejection.voucherCode) {
-      setVoucherCodes((codes) => codes.filter((code) => code !== rejection.voucherCode));
-    }
+    setVoucherCodes((codes) => {
+      const next = vouchersAfterRejection(codes, rejection);
+      return next.length === codes.length ? codes : next;
+    });
     setVoucherError(rejection.message);
     return true;
   }, []);
@@ -145,10 +175,11 @@ export function PlanPaymentPage() {
       : null;
 
   const changeAddOn = (code: string, quantity: number) => {
+    setVoucherError(null);
     setAddOnSelection((current) => ({ ...current, [code]: quantity }));
   };
 
-  /** One key per cart, reused across retries so a retry replays the open order. */
+  /** One key per cart and quoted total, reused across retries so a retry replays the open order. */
   const idempotency = useRef<{ cart: string; key: string } | null>(null);
 
   const createCheckoutMutation = useCreatePlanCheckoutMutation();
@@ -166,7 +197,7 @@ export function PlanPaymentPage() {
     }
     setPaying(true);
     setError(null);
-    const cart = JSON.stringify(request);
+    const cart = checkoutFingerprint(request, quote);
     if (idempotency.current?.cart !== cart) {
       idempotency.current = { cart, key: newIdempotencyKey() };
     }
@@ -177,7 +208,7 @@ export function PlanPaymentPage() {
       });
 
       if (paidFromWallet(checkout)) {
-        await queryClient.invalidateQueries({ queryKey: planKeys.all });
+        await queryClient.invalidateQueries({ predicate: isPlanDataExceptQuote });
       } else {
         const paymentCheckout = getPaymentCheckout(checkout.provider);
         const result = await paymentCheckout.openCheckout(checkout, {
@@ -197,6 +228,10 @@ export function PlanPaymentPage() {
       await refetchTransactions();
       navigate(addOnOnly ? PLAN_STATUS_PATH : '/dashboard', { replace: true });
     } catch (err) {
+      // An abandoned or failed order can still hold wallet credit: show the balance and price as
+      // they are now. A changed total then gets a new idempotency key (checkoutFingerprint).
+      void queryClient.invalidateQueries({ queryKey: planKeys.wallet() });
+      void queryClient.invalidateQueries({ queryKey: planKeys.quotes() });
       if (dropRejectedVoucher(err)) return;
       setError(err instanceof Error ? err.message : 'Failed to process payment');
     } finally {
@@ -212,6 +247,8 @@ export function PlanPaymentPage() {
       hour: '2-digit',
       minute: '2-digit',
     });
+
+  const termEnd = formatTermEnd(quote?.termEndsAt);
 
   const cartControls = (
     <>
@@ -240,28 +277,44 @@ export function PlanPaymentPage() {
           label={`Use wallet credit (${formatRupees(walletBalance)} available)`}
           checked={useWalletCredit}
           disabled={paying}
-          onChange={(event) => setUseWalletCredit(event.target.checked)}
+          onChange={(event) => {
+            setVoucherError(null);
+            setUseWalletCredit(event.target.checked);
+          }}
         />
       ) : null}
       <Divider />
       <QuoteSummary quote={quote} loading={quoteQuery.isFetching} />
-      {quoteFailure ? <Alert variant="danger">{quoteFailure}</Alert> : null}
+      {addOnOnly && termEnd ? (
+        <Text variant="caption" color="secondary">
+          Valid until {termEnd}
+        </Text>
+      ) : null}
+      {quoteFailure ? (
+        <Stack gap="sm" align="start">
+          <Alert variant="danger">{quoteFailure}</Alert>
+          <Button
+            type="button"
+            variant="solid"
+            size="sm"
+            loading={quoteQuery.isFetching}
+            onClick={() => void quoteQuery.refetch()}
+          >
+            Try again
+          </Button>
+        </Stack>
+      ) : null}
     </>
   );
 
   let payLabel: string;
-  if (paying) {
-    payLabel = walletCoversAll ? 'Paying from wallet…' : 'Opening Razorpay…';
-  } else if (priced) {
-    if (!quoteRequest) {
-      payLabel = 'Choose an add-on';
-    } else if (!quote) {
-      payLabel = 'Pricing your order…';
-    } else {
-      payLabel = walletCoversAll
-        ? 'Pay with wallet credit'
-        : `Pay ${formatRupees(quote.grandTotal)}`;
-    }
+  if (priced || paying) {
+    payLabel = pricedPayLabel({
+      paying,
+      hasCart: quoteRequest != null,
+      quote,
+      quoteFailed: quoteFailure != null,
+    });
   } else if (selectedPlan) {
     payLabel = `Pay ₹${selectedPlan.arcPrice?.toLocaleString('en-IN')}${
       selectedPlan.planName === 'Extra User Plan' ? ' per user/year' : '/year'
@@ -283,12 +336,56 @@ export function PlanPaymentPage() {
         {payLabel}
       </Button>
       <Text variant="caption" color="secondary">
-        {walletCoversAll
-          ? 'Your wallet credit covers this order; no card or UPI payment is needed.'
-          : 'Secured by Razorpay. Choose your payment method in the checkout window.'}
+        {payCaption(quote)}
       </Text>
+      {error ? <Alert variant="danger">{error}</Alert> : null}
     </Stack>
   );
+
+  let addOnOnlyBody: ReactNode = null;
+  if (addOnOnlyLoadFailed) {
+    addOnOnlyBody = (
+      <Stack gap="sm" align="start">
+        <Alert variant="danger">Could not load your plan or the add-ons.</Alert>
+        <Button
+          type="button"
+          variant="solid"
+          size="sm"
+          loading={planStatusQuery.isFetching || addOnsQuery.isFetching}
+          onClick={() => {
+            void planStatusQuery.refetch();
+            void addOnsQuery.refetch();
+          }}
+        >
+          Try again
+        </Button>
+      </Stack>
+    );
+  } else if (intentState?.kind === 'planNotEligible') {
+    addOnOnlyBody = (
+      <Stack gap="sm" align="start">
+        <Text color="secondary">
+          Add-ons can be bought on their own only on an active paid plan. Choose a plan on My Plan
+          and add what you need there.
+        </Text>
+        <Button type="button" variant="solid" onClick={() => navigate(PLAN_STATUS_PATH)}>
+          Back to My Plan
+        </Button>
+      </Stack>
+    );
+  } else if (intentState?.kind === 'loading') {
+    addOnOnlyBody = <CenteredLoader label="Loading add-ons..." />;
+  } else if (intentState) {
+    addOnOnlyBody = (
+      <>
+        {intentState.kind === 'unavailable' ? (
+          <Alert variant="warning">This add-on isn&apos;t available for your plan.</Alert>
+        ) : null}
+        {cartControls}
+        {payAction}
+      </>
+    );
+  }
 
   if (transactionsLoading && transactions.length === 0) {
     return (
@@ -361,8 +458,7 @@ export function PlanPaymentPage() {
                   </Text>
                 </Stack>
                 <Divider />
-                {cartControls}
-                {payAction}
+                {addOnOnlyBody}
               </Stack>
             </CardBody>
           </Card>
@@ -428,8 +524,6 @@ export function PlanPaymentPage() {
             </Stack>
           </CardBody>
         </Card>
-
-        {error ? <Alert variant="danger">{error}</Alert> : null}
       </Stack>
     </Stack>
   );

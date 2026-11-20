@@ -5,11 +5,13 @@ import {
   addOnPriceLabel,
   buildAddOnOnlyRequest,
   buildQuoteRequest,
+  checkoutFingerprint,
   maxQuantityFor,
   normaliseVoucherCode,
   paidFromWallet,
   readVoucherRejection,
   sellableAddOns,
+  vouchersAfterRejection,
 } from './cart';
 
 function addOn(overrides: Partial<AddOnResponse>): AddOnResponse {
@@ -151,5 +153,36 @@ describe('readVoucherRejection', () => {
   it('ignores other errors', () => {
     expect(readVoucherRejection(new ApiError('bad', { status: 400 }))).toBeNull();
     expect(readVoucherRejection(new Error('boom'))).toBeNull();
+  });
+});
+
+describe('vouchersAfterRejection', () => {
+  it('drops only the voucher the API named', () => {
+    expect(
+      vouchersAfterRejection(['A', 'B'], {
+        voucherCode: 'B',
+        message: 'This voucher has expired.',
+      }),
+    ).toEqual(['A']);
+  });
+
+  it('clears every voucher when the API names none', () => {
+    expect(vouchersAfterRejection(['A', 'B'], { voucherCode: null, message: 'No.' })).toEqual([]);
+  });
+});
+
+describe('checkoutFingerprint', () => {
+  const request = buildQuoteRequest('GROWTH', {}, ['SAVE10']);
+
+  it('is the same for the same cart and totals, so a retry reuses the key', () => {
+    expect(checkoutFingerprint(request, { grandTotal: 900, walletCredit: 0 })).toBe(
+      checkoutFingerprint({ ...request }, { grandTotal: 900, walletCredit: 0 }),
+    );
+  });
+
+  it('changes when the quoted total or wallet credit changes for the same cart', () => {
+    const before = checkoutFingerprint(request, { grandTotal: 900, walletCredit: 0 });
+    expect(checkoutFingerprint(request, { grandTotal: 1000, walletCredit: 0 })).not.toBe(before);
+    expect(checkoutFingerprint(request, { grandTotal: 900, walletCredit: 100 })).not.toBe(before);
   });
 });

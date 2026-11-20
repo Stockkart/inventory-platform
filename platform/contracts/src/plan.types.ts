@@ -207,6 +207,11 @@ export interface QuoteResponse {
   currency: string;
   /** 0 on an add-on-only cart, which has no term; never show a duration for it. */
   durationMonths: number;
+  /**
+   * Add-on-only carts: when the annual add-ons end (ISO instant; full price, no proration). Null or
+   * absent otherwise, and on an API that predates the field.
+   */
+  termEndsAt?: string | null;
   pricingVersion: number;
   quotedAt: string;
   expiresAt: string;

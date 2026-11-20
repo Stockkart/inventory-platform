@@ -8,6 +8,7 @@ import {
   Button,
   QtyStepper,
   Skeleton,
+  Stack,
   Text,
   surfaceChrome,
   cn,
@@ -101,7 +102,13 @@ export interface AddOnTopUpSectionProps {
 export function AddOnTopUpSection({ status, onBuy }: AddOnTopUpSectionProps) {
   const [open, setOpen] = useState(false);
   const bodyId = useId();
-  const { data: catalogue = [], isLoading, isError } = useAddOnsQuery({ enabled: open });
+  const {
+    data: catalogue = [],
+    isLoading,
+    isError,
+    isFetching,
+    refetch,
+  } = useAddOnsQuery({ enabled: open });
   const addOns = topUpAddOns(catalogue, status);
 
   return (
@@ -135,7 +142,18 @@ export function AddOnTopUpSection({ status, onBuy }: AddOnTopUpSectionProps) {
           isLoading ? (
             <Skeleton height={120} />
           ) : isError ? (
-            <Alert variant="danger">Could not load add-ons. Please try again.</Alert>
+            <Stack gap="sm" align="start">
+              <Alert variant="danger">Could not load add-ons.</Alert>
+              <Button
+                type="button"
+                variant="solid"
+                size="sm"
+                loading={isFetching}
+                onClick={() => void refetch()}
+              >
+                Retry
+              </Button>
+            </Stack>
           ) : addOns.length === 0 ? (
             <Text color="secondary">Your plan already includes every add-on.</Text>
           ) : (

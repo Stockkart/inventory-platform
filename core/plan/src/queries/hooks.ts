@@ -26,7 +26,7 @@ import type {
   WalletResponse,
 } from '@inventory-platform/plan/types';
 import { plansApi } from '../api/plans.api';
-import { planKeys } from './keys';
+import { isPlanDataExceptQuote, planKeys } from './keys';
 
 export function usePlansQuery(
   options?: Omit<UseQueryOptions<PlanResponse[]>, 'queryKey' | 'queryFn'>,
@@ -179,7 +179,7 @@ export function useVerifyPlanPaymentMutation(
   return useMutation({
     mutationFn: (data) => plansApi.verifyPayment(data),
     onSuccess: (...args) => {
-      void queryClient.invalidateQueries({ queryKey: planKeys.all });
+      void queryClient.invalidateQueries({ predicate: isPlanDataExceptQuote });
       options?.onSuccess?.(...args);
     },
     ...options,

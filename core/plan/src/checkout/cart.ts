@@ -1,10 +1,12 @@
 import { isApiError } from '@inventory-platform/api-client';
 import type {
   AddOnResponse,
+  CreatePlanCheckoutRequest,
   PlanCheckoutResponse,
   PlanResponse,
   QuoteAddOnLine,
   QuoteRequest,
+  QuoteResponse,
   VoucherRejectedDetails,
   VoucherRejection,
 } from '@inventory-platform/plan/types';
@@ -123,6 +125,31 @@ export function readVoucherRejection(error: unknown): VoucherDenial | null {
     voucherCode: details.voucherCode ?? null,
     message: voucherRejectionMessage(details.reason),
   };
+}
+
+/**
+ * Vouchers left applied after a VOUCHER_REJECTED: drop the named one, or all of them when the API
+ * does not say which, so the cart can be priced again instead of staying stuck.
+ */
+export function vouchersAfterRejection(codes: string[], rejection: VoucherDenial): string[] {
+  if (!rejection.voucherCode) return [];
+  return codes.filter((code) => code !== rejection.voucherCode);
+}
+
+/**
+ * What one idempotency key stands for: the cart plus the totals the shopper was shown. The server
+ * replays an order for a reused key, so a new total (a voucher ran out, wallet credit moved) must
+ * get a new key or the shopper pays the old amount.
+ */
+export function checkoutFingerprint(
+  request: CreatePlanCheckoutRequest,
+  quote: Pick<QuoteResponse, 'grandTotal' | 'walletCredit'> | undefined,
+): string {
+  return JSON.stringify({
+    request,
+    grandTotal: quote?.grandTotal ?? null,
+    walletCredit: quote?.walletCredit ?? null,
+  });
 }
 
 export function newIdempotencyKey(): string {

@@ -10,6 +10,8 @@ export const planKeys = {
   shopStatus: () => [...base.all, 'shop-status'] as const,
   transactions: () => [...base.all, 'transactions'] as const,
   usage: () => [...base.all, 'usage'] as const,
+  /** Prefix of every cart quote. */
+  quotes: () => [...base.all, 'quote'] as const,
   quote: (request: QuoteRequest) => [...base.all, 'quote', request] as const,
   activeCampaign: () => [...base.all, 'active-campaign'] as const,
   addOns: () => [...base.all, 'addons'] as const,
@@ -33,5 +35,13 @@ export const planKeys = {
   adminVoucherRedemptions: (id: string) =>
     [...base.all, 'admin-vouchers', 'redemptions', id] as const,
 };
+
+/**
+ * Every plan query except cart quotes. After a payment the page leaves; re-pricing the cart it just
+ * paid for is wasted work and can flash a voucher error (a single-use voucher is now redeemed).
+ */
+export function isPlanDataExceptQuote(query: { queryKey: readonly unknown[] }): boolean {
+  return query.queryKey[0] === planKeys.all[0] && query.queryKey[1] !== planKeys.quotes()[1];
+}
 
 export const PLAN_MODULE_VERSION = '0.1.0';

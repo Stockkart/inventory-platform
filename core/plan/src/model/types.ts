@@ -49,6 +49,8 @@ export interface PlanCheckoutResponse {
   planName: string;
   /** True when the order buys add-ons only, on top of the shop's current paid plan. */
   addOnOnly?: boolean;
+  /** Add-on-only orders: when the annual add-ons end (ISO instant). Absent on older APIs. */
+  termEndsAt?: string | null;
   items?: QuoteItem[];
   subtotal?: number;
   discountTotal?: number;

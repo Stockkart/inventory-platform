@@ -39,8 +39,9 @@ export function PlanStatusPage() {
   const entitlements = usePlanEntitlementsStore((s) => (shopId ? s.byShopId[shopId] : undefined));
 
   useEffect(() => {
+    if (!shopId) return;
     void fetchEntitlements({ force: true });
-  }, [fetchEntitlements]);
+  }, [fetchEntitlements, shopId]);
 
   const handleSelectPlan = useCallback(
     (plan: PlanResponse) => {
