@@ -124,7 +124,7 @@ export interface PlanTransactionResponse {
   /** Wallet credit given back on a full refund; null otherwise. */
   walletCreditReturned: number | null;
   /** Time the list is sorted by, newest first. */
-  sortAt: string;
+  sortAt: string | null;
 }
 
 /** PLAN, ADD_ON_ONLY or ASSIGNED (set by an admin or the assign endpoint; no verified charge). */
