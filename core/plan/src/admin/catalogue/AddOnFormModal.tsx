@@ -134,10 +134,10 @@ export function AddOnFormModal({ open, addOn, onClose }: AddOnFormModalProps) {
 
           <Inline gap="md" flexWrap align="start">
             <FormField
-              label="What it gives"
+              label="Add-on type"
               htmlFor="addon-grant-type"
               required
-              hint={isNew ? 'Fixed once created.' : undefined}
+              hint={isNew ? 'What the shop gets. Fixed once created.' : undefined}
             >
               <Select
                 id="addon-grant-type"
