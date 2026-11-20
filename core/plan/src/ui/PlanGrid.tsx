@@ -1,12 +1,11 @@
 import { Check } from 'lucide-react';
-import type { PlanResponse } from '@inventory-platform/plan/types';
+import type { PlanFeature, PlanResponse } from '@inventory-platform/plan/types';
 import {
   Badge,
   Box,
   Button,
   Text,
   VisuallyHidden,
-  chartChrome,
   surfaceChrome,
   cn,
 } from '@inventory-platform/ui-kit';
@@ -17,6 +16,8 @@ import {
   planYearlyPrice,
   plansForSelection,
 } from './planPricing';
+
+const FEATURE_ORDER = Object.keys(FEATURE_LABELS) as PlanFeature[];
 
 /** The backend decides which plan is highlighted. */
 export function isMostPopular(plan: PlanResponse): boolean {
@@ -62,8 +63,9 @@ export function buildPlanFeatures(plan: PlanResponse): string[] {
     features.push(`${plan.ocrLimit.toLocaleString('en-IN')} OCR invoices/month`);
   }
 
-  for (const feature of plan.features ?? []) {
-    features.push(FEATURE_LABELS[feature] ?? feature);
+  // The API sends features as a set, so list them in one fixed order on every card.
+  for (const feature of FEATURE_ORDER) {
+    if (plan.features?.includes(feature)) features.push(FEATURE_LABELS[feature]);
   }
 
   return features;
@@ -181,7 +183,7 @@ export function PlanGrid({
 }: PlanGridProps) {
   return (
     <Box className={surfaceChrome.planGridWrap}>
-      <Box display="grid" gap="md" width="full" className={chartChrome.autoGridFillWide}>
+      <Box display="grid" gap="md" width="full" className={surfaceChrome.planCardGrid}>
         {plansForSelection(plans).map((plan) => (
           <PlanTile
             key={plan.id}
