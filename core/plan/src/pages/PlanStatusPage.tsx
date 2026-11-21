@@ -15,6 +15,7 @@ import {
 } from '@inventory-platform/ui-kit';
 import { PlanGrid } from '../ui/PlanGrid';
 import { FEATURE_LABELS } from '../ui/planPricing';
+import { trialLabel } from '../ui/trialLabel';
 import { isAtLimit, isPlanFeature, splitFeatures, usageOfLimit } from '../entitlements';
 import { CampaignBanner } from '../campaign';
 import type { PlanResponse } from '@inventory-platform/plan/types';
@@ -148,7 +149,7 @@ export function PlanStatusPage() {
             </Badge>
           </Box>
           <Text as="p" className={surfaceChrome.planStatusMeta}>
-            {status.trial ? '3-day trial · ' : null}
+            {status.trial ? `${trialLabel(status.trialDays)} · ` : null}
             {renewLabel} {formatDate(status.planExpiryDate)}
           </Text>
         </Box>

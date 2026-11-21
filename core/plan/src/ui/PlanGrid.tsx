@@ -16,6 +16,7 @@ import {
   planYearlyPrice,
   plansForSelection,
 } from './planPricing';
+import { trialLabel } from './trialLabel';
 
 /** The backend decides which plan is highlighted. */
 export function isMostPopular(plan: PlanResponse): boolean {
@@ -102,7 +103,7 @@ function PlanTile({
         <Box className={surfaceChrome.planCardTop}>
           {isCurrent ? <Badge variant="success">Current</Badge> : null}
           {!isCurrent && isPopular ? <Badge variant="info">Most popular</Badge> : null}
-          {showTrialBadge ? <Badge variant="neutral">3-day trial</Badge> : null}
+          {showTrialBadge ? <Badge variant="neutral">{trialLabel(plan.trialDays)}</Badge> : null}
         </Box>
 
         <Text as="h3" className={surfaceChrome.planCardName}>
