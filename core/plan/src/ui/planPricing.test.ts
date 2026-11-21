@@ -77,12 +77,10 @@ describe('buildPlanComparison', () => {
 });
 
 describe('plansForSelection', () => {
-  it('leaves the legacy add-on plans out of plan selection; they are sold at payment', () => {
-    const starter = plan({ id: 's', planName: 'Starter' });
-    const extraUser = plan({ id: 'u', planName: 'Extra User Plan' });
-    const extraShop = plan({ id: 'x', planName: 'Extra Shop Plan' });
-    const pro = plan({ id: 'p', planName: 'Professional' });
-
-    expect(plansForSelection([starter, extraUser, pro, extraShop])).toEqual([starter, pro]);
+  it('leaves out the plans the API marks not selectable; they are sold at payment', () => {
+    const starter = plan({ id: 's', planName: 'Starter', selectable: true });
+    const extraUser = plan({ id: 'u', planName: 'Extra User Plan', selectable: false });
+    const older = plan({ id: 'o', planName: 'Older API plan' });
+    expect(plansForSelection([starter, extraUser, older])).toEqual([starter, older]);
   });
 });
