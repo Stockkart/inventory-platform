@@ -284,11 +284,10 @@ export function toAddOnRequest(
     name,
     description: optional(form.description),
     price: price as number,
-    billingType: form.grantType === 'OCR_CREDITS' ? 'ONE_TIME' : 'ANNUAL',
+    // Billing type, and pack size and stacking for a feature, are derived and checked by the API.
     grantType: form.grantType,
     grantsFeature: feature ? (form.grantsFeature as PlanFeature) : null,
-    grantsQuantity: feature ? 1 : grantsQuantity,
-    stackable: feature ? false : form.stackable,
+    ...(feature ? {} : { grantsQuantity, stackable: form.stackable }),
     maxQuantity: maxQuantity as number | null,
     displayOrder: displayOrder as number | null,
   }));
