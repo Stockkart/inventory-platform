@@ -40,4 +40,6 @@ export const PLAN_ENDPOINTS = {
   ADMIN_WALLET: (shopId: string) => `/admin/wallets/${encodeURIComponent(shopId)}`,
   ADMIN_WALLET_ADJUSTMENTS: (shopId: string) =>
     `/admin/wallets/${encodeURIComponent(shopId)}/adjustments`,
+  ADMIN_WALLET_ADJUSTMENT_PREVIEW: (shopId: string) =>
+    `/admin/wallets/${encodeURIComponent(shopId)}/adjustments/preview`,
 } as const;
