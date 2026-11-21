@@ -19,8 +19,21 @@ export const referralRoutes: RouteModule = {
   children: [{ path: '', file: 'routes/referrals.tsx', lazy: () => import('./routes/referrals') }],
 };
 
+/** StockKart operators only; the shell hides and guards these for everyone else. */
+export const platformAdminRoutes: RouteModule = {
+  path: 'platform-admin',
+  children: [
+    {
+      path: 'mis',
+      file: 'routes/platform-admin-mis.tsx',
+      lazy: () => import('./routes/platform-admin-mis'),
+    },
+  ],
+};
+
 export const planDashboardRoutes: RouteModule[] = [
   planPaymentRoutes,
   planStatusRoutes,
   referralRoutes,
+  platformAdminRoutes,
 ];

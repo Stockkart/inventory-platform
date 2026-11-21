@@ -2,12 +2,19 @@ export { plansApi } from './api/plans.api';
 export { PLAN_ENDPOINTS } from './api/endpoints';
 export { planKeys, PLAN_MODULE_VERSION } from './queries/keys';
 export * from './queries/hooks';
-export { planStatusRoutes, planPaymentRoutes, referralRoutes, planDashboardRoutes } from './routes';
-export { planNav } from './nav';
+export {
+  planStatusRoutes,
+  planPaymentRoutes,
+  referralRoutes,
+  platformAdminRoutes,
+  planDashboardRoutes,
+} from './routes';
+export { planNav, platformAdminNav } from './nav';
 
 export { PlanStatusPage } from './pages/PlanStatusPage';
 export { PlanPaymentPage } from './pages/PlanPaymentPage';
 export { ReferralsPage } from './pages/ReferralsPage';
+export { PlanMisPage } from './pages/PlanMisPage';
 export { PlanGrid, buildPlanFeatures } from './ui/PlanGrid';
 export { CampaignBanner, type CampaignBannerProps } from './campaign';
 export { readEntitlementError, type EntitlementDenial } from './entitlements';

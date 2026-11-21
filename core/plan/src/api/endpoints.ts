@@ -17,4 +17,5 @@ export const PLAN_ENDPOINTS = {
   ADDONS: '/plans/addons',
   VOUCHER_VALIDATE: '/plans/vouchers/validate',
   CAMPAIGN_ACTIVE: '/campaigns/active',
+  ADMIN_MIS: '/admin/mis/plans',
 } as const;
