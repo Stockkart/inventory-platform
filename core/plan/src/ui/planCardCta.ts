@@ -1,4 +1,5 @@
 import type { PlanOptionResponse } from '@inventory-platform/plan/types';
+import { formatPlanDate } from './planDate';
 
 export interface PlanCardCta {
   label: string;
@@ -12,16 +13,6 @@ const ACTION_LABELS: Record<PlanOptionResponse['action'], string> = {
   UPGRADE: 'Upgrade',
   BUY: 'Buy',
 };
-
-/** Indian calendar day, e.g. "21 Nov 2027". */
-function formatDay(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'Asia/Kolkata',
-  });
-}
 
 /**
  * The card button from the API's plan option (`planOptions` on plan status). Without one (the
@@ -39,8 +30,9 @@ export function planCardCta(
     return { label: ACTION_LABELS[option.action], disabled: false, note: null };
   }
   const reason = option.unavailableReason ?? 'Not available right now.';
-  const note = option.availableFrom
-    ? `${reason.replace(/\.?$/, '.')} Available from ${formatDay(option.availableFrom)}.`
+  const availableFrom = formatPlanDate(option.availableFrom);
+  const note = availableFrom
+    ? `${reason.replace(/\.?$/, '.')} Available from ${availableFrom}.`
     : reason;
   return { label: ACTION_LABELS[option.action], disabled: true, note };
 }
