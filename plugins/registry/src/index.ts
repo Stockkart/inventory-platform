@@ -39,6 +39,11 @@ export async function loadVerticalPluginRoutes(
 }
 
 export { useVerticalPluginStore } from './useVerticalPluginStore';
+/**
+ * Plan entitlements for the dashboard layout's nav filter and route guard. Re-exported here
+ * because the app may not import domain packages, and the shell takes the data as props.
+ */
+export { useShopEntitlementsQuery } from '@inventory-platform/plan';
 export { registerComposedProfileTabs, BARCODE_LABELS_PROFILE_TAB_ID } from './profile-tabs';
 export { loadSellSurfaceComponent, resolveSellPath } from './sell-surface';
 export { composedDashboardRoutes, DASHBOARD_ROUTE_ENTRIES } from './composed-dashboard-routes.js';
