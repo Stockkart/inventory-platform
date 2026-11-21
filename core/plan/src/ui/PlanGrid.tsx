@@ -163,14 +163,16 @@ function PlanTile({
             >
               {cta.label}
             </Button>
-            {cta.note ? (
-              <Text variant="caption" color="secondary">
-                {cta.note}
-              </Text>
-            ) : null}
           </Box>
         ) : null}
       </Box>
+      {onSelectPlan && cta.note ? (
+        <Box className={surfaceChrome.planCardNote}>
+          <Text variant="caption" color="secondary">
+            {cta.note}
+          </Text>
+        </Box>
+      ) : null}
     </Box>
   );
 }
