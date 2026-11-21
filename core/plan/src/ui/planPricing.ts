@@ -11,8 +11,10 @@ export const FEATURE_LABELS: Record<PlanFeature, string> = {
   ADVANCED_ACCESS_CONTROL: 'Advanced access control',
 };
 
+/** Rupees as the rest of the app shows money: Indian grouping and always two decimals ("₹8,499.10"). */
 export function formatRupees(amount: number): string {
-  return `₹${amount.toLocaleString('en-IN')}`;
+  const safe = Number.isFinite(amount) ? amount : 0;
+  return `₹${safe.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 /** What the plan is sold for per year. */
