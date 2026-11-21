@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { toBlobRequestError } from '@inventory-platform/api-client';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
@@ -24,10 +25,14 @@ export async function downloadAccountingBlob(
 ): Promise<{ blob: Blob; filename: string }> {
   const qs = new URLSearchParams(query).toString();
   const url = qs ? `${API_BASE_URL}${path}?${qs}` : `${API_BASE_URL}${path}`;
-  const response = await axios.get(url, {
-    responseType: 'blob',
-    headers: authHeaders(),
-  });
+  const response = await axios
+    .get(url, {
+      responseType: 'blob',
+      headers: authHeaders(),
+    })
+    .catch(async (e: unknown) => {
+      throw await toBlobRequestError(e);
+    });
 
   const contentDisposition = response.headers['content-disposition'] as string | undefined;
   let filename = defaultFilename;
