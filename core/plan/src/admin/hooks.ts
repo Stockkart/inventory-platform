@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   AdminActiveRequest,
   CampaignRequest,
@@ -11,6 +11,7 @@ import type {
 } from '@inventory-platform/plan/types';
 import { planKeys } from '../queries/keys';
 import { planAdminApi } from './admin.api';
+import { VOUCHER_PAGE_SIZE } from './vouchers/voucherForm';
 
 export function useAdminAttributionsQuery(status: ReferralAttributionStatus) {
   return useQuery({
@@ -82,10 +83,11 @@ export function useAdminAddOnsQuery() {
   });
 }
 
-export function useAdminVouchersQuery(addOnCode: string | null) {
+export function useAdminVouchersQuery(addOnCode: string | null, page: number) {
   return useQuery({
-    queryKey: planKeys.adminVoucherList(addOnCode),
-    queryFn: () => planAdminApi.listVouchers(addOnCode),
+    queryKey: planKeys.adminVoucherList(addOnCode, page),
+    queryFn: () => planAdminApi.listVouchers(addOnCode, page, VOUCHER_PAGE_SIZE),
+    placeholderData: keepPreviousData,
   });
 }
 

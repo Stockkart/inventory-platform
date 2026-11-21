@@ -3,7 +3,6 @@ import type {
   ShopAccess,
   PlanEntitlementsView,
 } from '@inventory-platform/access';
-import { isPathEntitled } from '@inventory-platform/access';
 import type {
   VerticalPlugin,
   DashboardMenuGroup,
@@ -13,6 +12,7 @@ import type {
 import { resolveSellPath } from '@inventory-platform/routing';
 import { isCustomerReturnEnabled, isVendorReturnEnabled } from '@inventory-platform/routing';
 import { filterDashboardMenuGroupsByAccess, filterPlatformAdminGroups } from './accessNav';
+import { filterMenuGroupsByEntitlements } from './planEntitlementNav';
 
 export { isCustomerReturnEnabled, isVendorReturnEnabled };
 
@@ -122,18 +122,6 @@ function mergeMenuListProductNav(
 
 export { resolveSellPath };
 
-function filterByEntitlements(
-  groups: DashboardMenuGroup[],
-  entitlements: PlanEntitlementsView | null | undefined,
-): DashboardMenuGroup[] {
-  return groups
-    .map((group) => ({
-      ...group,
-      items: group.items.filter((item) => isPathEntitled(item.path, entitlements)),
-    }))
-    .filter((group) => group.items.length > 0);
-}
-
 /**
  * Vertical capability, shop access and plan entitlements must all allow an item; platform admin
  * pages are shown only to platform admins.
@@ -157,7 +145,7 @@ export function getDashboardMenuGroupsWithCapabilities(
   }
 
   return filterPlatformAdminGroups(
-    filterByEntitlements(
+    filterMenuGroupsByEntitlements(
       filterDashboardMenuGroupsByAccess(filterReturnsGroup(groups, capabilities), access),
       entitlements,
     ),
