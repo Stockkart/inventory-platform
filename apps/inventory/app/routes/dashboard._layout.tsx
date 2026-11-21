@@ -2,9 +2,11 @@ import { useEffect } from 'react';
 import { useAuthStore, useVerticalSchemaStore } from '@inventory-platform/session';
 import { VerticalPluginProvider } from '@inventory-platform/routing';
 import { DashboardLayout, DashboardRouteGuard } from '@inventory-platform/shell';
+import type { DashboardLayoutProps } from '@inventory-platform/shell/types';
 import {
   COMPOSED_DASHBOARD_MENU_GROUPS,
   registerComposedProfileTabs,
+  useShopEntitlementsQuery,
   useVerticalPluginStore,
 } from '@inventory-platform/plugin-registry';
 import { Outlet } from 'react-router';
@@ -14,14 +16,23 @@ import { Outlet } from 'react-router';
 registerComposedProfileTabs();
 
 export default function DashboardLayoutRoute() {
+  // Server state from TanStack Query; the shell only filters nav and guards routes with it.
+  const { data: planEntitlements } = useShopEntitlementsQuery();
   return (
-    <DashboardRouteGuard menuGroups={COMPOSED_DASHBOARD_MENU_GROUPS}>
-      <DashboardLayoutShell />
+    <DashboardRouteGuard
+      menuGroups={COMPOSED_DASHBOARD_MENU_GROUPS}
+      planEntitlements={planEntitlements}
+    >
+      <DashboardLayoutShell planEntitlements={planEntitlements ?? null} />
     </DashboardRouteGuard>
   );
 }
 
-function DashboardLayoutShell() {
+function DashboardLayoutShell({
+  planEntitlements,
+}: {
+  planEntitlements: DashboardLayoutProps['planEntitlements'];
+}) {
   const { user } = useAuthStore();
   const shopSchema = useVerticalSchemaStore((s) => {
     if (!user?.shopId) return undefined;
@@ -44,6 +55,7 @@ function DashboardLayoutShell() {
       <DashboardLayout
         verticalPlugin={verticalPlugin ?? null}
         baseMenuGroups={COMPOSED_DASHBOARD_MENU_GROUPS}
+        planEntitlements={planEntitlements}
       >
         <Outlet />
       </DashboardLayout>
