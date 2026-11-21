@@ -81,6 +81,9 @@ export function withTarget(form: VoucherFormState, target: VoucherTarget): Vouch
   };
 }
 
+/** Rupees or percent with at most two decimals, as the API stores them. */
+const MONEY = /^\d+(\.\d{1,2})?$/;
+
 function wholeNumber(input: string): number | null {
   return /^\d+$/.test(input.trim()) ? Number(input.trim()) : null;
 }
@@ -92,10 +95,20 @@ function optional(input: string): string | undefined {
 
 export type VoucherValueResult = { ok: true; value: number } | { ok: false; error: string };
 
-/** The discount a ₹ or percent voucher takes: above 0, and at most 100 for a percent. */
+/**
+ * The discount a ₹ or percent voucher takes: a plain number with up to two decimals, above 0, and
+ * at most 100 for a percent. The API validates it again and has the final say.
+ */
 export function parseVoucherValue(type: VoucherType, input: string): VoucherValueResult {
-  const parsed = Number(input);
-  if (!input.trim() || !Number.isFinite(parsed) || parsed <= 0) {
+  const trimmed = input.trim();
+  if (!MONEY.test(trimmed)) {
+    return {
+      ok: false,
+      error: trimmed ? 'Enter a number like 1500 or 99.50.' : 'Enter a value above 0.',
+    };
+  }
+  const parsed = Number(trimmed);
+  if (parsed <= 0) {
     return { ok: false, error: 'Enter a value above 0.' };
   }
   if (type === 'PERCENT_OFF' && parsed > 100) return { ok: false, error: 'At most 100%.' };

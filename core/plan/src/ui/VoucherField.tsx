@@ -32,6 +32,8 @@ export function VoucherField({
   const validate = useValidateVoucherMutation();
 
   const apply = async () => {
+    // Enter and the button share this: one check at a time.
+    if (disabled || validate.isPending) return;
     const code = normaliseVoucherCode(input);
     if (!code) return;
     if (applied.includes(code)) {
@@ -80,7 +82,7 @@ export function VoucherField({
           />
           <Button
             type="button"
-            variant="outline"
+            variant="solid"
             onClick={() => void apply()}
             loading={validate.isPending}
             disabled={disabled || !input.trim()}

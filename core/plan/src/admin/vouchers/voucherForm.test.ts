@@ -247,11 +247,21 @@ describe('parseVoucherValue', () => {
     expect(parseVoucherValue('PERCENT_OFF', '100')).toEqual({ ok: true, value: 100 });
   });
 
-  it('rejects empty, zero, negative and non-numbers', () => {
-    for (const input of ['', ' ', '0', '-5', 'abc']) {
+  it('rejects empty and zero', () => {
+    for (const input of ['', ' ', '0', '0.00']) {
       expect(parseVoucherValue('FLAT_OFF', input)).toEqual({
         ok: false,
         error: 'Enter a value above 0.',
+      });
+    }
+  });
+
+  it('accepts at most two decimals and nothing Number() alone would let through', () => {
+    expect(parseVoucherValue('FLAT_OFF', ' 99.50 ')).toEqual({ ok: true, value: 99.5 });
+    for (const input of ['-5', 'abc', '1e3', '0x10', '12.345', '1,500', '.5', 'Infinity']) {
+      expect(parseVoucherValue('FLAT_OFF', input)).toEqual({
+        ok: false,
+        error: 'Enter a number like 1500 or 99.50.',
       });
     }
   });
