@@ -160,7 +160,7 @@ function PlanTile({
 
         {plan.price != null && plan.price > 0 ? (
           <Text as="p" className={surfaceChrome.planCardOneTime}>
-            One-time ₹{plan.price.toLocaleString('en-IN')} with support
+            One-time {formatRupees(plan.price)} with support
           </Text>
         ) : null}
 
