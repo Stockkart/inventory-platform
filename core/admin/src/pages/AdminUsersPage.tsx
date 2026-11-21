@@ -22,7 +22,12 @@ import {
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import type { AdminAccount, AdminPasswordIssued } from '@inventory-platform/admin/types';
-import { adminErrorMessage, adminStatusBadge, formatAdminDateTime } from '../forms/adminForms';
+import {
+  adminErrorMessage,
+  adminStatusBadge,
+  formatAdminDateTime,
+  issuedPassword,
+} from '../forms/adminForms';
 import {
   useAdminMeQuery,
   useAdminUsersQuery,
@@ -67,7 +72,9 @@ export function AdminUsersPage() {
         {
           onSuccess: (value) => {
             setPending(null);
-            setIssued({ title: 'Password reset', value });
+            const issuedNow = issuedPassword(value);
+            if (issuedNow) setIssued({ title: 'Password reset', value: issuedNow });
+            else useNotify.success(`Reset link emailed to ${admin.email}`);
           },
           onError: (error) => useNotify.error(adminErrorMessage(error)),
         },
@@ -182,7 +189,7 @@ export function AdminUsersPage() {
         message={
           pending
             ? pending.kind === 'reset'
-              ? `${pending.admin.name} is signed out and gets a new temporary password to share with them.`
+              ? `${pending.admin.name} is signed out and gets an email with a link to set a new password.`
               : pending.admin.active
               ? `${pending.admin.name} is signed out and can no longer sign in.`
               : `${pending.admin.name} can sign in again with their current password.`

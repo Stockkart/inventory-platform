@@ -8,6 +8,8 @@ import type {
   AdminLoginRequest,
   AdminLoginResponse,
   AdminPasswordIssued,
+  AdminPasswordResetResult,
+  AdminResetPasswordRequest,
   AdminReasonBody,
 } from '@inventory-platform/admin/types';
 import { ADMIN_ENDPOINTS } from './endpoints';
@@ -60,11 +62,16 @@ export const adminApi = {
     return response.data;
   },
 
-  resetPassword: async (id: string, body: AdminReasonBody): Promise<AdminPasswordIssued> => {
-    const response = await apiClient.post<ApiResponse<AdminPasswordIssued>>(
+  resetPassword: async (id: string, body: AdminReasonBody): Promise<AdminPasswordResetResult> => {
+    const response = await apiClient.post<ApiResponse<AdminPasswordResetResult>>(
       ADMIN_ENDPOINTS.ADMIN_RESET_PASSWORD(id),
       body,
     );
     return response.data;
+  },
+
+  /** Public: set a new password with the token from a reset email. */
+  resetPasswordWithToken: async (body: AdminResetPasswordRequest): Promise<void> => {
+    await apiClient.post<ApiResponse<unknown>>(ADMIN_ENDPOINTS.RESET_PASSWORD, body);
   },
 };
