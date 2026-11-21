@@ -7,19 +7,24 @@ import {
   useShopAccessStore,
   usePlanEntitlementsStore,
 } from '@inventory-platform/session';
-import { isPathEntitled, planFeatureForPath } from '@inventory-platform/access';
+import { isPlanFeatureEnabled } from '@inventory-platform/access';
+import type { DashboardMenuGroup } from '@inventory-platform/routing';
 import { apiClient } from '@inventory-platform/api-client';
 import { isPlanExpiryAllowedPath } from '@inventory-platform/contracts';
 import { CenteredLoader } from '@inventory-platform/ui-kit';
 import { canAccessDashboardPath } from '../lib/accessNav';
+import { planFeatureForPath } from '../lib/planEntitlementNav';
 
 export type DashboardRouteGuardState = {
   isReady: boolean;
   blockingContent: ReactNode | null;
 };
 
-/** Session, plan expiry, and shop-access bootstrap for dashboard routes. */
-export function useDashboardRouteGuard(): DashboardRouteGuardState {
+/**
+ * Session, plan expiry, and shop-access bootstrap for dashboard routes. `menuGroups` is the
+ * dashboard nav; its items' `requiresFeature` decides which paths need a plan feature.
+ */
+export function useDashboardRouteGuard(menuGroups: DashboardMenuGroup[]): DashboardRouteGuardState {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, isLoading, user, token, fetchCurrentUser } = useAuthStore();
@@ -120,11 +125,12 @@ export function useDashboardRouteGuard(): DashboardRouteGuardState {
       navigate('/dashboard/plan-status', { replace: true });
       return;
     }
-    if (!isPathEntitled(location.pathname, planEntitlements)) {
-      const feature = planFeatureForPath(location.pathname);
-      navigate(`/dashboard/plan-status${feature ? `?locked=${feature}` : ''}`, { replace: true });
+    const feature = planFeatureForPath(menuGroups, location.pathname);
+    if (feature && !isPlanFeatureEnabled(planEntitlements, feature)) {
+      navigate(`/dashboard/plan-status?locked=${feature}`, { replace: true });
     }
   }, [
+    menuGroups,
     planEntitlements,
     isAuthenticated,
     user?.shopId,
@@ -156,8 +162,14 @@ export function useDashboardRouteGuard(): DashboardRouteGuardState {
   return { isReady: true, blockingContent: null };
 }
 
-export function DashboardRouteGuard({ children }: { children: ReactNode }) {
-  const { isReady, blockingContent } = useDashboardRouteGuard();
+interface DashboardRouteGuardProps {
+  /** Dashboard nav, for the plan feature each path needs. */
+  menuGroups: DashboardMenuGroup[];
+  children: ReactNode;
+}
+
+export function DashboardRouteGuard({ menuGroups, children }: DashboardRouteGuardProps) {
+  const { isReady, blockingContent } = useDashboardRouteGuard(menuGroups);
   if (blockingContent) {
     return blockingContent;
   }
