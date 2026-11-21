@@ -23,6 +23,8 @@ export const planKeys = {
   adminRewards: (status: string | null) =>
     [...base.all, 'admin-referrals', 'rewards', status ?? 'all'] as const,
   adminWallet: (shopId: string) => [...base.all, 'admin-wallet', shopId] as const,
+  adminWalletPreview: (shopId: string, amount: number) =>
+    [...base.all, 'admin-wallet', shopId, 'preview', amount] as const,
 };
 
 export const PLAN_MODULE_VERSION = '0.1.0';
