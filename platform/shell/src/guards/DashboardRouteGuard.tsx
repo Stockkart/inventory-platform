@@ -6,9 +6,8 @@ import {
   usePlanStatusStore,
   useVerticalSchemaStore,
   useShopAccessStore,
-  usePlanEntitlementsStore,
 } from '@inventory-platform/session';
-import { isPlanFeatureEnabled } from '@inventory-platform/access';
+import { isPlanFeatureEnabled, type PlanEntitlementsView } from '@inventory-platform/access';
 import type { DashboardMenuGroup } from '@inventory-platform/routing';
 import { apiClient } from '@inventory-platform/api-client';
 import { isPlanExpiryAllowedPath } from '@inventory-platform/contracts';
@@ -24,8 +23,12 @@ export type DashboardRouteGuardState = {
 /**
  * Session, plan expiry, and shop-access bootstrap for dashboard routes. `menuGroups` is the
  * dashboard nav; its items' `requiresFeature` decides which paths need a plan feature.
+ * `planEntitlements` comes from the app layer; while it is unknown every path is allowed.
  */
-export function useDashboardRouteGuard(menuGroups: DashboardMenuGroup[]): DashboardRouteGuardState {
+export function useDashboardRouteGuard(
+  menuGroups: DashboardMenuGroup[],
+  planEntitlements: PlanEntitlementsView | null | undefined,
+): DashboardRouteGuardState {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, isLoading, user, token, fetchCurrentUser } = useAuthStore();
@@ -40,9 +43,6 @@ export function useDashboardRouteGuard(menuGroups: DashboardMenuGroup[]): Dashbo
   const accessLoading = useShopAccessStore((s) => s.loading);
   const fetchAccess = useShopAccessStore((s) => s.fetchAccess);
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
-  const planEntitlements = usePlanEntitlementsStore((s) =>
-    user?.shopId ? s.byShopId[user.shopId] : undefined,
-  );
   const hasCheckedAuth = useRef(false);
   const isCheckingRef = useRef(false);
 
@@ -177,11 +177,17 @@ export function useDashboardRouteGuard(menuGroups: DashboardMenuGroup[]): Dashbo
 interface DashboardRouteGuardProps {
   /** Dashboard nav, for the plan feature each path needs. */
   menuGroups: DashboardMenuGroup[];
+  /** The shop's plan entitlements, loaded by the app layer. Unknown allows every path. */
+  planEntitlements?: PlanEntitlementsView | null;
   children: ReactNode;
 }
 
-export function DashboardRouteGuard({ menuGroups, children }: DashboardRouteGuardProps) {
-  const { isReady, blockingContent } = useDashboardRouteGuard(menuGroups);
+export function DashboardRouteGuard({
+  menuGroups,
+  planEntitlements,
+  children,
+}: DashboardRouteGuardProps) {
+  const { isReady, blockingContent } = useDashboardRouteGuard(menuGroups, planEntitlements);
   if (blockingContent) {
     return blockingContent;
   }
