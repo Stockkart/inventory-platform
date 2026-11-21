@@ -25,6 +25,12 @@ The admin token is stored by `apiClient` like the shop token, but the admin app 
 origin, so the two never share storage. A 401 anywhere clears the token and returns to `/login`.
 When `mustChangePassword` is set, every page except change password redirects there.
 
+## Hosting
+
+`apps/admin` is its own Netlify site (`apps/admin/netlify.toml`: static SPA, every path served
+`index.html`). It needs `VITE_API_URL`, and the API's `ADMIN_CLIENT_URL` set to the site's origin.
+See `docs/deploying.md`, "Admin app".
+
 ## Layout
 
 `api/` · `queries/` · `session/` · `forms/` · `pages/` · `ui/` · `routes/` · `routes.ts` · `nav.ts`
