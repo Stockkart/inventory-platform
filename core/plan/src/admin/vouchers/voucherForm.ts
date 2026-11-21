@@ -5,6 +5,7 @@ import type {
   VoucherUpdateRequest,
 } from '@inventory-platform/plan/types';
 import { endOfDayIst, istDay, startOfDayIst } from '../dates';
+import { formatRupees } from '../../ui/planPricing';
 
 /** Mirrors VoucherAdminValidator so most mistakes show before the request. */
 export const VOUCHER_MAX_BATCH = 500;
@@ -180,7 +181,7 @@ export function describeVoucherValue(voucher: Pick<AdminVoucher, 'type' | 'value
     case 'PERCENT_OFF':
       return `${voucher.value ?? 0}% off`;
     case 'FLAT_OFF':
-      return `₹${(voucher.value ?? 0).toLocaleString('en-IN')} off`;
+      return `${formatRupees(voucher.value ?? 0)} off`;
   }
 }
 
