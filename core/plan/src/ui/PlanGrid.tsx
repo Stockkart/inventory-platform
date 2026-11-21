@@ -56,6 +56,10 @@ export function buildPlanFeatures(plan: PlanResponse): string[] {
     features.push('Unlimited users');
   }
 
+  if (plan.roleLimit != null) {
+    features.push(`${plan.roleLimit} staff role${plan.roleLimit === 1 ? '' : 's'}`);
+  }
+
   if (plan.ocrLimit != null) {
     features.push(`${plan.ocrLimit.toLocaleString('en-IN')} OCR invoices/month`);
   }
