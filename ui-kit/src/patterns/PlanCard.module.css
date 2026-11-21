@@ -38,8 +38,8 @@
   line-height: 1.2;
   text-transform: uppercase;
   /* Brochure amber, same as surfaceChrome.planCardPopularPill. */
-  color: #1f2937;
-  background: #f59e0b;
+  color: var(--sk-color-promo-text, #1f2937);
+  background: var(--sk-color-promo, #f59e0b);
 }
 
 .inner {

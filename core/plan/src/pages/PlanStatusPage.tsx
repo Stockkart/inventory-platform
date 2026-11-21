@@ -193,7 +193,13 @@ export function PlanStatusPage() {
               <Text as="span" className={surfaceChrome.planUsageLabel}>
                 {item.label}
               </Text>
-              <Text as="span" className={surfaceChrome.planUsageValue}>
+              <Text
+                as="span"
+                className={cn(
+                  surfaceChrome.planUsageValue,
+                  item.danger && surfaceChrome.planUsageValueDanger,
+                )}
+              >
                 {item.value}
               </Text>
             </Box>
@@ -228,7 +234,10 @@ export function PlanStatusPage() {
                   feature === lockedFeature && surfaceChrome.planFeatureItemHighlight,
                 )}
               >
-                <Box as="span" className={surfaceChrome.planFeatureIcon}>
+                <Box
+                  as="span"
+                  className={cn(surfaceChrome.planFeatureIcon, surfaceChrome.planFeatureIconLocked)}
+                >
                   <Lock size={12} aria-hidden />
                 </Box>
                 <Text as="span" className={surfaceChrome.planFeatureLabel}>

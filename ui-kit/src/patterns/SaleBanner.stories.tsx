@@ -18,7 +18,6 @@ export const Live: StoryObj<typeof SaleBanner> = {
     countdown: 'Ends 20 Oct',
     actionLabel: 'See plans',
     onActivate: () => undefined,
-    onDismiss: () => undefined,
   },
 };
 

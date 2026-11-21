@@ -6,9 +6,17 @@
 .strip {
   /* Brand navy ticker with amber accents, matching the StockKart brochure. */
   --sale-strip-bg: var(--sk-color-bg-sidebar);
-  --sale-strip-text: color-mix(in srgb, #fff 74%, var(--sk-color-bg-sidebar));
-  --sale-strip-strong: #fff;
-  --sale-strip-accent: color-mix(in srgb, var(--sk-color-warning) 72%, #fff);
+  --sale-strip-text: color-mix(
+    in srgb,
+    var(--sk-color-on-dark, #fff) 74%,
+    var(--sk-color-bg-sidebar)
+  );
+  --sale-strip-strong: var(--sk-color-on-dark, #fff);
+  --sale-strip-accent: color-mix(
+    in srgb,
+    var(--sk-color-warning) 72%,
+    var(--sk-color-on-dark, #fff)
+  );
 
   position: relative;
   display: flex;
@@ -82,30 +90,6 @@ button.body:focus-visible {
 .separator {
   font-size: 0.875rem;
   color: var(--sale-strip-accent);
-}
-
-.dismiss {
-  flex-shrink: 0;
-  margin: 0 0.5rem;
-  color: var(--sale-strip-text);
-  background: var(--sale-strip-bg);
-  box-shadow: -1.5rem 0 1rem var(--sale-strip-bg);
-}
-
-.dismiss:hover {
-  color: var(--sale-strip-strong);
-}
-
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }
 
 @keyframes sale-ticker {
