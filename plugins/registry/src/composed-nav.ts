@@ -9,6 +9,7 @@ import {
 import { accountingNav } from '@inventory-platform/accounting/nav';
 import { analyticsNav } from '@inventory-platform/analytics/nav';
 import { creditNav } from '@inventory-platform/credit/nav';
+import { hrNav } from '@inventory-platform/hr/nav';
 import { misNav } from '@inventory-platform/mis/nav';
 import { planNav, platformAdminNav } from '@inventory-platform/plan/nav';
 import { pricingNav } from '@inventory-platform/pricing/nav';
@@ -38,6 +39,7 @@ const NAV_GROUP_ORDER: string[] = [
   'reminders-alerts',
   'marketing',
   'team',
+  'hr',
   'plan-billing',
   'platform-admin',
 ];
@@ -66,6 +68,7 @@ export const CORE_NAV_CONTRIBUTIONS: NavContribution[] = [
   remindersNav,
   userMarketingNav,
   userTeamNav,
+  hrNav,
   planNav,
   platformAdminNav,
 ];

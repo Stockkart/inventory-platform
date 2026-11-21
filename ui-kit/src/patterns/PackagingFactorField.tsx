@@ -102,6 +102,10 @@ export type PackagingFactorFieldProps = {
   factor: number;
   onChange: (baseUnit: string, factor: number) => void;
   disabled?: boolean;
+  /** Locks only the number after "1 ×" (unit stays editable). */
+  factorDisabled?: boolean;
+  /** Tooltip on the number, e.g. why it is locked. */
+  factorTitle?: string;
   required?: boolean;
   id?: string;
   compact?: boolean;
@@ -116,6 +120,8 @@ export function PackagingFactorField({
   factor,
   onChange,
   disabled = false,
+  factorDisabled = false,
+  factorTitle,
   required = false,
   id,
   compact = false,
@@ -344,7 +350,8 @@ export function PackagingFactorField({
             }
           }}
           onKeyDown={(e) => e.stopPropagation()}
-          disabled={disabled}
+          disabled={disabled || factorDisabled}
+          title={factorTitle}
           data-keyboard-nav="skip"
           aria-label={`${label} quantity per pack`}
         />

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { Store } from 'lucide-react';
 import {
   Alert,
@@ -17,8 +18,10 @@ import {
   ShopProfileForm,
   InvoiceSettingsSection,
   InvoiceSeriesSection,
+  ProfileTabPanel,
   ProfileTabs,
-  type ProfileTabId,
+  useProfileTabExtensions,
+  type ProfileTabKey,
 } from '../ui';
 import type { Location as LocationType, ShopDetailResponse, ShopType } from '../model/shop.types';
 
@@ -102,7 +105,15 @@ function ProfileField({ label, value, wide }: { label: string; value: string; wi
 }
 
 export function ProfilePage() {
-  const [activeTab, setActiveTab] = useState<ProfileTabId>('shop');
+  const [searchParams] = useSearchParams();
+  const extensions = useProfileTabExtensions();
+  // Deep-link support: `?tab=<id>` selects a built-in or registered tab on mount.
+  const [activeTab, setActiveTab] = useState<ProfileTabKey>(
+    () => searchParams.get('tab')?.trim() || 'shop',
+  );
+  const activeExtension = extensions.find((ext) => ext.id === activeTab);
+  // A deep link to a tab hidden for this shop (rate rules on a cafe) falls back to Shop.
+  const showShopTab = useCallback(() => setActiveTab('shop'), []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [shop, setShop] = useState<ShopDetailResponse | null>(null);
@@ -142,7 +153,7 @@ export function ProfilePage() {
     loadShop();
   }, [loadShop]);
 
-  const handleTabChange = (id: ProfileTabId) => {
+  const handleTabChange = (id: ProfileTabKey) => {
     setActiveTab(id);
     if (id !== 'shop') {
       setEditing(false);
@@ -232,8 +243,6 @@ export function ProfilePage() {
     { label: 'PAN', value: displayValue(shop.panNo) },
     { label: 'DL No', value: displayValue(shop.dlNo) },
     { label: 'FSSAI', value: displayValue(shop.fssai) },
-    { label: 'SGST', value: displayValue(shop.sgst) },
-    { label: 'CGST', value: displayValue(shop.cgst) },
   ];
 
   return (
@@ -352,6 +361,9 @@ export function ProfilePage() {
 
       {activeTab === 'numbering' ? <InvoiceSeriesSection /> : null}
       {activeTab === 'invoice' ? <InvoiceSettingsSection /> : null}
+      {activeExtension ? (
+        <ProfileTabPanel extension={activeExtension} onHidden={showShopTab} />
+      ) : null}
     </Stack>
   );
 }
