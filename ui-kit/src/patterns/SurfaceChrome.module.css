@@ -690,11 +690,14 @@
   color: var(--sk-color-text-secondary, #64748b);
 }
 
-/* Plan cards follow the 2026 brochure: white cards, brand-navy type, amber "Most popular". */
+/* Plan cards follow the 2026 brochure: white cards, brand-navy type, amber "Most popular".
+   Two subgrid rows (body, then the button's reason note) so buttons line up across a row of cards. */
 .planCard {
   position: relative;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 2;
+  row-gap: 0;
   height: 100%;
   border-radius: var(--sk-radius-lg, 12px);
   border: 1px solid var(--sk-color-border-default, #e2e8f0);
@@ -857,6 +860,11 @@
 .planCardCta {
   margin-top: auto;
   padding-top: 0.5rem;
+}
+
+.planCardNote {
+  margin-top: -0.75rem;
+  padding: 0 1.25rem 1.25rem;
 }
 
 /* Plan comparison table cells. */
