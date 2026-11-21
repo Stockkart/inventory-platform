@@ -148,7 +148,7 @@ export function PlanStatusPage() {
             </Badge>
           </Box>
           <Text as="p" className={surfaceChrome.planStatusMeta}>
-            {status.trial ? '30-day trial · ' : null}
+            {status.trial ? '3-day trial · ' : null}
             {renewLabel} {formatDate(status.planExpiryDate)}
           </Text>
         </Box>
