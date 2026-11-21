@@ -1,9 +1,13 @@
 import type { PlanResponse } from '@inventory-platform/plan/types';
 import { PlanCard, PlanCarousel3D } from '@inventory-platform/ui-kit';
 import { buildPlanFeatures, isMostPopular } from './PlanGrid';
-import { formatRupees, planListPriceLabel, planYearlyPrice } from './planPricing';
-
-const EXTRA_PLANS = ['Extra User Plan', 'Extra Shop Plan'];
+import {
+  formatRupees,
+  planListPriceLabel,
+  planYearlyPrice,
+  plansForSelection,
+} from './planPricing';
+import { freeTrialLabel } from './trialLabel';
 
 function planCardProps(
   plan: PlanResponse,
@@ -16,27 +20,23 @@ function planCardProps(
   },
 ) {
   const allFeatures = buildPlanFeatures(plan);
-  const features =
-    plan.bestFor && !EXTRA_PLANS.includes(plan.planName)
-      ? allFeatures.filter((f) => f !== plan.bestFor)
-      : allFeatures;
+  const features = plan.bestFor ? allFeatures.filter((f) => f !== plan.bestFor) : allFeatures;
 
   const highlight = isMostPopular(plan);
   const showPopular = highlight && (options.isCenter ?? true);
-  const showTrial = options.showTrialBadge && !EXTRA_PLANS.includes(plan.planName);
+  const showTrial = options.showTrialBadge;
 
   return {
     name: plan.planName,
-    bestFor: !EXTRA_PLANS.includes(plan.planName) ? plan.bestFor : null,
+    bestFor: plan.bestFor,
     priceLabel: formatRupees(planYearlyPrice(plan)),
     listPriceLabel: planListPriceLabel(plan),
     periodLabel: '/year',
     oneTimeLabel:
-      !EXTRA_PLANS.includes(plan.planName) && plan.price && plan.price > 0
-        ? `One-time ₹${plan.price.toLocaleString('en-IN')}`
-        : null,
+      plan.price && plan.price > 0 ? `One-time ₹${plan.price.toLocaleString('en-IN')}` : null,
     features,
     showTrialBadge: showTrial,
+    trialLabel: freeTrialLabel(plan.trialDays),
     highlighted: Boolean(options.isCenter),
     showPopularBadge: showPopular,
     ctaLabel: options.ctaLabel,
@@ -58,20 +58,12 @@ export function PlanCarousel({
   ctaLabel = 'Get Started',
   showTrialBadge = true,
 }: PlanCarouselProps) {
-  const sortedPlans = [...plans].sort((a, b) => {
-    const aExtra = EXTRA_PLANS.includes(a.planName);
-    const bExtra = EXTRA_PLANS.includes(b.planName);
-
-    if (aExtra && !bExtra) return 1;
-    if (!aExtra && bExtra) return -1;
-
-    return 0;
-  });
+  const selectablePlans = plansForSelection(plans);
 
   return (
     <PlanCarousel3D
-      items={sortedPlans}
-      dotCount={Math.max(sortedPlans.length - 2, 1)}
+      items={selectablePlans}
+      dotCount={Math.max(selectablePlans.length - 2, 1)}
       getSlideKey={(plan, cloneIndex) => `${plan.id}-${cloneIndex}`}
       renderSlide={(plan, { isCenter }) => (
         <PlanCard
@@ -88,4 +80,4 @@ export function PlanCarousel({
   );
 }
 
-export { EXTRA_PLANS, planCardProps };
+export { planCardProps };
