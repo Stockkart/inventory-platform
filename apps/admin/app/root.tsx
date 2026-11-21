@@ -16,6 +16,10 @@ export const meta: MetaFunction = () => [
   { name: 'robots', content: 'noindex, nofollow' },
 ];
 
+// Set by the Netlify build (VITE_BUILD_SHA=$COMMIT_REF, apps/admin/netlify.toml) so the live
+// commit can be checked; 'local' for dev builds. Rendered in Layout, as in the shop app.
+const BUILD_SHA = import.meta.env.VITE_BUILD_SHA || 'local';
+
 export const links: LinksFunction = () => [
   {
     rel: 'icon',
@@ -40,6 +44,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="build-sha" content={BUILD_SHA} />
         <Meta />
         <Links />
         <script

@@ -48,3 +48,7 @@ Auth / onboarding: `journeyChrome` from ui-kit. Profile and lists: `surfaceChrom
 ### Access control: "Edit rate rules and rates"
 
 Each member's module toggles include `rateRulesEdit` ("Edit rate rules and rates"), next to the other module grants. The Access control page shows it as a toggle; it lets that member edit the shop's rate rules and change a rule rate's discount % or scheme (the server enforces it). `lib/memberModules.ts` (`modulesFromMember`) builds the toggle state from a member: the stored grant where one is set, otherwise the effective access the server reports. Add any new module permission there as well as to the toggle list.
+
+### Onboarding referral code
+
+A referrer shares `/signup?ref=CODE` (built by `core/plan` `referralShareLink`). Sign-up and onboarding keep `?ref=` in `sessionStorage` (`rememberReferralCode`, `journey/onboarding/referral.ts`), because login and shop selection drop the query string; the onboarding referral step prefills from the URL first, then the kept code (`initialReferralCode`), and forgets it once the shop is created. Blocked storage only loses the prefill. The API checks the code; the frontend only normalises case and spaces.

@@ -10,6 +10,7 @@ Subscription plans: status, payment flow, and marketing/landing plan surfaces.
 - Nav group **Plan & Billing**
 - Plans API, payment helpers, guards
 - Marketing UI pieces used on public/plan pages
+- Admin tool pages (MIS, referral operations, vouchers, campaigns, catalogue) as `planAdminToolRoutes`, mounted only in the admin app (`apps/admin`). The shop app has no admin routes or nav.
 
 ## Does not own
 
@@ -36,3 +37,7 @@ The landing-page carousel (ui-kit `PlanCard`) and the `/plans` cards (`surfaceCh
 ## Sale banner
 
 `CampaignBanner` shows the active campaign as a scrolling strip on My Plan and on the public landing and plans pages. It has no close button, so the offer stays visible while the campaign runs. The campaign's `dismissible` field is still stored by the API but the UI no longer reads it, and the admin form no longer shows it.
+
+## Tests
+
+`nx test plan` runs `src/**/*.test.ts(x)` with the same setup as `core/user` (`vitest.config.ts`, `vitest.setup.ts`, `tsconfig.spec.json`): `src/ui/**` in jsdom, everything else in node. CI runs it with every other test target.

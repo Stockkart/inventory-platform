@@ -10,6 +10,9 @@ if (import.meta.env.DEV) {
 
 const X_SHOP_ID_KEY = 'x_shop_id';
 
+/** Where the shop app keeps its bearer token. The admin app uses its own key (setTokenStorageKey). */
+const DEFAULT_TOKEN_KEY = 'auth_token';
+
 /**
  * Per-call options for the typed helpers below.
  *
@@ -65,6 +68,7 @@ export interface RequestOptions {
 class ApiClient {
   private axiosInstance: AxiosInstance;
   private token: string | null = null;
+  private tokenKey = DEFAULT_TOKEN_KEY;
   private shopId: string | null = null;
   private baseURL: string;
   private onPlanExpired: (() => void) | null = null;
@@ -82,7 +86,7 @@ class ApiClient {
     });
 
     if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('auth_token');
+      this.token = localStorage.getItem(this.tokenKey);
       if (this.token) {
         this.axiosInstance.defaults.headers.common.Authorization = `Bearer ${this.token}`;
       }
@@ -91,7 +95,7 @@ class ApiClient {
     this.axiosInstance.interceptors.request.use(
       (config) => {
         const currentToken =
-          typeof window !== 'undefined' ? localStorage.getItem('auth_token') : this.token;
+          typeof window !== 'undefined' ? localStorage.getItem(this.tokenKey) : this.token;
 
         if (currentToken) {
           this.token = currentToken;
@@ -181,19 +185,35 @@ class ApiClient {
     this.token = token;
 
     if (token && typeof window !== 'undefined') {
-      localStorage.setItem('auth_token', token);
+      localStorage.setItem(this.tokenKey, token);
       this.axiosInstance.defaults.headers.common.Authorization = `Bearer ${token}`;
     } else {
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('auth_token');
+        localStorage.removeItem(this.tokenKey);
       }
+      delete this.axiosInstance.defaults.headers.common.Authorization;
+    }
+  }
+
+  /**
+   * Keep the bearer token under another localStorage key. The admin app calls this once at
+   * start-up so an admin token never shares a key with a shop sign-in. Reloads the token from the
+   * new key; the old key is left alone.
+   */
+  setTokenStorageKey(key: string) {
+    if (key === this.tokenKey) return;
+    this.tokenKey = key;
+    this.token = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+    if (this.token) {
+      this.axiosInstance.defaults.headers.common.Authorization = `Bearer ${this.token}`;
+    } else {
       delete this.axiosInstance.defaults.headers.common.Authorization;
     }
   }
 
   hasToken(): boolean {
     if (typeof window !== 'undefined') {
-      return Boolean(localStorage.getItem('auth_token'));
+      return Boolean(localStorage.getItem(this.tokenKey));
     }
     return Boolean(this.token);
   }
@@ -286,7 +306,7 @@ class ApiClient {
   }
 
   createSseConnection(path: string): EventSource {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : this.token;
+    const token = typeof window !== 'undefined' ? localStorage.getItem(this.tokenKey) : this.token;
 
     const url = `${this.baseURL}${path}`;
 

@@ -3,11 +3,15 @@ import { useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@inventory-platform/api-client';
 import { useAdminMeQuery } from '../queries/hooks';
-import { adminRedirect, ADMIN_PATHS, type AdminArea } from './adminGuard';
+import { adminRedirect, adminSessionStatus, ADMIN_PATHS, type AdminArea } from './adminGuard';
+import { selectAdminTokenStorage } from './adminToken';
+
+selectAdminTokenStorage();
 
 /**
  * The signed-in admin for an area of the admin app, redirecting when the area is not allowed.
- * A 401 anywhere clears the session and returns to sign-in.
+ * A 401 anywhere clears the session and returns to sign-in; any other failure of the session check
+ * leaves the admin signed in with `unavailable` set and `retry` to ask again.
  */
 export function useAdminSession(area: AdminArea) {
   const navigate = useNavigate();
@@ -29,7 +33,11 @@ export function useAdminSession(area: AdminArea) {
   }, [navigate, queryClient]);
 
   const me = useAdminMeQuery(hasToken === true);
-  const status = hasToken ? (me.isError ? 'error' : me.data ? 'ready' : 'loading') : 'idle';
+  const status = adminSessionStatus({
+    hasToken: hasToken === true,
+    hasAdmin: me.data != null,
+    error: me.error,
+  });
   const redirect =
     hasToken === null
       ? null
@@ -47,5 +55,9 @@ export function useAdminSession(area: AdminArea) {
   return {
     admin: me.data ?? null,
     checking: hasToken === null || status === 'loading' || redirect !== null,
+    /** The API could not confirm the session (server error or offline); not signed out. */
+    unavailable: status === 'unavailable',
+    retrying: me.isFetching,
+    retry: () => void me.refetch(),
   };
 }

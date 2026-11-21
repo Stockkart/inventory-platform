@@ -127,3 +127,27 @@ variables. Secret scanning and push protection are enabled on the repository, an
 | `ci-hygiene.yml`                        | PR, push to `main`                                   | actionlint, shellcheck, no `.env`                          |
 | `_deploy.yml`                           | called by the above                                  | the one build-and-deploy job, parameterised by environment |
 | `ci.yml`, `eslint.yml`, `format.yml`, … | PR                                                   | unchanged existing checks                                  |
+
+## Admin app (Netlify)
+
+The StockKart admin app (`apps/admin`, admin sign-in, plan and referral tools) is
+its own Netlify site, separate from the shop app. It is a static single-page app,
+so the site serves `apps/admin/build/client` and rewrites every path to
+`index.html` (`apps/admin/netlify.toml`).
+
+Netlify site settings:
+
+| Setting           | Value                                                           |
+| ----------------- | --------------------------------------------------------------- |
+| Base directory    | empty (repo root)                                               |
+| Package directory | `apps/admin`                                                    |
+| Build command     | from `apps/admin/netlify.toml` (`pnpm nx build admin-app`)      |
+| `VITE_API_URL`    | the API base URL, the same value as the shop app (`.../api/v1`) |
+
+API side: set `ADMIN_CLIENT_URL` on inventory-api to the admin site's origin
+(for example `https://admin.<domain>`, no trailing slash). The API's CORS allows
+only that origin on admin paths, so the admin app cannot sign in until it is set.
+The shop app's origin stays in the API's `CLIENT_URL`.
+
+Verify a deploy the same way as the shop app: the page carries
+`<meta name="build-sha" content="<sha>">` from Netlify's `COMMIT_REF`.

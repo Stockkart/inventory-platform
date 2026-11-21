@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import {
-  isPlatformAdmin,
   useAuthStore,
   useNotify,
   useShopCapabilitiesStore,
@@ -270,7 +269,6 @@ export function DashboardLayout({
     prevFullscreen.current = isFullscreen;
   }, [isFullscreen, user, fullscreenSupported, fullscreenEnterHint, fullscreenExitHint]);
 
-  const platformAdmin = isPlatformAdmin(user);
   const filteredMenuGroups = useMemo(
     () =>
       getDashboardMenuGroupsWithCapabilities(
@@ -280,17 +278,8 @@ export function DashboardLayout({
         shopAccess ?? null,
         verticalPlugin ?? null,
         planEntitlements ?? null,
-        platformAdmin,
       ),
-    [
-      baseMenuGroups,
-      user?.role,
-      shopCapabilities,
-      shopAccess,
-      verticalPlugin,
-      planEntitlements,
-      platformAdmin,
-    ],
+    [baseMenuGroups, user?.role, shopCapabilities, shopAccess, verticalPlugin, planEntitlements],
   );
 
   const navRowsForPalette = useMemo(
