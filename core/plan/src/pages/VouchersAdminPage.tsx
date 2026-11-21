@@ -8,6 +8,7 @@ import {
   FormField,
   Inline,
   PageHeader,
+  PaginationBar,
   Select,
   Stack,
   Table,
@@ -29,7 +30,11 @@ import {
 } from '../admin/hooks';
 import { ReasonDialog } from '../admin/ReasonDialog';
 import { adminErrorMessage, formatAdminDate } from '../admin/format';
-import { describeVoucherValue, voucherUsage } from '../admin/vouchers/voucherForm';
+import {
+  describeVoucherValue,
+  isLastVoucherPage,
+  voucherUsage,
+} from '../admin/vouchers/voucherForm';
 import { GenerateVoucherModal } from '../admin/vouchers/GenerateVoucherModal';
 import { EditVoucherModal } from '../admin/vouchers/EditVoucherModal';
 import { RedemptionsModal } from '../admin/vouchers/RedemptionsModal';
@@ -43,12 +48,13 @@ function validity(voucher: AdminVoucher): string {
 
 export function VouchersAdminPage() {
   const [addOnCode, setAddOnCode] = useState('');
+  const [page, setPage] = useState(0);
   const [generating, setGenerating] = useState(false);
   const [editing, setEditing] = useState<AdminVoucher | null>(null);
   const [viewing, setViewing] = useState<AdminVoucher | null>(null);
   const [toggling, setToggling] = useState<AdminVoucher | null>(null);
   const addOns = useAdminAddOnsQuery();
-  const query = useAdminVouchersQuery(addOnCode || null);
+  const query = useAdminVouchersQuery(addOnCode || null, page);
   const activeMutation = useSetVoucherActiveMutation();
   const rows = query.data ?? [];
   const catalogue = addOns.data ?? [];
@@ -91,7 +97,10 @@ export function VouchersAdminPage() {
                     { value: '', label: 'All add-ons' },
                     ...catalogue.map((a) => ({ value: a.code, label: a.name })),
                   ]}
-                  onChange={(e) => setAddOnCode(e.target.value)}
+                  onChange={(e) => {
+                    setAddOnCode(e.target.value);
+                    setPage(0);
+                  }}
                 />
               </FormField>
               <Text variant="caption" color="secondary">
@@ -185,6 +194,14 @@ export function VouchersAdminPage() {
                 )}
               </TableBody>
             </Table>
+            <PaginationBar
+              page={page}
+              prevDisabled={page === 0}
+              nextDisabled={query.isPlaceholderData || isLastVoucherPage(rows.length)}
+              disabled={query.isFetching}
+              onPageChange={setPage}
+              aria-label="Voucher pages"
+            />
           </Stack>
         </CardBody>
       </Card>
