@@ -2,6 +2,7 @@
 export const PLAN_EXPIRY_ALLOWED_PATHS = [
   '/dashboard/plan-status',
   '/dashboard/plan-payment',
+  '/dashboard/referrals',
   '/dashboard/shops',
 ] as const;
 
