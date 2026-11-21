@@ -67,6 +67,14 @@ describe('buildPlanComparison', () => {
     expect(byKey.whatsapp).toEqual(['Unlimited', 'Unlimited']);
   });
 
+  it('shows the billing limit as the API words it', () => {
+    const rows = buildPlanComparison([
+      { ...starter, billingLimitLabel: '₹1.5L' },
+      { ...pro, billingLimitLabel: 'Unlimited' },
+    ]).rows;
+    expect(rows.find((row) => row.key === 'billing')?.values).toEqual(['₹1.5L', 'Unlimited']);
+  });
+
   it('adds a row only for features some shown plan includes', () => {
     const rows = buildPlanComparison([starter, pro]).rows;
     const byKey = Object.fromEntries(rows.map((row) => [row.key, row.values]));
@@ -112,12 +120,10 @@ describe('buildPlanComparison', () => {
 });
 
 describe('plansForSelection', () => {
-  it('leaves the legacy add-on plans out of plan selection; they are sold at payment', () => {
-    const starter = plan({ id: 's', planName: 'Starter' });
-    const extraUser = plan({ id: 'u', planName: 'Extra User Plan' });
-    const extraShop = plan({ id: 'x', planName: 'Extra Shop Plan' });
-    const pro = plan({ id: 'p', planName: 'Professional' });
-
-    expect(plansForSelection([starter, extraUser, pro, extraShop])).toEqual([starter, pro]);
+  it('leaves out the plans the API marks not selectable; they are sold at payment', () => {
+    const starter = plan({ id: 's', planName: 'Starter', selectable: true });
+    const extraUser = plan({ id: 'u', planName: 'Extra User Plan', selectable: false });
+    const older = plan({ id: 'o', planName: 'Older API plan' });
+    expect(plansForSelection([starter, extraUser, older])).toEqual([starter, older]);
   });
 });

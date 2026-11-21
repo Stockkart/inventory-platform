@@ -133,7 +133,6 @@ describe('toAddOnRequest', () => {
     const result = toAddOnRequest(addOnFormState(addOn), false);
     expect(result.ok && result.request).toMatchObject({
       code: 'EXTRA_SEAT',
-      billingType: 'ANNUAL',
       grantType: 'SEATS',
       grantsFeature: null,
       grantsQuantity: 1,
@@ -142,7 +141,7 @@ describe('toAddOnRequest', () => {
     });
   });
 
-  it('derives billing and single purchase from what the add-on gives', () => {
+  it('leaves billing, and pack size and stacking of a feature, to the API', () => {
     const credits = toAddOnRequest(
       {
         ...emptyAddOnForm(),
@@ -154,7 +153,8 @@ describe('toAddOnRequest', () => {
       },
       true,
     );
-    expect(credits.ok && credits.request.billingType).toBe('ONE_TIME');
+    expect(credits.ok && credits.request).not.toHaveProperty('billingType');
+    expect(credits.ok && credits.request.grantsQuantity).toBe(100);
 
     const feature = toAddOnRequest(
       {
@@ -169,12 +169,10 @@ describe('toAddOnRequest', () => {
       },
       true,
     );
-    expect(feature.ok && feature.request).toMatchObject({
-      billingType: 'ANNUAL',
-      grantsFeature: 'MARKETING',
-      grantsQuantity: 1,
-      stackable: false,
-    });
+    expect(feature.ok && feature.request).toMatchObject({ grantsFeature: 'MARKETING' });
+    expect(feature.ok && feature.request).not.toHaveProperty('grantsQuantity');
+    expect(feature.ok && feature.request).not.toHaveProperty('stackable');
+    expect(feature.ok && feature.request).not.toHaveProperty('billingType');
   });
 
   it('requires a feature, a positive price and a pack size', () => {

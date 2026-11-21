@@ -49,12 +49,12 @@ export const FEATURE_GROUPS: readonly { title: string; features: readonly PlanFe
   { title: 'Team & support', features: ['ADVANCED_ACCESS_CONTROL', 'PRIORITY_SUPPORT'] },
 ];
 
-/** Legacy add-ons stored as plans. They are bought on the payment page, not picked as a plan. */
-export const ADD_ON_PLAN_NAMES = ['Extra User Plan', 'Extra Shop Plan'];
-
-/** Plans a shop can pick from; add-ons only show once a plan is chosen, at payment. */
+/**
+ * Plans a shop can pick from: the API marks legacy add-on rows (e.g. "Extra User Plan")
+ * `selectable: false`; add-ons only show once a plan is chosen, at payment.
+ */
 export function plansForSelection(plans: PlanResponse[]): PlanResponse[] {
-  return plans.filter((plan) => !ADD_ON_PLAN_NAMES.includes(plan.planName));
+  return plans.filter((plan) => plan.selectable !== false);
 }
 
 export function formatRupees(amount: number): string {
@@ -138,11 +138,8 @@ export function buildPlanComparison(allPlans: PlanResponse[]): PlanComparison {
       group: LIMITS_GROUP,
       key: 'billing',
       label: 'Billing per month',
-      values: plans.map((plan) =>
-        plan.unlimited || plan.billingLimit == null
-          ? 'Unlimited'
-          : `₹${(plan.billingLimit / 100000).toFixed(1)}L`,
-      ),
+      // The API formats the monthly billing limit ("Unlimited", "₹1.5L").
+      values: plans.map((plan) => plan.billingLimitLabel ?? '—'),
     },
     {
       group: LIMITS_GROUP,
