@@ -57,6 +57,22 @@ export interface UsageResponse {
   whatsappUsed: number;
 }
 
+/** What a plan card offers the shop; decided by the API (inventory-api `PlanOptions`). */
+export type PlanAction = 'CURRENT' | 'UPGRADE' | 'BUY';
+
+/** One catalogue plan's card on plan status. Absent on older APIs. */
+export interface PlanOptionResponse {
+  planId: string;
+  planCode: string | null;
+  action: PlanAction;
+  /** False while the paid plan has days left and this is a different plan (PLAN_CHANGE_NOT_ALLOWED). */
+  actionAvailable: boolean;
+  /** Why the action is not available yet; shown as is. */
+  unavailableReason: string | null;
+  /** When the action becomes available (the paid plan's expiry). */
+  availableFrom: string | null;
+}
+
 export interface ShopPlanStatusResponse {
   shopId: string;
   planId: string | null;
@@ -75,6 +91,10 @@ export interface ShopPlanStatusResponse {
   smsLimitReached: boolean;
   whatsappLimitReached: boolean;
   userLimitReached: boolean;
+  /** True only when the shop could still start a free trial. Absent on older APIs: no trial badge. */
+  trialAvailable?: boolean;
+  /** What each catalogue plan's card offers, in catalogue order. Absent on older APIs. */
+  planOptions?: PlanOptionResponse[] | null;
 }
 
 /** Why a shop has its entitlements. LEGACY_GRANDFATHERED keeps every feature until migrated. */
@@ -94,6 +114,8 @@ export interface ShopEntitlementsResponse {
   userCount: number;
   ocrLimit: number | null;
   ocrUsed: number;
+  /** Bought scan credits still left; used after the monthly scans. Absent on older APIs. */
+  ocrTopUpRemaining?: number | null;
   expiresAt: string | null;
   /** All seats are taken (API decides). Absent on older APIs: then no warning is shown. */
   seatLimitReached?: boolean;

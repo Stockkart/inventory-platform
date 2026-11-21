@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { PlanResponse } from '@inventory-platform/plan/types';
-import { buildPlanComparison, planListPriceLabel, plansForSelection } from './planPricing';
+import {
+  buildPlanComparison,
+  formatRupees,
+  planListPriceLabel,
+  plansForSelection,
+} from './planPricing';
 
 function plan(overrides: Partial<PlanResponse>): PlanResponse {
   return {
@@ -20,9 +25,18 @@ function plan(overrides: Partial<PlanResponse>): PlanResponse {
   };
 }
 
+describe('formatRupees', () => {
+  it('always shows two decimals with Indian grouping', () => {
+    expect(formatRupees(8499.1)).toBe('₹8,499.10');
+    expect(formatRupees(999.9)).toBe('₹999.90');
+    expect(formatRupees(100000)).toBe('₹1,00,000.00');
+    expect(formatRupees(0)).toBe('₹0.00');
+  });
+});
+
 describe('planListPriceLabel', () => {
   it('shows the anchor when it is above the real price', () => {
-    expect(planListPriceLabel(plan({ listPrice: 12999 }))).toBe('₹12,999');
+    expect(planListPriceLabel(plan({ listPrice: 12999 }))).toBe('₹12,999.00');
   });
 
   it('hides a missing, equal or lower anchor', () => {
@@ -61,7 +75,7 @@ describe('buildPlanComparison', () => {
   it('treats a null limit as unlimited and zero as not included', () => {
     const rows = buildPlanComparison([starter, pro]).rows;
     const byKey = Object.fromEntries(rows.map((row) => [row.key, row.values]));
-    expect(byKey.price).toEqual(['₹4,999', '₹9,999']);
+    expect(byKey.price).toEqual(['₹4,999.00', '₹9,999.00']);
     expect(byKey.users).toEqual(['2', '5']);
     expect(byKey.sms).toEqual(['—', '500']);
     expect(byKey.whatsapp).toEqual(['Unlimited', 'Unlimited']);
