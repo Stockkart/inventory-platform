@@ -51,8 +51,11 @@ On an active paid plan (`canBuyAddOnsAlone`: not trial, not expired, has a plan)
 ## Payment page states
 
 - Pay button text and caption come from `pricedPayLabel` / `payCaption` (`checkout/payButton.ts`), fed only by server totals. A ₹0 order (wallet and/or vouchers cover it) is "Pay with wallet credit" or "Confirm order", never "Pay ₹0", and does not mention Razorpay: the API settles it with provider `wallet`.
-- A failed quote shows "Could not price your order" on the button and a **Try again** button (`refetch`). A `VOUCHER_REJECTED` that names no voucher clears every applied voucher (`vouchersAfterRejection`).
+- A failed quote shows "Could not price your order" on the button and a **Try again** button (`refetch`). A `VOUCHER_REJECTED` that names no voucher clears every applied voucher (`vouchersAfterRejection`). A rejection that leaves nothing to drop (the code is not applied) is shown as a quote failure with **Try again** (`quoteFailureMessage`), so the button never stays on "Pricing your order…".
 - The idempotency key covers the cart and the quoted `grandTotal` / `walletCredit` (`checkoutFingerprint`): the same cart at the same price replays the open order, a changed price opens a new one. After a failed or closed checkout the wallet and quote are refetched, since the abandoned order can hold wallet credit.
+- The order `status` from checkout and verify decides what happens next (`orderStage`, `checkout/orderState.ts`): CREATED / PAYMENT_PENDING opens Razorpay; PAID / FULFILLING / FULFILMENT_FAILED shows "Payment received, confirming…" with **Check again** and never reopens Razorpay (a replayed idempotency key returns the order as it is now); FULFILLED finishes; failed, expired, cancelled or refunded orders say the order was closed and the next attempt opens a new one.
+- When Razorpay took the payment but verify failed, the page keeps the Razorpay result and shows **Confirm payment**, which retries the verification alone.
+- If the checkout `amount` differs from the quoted `grandTotal`, Razorpay is not opened: the quote is refetched and the new total shown, to pay again.
 - After paying, plan queries are invalidated except quotes (`isPlanDataExceptQuote`), so the paid cart is not priced again on the way out. Payment errors show under the Pay button.
 
 ## Coming soon: SMS and WhatsApp

@@ -84,6 +84,8 @@ export interface VerifyPlanPaymentRequest {
 export interface VerifyPlanPaymentResponse {
   success: boolean;
   orderId: string;
+  /** Order status after verification (see checkout/orderState.ts). Absent on older APIs. */
+  status?: string;
   plan: PlanResponse | null;
 }
 

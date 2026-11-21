@@ -16,17 +16,23 @@ import {
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { useQueryClient } from '@tanstack/react-query';
-import type { CreatePlanCheckoutRequest } from '@inventory-platform/plan/types';
+import type {
+  CreatePlanCheckoutRequest,
+  VerifyPlanPaymentRequest,
+} from '@inventory-platform/plan/types';
 import {
   PLAN_STATUS_PATH,
   buildAddOnOnlyRequest,
   buildQuoteRequest,
   checkoutFingerprint,
+  confirmingMessage,
   formatTermEnd,
   newIdempotencyKey,
+  orderStage,
   paidFromWallet,
   payCaption,
   pricedPayLabel,
+  quoteFailureMessage,
   readAddOnOnlyIntent,
   readVoucherRejection,
   resolveAddOnOnlyIntent,
@@ -167,12 +173,7 @@ export function PlanPaymentPage() {
     if (quoteQuery.error) dropRejectedVoucher(quoteQuery.error);
   }, [quoteQuery.error, dropRejectedVoucher]);
 
-  const quoteFailure =
-    quoteQuery.error && !readVoucherRejection(quoteQuery.error)
-      ? quoteQuery.error instanceof Error
-        ? quoteQuery.error.message
-        : 'Could not price this order'
-      : null;
+  const quoteFailure = quoteFailureMessage(quoteQuery.error, voucherCodes);
 
   const changeAddOn = (code: string, quantity: number) => {
     setVoucherError(null);
@@ -184,6 +185,69 @@ export function PlanPaymentPage() {
 
   const createCheckoutMutation = useCreatePlanCheckoutMutation();
   const verifyPaymentMutation = useVerifyPlanPaymentMutation();
+
+  /**
+   * A gateway payment that went through but is not confirmed yet. Kept so "Confirm payment" retries
+   * the verification alone and never opens Razorpay again for an order that is already paid.
+   */
+  const [pendingVerify, setPendingVerify] = useState<VerifyPlanPaymentRequest | null>(null);
+  /** The order is paid and the API is still applying it: show that, never the Pay button. */
+  const [confirming, setConfirming] = useState<string | null>(null);
+
+  const finishPaid = async () => {
+    idempotency.current = null;
+    setPendingVerify(null);
+    setConfirming(null);
+    await Promise.all([fetchPlanStatus({ force: true }), fetchEntitlements({ force: true })]);
+    await refetchTransactions();
+    navigate(addOnOnly ? PLAN_STATUS_PATH : '/dashboard', { replace: true });
+  };
+
+  /** Act on the status the API reports after checkout or verify. Returns true when handled. */
+  const settleByStatus = async (status: string | null | undefined): Promise<boolean> => {
+    const stage = orderStage(status);
+    if (stage === 'done') {
+      await finishPaid();
+      return true;
+    }
+    if (stage === 'confirming') {
+      setConfirming(confirmingMessage(status));
+      await queryClient.invalidateQueries({ predicate: isPlanDataExceptQuote });
+      return true;
+    }
+    if (stage === 'closed') {
+      // This order can no longer be paid; the next attempt opens a new one.
+      idempotency.current = null;
+      setError('This order was closed. Check the total and pay again.');
+      return true;
+    }
+    return false;
+  };
+
+  const verify = async (request: VerifyPlanPaymentRequest) => {
+    setPendingVerify(request);
+    const verified = await verifyPaymentMutation.mutateAsync(request);
+    if (verified.status != null && (await settleByStatus(verified.status))) return;
+    await finishPaid();
+  };
+
+  /** Retry only the verification of a payment Razorpay already took. */
+  const handleConfirm = async () => {
+    if (!pendingVerify) return;
+    setPaying(true);
+    setError(null);
+    try {
+      await verify(pendingVerify);
+    } catch (err) {
+      setError(
+        `Payment received, but we could not confirm it yet (${
+          err instanceof Error ? err.message : 'no answer'
+        }). Try again; you will not be charged again.`,
+      );
+    } finally {
+      setPaying(false);
+    }
+  };
 
   const handlePay = async () => {
     if (!user?.shopId) return;
@@ -197,37 +261,62 @@ export function PlanPaymentPage() {
     }
     setPaying(true);
     setError(null);
+    setConfirming(null);
     const cart = checkoutFingerprint(request, quote);
     if (idempotency.current?.cart !== cart) {
       idempotency.current = { cart, key: newIdempotencyKey() };
     }
+    let paidAtGateway = false;
     try {
       const checkout = await createCheckoutMutation.mutateAsync({
         request,
         idempotencyKey: idempotency.current.key,
       });
 
+      // A replayed key returns the order as it is now: never reopen Razorpay on a paid order.
+      if (await settleByStatus(checkout.status)) return;
+
       if (paidFromWallet(checkout)) {
         await queryClient.invalidateQueries({ predicate: isPlanDataExceptQuote });
-      } else {
-        const paymentCheckout = getPaymentCheckout(checkout.provider);
-        const result = await paymentCheckout.openCheckout(checkout, {
-          customerEmail: user.email ?? undefined,
-        });
-
-        await verifyPaymentMutation.mutateAsync({
-          orderId: checkout.orderId,
-          razorpayPaymentId: result.razorpay_payment_id,
-          razorpayOrderId: result.razorpay_order_id,
-          razorpaySignature: result.razorpay_signature,
-        });
+        await finishPaid();
+        return;
       }
 
-      idempotency.current = null;
-      await Promise.all([fetchPlanStatus({ force: true }), fetchEntitlements({ force: true })]);
-      await refetchTransactions();
-      navigate(addOnOnly ? PLAN_STATUS_PATH : '/dashboard', { replace: true });
+      // The server's total is what Razorpay charges. If it is not what the shopper was shown,
+      // show the new price instead of charging it.
+      if (quote && checkout.amount !== quote.grandTotal) {
+        idempotency.current = null;
+        void queryClient.invalidateQueries({ queryKey: planKeys.quotes() });
+        setError(
+          `The total changed to ${formatRupees(
+            checkout.amount,
+          )}. Check the new total and pay again.`,
+        );
+        return;
+      }
+
+      const paymentCheckout = getPaymentCheckout(checkout.provider);
+      const result = await paymentCheckout.openCheckout(checkout, {
+        customerEmail: user.email ?? undefined,
+      });
+      paidAtGateway = true;
+      await verify({
+        orderId: checkout.orderId,
+        razorpayPaymentId: result.razorpay_payment_id,
+        razorpayOrderId: result.razorpay_order_id,
+        razorpaySignature: result.razorpay_signature,
+      });
     } catch (err) {
+      if (paidAtGateway) {
+        // Razorpay took the money; only the confirmation failed. Keep the order and offer to
+        // confirm again instead of paying again.
+        setError(
+          `Payment received, but we could not confirm it yet (${
+            err instanceof Error ? err.message : 'no answer'
+          }). Try again; you will not be charged again.`,
+        );
+        return;
+      }
       // An abandoned or failed order can still hold wallet credit: show the balance and price as
       // they are now. A changed total then gets a new idempotency key (checkoutFingerprint).
       void queryClient.invalidateQueries({ queryKey: planKeys.wallet() });
@@ -323,7 +412,28 @@ export function PlanPaymentPage() {
     payLabel = 'Pay';
   }
 
-  const payAction = (
+  // Paid at the gateway (or reported paid by the API): only confirming is left, never paying again.
+  const paidAction =
+    pendingVerify || confirming ? (
+      <Stack gap="sm">
+        <Alert variant="info">
+          {confirming ?? 'Payment received. Confirm it to finish; you will not be charged again.'}
+        </Alert>
+        <Button
+          type="button"
+          variant="solid"
+          onClick={() => void (pendingVerify ? handleConfirm() : handlePay())}
+          loading={paying}
+          disabled={paying}
+          className={surfaceChrome.maxW400}
+        >
+          {pendingVerify ? 'Confirm payment' : 'Check again'}
+        </Button>
+        {error ? <Alert variant="danger">{error}</Alert> : null}
+      </Stack>
+    ) : null;
+
+  const payAction = paidAction ?? (
     <Stack gap="sm">
       <Button
         type="button"
