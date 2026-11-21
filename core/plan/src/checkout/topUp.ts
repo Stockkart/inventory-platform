@@ -1,22 +1,21 @@
 import type { AddOnResponse, ShopPlanStatusResponse } from '@inventory-platform/plan/types';
 import { isPlanFeature } from '../entitlements/entitlements';
 import { FEATURE_LABELS } from '../ui/planPricing';
-import { maxQuantityFor, sellableAddOns, type AddOnSelection } from './cart';
+import { eligibleAddOns, maxQuantityFor, type AddOnSelection } from './cart';
 
 export const PLAN_STATUS_PATH = '/dashboard/plan-status';
 export const PLAN_PAYMENT_PATH = '/dashboard/plan-payment';
 
-type TopUpStatus = Pick<ShopPlanStatusResponse, 'trial' | 'planExpired' | 'plan'>;
+type TopUpStatus = Pick<ShopPlanStatusResponse, 'canBuyAddOnsAlone'>;
 
-/** The API sells add-ons on their own only on an active paid plan, never on a trial or expired plan. */
+/** The API says whether the shop can buy add-ons on their own (an active paid plan). */
 export function canBuyAddOnsAlone(status: TopUpStatus): boolean {
-  return !status.trial && !status.planExpired && status.plan != null;
+  return status.canBuyAddOnsAlone === true;
 }
 
-/** Add-ons the current plan can take: drops features it already includes and seats on unlimited plans. */
-export function topUpAddOns(addOns: AddOnResponse[], status: TopUpStatus): AddOnResponse[] {
-  if (!canBuyAddOnsAlone(status) || !status.plan) return [];
-  return sellableAddOns(addOns, status.plan);
+/** Top-ups to offer: the API's add-on options for this shop that it marks eligible. */
+export function topUpAddOns(options: AddOnResponse[], status: TopUpStatus): AddOnResponse[] {
+  return canBuyAddOnsAlone(status) ? eligibleAddOns(options) : [];
 }
 
 /** StockKart does not send SMS yet; the API rejects SMS packs, so they show as coming soon. */

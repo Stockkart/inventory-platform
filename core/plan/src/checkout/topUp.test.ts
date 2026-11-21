@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AddOnResponse, PlanResponse } from '@inventory-platform/plan/types';
+import type { AddOnResponse } from '@inventory-platform/plan/types';
 import {
   addOnGrantLabel,
   addOnOnlyPaymentPath,
@@ -28,58 +28,39 @@ function addOn(overrides: Partial<AddOnResponse>): AddOnResponse {
   };
 }
 
-const growth: PlanResponse = {
-  id: 'g',
-  planName: 'Growth',
-  price: 0,
-  arcPrice: 9999,
-  billingLimit: null,
-  billCountLimit: null,
-  smsLimit: null,
-  whatsappLimit: null,
-  userLimit: 5,
-  unlimited: false,
-  linkedId: null,
-  bestFor: null,
-  code: 'GROWTH',
-  features: ['CREDIT_BALANCE', 'ACCOUNTING'],
-};
-
-const active = { trial: false, planExpired: false, plan: growth };
+const active = { canBuyAddOnsAlone: true };
+const notPaid = { canBuyAddOnsAlone: false };
 
 describe('canBuyAddOnsAlone', () => {
-  it('is true only on an active paid plan', () => {
+  it('follows the API flag', () => {
     expect(canBuyAddOnsAlone(active)).toBe(true);
+    expect(canBuyAddOnsAlone(notPaid)).toBe(false);
   });
 
-  it('is false on a trial, an expired plan, or no plan', () => {
-    expect(canBuyAddOnsAlone({ ...active, trial: true })).toBe(false);
-    expect(canBuyAddOnsAlone({ ...active, planExpired: true })).toBe(false);
-    expect(canBuyAddOnsAlone({ ...active, plan: null })).toBe(false);
+  it('is false on an older API without the flag', () => {
+    expect(canBuyAddOnsAlone({})).toBe(false);
   });
 });
 
 describe('topUpAddOns', () => {
-  const accounting = addOn({ code: 'ACC', grantsFeature: 'ACCOUNTING' });
-  const salary = addOn({ code: 'SAL', grantsFeature: 'SALARY' });
-  const seat = addOn({ code: 'SEAT', grantType: 'SEATS', grantsQuantity: 1, stackable: true });
-  const sms = addOn({ code: 'SMS500', grantType: 'SMS', grantsQuantity: 500 });
+  const salary = addOn({ code: 'SAL', grantsFeature: 'SALARY', eligible: true });
+  const accounting = addOn({
+    code: 'ACC',
+    grantsFeature: 'ACCOUNTING',
+    eligible: false,
+    ineligibleReason: 'Your plan already includes this.',
+  });
+  const seat = addOn({ code: 'SEAT', grantType: 'SEATS', stackable: true, eligible: true });
 
-  it('hides feature add-ons the current plan already includes', () => {
-    expect(topUpAddOns([accounting, salary, seat, sms], active).map((a) => a.code)).toEqual([
+  it('offers only what the API marks eligible', () => {
+    expect(topUpAddOns([accounting, salary, seat], active).map((a) => a.code)).toEqual([
       'SAL',
       'SEAT',
-      'SMS500',
     ]);
   });
 
-  it('hides seats on an unlimited plan', () => {
-    const unlimited = { ...active, plan: { ...growth, unlimited: true } };
-    expect(topUpAddOns([seat, salary], unlimited).map((a) => a.code)).toEqual(['SAL']);
-  });
-
   it('offers nothing when add-ons cannot be bought alone', () => {
-    expect(topUpAddOns([salary], { ...active, trial: true })).toEqual([]);
+    expect(topUpAddOns([salary], notPaid)).toEqual([]);
   });
 });
 
@@ -138,58 +119,52 @@ describe('add-on-only payment link', () => {
 });
 
 describe('resolveAddOnOnlyIntent', () => {
-  const salary = addOn({ code: 'SAL', grantsFeature: 'SALARY' });
-  const accounting = addOn({ code: 'ACC', grantsFeature: 'ACCOUNTING' });
+  const salary = addOn({ code: 'SAL', grantsFeature: 'SALARY', eligible: true });
+  const accounting = addOn({ code: 'ACC', grantsFeature: 'ACCOUNTING', eligible: false });
   const seat = addOn({
     code: 'SEAT',
     grantType: 'SEATS',
     grantsQuantity: 1,
     stackable: true,
     maxQuantity: 5,
+    eligible: true,
   });
-  const sms = addOn({ code: 'SMS500', grantType: 'SMS', grantsQuantity: 500 });
-  const catalogue = [salary, accounting, seat, sms];
+  const sms = addOn({ code: 'SMS500', grantType: 'SMS', grantsQuantity: 500, eligible: true });
+  const options = [salary, accounting, seat, sms];
 
-  it('waits for plan status, then for the catalogue', () => {
+  it('waits for plan status, then for the add-on options', () => {
     const intent = { code: 'SAL', quantity: 1 };
-    expect(resolveAddOnOnlyIntent(intent, catalogue, undefined)).toEqual({ kind: 'loading' });
+    expect(resolveAddOnOnlyIntent(intent, options, undefined)).toEqual({ kind: 'loading' });
     expect(resolveAddOnOnlyIntent(intent, undefined, active)).toEqual({ kind: 'loading' });
   });
 
-  it('refuses a trial, expired or plan-less shop before looking at the add-on', () => {
-    const intent = { code: 'SAL', quantity: 1 };
-    for (const status of [
-      { ...active, trial: true },
-      { ...active, planExpired: true },
-      { ...active, plan: null },
-    ]) {
-      expect(resolveAddOnOnlyIntent(intent, undefined, status)).toEqual({
-        kind: 'planNotEligible',
-      });
-    }
+  it('refuses a shop that cannot buy add-ons alone before looking at the add-on', () => {
+    expect(resolveAddOnOnlyIntent({ code: 'SAL', quantity: 1 }, undefined, notPaid)).toEqual({
+      kind: 'planNotEligible',
+    });
   });
 
   it('seeds the cart with a buyable add-on', () => {
-    expect(resolveAddOnOnlyIntent({ code: 'SAL', quantity: 1 }, catalogue, active)).toEqual({
+    expect(resolveAddOnOnlyIntent({ code: 'SAL', quantity: 1 }, options, active)).toEqual({
       kind: 'ready',
       selection: { SAL: 1 },
     });
   });
 
   it('holds the quantity to the stepper cap', () => {
-    expect(resolveAddOnOnlyIntent({ code: 'SEAT', quantity: 40 }, catalogue, active)).toEqual({
+    expect(resolveAddOnOnlyIntent({ code: 'SEAT', quantity: 40 }, options, active)).toEqual({
       kind: 'ready',
       selection: { SEAT: 5 },
     });
-    expect(resolveAddOnOnlyIntent({ code: 'SAL', quantity: 3 }, catalogue, active)).toEqual({
+    expect(resolveAddOnOnlyIntent({ code: 'SAL', quantity: 3 }, options, active)).toEqual({
       kind: 'ready',
       selection: { SAL: 1 },
     });
   });
 
-  it('refuses an add-on the plan already includes, a coming-soon pack, or an unknown code', () => {
+  it('refuses an add-on the API marks ineligible, a coming-soon pack, or an unknown code', () => {
     for (const code of ['ACC', 'SMS500', 'NOPE']) {
-      expect(resolveAddOnOnlyIntent({ code, quantity: 1 }, catalogue, active)).toEqual({
+      expect(resolveAddOnOnlyIntent({ code, quantity: 1 }, options, active)).toEqual({
         kind: 'unavailable',
       });
     }

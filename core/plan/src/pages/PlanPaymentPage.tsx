@@ -35,7 +35,7 @@ import {
   readAddOnOnlyIntent,
   readVoucherRejection,
   resolveAddOnOnlyIntent,
-  sellableAddOns,
+  eligibleAddOns,
   topUpAddOns,
   vouchersAfterRejection,
   type AddOnSelection,
@@ -53,6 +53,7 @@ import {
   usePlanStatusStore,
 } from '@inventory-platform/session';
 import {
+  useAddOnOptionsQuery,
   useAddOnsQuery,
   useCancelPlanOrderMutation,
   useCreatePlanCheckoutMutation,
@@ -126,12 +127,15 @@ export function PlanPaymentPage() {
   const walletBalance = wallet?.availableBalance ?? 0;
   const applyWalletCredit = useWalletCredit && walletBalance > 0;
 
-  const addOnsQuery = useAddOnsQuery({ enabled: priced });
+  // A plan cart asks for add-ons with that plan's code; a top-up asks for the shop's options.
+  const planAddOnsQuery = useAddOnsQuery(planCode, { enabled: planCode != null && !addOnOnly });
+  const addOnOptionsQuery = useAddOnOptionsQuery({ enabled: addOnOnly });
+  const addOnsQuery = addOnOnly ? addOnOptionsQuery : planAddOnsQuery;
   const addOnCatalogue = addOnsQuery.data;
   const addOns = useMemo(() => {
     const catalogue = addOnCatalogue ?? [];
     if (addOnOnly) return planStatus ? topUpAddOns(catalogue, planStatus) : [];
-    return selectedPlan ? sellableAddOns(catalogue, selectedPlan) : [];
+    return selectedPlan ? eligibleAddOns(catalogue) : [];
   }, [addOnOnly, addOnCatalogue, planStatus, selectedPlan]);
 
   /** An add-on link is checked against the plan and catalogue before it reaches the cart. */

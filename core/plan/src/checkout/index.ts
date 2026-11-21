@@ -9,7 +9,7 @@ export {
   paidFromWallet,
   quoteFailureMessage,
   readVoucherRejection,
-  sellableAddOns,
+  eligibleAddOns,
   voucherRejectionMessage,
   vouchersAfterRejection,
   type AddOnSelection,

@@ -42,6 +42,10 @@ export interface PlanResponse {
   listPrice?: number | null;
   /** Length of the free trial in days (API `plan.trial-days`). Absent on older APIs. */
   trialDays?: number | null;
+  /** Monthly billing limit as the API words it, e.g. "Unlimited" or "₹1.5L". */
+  billingLimitLabel?: string | null;
+  /** False for legacy add-on rows that must not be offered as a plan. Absent = selectable. */
+  selectable?: boolean | null;
 }
 
 export interface UsageResponse {
@@ -71,6 +75,8 @@ export interface ShopPlanStatusResponse {
   smsLimitReached: boolean;
   whatsappLimitReached: boolean;
   userLimitReached: boolean;
+  /** True while the shop has a paid term, so add-ons can be bought on their own (API decides). */
+  canBuyAddOnsAlone?: boolean;
 }
 
 /** Why a shop has its entitlements. LEGACY_GRANDFATHERED keeps every feature until migrated. */
@@ -142,6 +148,8 @@ export interface QuoteItem {
   name: string;
   quantity: number;
   unitPrice: number;
+  /** unitPrice × quantity, before discounts (server-side). */
+  grossAmount: number;
   discount: number;
   lineTotal: number;
   itemSource: QuoteItemSource;
@@ -167,6 +175,13 @@ export interface AddOnResponse {
   stackable: boolean;
   maxQuantity: number | null;
   displayOrder: number | null;
+  /**
+   * Whether this cart (GET /plans/addons?planCode=X) or this shop's top-up (GET
+   * /plans/shop/addon-options) can take the add-on; null on the plain catalogue.
+   */
+  eligible?: boolean | null;
+  /** Why not, in words the shop can read; null when eligible. */
+  ineligibleReason?: string | null;
 }
 
 export type VoucherRejection =

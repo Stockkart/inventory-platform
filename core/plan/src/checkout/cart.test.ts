@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '@inventory-platform/api-client';
-import type { AddOnResponse, PlanResponse } from '@inventory-platform/plan/types';
+import type { AddOnResponse } from '@inventory-platform/plan/types';
 import {
   addOnPriceLabel,
   buildAddOnOnlyRequest,
@@ -11,7 +11,7 @@ import {
   paidFromWallet,
   quoteFailureMessage,
   readVoucherRejection,
-  sellableAddOns,
+  eligibleAddOns,
   vouchersAfterRejection,
 } from './cart';
 
@@ -32,29 +32,12 @@ function addOn(overrides: Partial<AddOnResponse>): AddOnResponse {
   };
 }
 
-const plan = {
-  id: 'p1',
-  planName: 'Growth',
-  code: 'GROWTH',
-  unlimited: false,
-  features: ['ACCOUNTING'],
-} as PlanResponse;
-
-describe('sellableAddOns', () => {
-  const accounting = addOn({ code: 'ACC', grantsFeature: 'ACCOUNTING' });
-  const salary = addOn({ code: 'SAL', grantsFeature: 'SALARY' });
-  const seats = addOn({ code: 'SEAT', grantType: 'SEATS', stackable: true });
-
-  it('hides features the plan already includes', () => {
-    expect(sellableAddOns([accounting, salary, seats], plan).map((a) => a.code)).toEqual([
-      'SAL',
-      'SEAT',
-    ]);
-  });
-
-  it('hides extra seats on unlimited plans', () => {
-    const unlimited = { ...plan, unlimited: true };
-    expect(sellableAddOns([salary, seats], unlimited).map((a) => a.code)).toEqual(['SAL']);
+describe('eligibleAddOns', () => {
+  it('keeps what the API marks eligible, and the plain catalogue (no flag)', () => {
+    const yes = addOn({ code: 'SAL', eligible: true });
+    const no = addOn({ code: 'ACC', eligible: false, ineligibleReason: 'Already included.' });
+    const plain = addOn({ code: 'SEAT', eligible: null });
+    expect(eligibleAddOns([yes, no, plain]).map((a) => a.code)).toEqual(['SAL', 'SEAT']);
   });
 });
 

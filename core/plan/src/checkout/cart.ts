@@ -3,7 +3,6 @@ import type {
   AddOnResponse,
   CreatePlanCheckoutRequest,
   PlanCheckoutResponse,
-  PlanResponse,
   QuoteAddOnLine,
   QuoteRequest,
   QuoteResponse,
@@ -18,20 +17,9 @@ const UNCAPPED_STEPPER_MAX = 99;
 /** Add-on code → quantity. Missing or 0 means not in the cart. */
 export type AddOnSelection = Record<string, number>;
 
-/** Add-ons the plan can take: the server rejects features the plan has and seats on unlimited plans. */
-export function sellableAddOns(addOns: AddOnResponse[], plan: PlanResponse): AddOnResponse[] {
-  const planFeatures = new Set(plan.features ?? []);
-  return addOns.filter((addOn) => {
-    if (
-      addOn.grantType === 'FEATURE' &&
-      addOn.grantsFeature &&
-      planFeatures.has(addOn.grantsFeature)
-    ) {
-      return false;
-    }
-    if (addOn.grantType === 'SEATS' && plan.unlimited) return false;
-    return true;
-  });
+/** Add-ons the API says this cart can take; `eligible` null (plain catalogue) counts as yes. */
+export function eligibleAddOns(addOns: AddOnResponse[]): AddOnResponse[] {
+  return addOns.filter((addOn) => addOn.eligible !== false);
 }
 
 export function maxQuantityFor(addOn: AddOnResponse): number {

@@ -78,11 +78,14 @@ export interface AddOnAdminRequest {
   name: string;
   description: string | null;
   price: number;
-  billingType: AddOnBillingType;
+  /** Omitted: the API derives it from grantType (OCR credits one-time, the rest annual). */
+  billingType?: AddOnBillingType;
   grantType: AddOnGrantType;
   grantsFeature: PlanFeature | null;
-  grantsQuantity: number | null;
-  stackable: boolean;
+  /** Omitted for a feature add-on: the API sets 1. */
+  grantsQuantity?: number | null;
+  /** Omitted for a feature add-on: the API sets false. */
+  stackable?: boolean;
   maxQuantity: number | null;
   displayOrder: number | null;
 }
