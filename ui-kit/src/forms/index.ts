@@ -1,6 +1,7 @@
 export { Button, type ButtonProps } from './Button';
 export { IconButton, type IconButtonProps } from './IconButton';
 export { Link, type LinkProps } from './Link';
+export { LinkButton, type LinkButtonProps } from './LinkButton';
 export { Input, type InputProps } from './Input';
 export { Textarea, type TextareaProps } from './Textarea';
 export { Select, type SelectProps, type SelectOptionDef } from './Select';
