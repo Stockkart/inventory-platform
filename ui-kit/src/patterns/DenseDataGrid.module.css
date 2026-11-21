@@ -262,3 +262,33 @@
   left: 0;
   max-width: 100%;
 }
+
+/* Fixed column widths (spreadsheet layout). The <colgroup> sets each column; content
+   never stretches a column, it clips. The table is as wide as its columns, so the
+   wrap scrolls horizontally on smaller screens instead of squeezing columns. */
+.tableFixed {
+  table-layout: fixed;
+  width: max-content;
+}
+
+.tableFixed .th {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tableFixed .td {
+  overflow: hidden;
+}
+
+.tableFixed .tdPackaging {
+  min-width: 0;
+  overflow: visible;
+}
+
+.tableFixed .input,
+.tableFixed .inputDate,
+.tableFixed .select {
+  min-width: 0;
+  max-width: none;
+  width: 100%;
+}

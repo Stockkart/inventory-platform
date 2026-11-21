@@ -38,6 +38,7 @@
     "@inventory-platform/admin": "workspace:*",
     "@inventory-platform/analytics": "workspace:*",
     "@inventory-platform/credit": "workspace:*",
+    "@inventory-platform/hr": "workspace:*",
     "@inventory-platform/mis": "workspace:*",
     "@inventory-platform/plan": "workspace:*",
     "@inventory-platform/pricing": "workspace:*",

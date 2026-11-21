@@ -39,6 +39,7 @@ export async function loadVerticalPluginRoutes(
 }
 
 export { useVerticalPluginStore } from './useVerticalPluginStore';
+export { registerComposedProfileTabs, BARCODE_LABELS_PROFILE_TAB_ID } from './profile-tabs';
 export { loadSellSurfaceComponent, resolveSellPath } from './sell-surface';
 export { composedDashboardRoutes, DASHBOARD_ROUTE_ENTRIES } from './composed-dashboard-routes.js';
 export { publicRoutes, PUBLIC_ROUTE_MANIFEST } from './public-routes.js';
