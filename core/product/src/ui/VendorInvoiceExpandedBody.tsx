@@ -1,5 +1,10 @@
 import { useMemo } from 'react';
-import type { InventoryItem, VendorPurchaseInvoiceDetail } from '@inventory-platform/product/types';
+import type {
+  AmendVendorPurchaseInvoicePayload,
+  InventoryItem,
+  VendorPurchaseInvoiceDetail,
+} from '@inventory-platform/product/types';
+import { AmendInvoiceHeaderForm } from './AmendInvoiceHeaderForm';
 import {
   Alert,
   Badge,
@@ -68,6 +73,9 @@ function vendorDisplay(row: { vendorName?: string | null }): string {
 
 export interface VendorInvoiceExpandedBodyProps {
   detail: VendorPurchaseInvoiceDetail;
+  /** Correcting the header against the paper bill. Omitted where the caller cannot amend. */
+  onAmend?: (payload: AmendVendorPurchaseInvoicePayload) => Promise<void>;
+  amending?: boolean;
   inventoryById: Record<string, InventoryItem>;
   inventoryLoading: boolean;
   inventoryWarning?: string;
@@ -75,6 +83,8 @@ export interface VendorInvoiceExpandedBodyProps {
 
 export function VendorInvoiceExpandedBody({
   detail,
+  onAmend,
+  amending,
   inventoryById,
   inventoryLoading,
   inventoryWarning,
@@ -125,6 +135,10 @@ export function VendorInvoiceExpandedBody({
           </Text>
         ) : null}
       </Inline>
+
+      {onAmend ? (
+        <AmendInvoiceHeaderForm detail={detail} onAmend={onAmend} busy={amending} />
+      ) : null}
 
       <Grid columns={3} gap="sm">
         {totals.map(({ label, value }) => (

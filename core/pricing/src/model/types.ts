@@ -1,13 +1,19 @@
 // Pricing API types
 import type { PricingRate } from '@inventory-platform/contracts';
 
-export type { PricingRate, PricingResponse } from '@inventory-platform/contracts';
+export type {
+  PricingRate,
+  PricingRateWarning,
+  PricingResponse,
+} from '@inventory-platform/contracts';
 
 export interface PatchPricingDto {
   maximumRetailPrice?: number;
   priceToRetail?: number;
   rates?: PricingRate[];
   defaultRate?: string;
+  /** Rule rate names to regenerate from their rule (needs the rate rules edit grant). */
+  resetRates?: string[];
 }
 
 export interface BulkPricingUpdateItem {

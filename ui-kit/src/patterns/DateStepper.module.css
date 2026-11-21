@@ -1,0 +1,13 @@
+/* Day chooser: [‹] [date box] [›] [Today]; wraps under 360 px so nothing overflows. */
+.root {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  max-width: 100%;
+}
+
+.input {
+  width: auto;
+  min-width: 9.5rem;
+}
