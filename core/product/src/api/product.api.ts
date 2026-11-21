@@ -1,7 +1,11 @@
 import { apiClient } from '@inventory-platform/api-client';
 import { PRODUCT_ENDPOINTS } from './endpoints';
 import type { ApiResponse } from '@inventory-platform/contracts';
-import type { ProductSuggestion, InventoryItem } from '@inventory-platform/product/types';
+import type {
+  HsnGstRates,
+  InventoryItem,
+  ProductSuggestion,
+} from '@inventory-platform/product/types';
 
 export const productApi = {
   /** Typeahead for registration: existing catalog products for the current shop. */
@@ -13,6 +17,26 @@ export const productApi = {
       { q },
     );
     return response.data ?? [];
+  },
+
+  /** Catalog products sharing this exact barcode (one per pack size / variant). */
+  listByBarcode: async (barcode: string): Promise<ProductSuggestion[]> => {
+    const code = barcode.trim();
+    if (!code) return [];
+    const response = await apiClient.get<ApiResponse<ProductSuggestion[]>>(
+      PRODUCT_ENDPOINTS.BY_BARCODE,
+      { code },
+    );
+    return response.data ?? [];
+  },
+
+  /** GST rates the rate notifications allow for an HSN, each split into CGST and SGST. */
+  hsnGstRates: async (hsn: string): Promise<HsnGstRates> => {
+    const response = await apiClient.get<ApiResponse<HsnGstRates>>(
+      PRODUCT_ENDPOINTS.HSN_GST_RATES,
+      { hsn },
+    );
+    return response.data;
   },
 
   /** Full catalog identity for a selected product (prefill source). */

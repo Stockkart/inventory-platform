@@ -23,6 +23,7 @@ import {
   Scale,
   ScrollText,
   Search,
+  Settings,
   ShoppingCart,
   Smartphone,
   Store,
@@ -73,6 +74,7 @@ const NAV_ICON_REGISTRY: Record<NavIconName, LucideIcon> = {
   lock: Lock,
   circle: Circle,
   barcode: Barcode,
+  settings: Settings,
 };
 
 export interface NavIconProps extends Omit<IconProps, 'icon'> {
