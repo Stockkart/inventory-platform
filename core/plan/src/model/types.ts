@@ -28,12 +28,6 @@ export type {
   VoucherRejectedDetails,
 } from '@inventory-platform/contracts';
 
-export interface AssignPlanRequest {
-  planId: string;
-  durationMonths: number;
-  paymentMethod?: string;
-}
-
 export interface PaymentConfigResponse {
   provider: string;
   publicKey: string | null;
