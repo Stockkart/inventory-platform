@@ -10,6 +10,7 @@ Subscription plans: status, payment flow, and marketing/landing plan surfaces.
 - Nav group **Plan & Billing**
 - Plans API, payment helpers, guards
 - Marketing UI pieces used on public/plan pages
+- Admin tool pages (MIS, referral operations, vouchers, campaigns, catalogue) as `planAdminToolRoutes`, mounted only in the admin app (`apps/admin`). The shop app has no admin routes or nav.
 
 ## Does not own
 
