@@ -1,3 +1,4 @@
+import formStyles from '../forms/forms.module.css';
 import styles from './AccountingChrome.module.css';
 
 export const accountingChrome = {
@@ -51,7 +52,8 @@ export const accountingChrome = {
   overviewKpiValueWarning: styles.overviewKpiValueWarning,
   overviewKpiValueMuted: styles.overviewKpiValueMuted,
   overviewSectionTitle: styles.overviewSectionTitle,
-  entryLink: styles.entryLink,
+  /** Same class as the shared `LinkButton` (apply on a ghost `Button`). */
+  entryLink: formStyles.linkButton,
   recentEntriesTable: styles.recentEntriesTable,
   recentEntriesAmount: styles.recentEntriesAmount,
   recentEntriesDate: styles.recentEntriesDate,
