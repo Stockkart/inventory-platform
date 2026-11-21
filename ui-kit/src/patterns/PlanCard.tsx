@@ -1,13 +1,15 @@
 import type { ReactNode } from 'react';
 import { cn } from '../utils/cn';
 import { Button } from '../forms/Button';
-import { Box, Text } from '../layout';
+import { Box, Text, VisuallyHidden } from '../layout';
 import styles from './PlanCard.module.css';
 
 export interface PlanCardProps {
   name: string;
   bestFor?: string | null;
   priceLabel: string;
+  /** Struck-through anchor shown before the price. */
+  listPriceLabel?: string | null;
   periodLabel?: string;
   oneTimeLabel?: string | null;
   features: string[];
@@ -24,6 +26,7 @@ export function PlanCard({
   name,
   bestFor,
   priceLabel,
+  listPriceLabel,
   periodLabel = '/year',
   oneTimeLabel,
   features,
@@ -57,6 +60,12 @@ export function PlanCard({
         ) : null}
 
         <Box className={styles.priceRow}>
+          {listPriceLabel ? (
+            <Text as="s" className={styles.listPrice}>
+              <VisuallyHidden>Was </VisuallyHidden>
+              {listPriceLabel}
+            </Text>
+          ) : null}
           <Text as="p" className={styles.price}>
             {priceLabel}
           </Text>

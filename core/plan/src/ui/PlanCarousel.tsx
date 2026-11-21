@@ -1,6 +1,7 @@
 import type { PlanResponse } from '@inventory-platform/plan/types';
 import { PlanCard, PlanCarousel3D } from '@inventory-platform/ui-kit';
 import { buildPlanFeatures, isMostPopular } from './PlanGrid';
+import { formatRupees, planListPriceLabel, planYearlyPrice } from './planPricing';
 
 const EXTRA_PLANS = ['Extra User Plan', 'Extra Shop Plan'];
 
@@ -27,7 +28,8 @@ function planCardProps(
   return {
     name: plan.planName,
     bestFor: !EXTRA_PLANS.includes(plan.planName) ? plan.bestFor : null,
-    priceLabel: `₹${(plan.arcPrice ?? plan.price)?.toLocaleString('en-IN') ?? 0}`,
+    priceLabel: formatRupees(planYearlyPrice(plan)),
+    listPriceLabel: planListPriceLabel(plan),
     periodLabel: '/year',
     oneTimeLabel:
       !EXTRA_PLANS.includes(plan.planName) && plan.price && plan.price > 0

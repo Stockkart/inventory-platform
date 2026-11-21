@@ -1,7 +1,7 @@
 import { Link as RouterLink, useNavigate } from 'react-router';
 import { usePlansQuery } from '../queries/hooks';
 import { FormKeyboardNavScope } from '@inventory-platform/routing';
-import { PlanGrid, Header, Footer } from '../ui';
+import { PlanGrid, PlanComparisonTable, Header, Footer } from '../ui';
 import { useAuthStore } from '@inventory-platform/session';
 import { Alert, Box, CenteredLoader, Stack, Text } from '@inventory-platform/ui-kit';
 
@@ -59,6 +59,8 @@ export default function PlansPage() {
                 showTrialBadge
               />
             ) : null}
+
+            {!loading && !error ? <PlanComparisonTable plans={plans} /> : null}
           </Stack>
         </FormKeyboardNavScope>
       </Box>

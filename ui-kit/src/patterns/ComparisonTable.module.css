@@ -1,0 +1,76 @@
+.scroll {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--sk-color-border-default);
+  border-radius: var(--sk-radius-lg);
+  background: var(--sk-color-bg-elevated);
+}
+
+.table {
+  width: 100%;
+  min-width: 36rem;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+}
+
+.caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.cell {
+  padding: 0.7rem 0.85rem;
+  text-align: center;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--sk-color-border-default);
+}
+
+.row:last-child .cell {
+  border-bottom: none;
+}
+
+/* Opaque backgrounds so scrolled columns pass underneath the pinned labels. */
+.corner,
+.rowHeader {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  width: 14rem;
+  text-align: left;
+  background: var(--sk-color-bg-elevated);
+  box-shadow: inset -1px 0 0 var(--sk-color-border-default);
+}
+
+@media (max-width: 40rem) {
+  .corner,
+  .rowHeader {
+    width: 8.5rem;
+  }
+}
+
+.corner,
+.colHeader {
+  background: var(--sk-color-bg-muted);
+  font-weight: 600;
+  color: var(--sk-color-text-primary);
+}
+
+.rowHeader {
+  font-weight: 500;
+  color: var(--sk-color-text-secondary);
+}
+
+.value {
+  color: var(--sk-color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.highlighted {
+  background: var(--sk-color-accent-soft);
+}

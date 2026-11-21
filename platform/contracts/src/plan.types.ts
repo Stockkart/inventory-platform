@@ -32,6 +32,12 @@ export interface PlanResponse {
   features?: PlanFeature[] | null;
   /** Marketing highlight chosen by the backend, e.g. MOST_POPULAR. */
   badge?: string | null;
+  /** Struck-through anchor shown beside arcPrice. Display only, never charged; null on legacy plans. */
+  listPrice?: number | null;
+  /** Monthly billing limit as the API words it, e.g. "Unlimited" or "₹1.5L". */
+  billingLimitLabel?: string | null;
+  /** False for legacy add-on rows that must not be offered as a plan. Absent = selectable. */
+  selectable?: boolean | null;
 }
 
 export interface UsageResponse {
