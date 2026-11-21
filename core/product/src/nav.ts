@@ -24,6 +24,7 @@ export const productNav: NavContribution = {
       path: '/dashboard/barcodes',
       label: 'Barcodes',
       icon: 'barcode',
+      requiresFeature: 'BARCODE_GENERATOR',
     },
     {
       path: '/dashboard/stock-corrections',

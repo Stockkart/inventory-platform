@@ -203,6 +203,7 @@ Other names in `.env-example` and `docker-compose.yml`: `INVENTORY_PLATFORM_PORT
   - Exception (26 files): `meta` re-exported from the page, e.g. `core/pricing/src/routes/pricing.tsx`.
 - `nav.ts` exports a `NavContribution` whose `groupId` is in `NAV_GROUP_ORDER` (`plugins/registry/src/composed-nav.ts`). Example: `core/reminders/src/nav.ts`.
   - Gate a whole group with `requiredCapability`. Example: `core/accounting/src/nav.ts`.
+  - Gate a group or one item on a plan feature with `requiresFeature`; the shell hides the item and the route guard sends its paths (and everything under them) to My Plan when the plan lacks it. Example: `core/accounting/src/nav.ts`, the Barcodes item in `core/product/src/nav.ts`.
 - `DashboardRouteGuard` wraps all dashboard routes (`apps/inventory/app/routes/dashboard._layout.tsx`). Gate features inside a page with `useCapabilityFeatureGuard`. Example: `core/product/src/pages/VendorReturnPage.tsx`.
 - Profile tabs owned by other domains register through `plugins/registry/src/profile-tabs.ts`.
 
