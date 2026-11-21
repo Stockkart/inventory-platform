@@ -129,6 +129,8 @@ export interface QuoteItem {
   name: string;
   quantity: number;
   unitPrice: number;
+  /** unitPrice × quantity, before discounts (server-side). */
+  grossAmount: number;
   discount: number;
   lineTotal: number;
   itemSource: QuoteItemSource;
