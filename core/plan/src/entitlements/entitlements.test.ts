@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '@inventory-platform/api-client';
 import type { ShopEntitlementsResponse } from '@inventory-platform/plan/types';
-import { isPlanFeature, readEntitlementError, splitFeatures, usageOfLimit } from './entitlements';
+import {
+  boughtScansLeftLabel,
+  isPlanFeature,
+  readEntitlementError,
+  splitFeatures,
+  usageOfLimit,
+} from './entitlements';
 
 describe('readEntitlementError', () => {
   it('reads a coded plan-limit 402', () => {
@@ -28,8 +34,16 @@ describe('readEntitlementError', () => {
 
 describe('usage helpers', () => {
   it('formats usage against a limit', () => {
-    expect(usageOfLimit(3, 5)).toBe('3 of 5');
-    expect(usageOfLimit(1200, null)).toBe('1,200');
+    expect(usageOfLimit(0, 100, 'scans')).toBe('Used 0 of 100 scans');
+    expect(usageOfLimit(3, 5, 'seats')).toBe('Used 3 of 5 seats');
+    expect(usageOfLimit(1200, null, 'scans')).toBe('Used 1,200 scans');
+  });
+
+  it('shows bought scans only while some are left', () => {
+    expect(boughtScansLeftLabel(500)).toBe('500 bought scans left');
+    expect(boughtScansLeftLabel(1)).toBe('1 bought scan left');
+    expect(boughtScansLeftLabel(0)).toBeNull();
+    expect(boughtScansLeftLabel(undefined)).toBeNull();
   });
 });
 
