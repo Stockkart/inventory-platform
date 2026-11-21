@@ -1,4 +1,4 @@
-import type { PlanResponse } from '@inventory-platform/plan/types';
+import type { PlanOptionResponse, PlanResponse } from '@inventory-platform/plan/types';
 import {
   Badge,
   Box,
@@ -10,6 +10,7 @@ import {
   cn,
 } from '@inventory-platform/ui-kit';
 import { FEATURE_LABELS, formatRupees, planListPriceLabel, planYearlyPrice } from './planPricing';
+import { planCardCta } from './planCardCta';
 
 const EXTRA_USER_PLAN = 'Extra User Plan';
 const EXTRA_SHOP_PLAN = 'Extra Shop Plan';
@@ -77,6 +78,8 @@ export interface PlanGridProps {
   onSelectPlan?: (plan: PlanResponse) => void;
   ctaLabel?: string;
   showTrialBadge?: boolean;
+  /** Plan status `planOptions`: the API's action per plan. Without it `ctaLabel` is used. */
+  planOptions?: PlanOptionResponse[] | null;
 }
 
 function PlanTile({
@@ -86,6 +89,7 @@ function PlanTile({
   onSelectPlan,
   ctaLabel,
   showTrialBadge,
+  option,
 }: {
   plan: PlanResponse;
   isCurrent: boolean;
@@ -93,7 +97,9 @@ function PlanTile({
   onSelectPlan?: (plan: PlanResponse) => void;
   ctaLabel: string;
   showTrialBadge: boolean;
+  option?: PlanOptionResponse;
 }) {
+  const cta = planCardCta(option, ctaLabel, isCurrent);
   const features = buildPlanFeatures(plan);
   const isExtra = EXTRA_PLANS.includes(plan.planName);
   const listPriceLabel = planListPriceLabel(plan);
@@ -161,11 +167,16 @@ function PlanTile({
               type="button"
               variant={isCurrent ? 'outline' : isPopular ? 'solid' : 'outline'}
               fullWidth
-              disabled={isCurrent}
+              disabled={cta.disabled}
               onClick={() => onSelectPlan(plan)}
             >
-              {isCurrent ? 'Current plan' : ctaLabel}
+              {cta.label}
             </Button>
+            {cta.note ? (
+              <Text variant="caption" color="secondary">
+                {cta.note}
+              </Text>
+            ) : null}
           </Box>
         ) : null}
       </Box>
@@ -179,6 +190,7 @@ export function PlanGrid({
   onSelectPlan,
   ctaLabel = 'Get Started',
   showTrialBadge = true,
+  planOptions,
 }: PlanGridProps) {
   const corePlans = plans.filter((plan) => !EXTRA_PLANS.includes(plan.planName));
   const addonPlans = plans.filter((plan) => EXTRA_PLANS.includes(plan.planName));
@@ -195,6 +207,7 @@ export function PlanGrid({
             onSelectPlan={onSelectPlan}
             ctaLabel={ctaLabel}
             showTrialBadge={showTrialBadge}
+            option={planOptions?.find((o) => o.planId === plan.id)}
           />
         ))}
       </Box>
