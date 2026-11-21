@@ -20,6 +20,11 @@ export interface NavContributionItem {
   path: string;
   label: string;
   icon: NavIconName;
+  /**
+   * Plan feature (API `PlanFeature`, e.g. `ACCOUNTING`) the shop's plan must include. Gates the
+   * nav item and every dashboard path under it.
+   */
+  requiresFeature?: string;
 }
 
 export interface NavContribution {
@@ -27,6 +32,8 @@ export interface NavContribution {
   label: string;
   icon: NavIconName;
   requiredCapability?: string;
+  /** Plan feature for every item of this contribution; an item's own `requiresFeature` wins. */
+  requiresFeature?: string;
   items: NavContributionItem[];
 }
 
