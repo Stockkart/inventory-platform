@@ -5,9 +5,12 @@ import type {
   WalletEntrySource,
 } from '@inventory-platform/plan/types';
 
-/** Link a referrer shares; onboarding prefills the code from `?ref=`. */
+/**
+ * Link a referrer shares. It opens sign-up, which keeps `?ref=` for the onboarding referral step
+ * (`core/user` `rememberReferralCode`); onboarding itself is behind sign-in.
+ */
 export function referralShareLink(origin: string, code: string): string {
-  return `${origin.replace(/\/+$/, '')}/onboarding?ref=${encodeURIComponent(code)}`;
+  return `${origin.replace(/\/+$/, '')}/signup?ref=${encodeURIComponent(code)}`;
 }
 
 const REWARD_STATUS: Record<ReferralRewardStatus, { label: string; variant: BadgeVariant }> = {
