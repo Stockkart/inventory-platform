@@ -1,7 +1,6 @@
 import { apiClient } from '@inventory-platform/api-client';
 import type { ApiResponse } from '@inventory-platform/contracts';
 import type {
-  AssignPlanRequest,
   CreatePlanCheckoutRequest,
   PaymentConfigResponse,
   PlanCheckoutResponse,
@@ -35,14 +34,6 @@ export const plansApi = {
   getSuggestedPlan: async (shopId: string): Promise<PlanResponse | null> => {
     const response = await apiClient.get<ApiResponse<PlanResponse | null>>(
       PLAN_ENDPOINTS.SHOP_SUGGESTED(shopId),
-    );
-    return response.data;
-  },
-
-  assignPlan: async (shopId: string, data: AssignPlanRequest): Promise<PlanResponse> => {
-    const response = await apiClient.post<ApiResponse<PlanResponse>>(
-      PLAN_ENDPOINTS.SHOP_ASSIGN(shopId),
-      data,
     );
     return response.data;
   },
