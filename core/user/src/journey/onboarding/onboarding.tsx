@@ -137,8 +137,6 @@ export default function OnboardingPage() {
     fssai: '',
     dlNo: '',
     panNo: '',
-    sgst: '',
-    cgst: '',
     tagline: '',
     continueFromPreviousApp: false,
     lastInvoiceNo: '',
@@ -348,8 +346,6 @@ export default function OnboardingPage() {
         fssai: formData.fssai || undefined,
         dlNo: formData.dlNo || undefined,
         panNo: formData.panNo || undefined,
-        sgst: formData.sgst || undefined,
-        cgst: formData.cgst || undefined,
         tagline: formData.tagline || undefined,
       });
 
@@ -527,24 +523,6 @@ export default function OnboardingPage() {
               placeholder="Enter the PAN No"
               value={getCurrentValue('panNo')}
               onChange={(v) => updateBusinessField('panNo', v)}
-              disabled={isLoading}
-            />
-          </FormRow>
-          <FormRow>
-            <FormField
-              label="SGST (%)"
-              id="sgst"
-              placeholder="Enter the SGST (%)"
-              value={getCurrentValue('sgst')}
-              onChange={(v) => updateBusinessField('sgst', v)}
-              disabled={isLoading}
-            />
-            <FormField
-              label="CGST (%)"
-              id="cgst"
-              placeholder="Enter the CGST (%)"
-              value={getCurrentValue('cgst')}
-              onChange={(v) => updateBusinessField('cgst', v)}
               disabled={isLoading}
             />
           </FormRow>
