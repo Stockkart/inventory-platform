@@ -36,6 +36,10 @@ export interface PlanResponse {
   listPrice?: number | null;
   /** Length of the free trial in days (API `plan.trial-days`). Absent on older APIs. */
   trialDays?: number | null;
+  /** Monthly billing limit as the API words it, e.g. "Unlimited" or "₹1.5L". */
+  billingLimitLabel?: string | null;
+  /** False for legacy add-on rows that must not be offered as a plan. Absent = selectable. */
+  selectable?: boolean | null;
 }
 
 export interface UsageResponse {
@@ -133,6 +137,8 @@ export interface QuoteItem {
   name: string;
   quantity: number;
   unitPrice: number;
+  /** unitPrice × quantity, before discounts (server-side). */
+  grossAmount: number;
   discount: number;
   lineTotal: number;
   itemSource: QuoteItemSource;

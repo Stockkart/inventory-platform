@@ -53,3 +53,7 @@ Referral operations → Wallet: the admin types a signed amount and presses **Re
 ## Usage tiles
 
 The seat and scan tiles on My Plan turn red only on the API's `seatLimitReached` / `ocrLimitReached` (entitlements response); the page never compares usage with limits itself.
+
+## Add-on catalogue (admin)
+
+The add-on form sends what the admin chose; the API derives `billingType` from the grant type (OCR credits one-time, the rest annual) and, for a feature add-on, `grantsQuantity` 1 and not stackable, and rejects contradictory combinations (`toAddOnRequest` no longer sets them).
