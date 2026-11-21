@@ -14,8 +14,7 @@ import {
 import { useNotify } from '@inventory-platform/session';
 import type { ShopPlanStatusResponse } from '@inventory-platform/contracts';
 import type { PlanGrantRequest } from '@inventory-platform/plan/types';
-import { usePlansQuery } from '../../queries/hooks';
-import { useGrantPlanMutation } from '../hooks';
+import { useAdminPlansQuery, useGrantPlanMutation } from '../hooks';
 import { adminErrorMessage, formatAdminDate } from '../format';
 import {
   CATALOGUE_LIMITS,
@@ -47,7 +46,8 @@ function SummaryRow({ label, value }: SummaryRowProps) {
 
 /** Grants a plan without payment, after a confirm step that repeats everything being sent. */
 export function PlanGrantForm({ shopId }: PlanGrantFormProps) {
-  const plans = usePlansQuery();
+  // The admin list: the shop plan list is not reachable from the admin app's origin.
+  const plans = useAdminPlansQuery();
   const [form, setForm] = useState<PlanGrantFormState>(emptyPlanGrantForm);
   const [showErrors, setShowErrors] = useState(false);
   const [confirming, setConfirming] = useState<PlanGrantRequest | null>(null);
