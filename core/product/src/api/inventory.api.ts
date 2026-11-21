@@ -19,6 +19,10 @@ import type {
   ParseInvoiceResponse,
   UpdateInventoryRequest,
   InventoryItem,
+  AmendInvoicePreview,
+  AmendVendorPurchaseInvoicePayload,
+  PurchaseTaxPreviewRequest,
+  PurchaseTaxPreviewResponse,
   VendorPurchaseInvoiceDetail,
   VendorPurchaseInvoiceListResponse,
   VendorPurchaseReturnPayload,
@@ -30,6 +34,7 @@ import type {
   InventoryCorrectionListResponse,
   PackagingUnit,
 } from '@inventory-platform/product/types';
+import type { SearchFieldCatalog, SearchRequest, SearchResponse } from '../model/search.types';
 import axios from 'axios';
 
 /** Resolve inventory document id for GET/PUT `/inventory/{id}`. */
@@ -184,6 +189,51 @@ export const inventoryApi = {
     return inventoryApi.search(params);
   },
 
+  /**
+   * Advanced search (advanced-product-search R2.1): text + filter groups + facets + sort + paging
+   * in one request. Pass TanStack Query's `signal` so a superseded request is cancelled.
+   */
+  searchAdvanced: async (request: SearchRequest, signal?: AbortSignal): Promise<SearchResponse> => {
+    const response = await apiClient.post<ApiResponse<SearchResponse>>(
+      INVENTORY_ENDPOINTS.SEARCH,
+      request,
+      { signal },
+    );
+    const body = response.data;
+    return {
+      data: Array.isArray(body?.data) ? body.data : [],
+      page: body?.page ?? { page: request.page, size: request.size, totalItems: 0, totalPages: 0 },
+      facets: body?.facets ?? {},
+      appliedSort: body?.appliedSort ?? null,
+    };
+  },
+
+  /** The fields the active shop can filter, facet and sort on (R1.1). */
+  searchFields: async (): Promise<SearchFieldCatalog> => {
+    const response = await apiClient.get<ApiResponse<SearchFieldCatalog>>(
+      INVENTORY_ENDPOINTS.SEARCH_FIELDS,
+    );
+    return response.data;
+  },
+
+  /** Distinct values of a text facet field for the "Find…" box (R5.4). */
+  searchValues: async (
+    field: string,
+    q?: string,
+    limit?: number,
+    signal?: AbortSignal,
+  ): Promise<string[]> => {
+    const params: Record<string, string> = { field };
+    if (q?.trim()) params.q = q.trim();
+    if (limit !== undefined && limit > 0) params.limit = String(limit);
+    const response = await apiClient.get<ApiResponse<string[]>>(
+      INVENTORY_ENDPOINTS.SEARCH_VALUES,
+      params,
+      { signal },
+    );
+    return Array.isArray(response.data) ? response.data : [];
+  },
+
   getExpiryBuckets: async (expiringSoonDays?: number): Promise<InventoryExpiryBuckets> => {
     const params: Record<string, string> = {};
     if (expiringSoonDays !== undefined && expiringSoonDays > 0) {
@@ -325,6 +375,41 @@ export const inventoryApi = {
   getVendorPurchaseInvoice: async (id: string): Promise<VendorPurchaseInvoiceDetail> => {
     const response = await apiClient.get<ApiResponse<VendorPurchaseInvoiceDetail>>(
       VENDOR_PURCHASE_INVOICES_ENDPOINTS.BY_ID(id),
+    );
+    return response.data;
+  },
+
+  /** Corrects a purchase invoice header against the paper bill. Header only; lines are fixed. */
+  /** What a correction would change, worked out by the server without saving. */
+  previewInvoiceAmendment: async (
+    id: string,
+    payload: AmendVendorPurchaseInvoicePayload,
+  ): Promise<AmendInvoicePreview> => {
+    const response = await apiClient.post<ApiResponse<AmendInvoicePreview>>(
+      VENDOR_PURCHASE_INVOICES_ENDPOINTS.AMEND_PREVIEW(id),
+      payload,
+    );
+    return response.data;
+  },
+
+  amendVendorPurchaseInvoice: async (
+    id: string,
+    payload: AmendVendorPurchaseInvoicePayload,
+  ): Promise<VendorPurchaseInvoiceDetail> => {
+    const response = await apiClient.patch<ApiResponse<VendorPurchaseInvoiceDetail>>(
+      VENDOR_PURCHASE_INVOICES_ENDPOINTS.BY_ID(id),
+      payload,
+    );
+    return response.data;
+  },
+
+  /** Tax and totals for the bill on the stock-in screen, worked out by the server. Saves nothing. */
+  previewPurchaseTotals: async (
+    payload: PurchaseTaxPreviewRequest,
+  ): Promise<PurchaseTaxPreviewResponse> => {
+    const response = await apiClient.post<ApiResponse<PurchaseTaxPreviewResponse>>(
+      VENDOR_PURCHASE_INVOICES_ENDPOINTS.PREVIEW_TOTALS,
+      payload,
     );
     return response.data;
   },
