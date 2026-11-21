@@ -40,6 +40,23 @@ const bannedNativeHtmlSyntaxRules = bannedNativeHtmlTags.map((tag) => ({
   message: `Use @inventory-platform/ui-kit primitives instead of native <${tag}>.`,
 }));
 
+/**
+ * Guard rail: no native dropdown anywhere, ui-kit included. ui-kit `Select` renders the StockKart
+ * dropdown (a button and the `ChoiceList` panel); use it, or `FilterDropdown` + `ChoiceList`.
+ */
+const nativeDropdownBan = ['select', 'datalist'].map((tag) => ({
+  selector: `JSXOpeningElement[name.name="${tag}"]`,
+  message: `No native <${tag}> dropdowns: use ui-kit Select (or FilterDropdown + ChoiceList).`,
+}));
+
+/** Patterns relative to ui-kit/eslint.config.mjs. */
+export const uiKitNativeDropdownBan = {
+  files: ['src/**/*.{ts,tsx,js,jsx}'],
+  rules: {
+    'no-restricted-syntax': ['error', ...nativeDropdownBan],
+  },
+};
+
 const cssModuleImportBan = {
   selector: 'ImportDeclaration[source.value=/\\.module\\.css$/]',
   message:
@@ -149,6 +166,7 @@ export default [
                 '@inventory-platform/accounting',
                 '@inventory-platform/analytics',
                 '@inventory-platform/credit',
+                '@inventory-platform/hr',
                 '@inventory-platform/mis',
                 '@inventory-platform/plan',
                 '@inventory-platform/pricing',
@@ -181,7 +199,13 @@ export default [
     ],
     ignores: ['ui-kit/**'],
     rules: {
-      'no-restricted-syntax': ['error', cssModuleImportBan],
+      'no-restricted-syntax': ['error', ...nativeDropdownBan, cssModuleImportBan],
+    },
+  },
+  {
+    files: ['ui-kit/src/**/*.{ts,tsx,js,jsx}'],
+    rules: {
+      'no-restricted-syntax': ['error', ...nativeDropdownBan],
     },
   },
   eslintConfigPrettier,
