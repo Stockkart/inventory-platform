@@ -51,15 +51,8 @@ export const planAdminToolRoutes: RouteModule = {
   ],
 };
 
-/** StockKart operators only; the shell hides and guards these for everyone else. */
-export const platformAdminRoutes: RouteModule = {
-  path: 'platform-admin',
-  children: planAdminToolRoutes.children,
-};
-
 export const planDashboardRoutes: RouteModule[] = [
   planPaymentRoutes,
   planStatusRoutes,
   referralRoutes,
-  platformAdminRoutes,
 ];

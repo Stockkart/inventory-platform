@@ -299,15 +299,15 @@
 
 /* Brochure amber, same as the "Most popular" pill: the one headline CTA on a hero. */
 .variant-promo {
-  color: #1f2937;
-  background: #f59e0b;
+  color: var(--sk-color-promo-text, #1f2937);
+  background: var(--sk-color-promo, #f59e0b);
   border-color: transparent;
   border-radius: var(--sk-radius-full);
   box-shadow: 0 6px 16px rgba(245, 158, 11, 0.3);
 }
 
 .variant-promo:hover:not(:disabled) {
-  background: #fbbf24;
+  background: var(--sk-color-promo-hover, #fbbf24);
 }
 
 .variant-onBrand {

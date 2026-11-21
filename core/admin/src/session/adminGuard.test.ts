@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { adminRedirect } from './adminGuard';
+import { ApiError } from '@inventory-platform/api-client';
+import { adminRedirect, adminSessionStatus } from './adminGuard';
 
 describe('adminRedirect', () => {
   it('sends visitors without a session to sign in', () => {
@@ -57,5 +58,36 @@ describe('adminRedirect', () => {
     expect(
       adminRedirect({ area: 'login', hasToken: true, status: 'ready', mustChangePassword: true }),
     ).toBe('/change-password');
+  });
+
+  it('keeps admins in place when the API could not answer', () => {
+    expect(adminRedirect({ area: 'app', hasToken: true, status: 'unavailable' })).toBeNull();
+    expect(
+      adminRedirect({ area: 'change-password', hasToken: true, status: 'unavailable' }),
+    ).toBeNull();
+    expect(adminRedirect({ area: 'login', hasToken: true, status: 'unavailable' })).toBeNull();
+  });
+});
+
+describe('adminSessionStatus', () => {
+  const base = { hasToken: true, hasAdmin: false, error: null };
+
+  it('is idle without a token and ready once the admin is known', () => {
+    expect(adminSessionStatus({ ...base, hasToken: false })).toBe('idle');
+    expect(adminSessionStatus({ ...base, hasAdmin: true })).toBe('ready');
+    expect(adminSessionStatus(base)).toBe('loading');
+  });
+
+  it('treats only a 401 as signed out', () => {
+    expect(adminSessionStatus({ ...base, error: new ApiError('expired', { status: 401 }) })).toBe(
+      'error',
+    );
+    expect(adminSessionStatus({ ...base, error: new ApiError('down', { status: 503 }) })).toBe(
+      'unavailable',
+    );
+    expect(adminSessionStatus({ ...base, error: new ApiError('offline', { status: 0 }) })).toBe(
+      'unavailable',
+    );
+    expect(adminSessionStatus({ ...base, error: new Error('boom') })).toBe('unavailable');
   });
 });

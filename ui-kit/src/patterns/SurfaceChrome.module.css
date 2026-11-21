@@ -516,8 +516,8 @@
 }
 
 .planStatusBadgeWarning {
-  background: color-mix(in srgb, var(--sk-color-warning) 78%, #fff);
-  color: #1f2937;
+  background: color-mix(in srgb, var(--sk-color-warning) 78%, var(--sk-color-on-dark, #fff));
+  color: var(--sk-color-promo-text, #1f2937);
 }
 
 .planStatusMeta {
@@ -607,7 +607,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.planUsageCardDanger .planUsageValue {
+.planUsageValueDanger {
   color: var(--sk-color-danger, #dc2626);
 }
 
@@ -653,7 +653,7 @@
   color: var(--sk-color-success);
 }
 
-.planFeatureItemLocked .planFeatureIcon {
+.planFeatureIconLocked {
   background: var(--sk-color-bg-muted, #f1f5f9);
   color: var(--sk-color-text-muted, #64748b);
 }
@@ -742,8 +742,8 @@
   transform: translate(-50%, -50%);
   padding: 0.25rem 0.75rem;
   border-radius: var(--sk-radius-full, 9999px);
-  background: #f59e0b;
-  color: #1f2937;
+  background: var(--sk-color-promo, #f59e0b);
+  color: var(--sk-color-promo-text, #1f2937);
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.06em;

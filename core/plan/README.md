@@ -10,6 +10,7 @@ Subscription plans: status, payment flow, and marketing/landing plan surfaces.
 - Nav group **Plan & Billing**
 - Plans API, payment helpers, guards
 - Marketing UI pieces used on public/plan pages
+- Admin tool pages (MIS, referral operations, vouchers, campaigns, catalogue) as `planAdminToolRoutes`, mounted only in the admin app (`apps/admin`). The shop app has no admin routes or nav.
 
 ## Does not own
 
@@ -57,3 +58,7 @@ On an active paid plan (`canBuyAddOnsAlone`: not trial, not expired, has a plan)
 ## Coming soon: SMS and WhatsApp
 
 StockKart does not send SMS or WhatsApp yet. Every SMS / WhatsApp allowance carries the amber "Coming soon" badge (`surfaceChrome.planComingSoon`): plan card lines (`buildPlanFeatures` returns `{ label, comingSoon }`, rendered by `PlanGrid` and the ui-kit `PlanCard`), the "SMS per month" / "WhatsApp per month" rows of the comparison table, the My Plan usage tiles, and `grantType: 'SMS'` add-ons (shown, but Buy and the checkout checkbox are disabled; the API rejects them with "SMS packs are coming soon").
+
+## Tests
+
+`nx test plan` runs `src/**/*.test.ts(x)` with the same setup as `core/user` (`vitest.config.ts`, `vitest.setup.ts`, `tsconfig.spec.json`): `src/ui/**` in jsdom, everything else in node. CI runs it with every other test target.
