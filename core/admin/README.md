@@ -8,10 +8,12 @@ accepted by shop APIs.
 ## Owns
 
 - Sign-in (`/login`) and change password (`/change-password`, forced after a temporary password)
+- Set a new password from an emailed reset link (`/reset-password?token=…`, public; `POST /admin/auth/reset-password`)
 - Session guard: `useAdminSession` + the pure `adminRedirect` rules
 - `AdminLayout` — admin header and tool sidebar (`ADMIN_NAV`)
 - Admins page (`/admins`) — add an admin (issues a one-time temporary password), turn off / on,
-  reset password
+  reset password (the admin is emailed a reset link; an older API that still returns a temporary
+  password shows it once)
 - `/admin/auth/*` and `/admin/admins/*` APIs + Query hooks
 
 ## Does not own

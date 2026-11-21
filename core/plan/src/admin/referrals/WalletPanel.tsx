@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   Alert,
   Button,
   Card,
   CardBody,
+  CenteredLoader,
   FormField,
   Inline,
   Input,
@@ -16,10 +17,14 @@ import {
   TableHeaderCell,
   TableRow,
   Text,
-  Textarea,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
-import { useAdjustWalletMutation, useAdminWalletQuery } from '../hooks';
+import {
+  useAdjustWalletMutation,
+  useAdminWalletQuery,
+  useWalletAdjustmentPreviewQuery,
+} from '../hooks';
+import { ReasonDialog } from '../ReasonDialog';
 import {
   adminErrorMessage,
   formatAdminDate,
@@ -42,41 +47,69 @@ function Figure({ label, value }: { label: string; value: string }) {
   );
 }
 
-function AdjustForm({ shopId }: { shopId: string }) {
+interface AdjustFormProps {
+  shopId: string;
+}
+
+function AdjustForm({ shopId }: AdjustFormProps) {
   const [amountInput, setAmountInput] = useState('');
-  const [reason, setReason] = useState('');
+  const [confirming, setConfirming] = useState(false);
   /** Kept across retries of one adjustment so a resend is not applied twice. */
   const [adjustmentId, setAdjustmentId] = useState(newAdjustmentId);
   const mutation = useAdjustWalletMutation(shopId);
   const amount = parseAdjustmentAmount(amountInput);
-  const canSubmit = amount !== null && reason.trim().length > 0 && !mutation.isPending;
+  const preview = useWalletAdjustmentPreviewQuery(shopId, amount, confirming);
+  const credit = amount !== null && amount > 0;
 
-  const submit = () => {
+  const confirm = (reason: string) => {
     if (amount === null) return;
     mutation.mutate(
-      { amount, reason: reason.trim(), adjustmentId },
+      { amount, reason, adjustmentId },
       {
         onSuccess: () => {
-          useNotify.success(amount > 0 ? 'Wallet credited' : 'Wallet debited');
+          useNotify.success(credit ? 'Wallet credited' : 'Wallet debited');
+          setConfirming(false);
           setAmountInput('');
-          setReason('');
           setAdjustmentId(newAdjustmentId());
         },
       },
     );
   };
 
+  let previewBody: ReactNode = <CenteredLoader label="Checking the new balance…" />;
+  if (preview.isError) {
+    previewBody = (
+      <Alert variant="danger">
+        {adminErrorMessage(preview.error, 'Could not check this adjustment.')}
+      </Alert>
+    );
+  } else if (preview.data) {
+    previewBody = preview.data.allowed ? (
+      <Text>
+        Balance {formatRupees(preview.data.currentBalance)} →{' '}
+        <Text as="span" weight="semibold">
+          {formatRupees(preview.data.resultingBalance)}
+        </Text>
+      </Text>
+    ) : (
+      <Alert variant="warning">
+        The API does not allow this adjustment. One adjustment can move at most{' '}
+        {formatRupees(preview.data.maxAdjustment)} either way; the balance is{' '}
+        {formatRupees(preview.data.currentBalance)}.
+      </Alert>
+    );
+  }
+
   return (
     <Stack gap="md">
       <Text variant="heading3" weight="semibold">
         Adjust balance
       </Text>
-      {mutation.error ? <Alert variant="danger">{adminErrorMessage(mutation.error)}</Alert> : null}
       <FormField
         label="Amount (₹)"
         htmlFor="wallet-adjust-amount"
         required
-        hint="Positive to credit, negative (e.g. -250) to debit. A debit can only take what is available."
+        hint="Positive to credit, negative (e.g. -250) to debit. You confirm the new balance next."
         error={
           amountInput && amount === null ? 'Enter a non-zero amount, up to 2 decimals.' : undefined
         }
@@ -92,25 +125,29 @@ function AdjustForm({ shopId }: { shopId: string }) {
           disabled={mutation.isPending}
         />
       </FormField>
-      <FormField
-        label="Reason"
-        htmlFor="wallet-adjust-reason"
-        required
-        hint="Shown on the ledger and kept in the audit log."
-      >
-        <Textarea
-          id="wallet-adjust-reason"
-          rows={2}
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          disabled={mutation.isPending}
-        />
-      </FormField>
       <Inline>
-        <Button variant="solid" disabled={!canSubmit} loading={mutation.isPending} onClick={submit}>
-          {amount !== null && amount < 0 ? 'Debit wallet' : 'Credit wallet'}
+        <Button variant="solid" disabled={amount === null} onClick={() => setConfirming(true)}>
+          {amount !== null && amount < 0 ? 'Review debit' : 'Review credit'}
         </Button>
       </Inline>
+      <ReasonDialog
+        open={confirming}
+        title={credit ? 'Credit this wallet?' : 'Debit this wallet?'}
+        message={`Shop ${shopId}: ${credit ? 'credit' : 'debit'} ${formatRupees(
+          Math.abs(amount ?? 0),
+        )}.`}
+        confirmLabel={credit ? 'Credit wallet' : 'Debit wallet'}
+        confirmDisabled={!preview.data?.allowed}
+        busy={mutation.isPending}
+        error={mutation.error ? adminErrorMessage(mutation.error) : null}
+        onConfirm={confirm}
+        onClose={() => {
+          setConfirming(false);
+          mutation.reset();
+        }}
+      >
+        {previewBody}
+      </ReasonDialog>
     </Stack>
   );
 }

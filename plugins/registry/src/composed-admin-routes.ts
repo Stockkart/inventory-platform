@@ -14,6 +14,7 @@ export function composedAdminRoutes(): RouteConfigEntry[] {
   return [
     route('login', `${ADMIN}/${ADMIN_ROUTE_FILES.login}`),
     route('change-password', `${ADMIN}/${ADMIN_ROUTE_FILES.changePassword}`),
+    route('reset-password', `${ADMIN}/${ADMIN_ROUTE_FILES.resetPassword}`),
     layout(`${ADMIN}/${ADMIN_ROUTE_FILES.layout}`, [
       index(`${ADMIN}/${ADMIN_ROUTE_FILES.home}`),
       route('admins', `${ADMIN}/${ADMIN_ROUTE_FILES.admins}`),
