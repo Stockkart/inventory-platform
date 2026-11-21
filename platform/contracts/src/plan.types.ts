@@ -60,3 +60,51 @@ export interface ShopPlanStatusResponse {
   whatsappLimitReached: boolean;
   userLimitReached: boolean;
 }
+
+export interface QuoteAddOnLine {
+  code: string;
+  quantity: number;
+}
+
+/** Cart to price via POST /plans/orders/quote. */
+export interface QuoteRequest {
+  planCode: string;
+  /** Plans are sold yearly; omit or send 12. */
+  durationMonths?: number;
+  addOns?: QuoteAddOnLine[];
+  voucherCodes?: string[];
+  applyWalletCredit?: boolean;
+}
+
+export type QuoteItemType = 'PLAN' | 'ADDON' | 'OCR_TOPUP';
+export type QuoteItemSource = 'MANUAL' | 'VOUCHER';
+
+export interface QuoteItem {
+  type: QuoteItemType;
+  code: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  discount: number;
+  lineTotal: number;
+  itemSource: QuoteItemSource;
+}
+
+/**
+ * Server-priced cart for display. Render these totals as-is; checkout re-prices server-side, so
+ * never compute or send a total from the client.
+ */
+export interface QuoteResponse {
+  items: QuoteItem[];
+  subtotal: number;
+  discountTotal: number;
+  walletCredit: number;
+  /** Prices include tax; no tax line is itemised yet. */
+  taxInclusive: boolean;
+  grandTotal: number;
+  currency: string;
+  durationMonths: number;
+  pricingVersion: number;
+  quotedAt: string;
+  expiresAt: string;
+}
