@@ -35,4 +35,4 @@ export {
   pricedPayLabel,
   type PricedPayLabelInput,
 } from './payButton';
-export { confirmingMessage, orderStage, type OrderStage } from './orderState';
+export { confirmingMessage, orderStage, type OrderStage, type OrderState } from './orderState';

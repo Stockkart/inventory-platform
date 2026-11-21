@@ -280,6 +280,17 @@ export interface AdminActiveRequest {
   reason: string;
 }
 
+/** What an adjustment would do, from the API: balances and whether it is within the cap. */
+export interface WalletAdjustmentPreview {
+  amount: number;
+  currentBalance: number;
+  /** Equals currentBalance when the adjustment is not allowed. */
+  resultingBalance: number;
+  allowed: boolean;
+  /** Largest amount one adjustment may move, either way. */
+  maxAdjustment: number;
+}
+
 export interface WalletAdjustmentRequest {
   /** Positive credits the wallet; negative takes from the available balance. */
   amount: number;

@@ -172,6 +172,18 @@ export function useCreatePlanCheckoutMutation(
   });
 }
 
+/** Cancel an abandoned unpaid order so its wallet and voucher holds come back at once. */
+export function useCancelPlanOrderMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (orderId: string) => plansApi.cancelOrder(orderId),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: planKeys.wallet() });
+      void queryClient.invalidateQueries({ queryKey: planKeys.quotes() });
+    },
+  });
+}
+
 export function useVerifyPlanPaymentMutation(
   options?: UseMutationOptions<VerifyPlanPaymentResponse, Error, VerifyPlanPaymentRequest>,
 ) {

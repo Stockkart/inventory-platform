@@ -22,6 +22,7 @@ import type {
   ReferralApprovalRequest,
   ReferralAttributionStatus,
   ReferralRewardStatus,
+  WalletAdjustmentPreview,
   WalletAdjustmentRequest,
   WalletResponse,
 } from '@inventory-platform/plan/types';
@@ -223,6 +224,17 @@ export const planAdminApi = {
   getWallet: async (shopId: string): Promise<WalletResponse> => {
     const response = await apiClient.get<ApiResponse<WalletResponse>>(
       PLAN_ENDPOINTS.ADMIN_WALLET(shopId),
+    );
+    return response.data;
+  },
+
+  previewWalletAdjustment: async (
+    shopId: string,
+    amount: number,
+  ): Promise<WalletAdjustmentPreview> => {
+    const response = await apiClient.post<ApiResponse<WalletAdjustmentPreview>>(
+      PLAN_ENDPOINTS.ADMIN_WALLET_ADJUSTMENT_PREVIEW(shopId),
+      { amount },
     );
     return response.data;
   },

@@ -6,5 +6,7 @@ export type {
   AdminLoginRequest,
   AdminLoginResponse,
   AdminPasswordIssued,
+  AdminPasswordResetResult,
   AdminReasonBody,
+  AdminResetPasswordRequest,
 } from './admin.types';

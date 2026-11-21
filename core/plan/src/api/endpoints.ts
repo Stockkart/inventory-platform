@@ -13,6 +13,7 @@ export const PLAN_ENDPOINTS = {
   PAYMENT_CHECKOUT: '/plans/payment/checkout',
   PAYMENT_VERIFY: '/plans/payment/verify',
   ORDER_QUOTE: '/plans/orders/quote',
+  ORDER_CANCEL: (orderId: string) => `/plans/orders/${encodeURIComponent(orderId)}/cancel`,
   ADDONS: '/plans/addons',
   VOUCHER_VALIDATE: '/plans/vouchers/validate',
   CAMPAIGN_ACTIVE: '/campaigns/active',
@@ -41,4 +42,6 @@ export const PLAN_ENDPOINTS = {
   ADMIN_WALLET: (shopId: string) => `/admin/wallets/${encodeURIComponent(shopId)}`,
   ADMIN_WALLET_ADJUSTMENTS: (shopId: string) =>
     `/admin/wallets/${encodeURIComponent(shopId)}/adjustments`,
+  ADMIN_WALLET_ADJUSTMENT_PREVIEW: (shopId: string) =>
+    `/admin/wallets/${encodeURIComponent(shopId)}/adjustments/preview`,
 } as const;

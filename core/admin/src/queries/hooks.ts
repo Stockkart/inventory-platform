@@ -6,6 +6,7 @@ import type {
   AdminCreateRequest,
   AdminLoginRequest,
   AdminReasonBody,
+  AdminResetPasswordRequest,
 } from '@inventory-platform/admin/types';
 import { adminApi } from '../api/admin.api';
 import { selectAdminTokenStorage } from '../session/adminToken';
@@ -87,5 +88,12 @@ export function useResetAdminPasswordMutation() {
     mutationFn: ({ id, body }: { id: string; body: AdminReasonBody }) =>
       adminApi.resetPassword(id, body),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: adminKeys.admins() }),
+  });
+}
+
+/** Public: set a new password from an emailed reset link. */
+export function useAdminResetPasswordWithTokenMutation() {
+  return useMutation({
+    mutationFn: (body: AdminResetPasswordRequest) => adminApi.resetPasswordWithToken(body),
   });
 }

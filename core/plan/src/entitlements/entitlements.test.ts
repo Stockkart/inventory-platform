@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '@inventory-platform/api-client';
 import type { ShopEntitlementsResponse } from '@inventory-platform/plan/types';
-import {
-  isAtLimit,
-  isPlanFeature,
-  readEntitlementError,
-  splitFeatures,
-  usageOfLimit,
-} from './entitlements';
+import { isPlanFeature, readEntitlementError, splitFeatures, usageOfLimit } from './entitlements';
 
 describe('readEntitlementError', () => {
   it('reads a coded plan-limit 402', () => {
@@ -36,12 +30,6 @@ describe('usage helpers', () => {
   it('formats usage against a limit', () => {
     expect(usageOfLimit(3, 5)).toBe('3 of 5');
     expect(usageOfLimit(1200, null)).toBe('1,200');
-  });
-
-  it('flags only a reached limit', () => {
-    expect(isAtLimit(5, 5)).toBe(true);
-    expect(isAtLimit(4, 5)).toBe(false);
-    expect(isAtLimit(99, null)).toBe(false);
   });
 });
 

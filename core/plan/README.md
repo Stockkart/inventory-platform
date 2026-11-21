@@ -58,9 +58,10 @@ On an active paid plan (`canBuyAddOnsAlone`: not trial, not expired, has a plan)
 - Pay button text and caption come from `pricedPayLabel` / `payCaption` (`checkout/payButton.ts`), fed only by server totals. A ₹0 order (wallet and/or vouchers cover it) is "Pay with wallet credit" or "Confirm order", never "Pay ₹0", and does not mention Razorpay: the API settles it with provider `wallet`.
 - A failed quote shows "Could not price your order" on the button and a **Try again** button (`refetch`). A `VOUCHER_REJECTED` that names no voucher clears every applied voucher (`vouchersAfterRejection`). A rejection that leaves nothing to drop (the code is not applied) is shown as a quote failure with **Try again** (`quoteFailureMessage`), so the button never stays on "Pricing your order…".
 - The idempotency key covers the cart and the quoted `grandTotal` / `walletCredit` (`checkoutFingerprint`): the same cart at the same price replays the open order, a changed price opens a new one. After a failed or closed checkout the wallet and quote are refetched, since the abandoned order can hold wallet credit.
-- The order `status` from checkout and verify decides what happens next (`orderStage`, `checkout/orderState.ts`): CREATED / PAYMENT_PENDING opens Razorpay; PAID / FULFILLING / FULFILMENT_FAILED shows "Payment received, confirming…" with **Check again** and never reopens Razorpay (a replayed idempotency key returns the order as it is now); FULFILLED finishes; failed, expired, cancelled or refunded orders say the order was closed and the next attempt opens a new one.
+- The order `phase` from checkout, verify and cancel decides what happens next (`orderStage`, `checkout/orderState.ts`; the raw `status` on an older API): AWAITING_PAYMENT opens Razorpay; PROCESSING shows "Payment received, confirming…" with **Check again** and never reopens Razorpay (a replayed idempotency key returns the order as it is now); FULFILLED finishes; FAILED / ENDED say the order was closed and the next attempt opens a new one.
+- Closing the Razorpay window cancels the unpaid order (`POST /plans/orders/{orderId}/cancel`), so its wallet credit and vouchers come back at once. If that cancel fails, the order stays open and the next Pay replays it with the same idempotency key at the price it was opened at. A failed attempt inside the Razorpay window no longer ends the checkout; its message is shown only once the window is closed (`PaymentDismissedError.lastFailure`).
 - When Razorpay took the payment but verify failed, the page keeps the Razorpay result and shows **Confirm payment**, which retries the verification alone.
-- If the checkout `amount` differs from the quoted `grandTotal`, Razorpay is not opened: the quote is refetched and the new total shown, to pay again.
+- If the checkout `amount` of a new order differs from the quoted `grandTotal`, Razorpay is not opened: that order is cancelled, the quote is refetched and the new total shown, to pay again.
 - After paying, plan queries are invalidated except quotes (`isPlanDataExceptQuote`), so the paid cart is not priced again on the way out. Payment errors show under the Pay button.
 
 ## Coming soon: SMS and WhatsApp
@@ -80,3 +81,11 @@ For a plan target the modal shows a live preview from `POST /admin/vouchers/plan
 ## Tests
 
 `nx test plan` runs `src/**/*.test.ts(x)` with the same setup as `core/user` (`vitest.config.ts`, `vitest.setup.ts`, `tsconfig.spec.json`): `src/ui/**` in jsdom, everything else in node. CI runs it with every other test target.
+
+## Wallet adjustments (admin)
+
+Referral operations → Wallet: the admin types a signed amount and presses **Review credit/debit**. A `ReasonDialog` shows the shop, the amount and the balance before → after from `POST /admin/wallets/{shopId}/adjustments/preview`; **Confirm** stays disabled until the API says the adjustment is allowed (it caps one adjustment) and a reason is typed. The same adjustment id is kept across retries so it is applied once.
+
+## Usage tiles
+
+The seat and scan tiles on My Plan turn red only on the API's `seatLimitReached` / `ocrLimitReached` (entitlements response); the page never compares usage with limits itself.

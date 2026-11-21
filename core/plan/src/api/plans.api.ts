@@ -8,6 +8,7 @@ import type {
   PlanCheckoutResponse,
   PlanMisParams,
   PlanMisResponse,
+  PlanOrderStatusResponse,
   PlanResponse,
   PlanTransactionResponse,
   QuoteRequest,
@@ -138,6 +139,14 @@ export const plansApi = {
     const response = await apiClient.post<ApiResponse<VerifyPlanPaymentResponse>>(
       PLAN_ENDPOINTS.PAYMENT_VERIFY,
       data,
+    );
+    return response.data;
+  },
+
+  /** Cancel the shop's own unpaid order; the API releases its voucher and wallet holds. */
+  cancelOrder: async (orderId: string): Promise<PlanOrderStatusResponse> => {
+    const response = await apiClient.post<ApiResponse<PlanOrderStatusResponse>>(
+      PLAN_ENDPOINTS.ORDER_CANCEL(orderId),
     );
     return response.data;
   },

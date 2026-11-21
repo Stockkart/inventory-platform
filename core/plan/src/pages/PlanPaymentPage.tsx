@@ -39,8 +39,9 @@ import {
   topUpAddOns,
   vouchersAfterRejection,
   type AddOnSelection,
+  type OrderState,
 } from '../checkout';
-import { getPaymentCheckout } from '../payment/index.js';
+import { PaymentDismissedError, getPaymentCheckout } from '../payment/index.js';
 import { AddOnPicker } from '../ui/AddOnPicker';
 import { formatRupees, planListPriceLabel } from '../ui/planPricing';
 import { PastPurchases } from '../ui/PastPurchases';
@@ -53,6 +54,7 @@ import {
 } from '@inventory-platform/session';
 import {
   useAddOnsQuery,
+  useCancelPlanOrderMutation,
   useCreatePlanCheckoutMutation,
   usePlanQuery,
   usePlanQuoteQuery,
@@ -185,8 +187,16 @@ export function PlanPaymentPage() {
   /** One key per cart and quoted total, reused across retries so a retry replays the open order. */
   const idempotency = useRef<{ cart: string; key: string } | null>(null);
 
+  /**
+   * The unpaid order the last checkout opened. While it is open its idempotency key is reused, so a
+   * retry replays it instead of opening a second order at a different price; it is cancelled when
+   * the shopper closes the payment window, which releases its wallet and voucher holds.
+   */
+  const openOrder = useRef<{ orderId: string; key: string } | null>(null);
+
   const createCheckoutMutation = useCreatePlanCheckoutMutation();
   const verifyPaymentMutation = useVerifyPlanPaymentMutation();
+  const cancelOrderMutation = useCancelPlanOrderMutation();
 
   /**
    * A gateway payment that went through but is not confirmed yet. Kept so "Confirm payment" retries
@@ -198,6 +208,7 @@ export function PlanPaymentPage() {
 
   const finishPaid = async () => {
     idempotency.current = null;
+    openOrder.current = null;
     setPendingVerify(null);
     setConfirming(null);
     await Promise.all([fetchPlanStatus({ force: true }), fetchEntitlements({ force: true })]);
@@ -205,21 +216,23 @@ export function PlanPaymentPage() {
     navigate(addOnOnly ? PLAN_STATUS_PATH : '/dashboard', { replace: true });
   };
 
-  /** Act on the status the API reports after checkout or verify. Returns true when handled. */
-  const settleByStatus = async (status: string | null | undefined): Promise<boolean> => {
-    const stage = orderStage(status);
+  /** Act on the order phase the API reports after checkout, verify or cancel. True when handled. */
+  const settle = async (state: OrderState): Promise<boolean> => {
+    const stage = orderStage(state);
     if (stage === 'done') {
       await finishPaid();
       return true;
     }
     if (stage === 'confirming') {
-      setConfirming(confirmingMessage(status));
+      openOrder.current = null;
+      setConfirming(confirmingMessage(state.status));
       await queryClient.invalidateQueries({ predicate: isPlanDataExceptQuote });
       return true;
     }
     if (stage === 'closed') {
       // This order can no longer be paid; the next attempt opens a new one.
       idempotency.current = null;
+      openOrder.current = null;
       setError('This order was closed. Check the total and pay again.');
       return true;
     }
@@ -229,7 +242,7 @@ export function PlanPaymentPage() {
   const verify = async (request: VerifyPlanPaymentRequest) => {
     setPendingVerify(request);
     const verified = await verifyPaymentMutation.mutateAsync(request);
-    if (verified.status != null && (await settleByStatus(verified.status))) return;
+    if (await settle(verified)) return;
     await finishPaid();
   };
 
@@ -251,6 +264,25 @@ export function PlanPaymentPage() {
     }
   };
 
+  /**
+   * The shopper left an unpaid order: cancel it so its holds come back now, not at expiry. If the
+   * API says it was paid after all, show that. If the cancel fails, keep the order (and its key)
+   * so the next attempt replays it rather than opening another.
+   */
+  const abandon = async (orderId: string) => {
+    try {
+      const cancelled = await cancelOrderMutation.mutateAsync(orderId);
+      if (orderStage(cancelled) === 'closed') {
+        openOrder.current = null;
+        idempotency.current = null;
+        return;
+      }
+      await settle(cancelled);
+    } catch {
+      // Still open on the server; the next Pay replays it with the same key.
+    }
+  };
+
   const handlePay = async () => {
     if (!user?.shopId) return;
     let request: CreatePlanCheckoutRequest;
@@ -265,10 +297,15 @@ export function PlanPaymentPage() {
     setError(null);
     setConfirming(null);
     const cart = checkoutFingerprint(request, quote);
-    if (idempotency.current?.cart !== cart) {
+    // An order from the last attempt is still open: replay it with its key.
+    const replaying = openOrder.current != null;
+    if (openOrder.current) {
+      idempotency.current = { cart, key: openOrder.current.key };
+    } else if (idempotency.current?.cart !== cart) {
       idempotency.current = { cart, key: newIdempotencyKey() };
     }
     let paidAtGateway = false;
+    let orderId: string | null = null;
     try {
       const checkout = await createCheckoutMutation.mutateAsync({
         request,
@@ -276,7 +313,9 @@ export function PlanPaymentPage() {
       });
 
       // A replayed key returns the order as it is now: never reopen Razorpay on a paid order.
-      if (await settleByStatus(checkout.status)) return;
+      if (await settle(checkout)) return;
+      orderId = checkout.orderId;
+      openOrder.current = { orderId: checkout.orderId, key: idempotency.current.key };
 
       if (paidFromWallet(checkout)) {
         await queryClient.invalidateQueries({ predicate: isPlanDataExceptQuote });
@@ -286,7 +325,9 @@ export function PlanPaymentPage() {
 
       // The server's total is what Razorpay charges. If it is not what the shopper was shown,
       // show the new price instead of charging it.
-      if (quote && checkout.amount !== quote.grandTotal) {
+      // A replayed order keeps the price it was opened at, which is what the shopper saw then.
+      if (!replaying && quote && checkout.amount !== quote.grandTotal) {
+        await abandon(checkout.orderId);
         idempotency.current = null;
         void queryClient.invalidateQueries({ queryKey: planKeys.quotes() });
         setError(
@@ -319,8 +360,13 @@ export function PlanPaymentPage() {
         );
         return;
       }
-      // An abandoned or failed order can still hold wallet credit: show the balance and price as
-      // they are now. A changed total then gets a new idempotency key (checkoutFingerprint).
+      if (err instanceof PaymentDismissedError) {
+        // Closed the payment window: cancel the order so its wallet credit and vouchers come back.
+        if (orderId) await abandon(orderId);
+        if (err.lastFailure) setError(err.lastFailure);
+        return;
+      }
+      // A failed order can still hold wallet credit: show the balance and price as they are now.
       void queryClient.invalidateQueries({ queryKey: planKeys.wallet() });
       void queryClient.invalidateQueries({ queryKey: planKeys.quotes() });
       if (dropRejectedVoucher(err)) return;
