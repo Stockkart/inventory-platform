@@ -22,6 +22,7 @@
 /core/analytics/ @your-org/stockkart-frontend
 /core/checkout/ @your-org/stockkart-frontend
 /core/credit/ @your-org/stockkart-frontend
+/core/hr/ @your-org/stockkart-frontend
 /core/mis/ @your-org/stockkart-frontend
 /core/notifications/ @your-org/stockkart-frontend
 /core/plan/ @your-org/stockkart-frontend
