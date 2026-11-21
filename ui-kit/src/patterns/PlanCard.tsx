@@ -1,8 +1,15 @@
 import type { ReactNode } from 'react';
 import { cn } from '../utils/cn';
 import { Button } from '../forms/Button';
+import { Badge } from '../feedback/Badge';
 import { Box, Text, VisuallyHidden } from '../layout';
 import styles from './PlanCard.module.css';
+
+/** A feature line; `comingSoon` adds a "Coming soon" tag for something sold but not live yet. */
+export interface PlanCardFeature {
+  label: string;
+  comingSoon?: boolean;
+}
 
 export interface PlanCardProps {
   name: string;
@@ -12,7 +19,7 @@ export interface PlanCardProps {
   listPriceLabel?: string | null;
   periodLabel?: string;
   oneTimeLabel?: string | null;
-  features: string[];
+  features: (string | PlanCardFeature)[];
   showTrialBadge?: boolean;
   /** Trial badge text, e.g. "Free 3-day trial"; the caller formats the API's trial length. */
   trialLabel?: string;
@@ -84,14 +91,24 @@ export function PlanCard({
         ) : null}
 
         <ul className={styles.features}>
-          {features.map((feature) => (
-            <li key={feature} className={styles.feature}>
-              <span className={styles.check} aria-hidden>
-                ✓
-              </span>
-              <span>{feature}</span>
-            </li>
-          ))}
+          {features.map((item) => {
+            const feature = typeof item === 'string' ? { label: item } : item;
+            return (
+              <li key={feature.label} className={styles.feature}>
+                <span className={styles.check} aria-hidden>
+                  ✓
+                </span>
+                <span>
+                  {feature.label}
+                  {feature.comingSoon ? (
+                    <Badge variant="warning" className={styles.comingSoon}>
+                      Coming soon
+                    </Badge>
+                  ) : null}
+                </span>
+              </li>
+            );
+          })}
         </ul>
 
         {footer ??

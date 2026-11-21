@@ -58,9 +58,14 @@ Domain widgets and pages stay in `core/*/ui` and `core/*/pages`.
 | `chartChrome`        | Analytics filters, KPIs, chart frames (`plot` = fixed height)                                                                                                                                                                                               |
 | `productChrome`      | Scan Sell, carts, cafe stock lines                                                                                                                                                                                                                          |
 | `accountingChrome`   | Ledger / journal layouts                                                                                                                                                                                                                                    |
-| `surfaceChrome`      | Generic dashboard surfaces, profile tiles, profile settings tabs (`invoiceSettings*`, `cardBuilder*`, `rateRules*`)                                                                                                                                         |
+| `surfaceChrome`      | Generic dashboard surfaces, profile tiles, profile settings tabs (`invoiceSettings*`, `cardBuilder*`, `rateRules*`), My Plan (`plan*`)                                                                                                                      |
 | `searchChrome`       | Filter strip under a search bar: `FilterStrip` + `FilterDropdown` pills, `FacetCheckboxList` inside; `CollapsibleGroup` for vertical panels. `FilterDropdown block` + `ChoiceList` is the custom single-choice dropdown for a form row (no native `select`) |
 | `registrationChrome` | Product registration grids / vendor cards                                                                                                                                                                                                                   |
+
+### Plan surfaces
+
+- `PlanCard` `features` take plain strings or `{ label, comingSoon }`; `comingSoon` adds an amber "Coming soon" badge (story: _Patterns/Plan card → With coming soon lines_). The dashboard equivalent is `surfaceChrome.planComingSoon` on a `Badge variant="warning"`.
+- `surfaceChrome.planTopUp*` is the My Plan "Add-ons & top-ups" disclosure: `planTopUpToggle` goes on a `Button variant="ghost"` with `aria-expanded` / `aria-controls`, `planTopUpBody` on the controlled panel, `planTopUpGrid` / `planTopUpCard*` for the add-on cards.
 
 ## Dropdowns
 

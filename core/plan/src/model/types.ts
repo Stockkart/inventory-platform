@@ -33,14 +33,23 @@ export interface PaymentConfigResponse {
   publicKey: string | null;
 }
 
+/** Order phase from the API, grouping its statuses for the screen. */
+export type OrderPhase = 'AWAITING_PAYMENT' | 'PROCESSING' | 'FULFILLED' | 'FAILED' | 'ENDED';
+
 export interface PlanCheckoutResponse {
   orderId: string;
   status?: string;
+  /** Absent on older APIs; then `status` decides (checkout/orderState.ts). */
+  phase?: OrderPhase;
   provider: string;
   /** Amount charged, after discounts and wallet credit. */
   amount: number;
   currency: string;
   planName: string;
+  /** True when the order buys add-ons only, on top of the shop's current paid plan. */
+  addOnOnly?: boolean;
+  /** Add-on-only orders: when the annual add-ons end (ISO instant). Absent on older APIs. */
+  termEndsAt?: string | null;
   items?: QuoteItem[];
   subtotal?: number;
   discountTotal?: number;
@@ -71,9 +80,19 @@ export interface VerifyPlanPaymentRequest {
   razorpaySignature: string;
 }
 
+/** POST /plans/orders/{orderId}/cancel */
+export interface PlanOrderStatusResponse {
+  orderId: string;
+  status: string;
+  phase?: OrderPhase;
+}
+
 export interface VerifyPlanPaymentResponse {
   success: boolean;
   orderId: string;
+  /** Order status after verification (see checkout/orderState.ts). Absent on older APIs. */
+  status?: string;
+  phase?: OrderPhase;
   plan: PlanResponse | null;
 }
 
@@ -83,7 +102,8 @@ export interface PlanTransactionResponse {
   planId: string;
   planName: string;
   amount: number;
-  durationMonths: number;
+  /** Null on add-on-only orders, which have no term. */
+  durationMonths: number | null;
   paymentMethod: string;
   provider?: string | null;
   providerPaymentId?: string | null;

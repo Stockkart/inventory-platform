@@ -8,6 +8,7 @@ import type {
   PlanCheckoutResponse,
   PlanMisParams,
   PlanMisResponse,
+  PlanOrderStatusResponse,
   PlanResponse,
   PlanTransactionResponse,
   QuoteRequest,
@@ -106,8 +107,20 @@ export const plansApi = {
     return response.data;
   },
 
-  listAddOns: async (): Promise<AddOnResponse[]> => {
-    const response = await apiClient.get<ApiResponse<AddOnResponse[]>>(PLAN_ENDPOINTS.ADDONS);
+  /** The add-on catalogue; with a plan code each add-on says whether a cart for that plan can take it. */
+  listAddOns: async (planCode?: string | null): Promise<AddOnResponse[]> => {
+    const response = await apiClient.get<ApiResponse<AddOnResponse[]>>(
+      PLAN_ENDPOINTS.ADDONS,
+      planCode ? { planCode } : undefined,
+    );
+    return response.data;
+  },
+
+  /** Add-ons this shop can buy on their own for its current plan, each with `eligible`. */
+  listAddOnOptions: async (): Promise<AddOnResponse[]> => {
+    const response = await apiClient.get<ApiResponse<AddOnResponse[]>>(
+      PLAN_ENDPOINTS.ADDON_OPTIONS,
+    );
     return response.data;
   },
 
@@ -146,6 +159,14 @@ export const plansApi = {
     const response = await apiClient.post<ApiResponse<VerifyPlanPaymentResponse>>(
       PLAN_ENDPOINTS.PAYMENT_VERIFY,
       data,
+    );
+    return response.data;
+  },
+
+  /** Cancel the shop's own unpaid order; the API releases its voucher and wallet holds. */
+  cancelOrder: async (orderId: string): Promise<PlanOrderStatusResponse> => {
+    const response = await apiClient.post<ApiResponse<PlanOrderStatusResponse>>(
+      PLAN_ENDPOINTS.ORDER_CANCEL(orderId),
     );
     return response.data;
   },

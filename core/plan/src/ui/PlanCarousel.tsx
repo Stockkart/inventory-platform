@@ -20,7 +20,7 @@ function planCardProps(
   },
 ) {
   const allFeatures = buildPlanFeatures(plan);
-  const features = plan.bestFor ? allFeatures.filter((f) => f !== plan.bestFor) : allFeatures;
+  const features = plan.bestFor ? allFeatures.filter((f) => f.label !== plan.bestFor) : allFeatures;
 
   const highlight = isMostPopular(plan);
   const showPopular = highlight && (options.isCenter ?? true);

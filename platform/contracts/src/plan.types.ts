@@ -75,6 +75,8 @@ export interface ShopPlanStatusResponse {
   smsLimitReached: boolean;
   whatsappLimitReached: boolean;
   userLimitReached: boolean;
+  /** True while the shop has a paid term, so add-ons can be bought on their own (API decides). */
+  canBuyAddOnsAlone?: boolean;
 }
 
 /** Why a shop has its entitlements. LEGACY_GRANDFATHERED keeps every feature until migrated. */
@@ -124,9 +126,12 @@ export interface QuoteAddOnLine {
   quantity: number;
 }
 
-/** Cart to price via POST /plans/orders/quote. */
+/**
+ * Cart to price via POST /plans/orders/quote. Leave `planCode` out and send `addOns` for an
+ * add-on-only order, priced against the shop's current paid plan.
+ */
 export interface QuoteRequest {
-  planCode: string;
+  planCode?: string;
   /** Plans are sold yearly; omit or send 12. */
   durationMonths?: number;
   addOns?: QuoteAddOnLine[];
@@ -170,6 +175,13 @@ export interface AddOnResponse {
   stackable: boolean;
   maxQuantity: number | null;
   displayOrder: number | null;
+  /**
+   * Whether this cart (GET /plans/addons?planCode=X) or this shop's top-up (GET
+   * /plans/shop/addon-options) can take the add-on; null on the plain catalogue.
+   */
+  eligible?: boolean | null;
+  /** Why not, in words the shop can read; null when eligible. */
+  ineligibleReason?: string | null;
 }
 
 export type VoucherRejection =
@@ -206,6 +218,8 @@ export interface VoucherRejectedDetails {
  * never compute or send a total from the client.
  */
 export interface QuoteResponse {
+  /** True for an add-on-only cart: no PLAN line, priced against the shop's current paid plan. */
+  addOnOnly?: boolean;
   items: QuoteItem[];
   subtotal: number;
   discountTotal: number;
@@ -214,7 +228,13 @@ export interface QuoteResponse {
   taxInclusive: boolean;
   grandTotal: number;
   currency: string;
+  /** 0 on an add-on-only cart, which has no term; never show a duration for it. */
   durationMonths: number;
+  /**
+   * Add-on-only carts: when the annual add-ons end (ISO instant; full price, no proration). Null or
+   * absent otherwise, and on an API that predates the field.
+   */
+  termEndsAt?: string | null;
   pricingVersion: number;
   quotedAt: string;
   expiresAt: string;

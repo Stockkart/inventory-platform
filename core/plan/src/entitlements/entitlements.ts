@@ -30,8 +30,9 @@ export function readEntitlementError(error: unknown): EntitlementDenial | null {
   };
 }
 
+/** Own keys only: `in` would also accept inherited names such as `__proto__` from a URL. */
 export function isPlanFeature(value: string | null | undefined): value is PlanFeature {
-  return value != null && value in FEATURE_LABELS;
+  return value != null && Object.hasOwn(FEATURE_LABELS, value);
 }
 
 /** "3 of 5", or just the count when unlimited. */

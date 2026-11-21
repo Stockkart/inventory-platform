@@ -13,6 +13,8 @@ import {
   cn,
 } from '@inventory-platform/ui-kit';
 import { PlanGrid } from '../ui/PlanGrid';
+import { AddOnTopUpSection } from '../ui/AddOnTopUpSection';
+import { addOnOnlyPaymentPath, canBuyAddOnsAlone, type AddOnOnlyIntent } from '../checkout';
 import { FEATURE_LABELS } from '../ui/planPricing';
 import { trialLabel } from '../ui/trialLabel';
 import { isPlanFeature, splitFeatures, usageOfLimit } from '../entitlements';
@@ -38,6 +40,13 @@ export function PlanStatusPage() {
   const handleSelectPlan = useCallback(
     (plan: PlanResponse) => {
       navigate(`/dashboard/plan-payment?planId=${plan.id}`);
+    },
+    [navigate],
+  );
+
+  const handleBuyAddOn = useCallback(
+    (intent: AddOnOnlyIntent) => {
+      navigate(addOnOnlyPaymentPath(intent));
     },
     [navigate],
   );
@@ -77,7 +86,7 @@ export function PlanStatusPage() {
     : 'Active';
   const renewLabel = status.trial || status.planExpired ? 'Expires' : 'Renews';
 
-  const usageItems = [
+  const usageItems: { label: string; value: string; danger: boolean; comingSoon?: boolean }[] = [
     {
       label: 'Billing amount',
       value: `₹${status.currentUsage?.billingAmountUsed?.toLocaleString('en-IN') ?? 0}`,
@@ -92,11 +101,13 @@ export function PlanStatusPage() {
       label: 'SMS',
       value: String(status.currentUsage?.smsUsed ?? 0),
       danger: status.smsLimitReached,
+      comingSoon: true,
     },
     {
       label: 'WhatsApp',
       value: String(status.currentUsage?.whatsappUsed ?? 0),
       danger: status.whatsappLimitReached,
+      comingSoon: true,
     },
   ];
   if (entitlements) {
@@ -187,6 +198,11 @@ export function PlanStatusPage() {
             >
               <Text as="span" className={surfaceChrome.planUsageLabel}>
                 {item.label}
+                {item.comingSoon ? (
+                  <Badge variant="warning" className={surfaceChrome.planComingSoon}>
+                    Coming soon
+                  </Badge>
+                ) : null}
               </Text>
               <Text
                 as="span"
@@ -243,6 +259,10 @@ export function PlanStatusPage() {
             ))}
           </Box>
         </Stack>
+      ) : null}
+
+      {canBuyAddOnsAlone(status) ? (
+        <AddOnTopUpSection status={status} onBuy={handleBuyAddOn} />
       ) : null}
 
       <Stack gap="sm">
