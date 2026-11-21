@@ -28,7 +28,13 @@ import {
   journeyChrome,
 } from '@inventory-platform/ui-kit';
 import { CircleHelp } from 'lucide-react';
-import { REFERRED_BY_NAME_MAX, normaliseReferralCode, referralCodeFromSearch } from './referral';
+import {
+  REFERRED_BY_NAME_MAX,
+  forgetReferralCode,
+  initialReferralCode,
+  normaliseReferralCode,
+  rememberReferralCode,
+} from './referral';
 
 const STEPS: OnboardingStep[] = [
   'name',
@@ -147,7 +153,7 @@ export default function OnboardingPage() {
     tagline: '',
     continueFromPreviousApp: false,
     lastInvoiceNo: '',
-    referredByCode: referralCodeFromSearch(location.search),
+    referredByCode: initialReferralCode(location.search),
     referredByName: '',
   });
   const [referrerName, setReferrerName] = useState<string | null>(null);
@@ -159,6 +165,11 @@ export default function OnboardingPage() {
     mq.addEventListener('change', update);
     return () => mq.removeEventListener('change', update);
   }, []);
+
+  // Keep a `?ref=` link's code before the sign-in redirect below drops the query string.
+  useEffect(() => {
+    rememberReferralCode(location.search);
+  }, [location.search]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -390,6 +401,7 @@ export default function OnboardingPage() {
       });
 
       if (response && response.shopId) {
+        forgetReferralCode();
         await fetchCurrentUser();
         if (formData.continueFromPreviousApp && formData.lastInvoiceNo.trim()) {
           try {

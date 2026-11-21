@@ -7,9 +7,9 @@ import {
 } from './referrals';
 
 describe('referralShareLink', () => {
-  it('points at onboarding with the code', () => {
+  it('points at sign-up with the code', () => {
     expect(referralShareLink('https://app.stockkart.in/', 'SK-AB2CD3')).toBe(
-      'https://app.stockkart.in/onboarding?ref=SK-AB2CD3',
+      'https://app.stockkart.in/signup?ref=SK-AB2CD3',
     );
   });
 });
