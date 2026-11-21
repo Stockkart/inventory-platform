@@ -30,11 +30,7 @@ import { AddOnPicker } from '../ui/AddOnPicker';
 import { formatRupees, planListPriceLabel } from '../ui/planPricing';
 import { QuoteSummary } from '../ui/QuoteSummary';
 import { VoucherField } from '../ui/VoucherField';
-import {
-  useAuthStore,
-  usePlanEntitlementsStore,
-  usePlanStatusStore,
-} from '@inventory-platform/session';
+import { useAuthStore, usePlanStatusStore } from '@inventory-platform/session';
 import {
   useAddOnsQuery,
   useCreatePlanCheckoutMutation,
@@ -50,7 +46,6 @@ import { planKeys } from '../queries/keys';
 export function PlanPaymentPage() {
   const { user } = useAuthStore();
   const fetchPlanStatus = usePlanStatusStore((s) => s.fetchPlanStatus);
-  const fetchEntitlements = usePlanEntitlementsStore((s) => s.fetchEntitlements);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
@@ -175,7 +170,11 @@ export function PlanPaymentPage() {
       }
 
       idempotency.current = null;
-      await Promise.all([fetchPlanStatus({ force: true }), fetchEntitlements({ force: true })]);
+      // Waits for the shop's entitlements to refetch, so the nav shows the new plan on arrival.
+      await Promise.all([
+        fetchPlanStatus({ force: true }),
+        queryClient.invalidateQueries({ queryKey: planKeys.shopEntitlements(user.shopId) }),
+      ]);
       await refetchTransactions();
       navigate('/dashboard', { replace: true });
     } catch (err) {
