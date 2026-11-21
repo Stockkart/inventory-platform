@@ -28,6 +28,9 @@
 - name: module:accounting
   color: '059669'
   description: core/accounting
+- name: module:admin
+  color: '7C3AED'
+  description: core/admin
 - name: module:analytics
   color: '2563EB'
   description: core/analytics

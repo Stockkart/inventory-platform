@@ -6,9 +6,12 @@ import {
   emptyAddOnForm,
   emptyGrantForm,
   emptyPlanForm,
+  emptyPlanGrantForm,
+  planGrantOptions,
   planFormState,
   toAddOnRequest,
   toGrantRequest,
+  toPlanGrantRequest,
   toPlanRequest,
 } from './catalogueForm';
 
@@ -242,5 +245,49 @@ describe('describeAddOnGrant', () => {
     expect(
       describeAddOnGrant({ grantType: 'FEATURE', grantsQuantity: 1 }, label, 'MARKETING'),
     ).toBe('Marketing');
+  });
+});
+
+describe('planGrantOptions', () => {
+  it('offers only selectable plans that have a code', () => {
+    const options = planGrantOptions([
+      plan,
+      { ...plan, id: 'p2', code: 'EXTRA_USER', planName: 'Extra User Plan', selectable: false },
+      { ...plan, id: 'p3', code: null, planName: 'Legacy' },
+      { ...plan, id: 'p4', code: 'PRO', planName: 'Pro', selectable: null },
+    ]);
+    expect(options).toEqual([
+      { value: 'GROWTH', label: 'Growth' },
+      { value: 'PRO', label: 'Pro' },
+    ]);
+  });
+});
+
+describe('toPlanGrantRequest', () => {
+  it('sends the plan code, whole months and the trimmed reason', () => {
+    const result = toPlanGrantRequest({ planCode: 'GROWTH', months: ' 6 ', reason: ' Support ' });
+    expect(result).toEqual({
+      ok: true,
+      request: { planCode: 'GROWTH', durationMonths: 6, reason: 'Support' },
+    });
+  });
+
+  it('needs a plan, 1 to 36 months and a reason of at most 200 characters', () => {
+    const empty = toPlanGrantRequest({ ...emptyPlanGrantForm(), months: '' });
+    expect(empty.ok).toBe(false);
+    if (!empty.ok)
+      expect(Object.keys(empty.errors).sort()).toEqual(['months', 'planCode', 'reason']);
+
+    for (const months of ['0', '37', '1.5', 'x']) {
+      const result = toPlanGrantRequest({ planCode: 'GROWTH', months, reason: 'ok' });
+      expect(result.ok).toBe(false);
+    }
+    expect(toPlanGrantRequest({ planCode: 'GROWTH', months: '36', reason: 'ok' }).ok).toBe(true);
+
+    const long = toPlanGrantRequest({ planCode: 'GROWTH', months: '1', reason: 'x'.repeat(201) });
+    expect(long.ok).toBe(false);
+    expect(
+      toPlanGrantRequest({ planCode: 'GROWTH', months: '1', reason: 'x'.repeat(200) }).ok,
+    ).toBe(true);
   });
 });

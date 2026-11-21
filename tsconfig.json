@@ -7,6 +7,9 @@
       "path": "./apps/inventory"
     },
     {
+      "path": "./apps/admin"
+    },
+    {
       "path": "./core/product"
     },
     {
@@ -29,6 +32,9 @@
     },
     {
       "path": "./core/accounting"
+    },
+    {
+      "path": "./core/admin"
     },
     {
       "path": "./platform/api-client"

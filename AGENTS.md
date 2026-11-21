@@ -33,7 +33,7 @@ Resolved versions from `pnpm-lock.yaml`; ranges in `package.json`.
 
 | Source tag      | Projects                           | May import tags                |
 | --------------- | ---------------------------------- | ------------------------------ |
-| `type:app`      | `apps/inventory`                   | app, platform, plugin          |
+| `type:app`      | `apps/inventory`, `apps/admin`     | app, platform, plugin          |
 | `type:plugin`   | `plugins/cafe`, `plugins/registry` | platform, core, plugin, ui-kit |
 | `type:core`     | `core/*`                           | platform, core, ui-kit         |
 | `type:platform` | `platform/*`                       | platform, plugin, core, ui-kit |
@@ -41,6 +41,7 @@ Resolved versions from `pnpm-lock.yaml`; ranges in `package.json`.
 
 - `type:journey` is declared in the config. No project carries it.
 - `apps/inventory` composes only through `@inventory-platform/plugin-registry/routes` (plus the `plugin-registry` barrel, `shell`, `query`, `session`, `routing`). A `no-restricted-imports` block in root `eslint.config.mjs` bans domain packages, `*/api`, `*/ui` and `*/pages/*` there. Example: `apps/inventory/app/routes.tsx`.
+- `apps/admin` (the StockKart admin app, separate sign-in) follows the same rule and the same lint block. Example: `apps/admin/app/routes.tsx`.
 - Team rule, stricter than lint: `platform/*` does not import `core/*` or `plugins/*`. Example: `platform/session/src/lib/useAuthStore.ts`.
   - Exception: `platform/shell/src/lib/DashboardLayout.tsx` imports `@inventory-platform/user/shops`.
 - Import another package only through its `package.json` `exports` (`.`, `/types`, `/nav`, `/routes/*`). Never import its `src/` paths. Example: `core/reminders/package.json`.
@@ -51,7 +52,8 @@ Resolved versions from `pnpm-lock.yaml`; ranges in `package.json`.
 ## Repository layout
 
 ```text
-apps/inventory/      route composer, providers, global reset only
+apps/inventory/      shop app: route composer, providers, global reset only
+apps/admin/          StockKart admin app (separate sign-in): route composer, providers only
 core/<domain>/       one business domain each
 platform/<infra>/    access, api-client, contracts, query, routing, schema, session, shell
 plugins/cafe/        vertical extras
@@ -71,7 +73,8 @@ scripts/deploy/      Vercel deploy and verify scripts
 | `analytics`     | sales/profit/inventory/vendor/customer analytics                   |
 | `mis`           | vendor/customer money, sales, stock MIS reports                    |
 | `credit`        | credit balances / charges                                          |
-| `plan`          | plan status, payment, marketing plan UI                            |
+| `plan`          | plan status, payment, marketing plan UI, admin plan tools          |
+| `admin`         | admin accounts, sign-in, session, admin app layout                 |
 | `pricing`       | pricing list + price edit                                          |
 | `reminders`     | reminders + inventory alert                                        |
 | `taxation`      | GSTR tabs                                                          |
@@ -181,15 +184,15 @@ Worked examples:
 - Read the API base only via `apiClient`. Exceptions: the helpers listed above.
 - To add a variable, add its name to `.env-example` and to the `env` inputs of `nx.targets.build` in `apps/inventory/package.json`.
 
-| Name                    | Purpose                           | Read in                                 | Declared in                                            |
-| ----------------------- | --------------------------------- | --------------------------------------- | ------------------------------------------------------ |
-| `VITE_API_URL`          | API base URL                      | `platform/api-client/src/lib/client.ts` | `.env-example`, `docker-compose.yml`, build inputs     |
-| `VITE_GOOGLE_CLIENT_ID` | Google OAuth client               | `apps/inventory/app/root.tsx`           | `.env-example`, build inputs                           |
-| `VITE_FACEBOOK_APP_ID`  | reserved, not read by source      | —                                       | `.env-example`, build inputs                           |
-| `VITE_RAZORPAY_KEY_ID`  | optional; backend returns the key | —                                       | `.env-example`, build inputs                           |
-| `VITE_MOBILE_API_URL`   | mobile upload base                | `core/product/src/api/upload.api.ts`    | build inputs only                                      |
-| `VITE_BUILD_SHA`        | deployed-commit meta tag          | `apps/inventory/app/root.tsx`           | build inputs; set by `scripts/deploy/vercel-deploy.sh` |
-| `VITE_ALLOWED_HOSTS`    | dev-server allowed hosts          | `apps/inventory/vite.config.mts`        | not declared                                           |
+| Name                    | Purpose                           | Read in                                                  | Declared in                                                                   |
+| ----------------------- | --------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `VITE_API_URL`          | API base URL                      | `platform/api-client/src/lib/client.ts`                  | `.env-example`, `docker-compose.yml`, build inputs                            |
+| `VITE_GOOGLE_CLIENT_ID` | Google OAuth client               | `apps/inventory/app/root.tsx`                            | `.env-example`, build inputs                                                  |
+| `VITE_FACEBOOK_APP_ID`  | reserved, not read by source      | —                                                        | `.env-example`, build inputs                                                  |
+| `VITE_RAZORPAY_KEY_ID`  | optional; backend returns the key | —                                                        | `.env-example`, build inputs                                                  |
+| `VITE_MOBILE_API_URL`   | mobile upload base                | `core/product/src/api/upload.api.ts`                     | build inputs only                                                             |
+| `VITE_BUILD_SHA`        | deployed-commit meta tag          | `apps/inventory/app/root.tsx`, `apps/admin/app/root.tsx` | build inputs; set by `scripts/deploy/vercel-deploy.sh`, `apps/*/netlify.toml` |
+| `VITE_ALLOWED_HOSTS`    | dev-server allowed hosts          | `apps/inventory/vite.config.mts`                         | not declared                                                                  |
 
 Other names in `.env-example` and `docker-compose.yml`: `INVENTORY_PLATFORM_PORT` (host port), `NODE_ENV` (Node environment), `DB_URI` and `CLIENT_URL` (backend service, commented out in compose).
 
@@ -317,14 +320,14 @@ ui-kit component:
 
 Creating `core/<name>`, `platform/<name>`, or `plugins/<name>` requires wiring in the **same PR**:
 
-| File                      | What to add                                                                                |
-| ------------------------- | ------------------------------------------------------------------------------------------ |
-| `.github/labels.yml`      | `module:<name>` (plugins: `module:plugin-<dir>`)                                           |
-| `.github/labeler.yml`     | path glob → that label                                                                     |
-| `.github/CODEOWNERS`      | `/core\|platform\|plugins/<dir>/`                                                          |
-| `<pkg>/eslint.config.mjs` | package lint entry                                                                         |
-| root `eslint.config.mjs`  | ban `@inventory-platform/<pkg>` from `apps/inventory` (except scaffolds / plugin-registry) |
-| root `tsconfig.json`      | project reference                                                                          |
-| `AGENTS.md`               | domain row if user-facing                                                                  |
+| File                      | What to add                                                                                                 |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `.github/labels.yml`      | `module:<name>` (plugins: `module:plugin-<dir>`)                                                            |
+| `.github/labeler.yml`     | path glob → that label                                                                                      |
+| `.github/CODEOWNERS`      | `/core\|platform\|plugins/<dir>/`                                                                           |
+| `<pkg>/eslint.config.mjs` | package lint entry                                                                                          |
+| root `eslint.config.mjs`  | ban `@inventory-platform/<pkg>` from `apps/inventory` and `apps/admin` (except scaffolds / plugin-registry) |
+| root `tsconfig.json`      | project reference                                                                                           |
+| `AGENTS.md`               | domain row if user-facing                                                                                   |
 
 CI: `.github/workflows/package-tracking.yml` (`node .github/scripts/check-package-tracking.mjs`). Cursor rule: `stockkart-new-package.mdc`.

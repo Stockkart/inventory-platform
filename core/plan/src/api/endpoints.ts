@@ -28,6 +28,8 @@ export const PLAN_ENDPOINTS = {
   ADMIN_ADDON: (id: string) => `/admin/addons/${id}`,
   ADMIN_ADDON_ACTIVE: (id: string) => `/admin/addons/${id}/active`,
   ADMIN_ADDON_GRANTS: '/admin/addons/grants',
+  ADMIN_SHOP_PLAN_GRANTS: (shopId: string) =>
+    `/admin/shops/${encodeURIComponent(shopId)}/plan-grants`,
   ADMIN_PLANS: '/admin/plans',
   ADMIN_PLAN: (id: string) => `/admin/plans/${id}`,
   ADMIN_PLAN_ACTIVE: (id: string) => `/admin/plans/${id}/active`,

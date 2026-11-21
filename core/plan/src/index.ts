@@ -6,10 +6,10 @@ export {
   planStatusRoutes,
   planPaymentRoutes,
   referralRoutes,
-  platformAdminRoutes,
+  planAdminToolRoutes,
   planDashboardRoutes,
 } from './routes';
-export { planNav, platformAdminNav } from './nav';
+export { planNav } from './nav';
 
 export { PlanStatusPage } from './pages/PlanStatusPage';
 export { PlanPaymentPage } from './pages/PlanPaymentPage';

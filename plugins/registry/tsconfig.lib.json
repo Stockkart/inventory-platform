@@ -70,6 +70,9 @@
     },
     {
       "path": "../../core/accounting/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/admin/tsconfig.lib.json"
     }
   ]
 }
