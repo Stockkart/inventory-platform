@@ -33,9 +33,14 @@ export interface PaymentConfigResponse {
   publicKey: string | null;
 }
 
+/** Order phase from the API, grouping its statuses for the screen. */
+export type OrderPhase = 'AWAITING_PAYMENT' | 'PROCESSING' | 'FULFILLED' | 'FAILED' | 'ENDED';
+
 export interface PlanCheckoutResponse {
   orderId: string;
   status?: string;
+  /** Absent on older APIs; then `status` decides (checkout/orderState.ts). */
+  phase?: OrderPhase;
   provider: string;
   /** Amount charged, after discounts and wallet credit. */
   amount: number;
@@ -75,11 +80,19 @@ export interface VerifyPlanPaymentRequest {
   razorpaySignature: string;
 }
 
+/** POST /plans/orders/{orderId}/cancel */
+export interface PlanOrderStatusResponse {
+  orderId: string;
+  status: string;
+  phase?: OrderPhase;
+}
+
 export interface VerifyPlanPaymentResponse {
   success: boolean;
   orderId: string;
   /** Order status after verification (see checkout/orderState.ts). Absent on older APIs. */
   status?: string;
+  phase?: OrderPhase;
   plan: PlanResponse | null;
 }
 

@@ -13,6 +13,7 @@ export const PLAN_ENDPOINTS = {
   PAYMENT_CHECKOUT: '/plans/payment/checkout',
   PAYMENT_VERIFY: '/plans/payment/verify',
   ORDER_QUOTE: '/plans/orders/quote',
+  ORDER_CANCEL: (orderId: string) => `/plans/orders/${encodeURIComponent(orderId)}/cancel`,
   ADDONS: '/plans/addons',
   VOUCHER_VALIDATE: '/plans/vouchers/validate',
   CAMPAIGN_ACTIVE: '/campaigns/active',
