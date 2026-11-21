@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { useAuthStore } from '@inventory-platform/session';
+import { useAuthStore, usePlanStatusStore } from '@inventory-platform/session';
 import { apiClient } from '@inventory-platform/api-client';
 
 const PUBLIC_AUTH_PATHS = new Set([
@@ -21,7 +21,10 @@ function isPublicAuthPath(pathname: string): boolean {
 
 /**
  * Syncs API client auth headers with the persisted store and signs the user out
- * when any protected request returns 401 (expired or invalid token).
+ * when any protected request returns 401 (expired or invalid token). A 402 plan-expired
+ * answer is recorded in the plan status store; `DashboardRouteGuard` sends the user to
+ * My Plan from there. Both handlers live here because this component is always mounted,
+ * so no answer arrives while a handler is unset (e.g. during a route change).
  */
 export function AuthInitializer({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -60,6 +63,11 @@ export function AuthInitializer({ children }: { children: React.ReactNode }) {
     });
     return () => apiClient.setUnauthorizedHandler(null);
   }, [clearSession, navigate]);
+
+  useEffect(() => {
+    apiClient.setPlanExpiredHandler(() => usePlanStatusStore.getState().markPlanExpired());
+    return () => apiClient.setPlanExpiredHandler(null);
+  }, []);
 
   // If session was cleared while still on a protected route, send to login.
   useEffect(() => {

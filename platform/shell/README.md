@@ -24,6 +24,7 @@ Authenticated app chrome: dashboard layout, sidebar/nav rendering, header action
 
 - Nav items with `requiresFeature` are hidden, and their paths redirect to `/dashboard/plan-status`, only when the backend enforces (`ENFORCE`) and the plan lacks the feature (`planEntitlementNav.ts`).
 - While the entitlements load, or if the load fails, nothing is hidden. The backend check is the real gate.
+- An expired plan or trial sends every dashboard path except the renewal screens (`PLAN_EXPIRY_ALLOWED_PATHS` in contracts) to `/dashboard/plan-status`. The guard learns of it from the plan status or from any call the API answers with a plan-expired 402: `AuthInitializer` (always mounted) registers the api-client handler, which records it in `usePlanStatusStore`. While redirecting, the guard renders a loader instead of the screen, so no screen fetches, fails and toasts; the redirect is re-sent after every navigation (`planExpiryRedirect.ts`).
 
 ## Calculator
 
