@@ -12,6 +12,12 @@
   flex-shrink: 0;
 }
 
+.trackSm {
+  height: 2rem;
+  min-height: 2rem;
+  padding: 0.125rem;
+}
+
 .trackDisabled {
   opacity: 0.65;
   pointer-events: none;
@@ -37,6 +43,11 @@
   white-space: nowrap;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btnSm {
+  padding: 0 0.6rem;
+  font-size: 0.75rem;
 }
 
 .btn:hover:not(:disabled) {
