@@ -24,16 +24,21 @@ import {
 import { useAdminChangePasswordMutation, useAdminLogoutMutation } from '../queries/hooks';
 import { ADMIN_PATHS } from '../session/adminGuard';
 import { useAdminSession } from '../session/useAdminSession';
+import { SessionUnavailable } from '../ui/SessionUnavailable';
 
 const EMPTY: ChangePasswordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
 
 export function AdminChangePasswordPage() {
   const navigate = useNavigate();
-  const { admin, checking } = useAdminSession('change-password');
+  const { admin, checking, unavailable, retrying, retry } = useAdminSession('change-password');
   const change = useAdminChangePasswordMutation();
   const logout = useAdminLogoutMutation();
   const [form, setForm] = useState<ChangePasswordForm>(EMPTY);
   const [formError, setFormError] = useState<string | null>(null);
+
+  if (unavailable) {
+    return <SessionUnavailable retrying={retrying} onRetry={retry} />;
+  }
 
   if (checking || !admin) {
     return <CenteredLoader />;
