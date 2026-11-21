@@ -150,6 +150,7 @@ export function DashboardLayout({
   children,
   verticalPlugin = null,
   baseMenuGroups,
+  planEntitlements = null,
 }: DashboardLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -271,8 +272,9 @@ export function DashboardLayout({
         shopCapabilities ?? null,
         shopAccess ?? null,
         verticalPlugin ?? null,
+        planEntitlements,
       ),
-    [baseMenuGroups, user?.role, shopCapabilities, shopAccess, verticalPlugin],
+    [baseMenuGroups, user?.role, shopCapabilities, shopAccess, verticalPlugin, planEntitlements],
   );
 
   const navRowsForPalette = useMemo(

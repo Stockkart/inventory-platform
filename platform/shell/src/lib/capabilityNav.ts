@@ -1,4 +1,8 @@
-import type { ShopUiCapabilities, ShopAccess } from '@inventory-platform/access';
+import type {
+  ShopUiCapabilities,
+  ShopAccess,
+  PlanEntitlementsView,
+} from '@inventory-platform/access';
 import type {
   VerticalPlugin,
   DashboardMenuGroup,
@@ -8,6 +12,7 @@ import type {
 import { resolveSellPath } from '@inventory-platform/routing';
 import { isCustomerReturnEnabled, isVendorReturnEnabled } from '@inventory-platform/routing';
 import { filterDashboardMenuGroupsByAccess } from './accessNav';
+import { filterMenuGroupsByEntitlements } from './planEntitlementNav';
 
 export { isCustomerReturnEnabled, isVendorReturnEnabled };
 
@@ -117,12 +122,14 @@ function mergeMenuListProductNav(
 
 export { resolveSellPath };
 
+/** Vertical capability, shop access and plan entitlements must all allow an item. */
 export function getDashboardMenuGroupsWithCapabilities(
   baseMenuGroups: DashboardMenuGroup[],
   role: string | undefined,
   capabilities: ShopUiCapabilities | null | undefined,
   access?: ShopAccess | null,
   plugin?: NavCapablePlugin | null,
+  entitlements?: PlanEntitlementsView | null,
 ): DashboardMenuGroup[] {
   void role;
   let groups = baseMenuGroups;
@@ -133,5 +140,8 @@ export function getDashboardMenuGroupsWithCapabilities(
     groups = mergeMenuListProductNav(baseMenuGroups, capItems);
   }
 
-  return filterDashboardMenuGroupsByAccess(filterReturnsGroup(groups, capabilities), access);
+  return filterMenuGroupsByEntitlements(
+    filterDashboardMenuGroupsByAccess(filterReturnsGroup(groups, capabilities), access),
+    entitlements,
+  );
 }
