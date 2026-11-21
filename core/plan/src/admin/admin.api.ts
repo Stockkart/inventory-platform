@@ -14,6 +14,7 @@ import type {
   AdminReferralReward,
   AdminVoucher,
   AdminVoucherRedemption,
+  PlanGrantRequest,
   VoucherGenerateRequest,
   VoucherUpdateRequest,
   ReferralApprovalRequest,
@@ -23,6 +24,7 @@ import type {
   WalletAdjustmentRequest,
   WalletResponse,
 } from '@inventory-platform/plan/types';
+import type { ShopPlanStatusResponse } from '@inventory-platform/contracts';
 import { PLAN_ENDPOINTS } from '../api/endpoints';
 
 /** Platform admin calls. The API rejects anyone without the platform admin role. */
@@ -99,6 +101,15 @@ export const planAdminApi = {
   grantAddOn: async (body: AddOnGrantRequest): Promise<ShopAddOn> => {
     const response = await apiClient.post<ApiResponse<ShopAddOn>>(
       PLAN_ENDPOINTS.ADMIN_ADDON_GRANTS,
+      body,
+    );
+    return response.data;
+  },
+
+  /** Returns the shop's plan status after the grant. */
+  grantPlan: async (shopId: string, body: PlanGrantRequest): Promise<ShopPlanStatusResponse> => {
+    const response = await apiClient.post<ApiResponse<ShopPlanStatusResponse>>(
+      PLAN_ENDPOINTS.ADMIN_SHOP_PLAN_GRANTS(shopId),
       body,
     );
     return response.data;
