@@ -104,7 +104,7 @@ export interface PlanTransactionResponse {
   shopId: string;
   planId: string;
   planName: string;
-  /** Null for ASSIGNED rows: no verified charge. */
+  /** Paid through Razorpay (0 when the wallet paid it all); null for ASSIGNED rows. */
   amount: number | null;
   /** Null on add-on-only orders, which have no term. */
   durationMonths: number | null;
@@ -125,6 +125,12 @@ export interface PlanTransactionResponse {
   subtotal: number | null;
   discountTotal: number | null;
   walletCredit: number | null;
+  /** Full price before wallet credit (walletAmount + gatewayAmount); null where amount is. Older APIs omit it. */
+  totalAmount?: number | null;
+  /** Part paid from the shop wallet; 0 when none. */
+  walletAmount?: number | null;
+  /** Part paid through Razorpay; same as amount. */
+  gatewayAmount?: number | null;
   termStartsAt: string | null;
   termEndsAt: string | null;
   /** True when the term was derived from createdAt and the duration, not granted. */

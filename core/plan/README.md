@@ -71,7 +71,7 @@ StockKart does not send SMS or WhatsApp yet. Every SMS / WhatsApp allowance carr
 
 ## Past purchases
 
-`PlanPaymentPage` lists purchases with `PastPurchases` (replacing "Transaction History"), newest first as the API returns them: plan orders, add-on-only orders and admin-assigned plans (amount shown as "—"). `purchaseHistory.ts` only formats labels (title, period with "≈" when the term is estimated, refund text, status tag such as "Processing" / "Needs attention"); every figure comes from `GET /plans/shop/transactions`. Expanding a row shows the line breakdown when the API kept one. `VoucherField` shows "Applies to <plan>" for a plan-target voucher and "₹X off <plan>" once the quote carries that voucher's line discount.
+`PlanPaymentPage` lists purchases with `PastPurchases` (replacing "Transaction History"), newest first as the API returns them: plan orders, add-on-only orders and admin-assigned plans (amount shown as "—"). `purchaseHistory.ts` only formats labels (title, period with "≈" when the term is estimated, refund text, status tag such as "Processing" / "Needs attention"); every figure comes from `GET /plans/shop/transactions`. The row amount is the full price (`totalAmount`, wallet part included; `amount` from an older API), with "₹300.00 wallet + ₹200.00 Razorpay" under it, or "Paid from wallet" when Razorpay took nothing (`paymentSplitLabel`, from the API's `walletAmount` and `gatewayAmount`); the breakdown's "Paid" row is the Razorpay part. Dates use `formatPlanDate`. Expanding a row shows the line breakdown when the API kept one. `VoucherField` shows "Applies to <plan>" for a plan-target voucher and "₹X off <plan>" once the quote carries that voucher's line discount.
 
 ## Plan vouchers (admin)
 

@@ -1,24 +1,13 @@
 import type { QuoteResponse } from '@inventory-platform/plan/types';
 import type { PlanTransactionResponse, PurchaseLine } from '../model/types';
+import { formatPlanDate } from './planDate';
 import { formatRupees } from './planPricing';
 
 /** Labels for the Past purchases list. Formatting only: every figure comes from the API. */
 
-function indianDay(iso: string | null | undefined, year: 'numeric' | '2-digit'): string | null {
-  if (!iso) return null;
-  const time = Date.parse(iso);
-  if (Number.isNaN(time)) return null;
-  return new Date(time).toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year,
-    timeZone: 'Asia/Kolkata',
-  });
-}
-
 /** "12 Nov 2026" */
 export function purchaseDateLabel(iso: string | null): string {
-  return indianDay(iso, 'numeric') ?? '';
+  return formatPlanDate(iso) ?? '';
 }
 
 function durationLabel(months: number | null): string | null {
@@ -40,10 +29,10 @@ export function purchaseTitle(tx: PlanTransactionResponse): string {
   return duration ? `${tx.planName} · ${duration}` : tx.planName;
 }
 
-/** "12 Nov 26 – 12 Nov 27", "≈ " prefixed when estimated; "" when there is no term. */
+/** "12 Nov 2026 – 12 Nov 2027", "≈ " prefixed when estimated; "" when there is no term. */
 export function periodLabel(tx: PlanTransactionResponse): string {
-  const start = indianDay(tx.termStartsAt, '2-digit');
-  const end = indianDay(tx.termEndsAt, '2-digit');
+  const start = formatPlanDate(tx.termStartsAt);
+  const end = formatPlanDate(tx.termEndsAt);
   if (!end) return '';
   const range = start ? `${start} – ${end}` : `Until ${end}`;
   return tx.termEstimated ? `≈ ${range}` : range;
@@ -98,9 +87,29 @@ export function planVoucherText(
   return discount != null ? `${formatRupees(discount)} off ${planName}` : `Applies to ${planName}`;
 }
 
-/** The amount paid; a dash when the API hides it (assigned plans have no verified charge). */
+/**
+ * The full price of the purchase, wallet part included (API `totalAmount`; `amount` from an older
+ * API); a dash when the API hides it (assigned plans have no verified charge).
+ */
 export function amountLabel(tx: PlanTransactionResponse): string {
-  return tx.amount == null ? '—' : formatRupees(tx.amount);
+  const total = tx.totalAmount ?? tx.amount;
+  return total == null ? '—' : formatRupees(total);
+}
+
+/** What Razorpay charged, for the "Paid" row of the breakdown; a dash when hidden. */
+export function gatewayAmountLabel(tx: PlanTransactionResponse): string {
+  const paid = tx.gatewayAmount ?? tx.amount;
+  return paid == null ? '—' : formatRupees(paid);
+}
+
+/**
+ * How the total was paid, from the API's parts: "₹300.00 wallet + ₹200.00 Razorpay", or
+ * "Paid from wallet" when Razorpay took nothing; "" when the wallet was not used.
+ */
+export function paymentSplitLabel(tx: PlanTransactionResponse): string {
+  if (tx.walletAmount == null || tx.walletAmount <= 0) return '';
+  if (tx.gatewayAmount == null || tx.gatewayAmount <= 0) return 'Paid from wallet';
+  return `${formatRupees(tx.walletAmount)} wallet + ${formatRupees(tx.gatewayAmount)} Razorpay`;
 }
 
 /** Plain-words tag for an order that is not finished; null for finished or order-less rows. */

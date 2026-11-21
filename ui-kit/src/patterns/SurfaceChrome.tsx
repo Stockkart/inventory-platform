@@ -131,6 +131,7 @@ export const surfaceChrome = {
   planTopUp: styles.planTopUp,
   planTopUpToggle: styles.planTopUpToggle,
   planTopUpHeading: styles.planTopUpHeading,
+  planPurchaseAmount: styles.planPurchaseAmount,
   planTopUpSupport: styles.planTopUpSupport,
   planTopUpChevron: styles.planTopUpChevron,
   planTopUpChevronOpen: styles.planTopUpChevronOpen,

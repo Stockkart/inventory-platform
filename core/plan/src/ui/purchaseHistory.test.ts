@@ -3,9 +3,11 @@ import type { QuoteResponse } from '@inventory-platform/plan/types';
 import type { PlanTransactionResponse } from '../model/types';
 import {
   amountLabel,
+  gatewayAmountLabel,
   hasPurchaseDetail,
   lineEachLabel,
   paidLabel,
+  paymentSplitLabel,
   planVoucherText,
   periodLabel,
   purchaseDateLabel,
@@ -88,18 +90,18 @@ describe('purchaseTitle', () => {
 
 describe('periodLabel', () => {
   it('shows the granted term', () => {
-    expect(periodLabel(tx())).toBe('12 Nov 26 – 12 Nov 27');
+    expect(periodLabel(tx())).toBe('12 Nov 2026 – 12 Nov 2027');
   });
   it('prefixes an estimated term with ≈', () => {
     expect(periodLabel(tx({ kind: 'ASSIGNED', termEstimated: true }))).toBe(
-      '≈ 12 Nov 26 – 12 Nov 27',
+      '≈ 12 Nov 2026 – 12 Nov 2027',
     );
   });
   it('is empty without a term', () => {
     expect(periodLabel(tx({ termStartsAt: null, termEndsAt: null }))).toBe('');
   });
   it('shows only the end for an add-on order that has no start', () => {
-    expect(periodLabel(tx({ kind: 'ADD_ON_ONLY', termStartsAt: null }))).toBe('Until 12 Nov 27');
+    expect(periodLabel(tx({ kind: 'ADD_ON_ONLY', termStartsAt: null }))).toBe('Until 12 Nov 2027');
   });
 });
 
@@ -130,12 +132,40 @@ describe('refundLabel', () => {
   });
 });
 
+const split = (walletAmount: number, gatewayAmount: number) =>
+  tx({
+    amount: gatewayAmount,
+    walletCredit: walletAmount,
+    totalAmount: walletAmount + gatewayAmount,
+    walletAmount,
+    gatewayAmount,
+  });
+
 describe('amountLabel', () => {
-  it('formats the paid amount', () => {
+  it('shows the full amount from the API, wallet part included', () => {
+    expect(amountLabel(split(300, 200))).toBe('₹500.00');
+    expect(amountLabel(split(500, 0))).toBe('₹500.00');
+  });
+  it('falls back to the paid amount from an older API', () => {
     expect(amountLabel(tx())).toBe('₹5,999.00');
   });
   it('is a dash when the amount is hidden', () => {
     expect(amountLabel(tx({ kind: 'ASSIGNED', amount: null }))).toBe('—');
+  });
+});
+
+describe('paymentSplitLabel / gatewayAmountLabel', () => {
+  it('splits a mixed payment into wallet and Razorpay parts', () => {
+    expect(paymentSplitLabel(split(300, 200))).toBe('₹300.00 wallet + ₹200.00 Razorpay');
+    expect(gatewayAmountLabel(split(300, 200))).toBe('₹200.00');
+  });
+  it('says paid from wallet when Razorpay took nothing', () => {
+    expect(paymentSplitLabel(split(500, 0))).toBe('Paid from wallet');
+  });
+  it('is empty when the wallet was not used or the API sent no parts', () => {
+    expect(paymentSplitLabel(split(0, 500))).toBe('');
+    expect(paymentSplitLabel(tx())).toBe('');
+    expect(paymentSplitLabel(tx({ kind: 'ASSIGNED', amount: null }))).toBe('');
   });
 });
 

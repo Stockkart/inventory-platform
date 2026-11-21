@@ -15,9 +15,11 @@ import type { PlanTransactionResponse, PurchaseLine } from '../model/types';
 import { formatRupees } from './planPricing';
 import {
   amountLabel,
+  gatewayAmountLabel,
   hasPurchaseDetail,
   lineEachLabel,
   paidLabel,
+  paymentSplitLabel,
   periodLabel,
   purchaseDateLabel,
   purchaseTitle,
@@ -88,7 +90,7 @@ function PurchaseDetail({ tx }: { tx: PlanTransactionResponse }) {
             {paidLabel(tx)}
           </Text>
           <Text variant="caption" weight="semibold">
-            {amountLabel(tx)}
+            {gatewayAmountLabel(tx)}
           </Text>
         </Inline>
       ) : null}
@@ -102,6 +104,7 @@ function PurchaseRow({ tx }: { tx: PlanTransactionResponse }) {
   const period = periodLabel(tx);
   const refund = refundLabel(tx);
   const status = statusTagLabel(tx);
+  const split = paymentSplitLabel(tx);
 
   const summary = (
     <>
@@ -118,9 +121,16 @@ function PurchaseRow({ tx }: { tx: PlanTransactionResponse }) {
           {period ? ` · ${period}` : ''}
         </Text>
       </Box>
-      <Text as="span" weight="semibold">
-        {amountLabel(tx)}
-      </Text>
+      <Box as="span" className={surfaceChrome.planPurchaseAmount}>
+        <Text as="span" weight="semibold">
+          {amountLabel(tx)}
+        </Text>
+        {split ? (
+          <Text as="span" variant="caption" color="secondary">
+            {split}
+          </Text>
+        ) : null}
+      </Box>
     </>
   );
 
