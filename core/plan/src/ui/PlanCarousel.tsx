@@ -7,6 +7,7 @@ import {
   planYearlyPrice,
   plansForSelection,
 } from './planPricing';
+import { freeTrialLabel } from './trialLabel';
 
 function planCardProps(
   plan: PlanResponse,
@@ -35,6 +36,7 @@ function planCardProps(
       plan.price && plan.price > 0 ? `One-time ₹${plan.price.toLocaleString('en-IN')}` : null,
     features,
     showTrialBadge: showTrial,
+    trialLabel: freeTrialLabel(plan.trialDays),
     highlighted: Boolean(options.isCenter),
     showPopularBadge: showPopular,
     ctaLabel: options.ctaLabel,

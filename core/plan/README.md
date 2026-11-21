@@ -29,6 +29,10 @@ My Plan (`PlanStatusPage`) uses the `surfaceChrome.planStatus*` / `planUsage*` /
 
 The landing-page carousel (ui-kit `PlanCard`) and the `/plans` cards (`surfaceChrome.planCard*`) share the brochure look: amber "Most popular" pill, 2px navy border on the highlighted plan, navy plan name, green tick circles. Change both together.
 
+## Trial length
+
+Trial badges and the My Plan trial line read the trial length from the API (`trialDays` on the plan list and on plan status, inventory-api `plan.trial-days`) through `trialLabel` / `freeTrialLabel` (`ui/trialLabel.ts`); an older API without the field shows "Free trial" with no number. ui-kit `PlanCard` takes the text as `trialLabel`.
+
 ## Related
 
 - `@inventory-platform/contracts` — plan types / guards
