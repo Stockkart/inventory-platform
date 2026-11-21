@@ -21,31 +21,31 @@ const preview = (over: Partial<PlanVoucherPreviewResponse> = {}): PlanVoucherPre
 describe('describePlanVoucherPreview', () => {
   it('writes the price line from the API figures', () => {
     expect(describePlanVoucherPreview(preview())).toEqual({
-      text: 'Starter ₹7,999 → ₹6,999 · base ₹4,999 · max ₹3,000 off (37.50%)',
+      text: 'Starter ₹7,999.00 → ₹6,999.00 · base ₹4,999.00 · max ₹3,000.00 off (37.50%)',
       allowed: true,
     });
   });
 
   it('falls back to the minimum when the plan has no base price', () => {
     const { text } = describePlanVoucherPreview(preview({ basePrice: null, floor: 1 }));
-    expect(text).toBe('Starter ₹7,999 → ₹6,999 · minimum ₹1 · max ₹3,000 off (37.50%)');
+    expect(text).toBe('Starter ₹7,999.00 → ₹6,999.00 · minimum ₹1.00 · max ₹3,000.00 off (37.50%)');
   });
 
   it('leaves out the max when the API sent none', () => {
     const { text } = describePlanVoucherPreview(preview({ maxFlat: null, maxPercent: null }));
-    expect(text).toBe('Starter ₹7,999 → ₹6,999 · base ₹4,999');
+    expect(text).toBe('Starter ₹7,999.00 → ₹6,999.00 · base ₹4,999.00');
   });
 
   it('shows the max without a percent when the API sent none', () => {
     const { text } = describePlanVoucherPreview(preview({ maxPercent: null }));
-    expect(text).toBe('Starter ₹7,999 → ₹6,999 · base ₹4,999 · max ₹3,000 off');
+    expect(text).toBe('Starter ₹7,999.00 → ₹6,999.00 · base ₹4,999.00 · max ₹3,000.00 off');
   });
 
   it('leaves out base and minimum when the API sent neither', () => {
     const { text } = describePlanVoucherPreview(
       preview({ basePrice: null, floor: null, maxFlat: null, maxPercent: null }),
     );
-    expect(text).toBe('Starter ₹7,999 → ₹6,999');
+    expect(text).toBe('Starter ₹7,999.00 → ₹6,999.00');
   });
 
   it('shows the API message when not allowed', () => {

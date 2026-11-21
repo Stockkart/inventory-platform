@@ -109,18 +109,18 @@ describe('refundLabel', () => {
       refundLabel(
         tx({ refundedToPaymentMethod: 4999, walletCreditReturned: 2000, status: 'REFUNDED' }),
       ),
-    ).toBe('Refunded ₹4,999 to UPI · ₹2,000 to wallet');
+    ).toBe('Refunded ₹4,999.00 to UPI · ₹2,000.00 to wallet');
   });
   it('shows only the payment-method part on a partial refund', () => {
-    expect(refundLabel(tx({ refundedToPaymentMethod: 1000 }))).toBe('Refunded ₹1,000 to UPI');
+    expect(refundLabel(tx({ refundedToPaymentMethod: 1000 }))).toBe('Refunded ₹1,000.00 to UPI');
   });
   it('drops the method when it is missing', () => {
     expect(refundLabel(tx({ paymentMethod: null, refundedToPaymentMethod: 1000 }))).toBe(
-      'Refunded ₹1,000',
+      'Refunded ₹1,000.00',
     );
   });
   it('shows only the wallet part when nothing went to the gateway', () => {
-    expect(refundLabel(tx({ walletCreditReturned: 2000 }))).toBe('Refunded ₹2,000 to wallet');
+    expect(refundLabel(tx({ walletCreditReturned: 2000 }))).toBe('Refunded ₹2,000.00 to wallet');
   });
   it('is plain "Refunded" for a refunded order with no figures', () => {
     expect(refundLabel(tx({ status: 'REFUNDED' }))).toBe('Refunded');
@@ -132,7 +132,7 @@ describe('refundLabel', () => {
 
 describe('amountLabel', () => {
   it('formats the paid amount', () => {
-    expect(amountLabel(tx())).toBe('₹5,999');
+    expect(amountLabel(tx())).toBe('₹5,999.00');
   });
   it('is a dash when the amount is hidden', () => {
     expect(amountLabel(tx({ kind: 'ASSIGNED', amount: null }))).toBe('—');
@@ -173,7 +173,7 @@ describe('hasPurchaseDetail / paidLabel / lineEachLabel', () => {
     expect(paidLabel(tx({ paymentMethod: null }))).toBe('Paid');
   });
   it('shows the unit price of a multi-quantity line', () => {
-    expect(lineEachLabel({ ...addOnLine('Extra user', 2), unitPrice: 999 })).toBe('₹999 each');
+    expect(lineEachLabel({ ...addOnLine('Extra user', 2), unitPrice: 999 })).toBe('₹999.00 each');
     expect(lineEachLabel(addOnLine('SMS pack', 1))).toBe('');
   });
 });
@@ -193,7 +193,7 @@ describe('planVoucherText', () => {
     ],
   } as unknown as QuoteResponse;
   it('shows the discount of the matching quote line', () => {
-    expect(planVoucherText('STARTER1K', 'Starter', quote)).toBe('₹1,000 off Starter');
+    expect(planVoucherText('STARTER1K', 'Starter', quote)).toBe('₹1,000.00 off Starter');
   });
   it('falls back when no line matches or there is no quote', () => {
     expect(planVoucherText('OTHER', 'Starter', quote)).toBe('Applies to Starter');
