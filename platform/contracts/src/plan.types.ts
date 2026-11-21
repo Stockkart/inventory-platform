@@ -133,9 +133,60 @@ export interface QuoteItem {
   name: string;
   quantity: number;
   unitPrice: number;
+  /** unitPrice × quantity, before discounts (server-side). */
+  grossAmount: number;
   discount: number;
   lineTotal: number;
   itemSource: QuoteItemSource;
+  /** Voucher that added or discounted this line. */
+  voucherCode?: string | null;
+}
+
+export type AddOnBillingType = 'ANNUAL' | 'ONE_TIME';
+export type AddOnGrantType = 'FEATURE' | 'SEATS' | 'SMS' | 'OCR_CREDITS';
+
+/** Add-on sold at checkout, from GET /plans/addons. */
+export interface AddOnResponse {
+  code: string;
+  name: string;
+  description: string | null;
+  price: number;
+  billingType: AddOnBillingType;
+  grantType: AddOnGrantType;
+  grantsFeature: PlanFeature | null;
+  grantsQuantity: number | null;
+  stackable: boolean;
+  maxQuantity: number | null;
+  displayOrder: number | null;
+}
+
+export type VoucherRejection =
+  | 'NOT_FOUND'
+  | 'INACTIVE'
+  | 'EXPIRED'
+  | 'EXHAUSTED'
+  | 'WRONG_SHOP'
+  | 'NOT_APPLICABLE_TO_CART'
+  | 'ALREADY_REDEEMED';
+
+export type VoucherType = 'FREE_ADDON' | 'PERCENT_OFF' | 'FLAT_OFF';
+
+/** GET /plans/vouchers/validate. Whether a code is usable; the money comes from the quote. */
+export interface VoucherCheckResponse {
+  code: string;
+  valid: boolean;
+  reason: VoucherRejection | null;
+  addOnCode: string | null;
+  type: VoucherType | null;
+  value: number | null;
+  quantity: number | null;
+  validTo: string | null;
+}
+
+/** `details` on a VOUCHER_REJECTED error from quote or checkout. */
+export interface VoucherRejectedDetails {
+  voucherCode?: string;
+  reason?: VoucherRejection;
 }
 
 /**

@@ -1,4 +1,5 @@
 import {
+  keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
@@ -8,8 +9,9 @@ import {
 import { useAuthStore } from '@inventory-platform/session';
 import type { ShopEntitlementsResponse } from '@inventory-platform/contracts';
 import type {
+  AddOnResponse,
   CampaignResponse,
-  CreatePlanCheckoutRequest,
+  CreatePlanCheckoutInput,
   PlanCheckoutResponse,
   PlanResponse,
   PlanTransactionResponse,
@@ -18,6 +20,7 @@ import type {
   ShopPlanStatusResponse,
   VerifyPlanPaymentRequest,
   VerifyPlanPaymentResponse,
+  VoucherCheckResponse,
 } from '@inventory-platform/plan/types';
 import { plansApi } from '../api/plans.api';
 import { planKeys } from './keys';
@@ -81,7 +84,7 @@ export function usePlanTransactionsQuery(
   });
 }
 
-/** Server-priced cart. Pass null until the cart has a plan. */
+/** Server-priced cart. Pass null until the cart has a plan. Keeps the last total visible while a cart edit re-prices. */
 export function usePlanQuoteQuery(
   request: QuoteRequest | null,
   options?: Omit<UseQueryOptions<QuoteResponse>, 'queryKey' | 'queryFn' | 'enabled'>,
@@ -93,6 +96,7 @@ export function usePlanQuoteQuery(
       return plansApi.quote(request);
     },
     enabled: request != null,
+    placeholderData: keepPreviousData,
     ...options,
   });
 }
@@ -110,8 +114,28 @@ export function useActiveCampaignQuery(
   });
 }
 
+export function useAddOnsQuery(
+  options?: Omit<UseQueryOptions<AddOnResponse[]>, 'queryKey' | 'queryFn'>,
+) {
+  return useQuery({
+    queryKey: planKeys.addOns(),
+    queryFn: () => plansApi.listAddOns(),
+    staleTime: 5 * 60_000,
+    ...options,
+  });
+}
+
+export function useValidateVoucherMutation(
+  options?: UseMutationOptions<VoucherCheckResponse, Error, string>,
+) {
+  return useMutation({
+    mutationFn: (code) => plansApi.validateVoucher(code),
+    ...options,
+  });
+}
+
 export function useCreatePlanCheckoutMutation(
-  options?: UseMutationOptions<PlanCheckoutResponse, Error, CreatePlanCheckoutRequest>,
+  options?: UseMutationOptions<PlanCheckoutResponse, Error, CreatePlanCheckoutInput>,
 ) {
   return useMutation({
     mutationFn: (data) => plansApi.createCheckout(data),
