@@ -4,7 +4,6 @@ export const PLAN_ENDPOINTS = {
   BY_ID: (id: string) => `/plans/${id}`,
   SHOP_STATUS: '/plans/shop/status',
   SHOP_SUGGESTED: (shopId: string) => `/plans/shop/${shopId}/suggested`,
-  SHOP_ASSIGN: (shopId: string) => `/plans/shop/${shopId}/assign`,
   SHOP_USAGE: '/plans/shop/usage',
   SHOP_TRANSACTIONS: '/plans/shop/transactions',
   SHOP_WALLET: '/plans/shop/wallet',
