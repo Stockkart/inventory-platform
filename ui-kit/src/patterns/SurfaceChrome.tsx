@@ -105,6 +105,7 @@ export const surfaceChrome = {
   planCardFeature: styles.planCardFeature,
   planCardCheck: styles.planCardCheck,
   planCardCta: styles.planCardCta,
+  planCardNote: styles.planCardNote,
   planCardCurrent: styles.planCardCurrent,
   planCardHighlight: styles.planCardHighlight,
   reminderPriority: styles.reminderPriority,

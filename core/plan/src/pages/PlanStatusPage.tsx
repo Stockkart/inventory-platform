@@ -13,6 +13,7 @@ import {
   cn,
 } from '@inventory-platform/ui-kit';
 import { PlanGrid } from '../ui/PlanGrid';
+import { formatPlanDate } from '../ui/planDate';
 import { FEATURE_LABELS, formatRupees } from '../ui/planPricing';
 import { boughtScansLeftLabel, isPlanFeature, splitFeatures, usageOfLimit } from '../entitlements';
 import { CampaignBanner } from '../campaign';
@@ -63,8 +64,6 @@ export function PlanStatusPage() {
     return null;
   }
 
-  const formatDate = (iso: string | null) =>
-    iso ? new Date(iso).toLocaleDateString('en-IN') : '—';
   const currentPlanIndex = status.plan ? plans.findIndex((p) => p.id === status.planId) : -1;
   const planName = status.trial ? 'Free trial' : status.plan?.planName ?? 'No active plan';
   const planStateLabel = status.trial
@@ -144,7 +143,7 @@ export function PlanStatusPage() {
           </Box>
           <Text as="p" className={surfaceChrome.planStatusMeta}>
             {status.trial ? '30-day trial · ' : null}
-            {renewLabel} {formatDate(status.planExpiryDate)}
+            {renewLabel} {formatPlanDate(status.planExpiryDate) ?? '—'}
           </Text>
         </Box>
         {!status.trial && currentPlanIndex >= 0 ? (
