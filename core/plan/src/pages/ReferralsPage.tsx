@@ -25,12 +25,10 @@ import {
   rewardStatusBadge,
   walletSourceLabel,
 } from '../referrals';
+import { formatPlanDate } from '../ui/planDate';
 import { formatRupees } from '../ui/planPricing';
 
-const formatDate = (iso: string | null) =>
-  iso
-    ? new Date(iso).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
-    : '—';
+const formatDate = (iso: string | null) => formatPlanDate(iso) ?? '—';
 
 function Figure({ label, value }: { label: string; value: string }) {
   return (
