@@ -4,6 +4,7 @@ export const ADMIN_PATHS = {
   home: '/',
   login: '/login',
   changePassword: '/change-password',
+  resetPassword: '/reset-password',
   mis: '/mis',
   referrals: '/referrals',
   vouchers: '/vouchers',

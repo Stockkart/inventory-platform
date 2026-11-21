@@ -9,4 +9,5 @@ export { ADMIN_ROUTE_FILES } from './routes';
 export { AdminLayout } from './ui/AdminLayout';
 export { AdminLoginPage } from './pages/AdminLoginPage';
 export { AdminChangePasswordPage } from './pages/AdminChangePasswordPage';
+export { AdminResetPasswordPage } from './pages/AdminResetPasswordPage';
 export { AdminUsersPage } from './pages/AdminUsersPage';

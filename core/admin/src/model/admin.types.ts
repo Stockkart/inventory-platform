@@ -41,8 +41,20 @@ export interface AdminReasonBody {
   reason?: string;
 }
 
-/** Returned once when an admin is added or reset; the server does not keep the password. */
+/** Returned once when an admin is added (and by older APIs on reset); the server does not keep it. */
 export interface AdminPasswordIssued {
   admin: AdminAccount;
   temporaryPassword: string;
+}
+
+/**
+ * Reset answer: the admin, who gets an email link to set a new password. Older APIs instead
+ * returned a temporary password to pass on.
+ */
+export type AdminPasswordResetResult = AdminAccount | AdminPasswordIssued;
+
+/** Body of the public reset-link request. */
+export interface AdminResetPasswordRequest {
+  token: string;
+  newPassword: string;
 }

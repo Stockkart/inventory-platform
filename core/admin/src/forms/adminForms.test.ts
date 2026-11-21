@@ -5,6 +5,8 @@ import {
   toChangePasswordRequest,
   toCreateAdminRequest,
   toLoginRequest,
+  issuedPassword,
+  toResetPasswordRequest,
 } from './adminForms';
 
 describe('toLoginRequest', () => {
@@ -93,5 +95,44 @@ describe('adminStatusBadge', () => {
   it('flags admins who still have a temporary password', () => {
     expect(adminStatusBadge({ ...admin, mustChangePassword: true }).label).toBe('Password not set');
     expect(adminStatusBadge(admin).label).toBe('Active');
+  });
+});
+
+describe('toResetPasswordRequest', () => {
+  const good = { newPassword: 'a-long-password', confirmPassword: 'a-long-password' };
+
+  it('needs the token from the link', () => {
+    expect(toResetPasswordRequest('', good)).toMatch(/incomplete/);
+  });
+
+  it('checks length and the repeat', () => {
+    expect(toResetPasswordRequest('t', { newPassword: 'short', confirmPassword: 'short' })).toMatch(
+      /characters/,
+    );
+    expect(toResetPasswordRequest('t', { ...good, confirmPassword: 'other-password' })).toBe(
+      'The new passwords do not match.',
+    );
+    expect(toResetPasswordRequest('t', good)).toEqual({
+      token: 't',
+      newPassword: 'a-long-password',
+    });
+  });
+});
+
+describe('issuedPassword', () => {
+  const admin = {
+    id: 'a1',
+    email: 'ops@example.com',
+    name: 'Ops',
+    active: true,
+    mustChangePassword: true,
+  } as never;
+
+  it('reads a temporary password from an older API', () => {
+    expect(issuedPassword({ admin, temporaryPassword: 'x' })?.temporaryPassword).toBe('x');
+  });
+
+  it('is null when the API emailed a link instead', () => {
+    expect(issuedPassword(admin)).toBeNull();
   });
 });

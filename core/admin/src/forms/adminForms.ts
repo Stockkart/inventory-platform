@@ -4,6 +4,9 @@ import type {
   AdminChangePasswordRequest,
   AdminCreateRequest,
   AdminLoginRequest,
+  AdminPasswordIssued,
+  AdminPasswordResetResult,
+  AdminResetPasswordRequest,
 } from '@inventory-platform/admin/types';
 import type { BadgeVariant } from '@inventory-platform/ui-kit';
 
@@ -38,6 +41,32 @@ export function toChangePasswordRequest(
   }
   if (form.newPassword !== form.confirmPassword) return 'The new passwords do not match.';
   return { currentPassword: form.currentPassword, newPassword: form.newPassword };
+}
+
+export interface ResetPasswordForm {
+  newPassword: string;
+  confirmPassword: string;
+}
+
+/** Reset-link form: a token from the link and a new password typed twice. */
+export function toResetPasswordRequest(
+  token: string,
+  form: ResetPasswordForm,
+): AdminResetPasswordRequest | string {
+  if (!token) return 'This reset link is incomplete. Ask another admin to send a new one.';
+  if (
+    form.newPassword.length < ADMIN_PASSWORD_MIN ||
+    form.newPassword.length > ADMIN_PASSWORD_MAX
+  ) {
+    return `New password must be ${ADMIN_PASSWORD_MIN} to ${ADMIN_PASSWORD_MAX} characters.`;
+  }
+  if (form.newPassword !== form.confirmPassword) return 'The new passwords do not match.';
+  return { token, newPassword: form.newPassword };
+}
+
+/** The temporary password in a reset answer, when an older API still returns one. */
+export function issuedPassword(result: AdminPasswordResetResult): AdminPasswordIssued | null {
+  return 'temporaryPassword' in result ? result : null;
 }
 
 export function toCreateAdminRequest(form: AdminCreateRequest): AdminCreateRequest | string {
