@@ -24,6 +24,11 @@ export const PLAN_ENDPOINTS = {
   ADMIN_REFERRAL_REWARDS: '/admin/referrals/rewards',
   ADMIN_REFERRAL_REWARD_ACTION: (id: string, action: 'approve' | 'void' | 'clawback') =>
     `/admin/referrals/rewards/${id}/${action}`,
+  ADMIN_ADDONS: '/admin/addons',
+  ADMIN_VOUCHERS: '/admin/vouchers',
+  ADMIN_VOUCHER: (id: string) => `/admin/vouchers/${id}`,
+  ADMIN_VOUCHER_ACTIVE: (id: string) => `/admin/vouchers/${id}/active`,
+  ADMIN_VOUCHER_REDEMPTIONS: (id: string) => `/admin/vouchers/${id}/redemptions`,
   ADMIN_WALLET: (shopId: string) => `/admin/wallets/${encodeURIComponent(shopId)}`,
   ADMIN_WALLET_ADJUSTMENTS: (shopId: string) =>
     `/admin/wallets/${encodeURIComponent(shopId)}/adjustments`,
