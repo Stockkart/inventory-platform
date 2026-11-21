@@ -11,7 +11,7 @@ import {
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import type { AdminVoucher } from '@inventory-platform/plan/types';
-import { useUpdateVoucherMutation } from '../hooks';
+import { useUpdateVoucherMutation } from '../../queries/admin.hooks';
 import { adminErrorMessage } from '../format';
 import { toUpdateRequest, voucherEditState, type VoucherEditState } from './voucherForm';
 

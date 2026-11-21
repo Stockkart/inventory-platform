@@ -5,7 +5,9 @@ import type {
   AdminActiveRequest,
   CampaignRequest,
   PlanAdminRequest,
+  PlanVoucherPreviewRequest,
   VoucherGenerateRequest,
+  VoucherListFilters,
   VoucherUpdateRequest,
   ReferralApprovalRequest,
   ReferralAttributionStatus,
@@ -13,9 +15,9 @@ import type {
   WalletAdjustmentRequest,
   PlanGrantRequest,
 } from '@inventory-platform/plan/types';
-import { planKeys } from '../queries/keys';
-import { planAdminApi } from './admin.api';
-import { VOUCHER_PAGE_SIZE } from './vouchers/voucherForm';
+import { planAdminApi } from '../api/admin.api';
+import { planKeys } from './keys';
+import { VOUCHER_PAGE_SIZE } from '../admin/vouchers/voucherForm';
 
 export function useAdminAttributionsQuery(status: ReferralAttributionStatus) {
   return useQuery({
@@ -176,11 +178,25 @@ export function useSetPlanActiveMutation() {
   });
 }
 
-export function useAdminVouchersQuery(addOnCode: string | null, page: number) {
+export function useAdminVouchersQuery(filters: VoucherListFilters, page: number) {
   return useQuery({
-    queryKey: planKeys.adminVoucherList(addOnCode, page),
-    queryFn: () => planAdminApi.listVouchers(addOnCode, page, VOUCHER_PAGE_SIZE),
+    queryKey: planKeys.adminVoucherList(filters, page),
+    queryFn: () => planAdminApi.listVouchers(filters, page, VOUCHER_PAGE_SIZE),
     placeholderData: keepPreviousData,
+  });
+}
+
+/** Live figures for a plan voucher being typed; null request means nothing to preview yet. */
+export function usePlanVoucherPreview(req: PlanVoucherPreviewRequest | null) {
+  return useQuery({
+    queryKey: planKeys.adminVoucherPlanPreview(
+      req?.planCode ?? '',
+      req?.type ?? '',
+      req?.value ?? null,
+    ),
+    queryFn: () => planAdminApi.previewPlanVoucher(req as PlanVoucherPreviewRequest),
+    enabled: req !== null,
+    retry: false,
   });
 }
 

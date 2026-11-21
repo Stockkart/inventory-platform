@@ -17,14 +17,14 @@ import {
   TableHeaderCell,
   TableRow,
   Text,
+  ReasonDialog,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import {
   useAdjustWalletMutation,
   useAdminWalletQuery,
   useWalletAdjustmentPreviewQuery,
-} from '../hooks';
-import { ReasonDialog } from '../ReasonDialog';
+} from '../../queries/admin.hooks';
 import {
   adminErrorMessage,
   formatAdminDate,

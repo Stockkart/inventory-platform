@@ -16,11 +16,11 @@ import {
   TableLoadingRow,
   TableRow,
   Text,
+  ReasonDialog,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import type { AdminReferralReward, ReferralRewardStatus } from '@inventory-platform/plan/types';
-import { useAdminRewardsQuery, useRewardActionMutation } from '../hooks';
-import { ReasonDialog } from '../ReasonDialog';
+import { useAdminRewardsQuery, useRewardActionMutation } from '../../queries/admin.hooks';
 import { adminErrorMessage, formatAdminDate } from '../format';
 import { rewardStatusBadge } from '../../referrals';
 import { formatRupees } from '../../ui/planPricing';

@@ -1,5 +1,9 @@
 import { createQueryKeyFactory } from '@inventory-platform/query';
-import type { PlanMisParams, QuoteRequest } from '@inventory-platform/plan/types';
+import type {
+  PlanMisParams,
+  QuoteRequest,
+  VoucherListFilters,
+} from '@inventory-platform/plan/types';
 
 const base = createQueryKeyFactory('plan');
 
@@ -33,8 +37,18 @@ export const planKeys = {
   adminShopAddOns: (shopId: string) => [...base.all, 'admin-shop-addons', shopId] as const,
   adminCampaigns: () => [...base.all, 'admin-campaigns'] as const,
   adminVouchers: () => [...base.all, 'admin-vouchers'] as const,
-  adminVoucherList: (addOnCode: string | null, page: number) =>
-    [...base.all, 'admin-vouchers', 'list', addOnCode ?? 'all', page] as const,
+  adminVoucherList: (filters: VoucherListFilters, page: number) =>
+    [
+      ...base.all,
+      'admin-vouchers',
+      'list',
+      filters.addOnCode ?? 'all',
+      filters.planCode ?? 'all',
+      filters.target ?? 'all',
+      page,
+    ] as const,
+  adminVoucherPlanPreview: (planCode: string, type: string, value: number | null) =>
+    [...base.all, 'admin-vouchers', 'plan-preview', planCode, type, value] as const,
   adminVoucherRedemptions: (id: string) =>
     [...base.all, 'admin-vouchers', 'redemptions', id] as const,
   adminWalletPreview: (shopId: string, amount: number) =>

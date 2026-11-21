@@ -20,19 +20,22 @@ import {
   TableLoadingRow,
   TableRow,
   Text,
+  ReasonDialog,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
-import type { AdminVoucher } from '@inventory-platform/plan/types';
+import type { AdminVoucher, VoucherTarget } from '@inventory-platform/plan/types';
 import {
   useAdminAddOnsQuery,
   useAdminVouchersQuery,
   useSetVoucherActiveMutation,
-} from '../admin/hooks';
-import { ReasonDialog } from '../admin/ReasonDialog';
+} from '../queries/admin.hooks';
 import { adminErrorMessage, formatAdminDate } from '../admin/format';
 import {
+  describeVoucherTarget,
   describeVoucherValue,
   isLastVoucherPage,
+  TARGET_OPTIONS,
+  voucherListFilters,
   voucherUsage,
 } from '../admin/vouchers/voucherForm';
 import { GenerateVoucherModal } from '../admin/vouchers/GenerateVoucherModal';
@@ -48,13 +51,14 @@ function validity(voucher: AdminVoucher): string {
 
 export function VouchersAdminPage() {
   const [addOnCode, setAddOnCode] = useState('');
+  const [target, setTarget] = useState<VoucherTarget | ''>('');
   const [page, setPage] = useState(0);
   const [generating, setGenerating] = useState(false);
   const [editing, setEditing] = useState<AdminVoucher | null>(null);
   const [viewing, setViewing] = useState<AdminVoucher | null>(null);
   const [toggling, setToggling] = useState<AdminVoucher | null>(null);
   const addOns = useAdminAddOnsQuery();
-  const query = useAdminVouchersQuery(addOnCode || null, page);
+  const query = useAdminVouchersQuery(voucherListFilters(addOnCode, target), page);
   const activeMutation = useSetVoucherActiveMutation();
   const rows = query.data ?? [];
   const catalogue = addOns.data ?? [];
@@ -89,6 +93,17 @@ export function VouchersAdminPage() {
         <CardBody>
           <Stack gap="md">
             <Inline gap="md" align="end">
+              <FormField label="Applies to" htmlFor="voucher-filter-target">
+                <Select
+                  id="voucher-filter-target"
+                  value={target}
+                  options={[{ value: '', label: 'All' }, ...TARGET_OPTIONS]}
+                  onChange={(e) => {
+                    setTarget(e.target.value as VoucherTarget | '');
+                    setPage(0);
+                  }}
+                />
+              </FormField>
               <FormField label="Add-on" htmlFor="voucher-filter-addon">
                 <Select
                   id="voucher-filter-addon"
@@ -101,6 +116,7 @@ export function VouchersAdminPage() {
                     setAddOnCode(e.target.value);
                     setPage(0);
                   }}
+                  disabled={target === 'PLAN'}
                 />
               </FormField>
               <Text variant="caption" color="secondary">
@@ -123,7 +139,7 @@ export function VouchersAdminPage() {
               <TableHead>
                 <TableRow>
                   <TableHeaderCell>Code</TableHeaderCell>
-                  <TableHeaderCell>Add-on</TableHeaderCell>
+                  <TableHeaderCell>Applies to</TableHeaderCell>
                   <TableHeaderCell>Discount</TableHeaderCell>
                   <TableHeaderCell>Used</TableHeaderCell>
                   <TableHeaderCell>Valid</TableHeaderCell>
@@ -153,8 +169,8 @@ export function VouchersAdminPage() {
                         ) : null}
                       </TableCell>
                       <TableCell>
-                        {addOnName.get(v.addOnCode) ?? v.addOnCode}
-                        {v.quantity > 1 ? (
+                        {describeVoucherTarget(v, (code) => addOnName.get(code))}
+                        {v.target === 'ADD_ON' && v.quantity > 1 ? (
                           <Text as="span" variant="caption" color="secondary">
                             {' '}
                             × {v.quantity}

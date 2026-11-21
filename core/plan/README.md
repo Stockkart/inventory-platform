@@ -11,6 +11,7 @@ Subscription plans: status, payment flow, and marketing/landing plan surfaces.
 - Plans API, payment helpers, guards
 - Shop entitlements query (`useShopEntitlementsQuery`, key `planKeys.shopEntitlements(shopId)`). The dashboard layout passes it to the shell for nav and route gating. A verified payment invalidates `planKeys.all`, so the nav shows the new plan without a reload. The key carries the shop id, so a shop switch or a login as another shop never reads the previous shop's entitlements.
 - Marketing UI pieces used on public/plan pages
+- Admin tool API and Query hooks: `api/admin.api.ts`, `queries/admin.hooks.ts` (keys in `queries/keys.ts`); confirm dialogs use ui-kit `ReasonDialog`
 - Admin tool pages (MIS, referral operations, vouchers, campaigns, catalogue) as `planAdminToolRoutes`, mounted only in the admin app (`apps/admin`). The shop app has no admin routes or nav.
 
 ## Does not own
@@ -67,6 +68,16 @@ On an active paid plan (plan status `canBuyAddOnsAlone`, decided by the API) My 
 ## Coming soon: SMS and WhatsApp
 
 StockKart does not send SMS or WhatsApp yet. Every SMS / WhatsApp allowance carries the amber "Coming soon" badge (`surfaceChrome.planComingSoon`): plan card lines (`buildPlanFeatures` returns `{ label, comingSoon }`, rendered by `PlanGrid` and the ui-kit `PlanCard`), the "SMS per month" / "WhatsApp per month" rows of the comparison table, the My Plan usage tiles, and `grantType: 'SMS'` add-ons (shown, but Buy and the checkout checkbox are disabled; the API rejects them with "SMS packs are coming soon").
+
+## Past purchases
+
+`PlanPaymentPage` lists purchases with `PastPurchases` (replacing "Transaction History"), newest first as the API returns them: plan orders, add-on-only orders and admin-assigned plans (amount shown as "—"). `purchaseHistory.ts` only formats labels (title, period with "≈" when the term is estimated, refund text, status tag such as "Processing" / "Needs attention"); every figure comes from `GET /plans/shop/transactions`. Expanding a row shows the line breakdown when the API kept one. `VoucherField` shows "Applies to <plan>" for a plan-target voucher and "₹X off <plan>" once the quote carries that voucher's line discount.
+
+## Plan vouchers (admin)
+
+The admin **Vouchers** page (`VouchersAdminPage`) and `GenerateVoucherModal` create vouchers for an add-on or for a plan. **Applies to** (a `FormField required` over the ui-kit `Select`) switches the form between the two; `withTarget` (`voucherForm.ts`) resets the fields that only make sense for the other target, and a plan voucher is a percent or flat discount on one plan chosen from the plan catalogue.
+
+For a plan target the modal shows a live preview from `POST /admin/vouchers/plan-preview` (`usePlanVoucherPreview`, debounced 300 ms by ui-kit `useDebouncedValue`). The API decides what the discount comes to and whether it is allowed (for example a percent over the plan's allowed maximum); `describePlanVoucherPreview` only turns that answer into text. **Create** stays disabled while the preview is loading, behind what was typed, failed, or says the voucher is not allowed, so a voucher the API would reject cannot be submitted. No discount maths happens in the frontend. The value field only checks that it is a plain number with up to two decimals above 0 (`parseVoucherValue`); the API validates the rest. The list filters by **Applies to** and by add-on; the add-on filter is disabled while Plan is chosen. The list is paged (`GET /admin/vouchers` with `page` from 0 and `size` 100, `VOUCHER_PAGE_SIZE`): **Previous** / **Next** under the table, **Next** off when a page comes back shorter than `size` (`isLastVoucherPage`), and changing a filter goes back to the first page. Rows show the target (`describeVoucherTarget`). Shops redeem a plan voucher on the payment page (see `VoucherField` under Past purchases).
 
 ## Tests
 

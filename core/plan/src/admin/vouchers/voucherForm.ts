@@ -1,6 +1,8 @@
 import type {
   AdminVoucher,
   VoucherGenerateRequest,
+  VoucherListFilters,
+  VoucherTarget,
   VoucherType,
   VoucherUpdateRequest,
 } from '@inventory-platform/plan/types';
@@ -20,12 +22,25 @@ export const VOUCHER_TYPE_LABEL: Record<VoucherType, string> = {
   FLAT_OFF: 'Flat ₹ off',
 };
 
+export const TARGET_OPTIONS: { value: VoucherTarget; label: string }[] = [
+  { value: 'ADD_ON', label: 'Add-on' },
+  { value: 'PLAN', label: 'Plan' },
+];
+
+/** A plan voucher can only discount: a free add-on makes no sense on a plan. */
+export const typeOptionsFor = (target: VoucherTarget): { value: VoucherType; label: string }[] =>
+  (Object.keys(VOUCHER_TYPE_LABEL) as VoucherType[])
+    .filter((type) => target === 'ADD_ON' || type !== 'FREE_ADDON')
+    .map((type) => ({ value: type, label: VOUCHER_TYPE_LABEL[type] }));
+
 export interface VoucherFormState {
+  target: VoucherTarget;
   mode: 'single' | 'batch';
   code: string;
   count: string;
   prefix: string;
   addOnCode: string;
+  planCode: string;
   type: VoucherType;
   value: string;
   quantity: string;
@@ -37,13 +52,15 @@ export interface VoucherFormState {
   note: string;
 }
 
-export const emptyVoucherForm = (addOnCode = ''): VoucherFormState => ({
+export const emptyVoucherForm = (addOnCode = '', planCode = ''): VoucherFormState => ({
+  target: planCode ? 'PLAN' : 'ADD_ON',
   mode: 'single',
   code: '',
   count: '10',
   prefix: '',
   addOnCode,
-  type: 'FREE_ADDON',
+  planCode,
+  type: planCode ? 'PERCENT_OFF' : 'FREE_ADDON',
   value: '',
   quantity: '1',
   maxRedemptions: '1',
@@ -54,6 +71,21 @@ export const emptyVoucherForm = (addOnCode = ''): VoucherFormState => ({
   note: '',
 });
 
+/** Switching target clears the other target's code and any type the new target cannot use. */
+export function withTarget(form: VoucherFormState, target: VoucherTarget): VoucherFormState {
+  if (form.target === target) return form;
+  return {
+    ...form,
+    target,
+    addOnCode: target === 'ADD_ON' ? form.addOnCode : '',
+    planCode: target === 'PLAN' ? form.planCode : '',
+    type: target === 'PLAN' ? 'PERCENT_OFF' : 'FREE_ADDON',
+  };
+}
+
+/** Rupees or percent with at most two decimals, as the API stores them. */
+const MONEY = /^\d+(\.\d{1,2})?$/;
+
 function wholeNumber(input: string): number | null {
   return /^\d+$/.test(input.trim()) ? Number(input.trim()) : null;
 }
@@ -61,6 +93,42 @@ function wholeNumber(input: string): number | null {
 function optional(input: string): string | undefined {
   const trimmed = input.trim();
   return trimmed ? trimmed : undefined;
+}
+
+export type VoucherValueResult = { ok: true; value: number } | { ok: false; error: string };
+
+/**
+ * The discount a ₹ or percent voucher takes: a plain number with up to two decimals, above 0, and
+ * at most 100 for a percent. The API validates it again and has the final say.
+ */
+export function parseVoucherValue(type: VoucherType, input: string): VoucherValueResult {
+  const trimmed = input.trim();
+  if (!MONEY.test(trimmed)) {
+    return {
+      ok: false,
+      error: trimmed ? 'Enter a number like 1500 or 99.50.' : 'Enter a value above 0.',
+    };
+  }
+  const parsed = Number(trimmed);
+  if (parsed <= 0) {
+    return { ok: false, error: 'Enter a value above 0.' };
+  }
+  if (type === 'PERCENT_OFF' && parsed > 100) return { ok: false, error: 'At most 100%.' };
+  return { ok: true, value: parsed };
+}
+
+/**
+ * The server applies only one list filter (plan, then add-on, then target), so an add-on is sent
+ * only when the target leaves room for it.
+ */
+export function voucherListFilters(
+  addOnCode: string,
+  target: VoucherTarget | '',
+): VoucherListFilters {
+  return {
+    target: target || undefined,
+    addOnCode: target !== 'PLAN' && addOnCode ? addOnCode : undefined,
+  };
 }
 
 export type VoucherFormResult =
@@ -82,22 +150,23 @@ export function toGenerateRequest(form: VoucherFormState): VoucherFormResult {
     if (prefix && !PREFIX.test(prefix)) errors.prefix = 'Up to 8 characters of A–Z or 0–9.';
   }
 
-  if (!form.addOnCode) errors.addOnCode = 'Choose an add-on.';
+  const isPlan = form.target === 'PLAN';
+  if (isPlan) {
+    if (!form.planCode) errors.planCode = 'Choose a plan.';
+    if (form.type === 'FREE_ADDON') errors.type = 'A plan voucher must take a percent or ₹ off.';
+  } else if (!form.addOnCode) {
+    errors.addOnCode = 'Choose an add-on.';
+  }
 
   let value: number | undefined;
   if (form.type !== 'FREE_ADDON') {
-    const parsed = Number(form.value);
-    if (!form.value.trim() || !Number.isFinite(parsed) || parsed <= 0) {
-      errors.value = 'Enter a value above 0.';
-    } else if (form.type === 'PERCENT_OFF' && parsed > 100) {
-      errors.value = 'At most 100%.';
-    } else {
-      value = parsed;
-    }
+    const parsed = parseVoucherValue(form.type, form.value);
+    if (parsed.ok) value = parsed.value;
+    else errors.value = parsed.error;
   }
 
-  const quantity = wholeNumber(form.quantity);
-  if (quantity === null || quantity < 1) errors.quantity = 'At least 1.';
+  const quantity = isPlan ? undefined : wholeNumber(form.quantity);
+  if (!isPlan && (quantity === null || (quantity ?? 0) < 1)) errors.quantity = 'At least 1.';
 
   let maxRedemptions: number | undefined;
   if (form.maxRedemptions.trim()) {
@@ -119,10 +188,10 @@ export function toGenerateRequest(form: VoucherFormState): VoucherFormResult {
       ...(form.mode === 'single'
         ? { code: code || undefined }
         : { count, prefix: prefix || undefined }),
-      addOnCode: form.addOnCode,
-      type: form.type,
-      value,
-      quantity: quantity ?? 1,
+      target: form.target,
+      ...(isPlan
+        ? { planCode: form.planCode, type: form.type, value }
+        : { addOnCode: form.addOnCode, type: form.type, value, quantity: quantity ?? 1 }),
       maxRedemptions,
       singleUsePerShop: form.singleUsePerShop,
       issuedToShopId: optional(form.issuedToShopId),
@@ -188,6 +257,16 @@ export function voucherUsage(voucher: AdminVoucher): string {
   const cap = voucher.maxRedemptions != null ? ` / ${voucher.maxRedemptions}` : '';
   const held = voucher.reservedCount > 0 ? ` (+${voucher.reservedCount} held)` : '';
   return `${voucher.redemptionCount}${cap}${held}`;
+}
+
+/** The add-on name is looked up by the caller, so this file imports no catalogue data. */
+export function describeVoucherTarget(
+  voucher: Pick<AdminVoucher, 'target' | 'addOnCode' | 'planCode' | 'planName'>,
+  addOnName?: (code: string) => string | undefined,
+): string {
+  if (voucher.target === 'PLAN') return `Plan: ${voucher.planName ?? voucher.planCode ?? ''}`;
+  const code = voucher.addOnCode ?? '';
+  return `Add-on: ${addOnName?.(code) ?? code}`;
 }
 
 /** The API returns a plain list per page, so a short page is the last one. */

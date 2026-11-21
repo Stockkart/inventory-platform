@@ -36,6 +36,7 @@ export const PLAN_ENDPOINTS = {
   ADMIN_PLAN: (id: string) => `/admin/plans/${id}`,
   ADMIN_PLAN_ACTIVE: (id: string) => `/admin/plans/${id}/active`,
   ADMIN_VOUCHERS: '/admin/vouchers',
+  ADMIN_VOUCHER_PLAN_PREVIEW: '/admin/vouchers/plan-preview',
   ADMIN_VOUCHER: (id: string) => `/admin/vouchers/${id}`,
   ADMIN_VOUCHER_ACTIVE: (id: string) => `/admin/vouchers/${id}/active`,
   ADMIN_VOUCHER_REDEMPTIONS: (id: string) => `/admin/vouchers/${id}/redemptions`,

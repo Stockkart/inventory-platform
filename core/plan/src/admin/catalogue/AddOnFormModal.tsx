@@ -14,7 +14,7 @@ import {
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import type { AddOnGrantType, AdminAddOn, PlanFeature } from '@inventory-platform/plan/types';
-import { useSaveAddOnMutation } from '../hooks';
+import { useSaveAddOnMutation } from '../../queries/admin.hooks';
 import { adminErrorMessage } from '../format';
 import { FEATURE_LABELS } from '../../ui/planPricing';
 import {
