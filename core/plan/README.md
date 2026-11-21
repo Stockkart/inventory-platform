@@ -43,3 +43,7 @@ The tiles read "Used 3 of 5 seats" and "Used 0 of 100 scans" (`usageOfLimit`; "U
 ## Plan cards on My Plan
 
 Plan status `planOptions` (inventory-api) gives each catalogue plan an `action`: `CURRENT` ("Renew plan"), `UPGRADE` ("Upgrade", a higher plan) or `BUY` ("Buy", a lower plan, or any plan without a paid plan). `planCardCta` (`ui/planCardCta.ts`) only maps that to the button; the page never compares prices or plan order. While the paid plan has days left the API marks other plans `actionAvailable: false` (a plan change waits for the paid plan to end, `PLAN_CHANGE_NOT_ALLOWED`): the button is disabled and its reason and "Available from <date>" show under it. The trial badge shows only when plan status says `trialAvailable`. Without `planOptions` (an older API, or the public `/plans` page) the cards keep the caller's `ctaLabel`.
+
+## Wallet history
+
+The Referrals page lists `GET /plans/shop/wallet` entries with their `availableDelta` and `availableAfter`. The API returns only rows that moved the available balance, so a paid order shows one "Used at checkout" row (its `ORDER_RESERVATION`) and no "+₹0.00" "Spent on a plan" row; an unpaid order that ended adds "Checkout hold released". Amounts use `formatRupees` (two decimals).

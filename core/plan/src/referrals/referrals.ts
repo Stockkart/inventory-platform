@@ -28,7 +28,9 @@ export function rewardStatusBadge(status: ReferralRewardStatus) {
 
 const WALLET_SOURCE_LABELS: Record<WalletEntrySource, string> = {
   REFERRAL_REWARD: 'Referral reward',
-  ORDER_RESERVATION: 'Held for checkout',
+  // The shop wallet API leaves out a paid order's ORDER_REDEMPTION row (it moves no available
+  // credit), so this row is where the shop sees the credit go; a release row follows if unpaid.
+  ORDER_RESERVATION: 'Used at checkout',
   RESERVATION_RELEASE: 'Checkout hold released',
   ORDER_REDEMPTION: 'Spent on a plan',
   MANUAL_ADJUSTMENT: 'Adjustment',
