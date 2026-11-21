@@ -558,10 +558,13 @@
   color: var(--sk-color-text-secondary, #64748b);
 }
 
+/* Two subgrid rows (body, then the button's reason note) so buttons line up across a row of cards. */
 .planCard {
   position: relative;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 2;
+  row-gap: 0;
   height: 100%;
   overflow: hidden;
   border-radius: var(--sk-radius-md, 8px);
@@ -701,6 +704,10 @@
 .planCardCta {
   margin-top: auto;
   padding-top: 0.35rem;
+}
+
+.planCardNote {
+  padding: 0 1.05rem 1.05rem;
 }
 
 .reminderPriority {
