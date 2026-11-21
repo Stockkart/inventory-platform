@@ -24,6 +24,15 @@ export interface RegisterShopDto {
   dlNo?: string;
   panNo?: string;
   tagline?: string;
+  /** Referral code of the shop that referred this one (`SK-XXXXXX`). Unknown codes are rejected. */
+  referredByCode?: string;
+  /** Free-text name when the referrer has no code; reviewed by an operator. */
+  referredByName?: string;
+}
+
+export interface ReferralCodeCheckResponse {
+  valid: boolean;
+  displayName?: string | null;
 }
 
 export interface RegisterShopResponse {
