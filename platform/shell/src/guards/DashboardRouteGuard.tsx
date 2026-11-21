@@ -6,13 +6,13 @@ import {
   useVerticalSchemaStore,
   useShopAccessStore,
 } from '@inventory-platform/session';
-import type { PlanEntitlementsView } from '@inventory-platform/access';
+import { isPlanFeatureEnabled, type PlanEntitlementsView } from '@inventory-platform/access';
 import type { DashboardMenuGroup } from '@inventory-platform/routing';
 import { apiClient } from '@inventory-platform/api-client';
 import { isPlanExpiryAllowedPath } from '@inventory-platform/contracts';
 import { CenteredLoader } from '@inventory-platform/ui-kit';
 import { canAccessDashboardPath } from '../lib/accessNav';
-import { isPathEntitled } from '../lib/planEntitlementNav';
+import { planFeatureForPath } from '../lib/planEntitlementNav';
 
 export type DashboardRouteGuardState = {
   isReady: boolean;
@@ -125,8 +125,9 @@ export function useDashboardRouteGuard(
       navigate('/dashboard/plan-status', { replace: true });
       return;
     }
-    if (!isPathEntitled(menuGroups, location.pathname, planEntitlements)) {
-      navigate('/dashboard/plan-status', { replace: true });
+    const feature = planFeatureForPath(menuGroups, location.pathname);
+    if (feature && !isPlanFeatureEnabled(planEntitlements, feature)) {
+      navigate(`/dashboard/plan-status?locked=${feature}`, { replace: true });
     }
   }, [
     menuGroups,

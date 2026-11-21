@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import {
   Alert,
   Badge,
@@ -13,9 +13,11 @@ import {
   cn,
 } from '@inventory-platform/ui-kit';
 import { PlanGrid } from '../ui/PlanGrid';
+import { FEATURE_LABELS } from '../ui/planPricing';
+import { isPlanFeature, splitFeatures, usageOfLimit } from '../entitlements';
 import { CampaignBanner } from '../campaign';
 import type { PlanResponse } from '@inventory-platform/plan/types';
-import { usePlansQuery, useShopPlanStatusQuery } from '../queries/hooks';
+import { usePlansQuery, useShopEntitlementsQuery, useShopPlanStatusQuery } from '../queries/hooks';
 
 export function PlanStatusPage() {
   const navigate = useNavigate();
@@ -26,6 +28,11 @@ export function PlanStatusPage() {
     error: statusErr,
   } = useShopPlanStatusQuery();
   const { data: plans = [] } = usePlansQuery();
+  const [searchParams] = useSearchParams();
+  const lockedParam = searchParams.get('locked');
+  const lockedFeature = isPlanFeature(lockedParam) ? lockedParam : null;
+  // Seat and OCR usage change between visits, so this page always refetches on arrival.
+  const { data: entitlements } = useShopEntitlementsQuery({ refetchOnMount: 'always' });
 
   const handleSelectPlan = useCallback(
     (plan: PlanResponse) => {
@@ -91,6 +98,21 @@ export function PlanStatusPage() {
       danger: status.whatsappLimitReached,
     },
   ];
+  if (entitlements) {
+    usageItems.push(
+      {
+        label: 'Team seats',
+        value: usageOfLimit(entitlements.userCount, entitlements.userLimit),
+        danger: entitlements.seatLimitReached === true,
+      },
+      {
+        label: 'Invoice scans',
+        value: usageOfLimit(entitlements.ocrUsed, entitlements.ocrLimit),
+        danger: entitlements.ocrLimitReached === true,
+      },
+    );
+  }
+  const features = entitlements ? splitFeatures(entitlements) : null;
 
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
@@ -136,6 +158,13 @@ export function PlanStatusPage() {
         ) : null}
       </Box>
 
+      {lockedFeature ? (
+        <Alert variant="info">
+          {FEATURE_LABELS[lockedFeature]} isn&apos;t included in your plan. Upgrade below to unlock
+          it.
+        </Alert>
+      ) : null}
+
       {status.trialExpired || status.planExpired ? (
         <Alert variant="warning">
           Your {status.trialExpired ? 'trial' : 'subscription'} has ended. Choose a plan below to
@@ -168,6 +197,34 @@ export function PlanStatusPage() {
           ))}
         </Box>
       </Stack>
+
+      {features ? (
+        <Stack gap="sm">
+          <Box className={surfaceChrome.planSectionHeader}>
+            <Text as="h3" className={surfaceChrome.inviteSectionTitle}>
+              Features
+            </Text>
+          </Box>
+          <Box className={accountingChrome.kpiGrid4}>
+            {features.included.map((feature) => (
+              <Box key={feature} className={accountingChrome.overviewKpiCard}>
+                <Text as="span" className={accountingChrome.overviewKpiLabel}>
+                  {FEATURE_LABELS[feature]}
+                </Text>
+                <Badge variant="success">Included</Badge>
+              </Box>
+            ))}
+            {features.locked.map((feature) => (
+              <Box key={feature} className={accountingChrome.overviewKpiCard}>
+                <Text as="span" className={accountingChrome.overviewKpiLabel}>
+                  {FEATURE_LABELS[feature]}
+                </Text>
+                <Badge variant={feature === lockedFeature ? 'warning' : 'neutral'}>Upgrade</Badge>
+              </Box>
+            ))}
+          </Box>
+        </Stack>
+      ) : null}
 
       <Stack gap="sm">
         <Box className={surfaceChrome.planSectionHeader}>
