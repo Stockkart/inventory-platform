@@ -18,7 +18,7 @@ import { AddOnTopUpSection } from '../ui/AddOnTopUpSection';
 import { addOnOnlyPaymentPath, canBuyAddOnsAlone, type AddOnOnlyIntent } from '../checkout';
 import { FEATURE_LABELS } from '../ui/planPricing';
 import { trialLabel } from '../ui/trialLabel';
-import { isAtLimit, isPlanFeature, splitFeatures, usageOfLimit } from '../entitlements';
+import { isPlanFeature, splitFeatures, usageOfLimit } from '../entitlements';
 import { CampaignBanner } from '../campaign';
 import type { PlanResponse } from '@inventory-platform/plan/types';
 import { usePlansQuery, useShopPlanStatusQuery } from '../queries/hooks';
@@ -122,12 +122,12 @@ export function PlanStatusPage() {
       {
         label: 'Team seats',
         value: usageOfLimit(entitlements.userCount, entitlements.userLimit),
-        danger: isAtLimit(entitlements.userCount, entitlements.userLimit),
+        danger: entitlements.seatLimitReached === true,
       },
       {
         label: 'Invoice scans',
         value: usageOfLimit(entitlements.ocrUsed, entitlements.ocrLimit),
-        danger: isAtLimit(entitlements.ocrUsed, entitlements.ocrLimit),
+        danger: entitlements.ocrLimitReached === true,
       },
     );
   }

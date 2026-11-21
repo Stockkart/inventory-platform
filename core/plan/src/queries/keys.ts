@@ -34,6 +34,8 @@ export const planKeys = {
     [...base.all, 'admin-vouchers', 'list', addOnCode ?? 'all'] as const,
   adminVoucherRedemptions: (id: string) =>
     [...base.all, 'admin-vouchers', 'redemptions', id] as const,
+  adminWalletPreview: (shopId: string, amount: number) =>
+    [...base.all, 'admin-wallet', shopId, 'preview', amount] as const,
 };
 
 /**

@@ -3,6 +3,8 @@ export const ADMIN_ENDPOINTS = {
   LOGOUT: '/admin/auth/logout',
   ME: '/admin/auth/me',
   CHANGE_PASSWORD: '/admin/auth/change-password',
+  /** Public: set a password from an emailed reset link. */
+  RESET_PASSWORD: '/admin/auth/reset-password',
   ADMINS: '/admin/admins',
   ADMIN_ACTIVE: (id: string) => `/admin/admins/${id}/active`,
   ADMIN_RESET_PASSWORD: (id: string) => `/admin/admins/${id}/reset-password`,
