@@ -3,6 +3,7 @@ import type { AdminVoucher } from '@inventory-platform/plan/types';
 import {
   describeVoucherValue,
   emptyVoucherForm,
+  isLastVoucherPage,
   toGenerateRequest,
   toUpdateRequest,
   voucherEditState,
@@ -150,5 +151,14 @@ describe('display helpers', () => {
     expect(describeVoucherValue({ type: 'FLAT_OFF', value: 1500 })).toBe('₹1,500 off');
     expect(voucherUsage(voucher())).toBe('3 / 10 (+1 held)');
     expect(voucherUsage(voucher({ maxRedemptions: null, reservedCount: 0 }))).toBe('3');
+  });
+});
+
+describe('isLastVoucherPage', () => {
+  it('treats a short page as the last one', () => {
+    expect(isLastVoucherPage(0)).toBe(true);
+    expect(isLastVoucherPage(99)).toBe(true);
+    expect(isLastVoucherPage(100)).toBe(false);
+    expect(isLastVoucherPage(3, 3)).toBe(false);
   });
 });

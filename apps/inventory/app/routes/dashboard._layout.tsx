@@ -15,7 +15,7 @@ registerComposedProfileTabs();
 
 export default function DashboardLayoutRoute() {
   return (
-    <DashboardRouteGuard>
+    <DashboardRouteGuard menuGroups={COMPOSED_DASHBOARD_MENU_GROUPS}>
       <DashboardLayoutShell />
     </DashboardRouteGuard>
   );
