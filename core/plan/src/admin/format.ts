@@ -4,6 +4,7 @@ import type {
   ReferralAttributionStatus,
   ReferralReviewReason,
 } from '@inventory-platform/plan/types';
+import { formatPlanDate } from '../ui/planDate';
 
 export function adminErrorMessage(
   error: unknown,
@@ -14,10 +15,9 @@ export function adminErrorMessage(
   return fallback;
 }
 
+/** Same style as every plan date ("21 Nov 2027"); a dash when there is none. */
 export function formatAdminDate(iso: string | null | undefined): string {
-  return iso
-    ? new Date(iso).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
-    : '—';
+  return formatPlanDate(iso) ?? '—';
 }
 
 const ATTRIBUTION_STATUS: Record<
