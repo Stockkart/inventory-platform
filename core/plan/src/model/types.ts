@@ -1,16 +1,11 @@
 import type { PlanResponse } from '@inventory-platform/contracts';
 
 export type {
+  PlanFeature,
   PlanResponse,
   UsageResponse,
   ShopPlanStatusResponse,
 } from '@inventory-platform/contracts';
-
-export interface AssignPlanRequest {
-  planId: string;
-  durationMonths: number;
-  paymentMethod?: string;
-}
 
 export interface PaymentConfigResponse {
   provider: string;
