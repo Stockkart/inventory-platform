@@ -47,11 +47,7 @@ import { AddOnPicker } from '../ui/AddOnPicker';
 import { formatRupees, planListPriceLabel } from '../ui/planPricing';
 import { QuoteSummary } from '../ui/QuoteSummary';
 import { VoucherField } from '../ui/VoucherField';
-import {
-  useAuthStore,
-  usePlanEntitlementsStore,
-  usePlanStatusStore,
-} from '@inventory-platform/session';
+import { useAuthStore, usePlanStatusStore } from '@inventory-platform/session';
 import {
   useAddOnOptionsQuery,
   useAddOnsQuery,
@@ -70,7 +66,6 @@ import { isPlanDataExceptQuote, planKeys } from '../queries/keys';
 export function PlanPaymentPage() {
   const { user } = useAuthStore();
   const fetchPlanStatus = usePlanStatusStore((s) => s.fetchPlanStatus);
-  const fetchEntitlements = usePlanEntitlementsStore((s) => s.fetchEntitlements);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
@@ -213,7 +208,13 @@ export function PlanPaymentPage() {
     openOrder.current = null;
     setPendingVerify(null);
     setConfirming(null);
-    await Promise.all([fetchPlanStatus({ force: true }), fetchEntitlements({ force: true })]);
+    // Waits for the shop's entitlements to refetch, so the nav shows the new plan on arrival.
+    await Promise.all([
+      fetchPlanStatus({ force: true }),
+      user?.shopId
+        ? queryClient.invalidateQueries({ queryKey: planKeys.shopEntitlements(user.shopId) })
+        : undefined,
+    ]);
     await refetchTransactions();
     navigate(addOnOnly ? PLAN_STATUS_PATH : '/dashboard', { replace: true });
   };
