@@ -184,15 +184,15 @@ Worked examples:
 - Read the API base only via `apiClient`. Exceptions: the helpers listed above.
 - To add a variable, add its name to `.env-example` and to the `env` inputs of `nx.targets.build` in `apps/inventory/package.json`.
 
-| Name                    | Purpose                           | Read in                                 | Declared in                                            |
-| ----------------------- | --------------------------------- | --------------------------------------- | ------------------------------------------------------ |
-| `VITE_API_URL`          | API base URL                      | `platform/api-client/src/lib/client.ts` | `.env-example`, `docker-compose.yml`, build inputs     |
-| `VITE_GOOGLE_CLIENT_ID` | Google OAuth client               | `apps/inventory/app/root.tsx`           | `.env-example`, build inputs                           |
-| `VITE_FACEBOOK_APP_ID`  | reserved, not read by source      | —                                       | `.env-example`, build inputs                           |
-| `VITE_RAZORPAY_KEY_ID`  | optional; backend returns the key | —                                       | `.env-example`, build inputs                           |
-| `VITE_MOBILE_API_URL`   | mobile upload base                | `core/product/src/api/upload.api.ts`    | build inputs only                                      |
-| `VITE_BUILD_SHA`        | deployed-commit meta tag          | `apps/inventory/app/root.tsx`           | build inputs; set by `scripts/deploy/vercel-deploy.sh` |
-| `VITE_ALLOWED_HOSTS`    | dev-server allowed hosts          | `apps/inventory/vite.config.mts`        | not declared                                           |
+| Name                    | Purpose                           | Read in                                                  | Declared in                                                                   |
+| ----------------------- | --------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `VITE_API_URL`          | API base URL                      | `platform/api-client/src/lib/client.ts`                  | `.env-example`, `docker-compose.yml`, build inputs                            |
+| `VITE_GOOGLE_CLIENT_ID` | Google OAuth client               | `apps/inventory/app/root.tsx`                            | `.env-example`, build inputs                                                  |
+| `VITE_FACEBOOK_APP_ID`  | reserved, not read by source      | —                                                        | `.env-example`, build inputs                                                  |
+| `VITE_RAZORPAY_KEY_ID`  | optional; backend returns the key | —                                                        | `.env-example`, build inputs                                                  |
+| `VITE_MOBILE_API_URL`   | mobile upload base                | `core/product/src/api/upload.api.ts`                     | build inputs only                                                             |
+| `VITE_BUILD_SHA`        | deployed-commit meta tag          | `apps/inventory/app/root.tsx`, `apps/admin/app/root.tsx` | build inputs; set by `scripts/deploy/vercel-deploy.sh`, `apps/*/netlify.toml` |
+| `VITE_ALLOWED_HOSTS`    | dev-server allowed hosts          | `apps/inventory/vite.config.mts`                         | not declared                                                                  |
 
 Other names in `.env-example` and `docker-compose.yml`: `INVENTORY_PLATFORM_PORT` (host port), `NODE_ENV` (Node environment), `DB_URI` and `CLIENT_URL` (backend service, commented out in compose).
 

@@ -54,7 +54,7 @@ export function PlanCard({
       ) : null}
 
       <Box className={styles.inner}>
-        {showTrialBadge ? <span className={styles.trial}>Free 30-day trial</span> : null}
+        {showTrialBadge ? <span className={styles.trial}>Free 3-day trial</span> : null}
 
         <Text as="h3" className={styles.name}>
           {name}

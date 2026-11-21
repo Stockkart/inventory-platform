@@ -10,6 +10,7 @@ Subscription plans: status, payment flow, and marketing/landing plan surfaces.
 - Nav group **Plan & Billing**
 - Plans API, payment helpers, guards
 - Marketing UI pieces used on public/plan pages
+- Admin tool pages (MIS, referral operations, vouchers, campaigns, catalogue) as `planAdminToolRoutes`, mounted only in the admin app (`apps/admin`). The shop app has no admin routes or nav.
 
 ## Does not own
 
@@ -67,3 +68,7 @@ StockKart does not send SMS or WhatsApp yet. Every SMS / WhatsApp allowance carr
 The admin **Vouchers** page (`VouchersAdminPage`) and `GenerateVoucherModal` create vouchers for an add-on or for a plan. **Applies to** (a `FormField required` over the ui-kit `Select`) switches the form between the two; `withTarget` (`voucherForm.ts`) resets the fields that only make sense for the other target, and a plan voucher is a percent or flat discount on one plan chosen from the plan catalogue.
 
 For a plan target the modal shows a live preview from `POST /admin/vouchers/plan-preview` (`usePlanVoucherPreview`, debounced 300 ms by `useDebouncedValue`). The API decides what the discount comes to and whether it is allowed (for example a percent over the plan's allowed maximum); `describePlanVoucherPreview` only turns that answer into text. **Create** stays disabled while the preview is loading, behind what was typed, failed, or says the voucher is not allowed, so a voucher the API would reject cannot be submitted. No discount maths happens in the frontend. The list filters by **Applies to** and by add-on; the add-on filter is disabled while Plan is chosen. Rows show the target (`describeVoucherTarget`). Shops redeem a plan voucher on the payment page (see `VoucherField` under Past purchases).
+
+## Tests
+
+`nx test plan` runs `src/**/*.test.ts(x)` with the same setup as `core/user` (`vitest.config.ts`, `vitest.setup.ts`, `tsconfig.spec.json`): `src/ui/**` in jsdom, everything else in node. CI runs it with every other test target.

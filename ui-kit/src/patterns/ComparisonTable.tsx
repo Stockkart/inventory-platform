@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode } from 'react';
 import { cn } from '../utils/cn';
+import { Box } from '../layout/Box';
 import styles from './ComparisonTable.module.css';
 
 export interface ComparisonColumn {
@@ -30,6 +31,8 @@ export interface ComparisonTableProps {
 /**
  * Feature-by-option grid. Row labels stay pinned while the columns scroll on narrow screens.
  * Rows that carry a `group` get a section title row, like the brochure's "Billing & stock".
+ * The table itself stays native elements: the `Table` primitive's row rules and header fill would
+ * override the pinned label column and the navy header rule.
  */
 export function ComparisonTable({
   caption,
@@ -39,7 +42,7 @@ export function ComparisonTable({
   className,
 }: ComparisonTableProps) {
   return (
-    <div className={cn(styles.scroll, className)}>
+    <Box className={cn(styles.scroll, className)}>
       <table className={styles.table}>
         <caption className={styles.caption}>{caption}</caption>
         <thead>
@@ -93,6 +96,6 @@ export function ComparisonTable({
           ))}
         </tbody>
       </table>
-    </div>
+    </Box>
   );
 }
