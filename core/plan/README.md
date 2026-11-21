@@ -37,3 +37,9 @@ Use ui-kit marketing patterns (`PlanCard`, `MarketingHero`, …) and solid butto
 ## Usage tiles
 
 The seat and scan tiles on My Plan turn red only on the API's `seatLimitReached` / `ocrLimitReached` (entitlements response); the page never compares usage with limits itself.
+
+The tiles read "Used 3 of 5 seats" and "Used 0 of 100 scans" (`usageOfLimit`; "Used 1,200 scans" when unlimited). While bought scan credits remain, the scan tile adds "500 bought scans left" from the entitlements `ocrTopUpRemaining` (`boughtScansLeftLabel`); an older API without the field shows nothing extra.
+
+## Plan cards on My Plan
+
+Plan status `planOptions` (inventory-api) gives each catalogue plan an `action`: `CURRENT` ("Renew plan"), `UPGRADE` ("Upgrade", a higher plan) or `BUY` ("Buy", a lower plan, or any plan without a paid plan). `planCardCta` (`ui/planCardCta.ts`) only maps that to the button; the page never compares prices or plan order. While the paid plan has days left the API marks other plans `actionAvailable: false` (a plan change waits for the paid plan to end, `PLAN_CHANGE_NOT_ALLOWED`): the button is disabled and its reason and "Available from <date>" show under it. The trial badge shows only when plan status says `trialAvailable`. Without `planOptions` (an older API, or the public `/plans` page) the cards keep the caller's `ctaLabel`.

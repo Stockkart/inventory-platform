@@ -58,6 +58,8 @@ export type {
   PlanResponse,
   UsageResponse,
   ShopPlanStatusResponse,
+  PlanAction,
+  PlanOptionResponse,
   QuoteAddOnLine,
   QuoteRequest,
   QuoteItemType,
