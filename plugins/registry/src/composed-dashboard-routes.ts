@@ -6,6 +6,7 @@ import {
 import { accountingRoutes } from '@inventory-platform/accounting';
 import { analyticsRoutes } from '@inventory-platform/analytics';
 import { creditRoutes } from '@inventory-platform/credit';
+import { hrDashboardRoutes } from '@inventory-platform/hr';
 import { misDashboardRoutes } from '@inventory-platform/mis';
 import { planDashboardRoutes } from '@inventory-platform/plan';
 import { pricingDashboardRoutes } from '@inventory-platform/pricing';
@@ -33,6 +34,7 @@ const DASHBOARD_ROUTE_REGISTRATIONS: RoutePackageRegistration[] = [
   { root: `${CORE}/mis/src`, modules: misDashboardRoutes },
   { root: `${CORE}/taxation/src`, modules: taxationRoutes },
   { root: `${CORE}/credit/src`, modules: creditRoutes },
+  { root: `${CORE}/hr/src`, modules: hrDashboardRoutes },
 ];
 
 const DASHBOARD_ROUTE_ENTRIES = composeDashboardRouteEntries(DASHBOARD_ROUTE_REGISTRATIONS);

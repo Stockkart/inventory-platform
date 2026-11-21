@@ -143,7 +143,7 @@ export function VendorReturnHistoryList({ refreshTrigger, filters }: VendorRetur
   const [limit] = useState(PAGE_SIZE);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const { error: notifyError } = useNotify;
+  const { error: notifyError, success: notifySuccess, info: notifyInfo } = useNotify;
 
   useEffect(() => {
     setPage(1);
@@ -373,6 +373,8 @@ export function VendorReturnHistoryList({ refreshTrigger, filters }: VendorRetur
         documentId={printTarget?.returnId ?? ''}
         creditNoteNo={printTarget?.creditNoteNo}
         onError={(message) => notifyError(message)}
+        onSuccess={(message) => notifySuccess(message)}
+        onInfo={(message) => notifyInfo(message)}
       />
     </Stack>
   );

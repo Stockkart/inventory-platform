@@ -1,0 +1,93 @@
+/* Permission × role checkbox matrix. Scrolls sideways on narrow screens; first column stays put. */
+.scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--sk-color-border-default, #e2e8f0);
+  border-radius: var(--sk-radius-lg, 12px);
+}
+
+.table {
+  width: 100%;
+  min-width: 28rem;
+  border-collapse: collapse;
+  font-family: var(--sk-font-sans);
+  font-size: 0.875rem;
+}
+
+.caption {
+  padding: 0.6rem 0.75rem;
+  color: var(--sk-color-text-primary);
+  font-weight: 600;
+  text-align: left;
+}
+
+/* Same technique as VisuallyHidden: still read by screen readers. */
+.captionHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.headCell {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--sk-color-border-default, #e2e8f0);
+  background: var(--sk-color-bg-muted, #f1f5f9);
+  color: var(--sk-color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Body cells draw a top border; with border-collapse it merges into the header's bottom border. */
+.rowHeadCell {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  padding: 0.6rem 0.75rem;
+  border-top: 1px solid var(--sk-color-border-default, #e2e8f0);
+  background: var(--sk-color-bg-surface, #fff);
+  text-align: left;
+  font-weight: 400;
+}
+
+/* Top-left header: stays in place like the row headers but keeps the header background. */
+.cornerCell {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  text-align: left;
+}
+
+.permissionLabel {
+  display: block;
+  color: var(--sk-color-text-primary);
+  font-weight: 500;
+}
+
+.permissionDescription {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--sk-color-text-muted);
+  font-size: 0.75rem;
+}
+
+.cell {
+  padding: 0.4rem 0.75rem;
+  border-top: 1px solid var(--sk-color-border-default, #e2e8f0);
+  text-align: center;
+}
+
+/* Checkbox label holds only hidden text; centre the box itself and give it a 44px touch target. */
+.checkbox {
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  margin: 0;
+}

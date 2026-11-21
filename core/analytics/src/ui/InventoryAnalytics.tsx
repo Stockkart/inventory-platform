@@ -1,5 +1,8 @@
-import { useMemo, useState } from 'react';
-import type { InventoryItemAnalytics } from '@inventory-platform/analytics/types';
+import { useEffect, useMemo, useState } from 'react';
+import type {
+  InventoryItemAnalytics,
+  InventoryPagedList,
+} from '@inventory-platform/analytics/types';
 import {
   Alert,
   Badge,
@@ -19,7 +22,11 @@ import {
   TableRow,
   chartChrome,
 } from '@inventory-platform/ui-kit';
-import { useExpiryBucketsQuery, useInventoryAnalyticsQuery } from '../queries/hooks';
+import {
+  useExpiryBucketsQuery,
+  useInventoryAnalyticsQuery,
+  useInventoryItemsPageMutation,
+} from '../queries/hooks';
 import { AnalyticsCollapsibleSection } from './AnalyticsCollapsibleSection';
 import { AnalyticsMetricCard } from './AnalyticsMetricCard';
 
@@ -63,6 +70,56 @@ export function InventoryAnalytics() {
       ? queryError.message
       : 'Failed to fetch inventory analytics'
     : null;
+
+  // Rows fetched with "Show more", per list, on top of the first page in inventoryData
+  const [moreRows, setMoreRows] = useState<
+    Partial<Record<InventoryPagedList, InventoryItemAnalytics[]>>
+  >({});
+  const [moreError, setMoreError] = useState<{ list: InventoryPagedList; message: string } | null>(
+    null,
+  );
+  const itemsPage = useInventoryItemsPageMutation();
+  const [loadingList, setLoadingList] = useState<InventoryPagedList | null>(null);
+
+  // A new answer (filters applied, refetch) starts every list again from its first page
+  useEffect(() => {
+    setMoreRows({});
+    setMoreError(null);
+  }, [inventoryData]);
+
+  const rowsOf = (list: InventoryPagedList, first: InventoryItemAnalytics[]) => [
+    ...first,
+    ...(moreRows[list] ?? []),
+  ];
+
+  const showMore = async (list: InventoryPagedList, shown: InventoryItemAnalytics[]) => {
+    const size = inventoryData?.meta.listLimit ?? shown.length;
+    if (!size) return;
+    setLoadingList(list);
+    setMoreError(null);
+    try {
+      const page = await itemsPage.mutateAsync({
+        list,
+        page: Math.floor(shown.length / size),
+        size,
+        lowStockThreshold: inventoryParams.lowStockThreshold,
+        deadStockDays: inventoryParams.deadStockDays,
+        expiringSoonDays: inventoryParams.expiringSoonDays,
+      });
+      setMoreRows((prev) => {
+        const have = new Set(shown.map((row) => row.inventoryId));
+        const fresh = page.items.filter((row) => !have.has(row.inventoryId));
+        return { ...prev, [list]: [...(prev[list] ?? []), ...fresh] };
+      });
+    } catch (err) {
+      setMoreError({
+        list,
+        message: err instanceof Error ? err.message : 'Failed to load more items',
+      });
+    } finally {
+      setLoadingList(null);
+    }
+  };
 
   const [expandedSections, setExpandedSections] = useState<{
     lowStock: boolean;
@@ -116,18 +173,21 @@ export function InventoryAnalytics() {
 
   const renderInventoryTable = (
     title: string,
-    items: InventoryItemAnalytics[] | null | undefined,
+    firstPage: InventoryItemAnalytics[] | null | undefined,
     sectionKey: keyof typeof expandedSections,
     showAllColumns = true,
+    list?: InventoryPagedList,
   ) => {
-    if (!items || items.length === 0) {
+    if (!firstPage || firstPage.length === 0) {
       return null;
     }
+    const items = list ? rowsOf(list, firstPage) : firstPage;
+    const total = (list && inventoryData?.listTotals?.[list]) ?? items.length;
 
     return (
       <AnalyticsCollapsibleSection
         title={title}
-        count={items.length}
+        count={total}
         expanded={expandedSections[sectionKey]}
         onToggle={() => toggleSection(sectionKey)}
       >
@@ -220,6 +280,18 @@ export function InventoryAnalytics() {
             ))}
           </TableBody>
         </Table>
+        {list && items.length < total ? (
+          <Stack gap="sm">
+            {moreError?.list === list ? <Alert variant="danger">{moreError.message}</Alert> : null}
+            <Button
+              variant="outline"
+              onClick={() => void showMore(list, items)}
+              disabled={loadingList !== null}
+            >
+              {loadingList === list ? 'Loading…' : `Show more (${items.length} of ${total} shown)`}
+            </Button>
+          </Stack>
+        ) : null}
       </AnalyticsCollapsibleSection>
     );
   };
@@ -357,12 +429,19 @@ export function InventoryAnalytics() {
             />
           </Grid>
 
-          {renderInventoryTable('Low Stock Items', inventoryData.lowStockItems, 'lowStock', true)}
+          {renderInventoryTable(
+            'Low Stock Items',
+            inventoryData.lowStockItems,
+            'lowStock',
+            true,
+            'lowStockItems',
+          )}
           {renderInventoryTable(
             'Not Selling Items',
             inventoryData.notSellingItems,
             'notSelling',
             true,
+            'notSellingItems',
           )}
           {renderInventoryTable(
             'Expiring Soon Items',
@@ -376,8 +455,9 @@ export function InventoryAnalytics() {
             inventoryData.deadStockItems,
             'deadStock',
             true,
+            'deadStockItems',
           )}
-          {renderInventoryTable('All Items', inventoryData.allItems, 'allItems', true)}
+          {renderInventoryTable('All Items', inventoryData.allItems, 'allItems', true, 'allItems')}
         </>
       ) : null}
     </Stack>
