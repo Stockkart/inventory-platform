@@ -86,6 +86,13 @@ describe('buildQuoteRequest', () => {
 });
 
 describe('buildAddOnOnlyRequest', () => {
+  it('asks for wallet credit on a scan pack bought on its own', () => {
+    expect(buildAddOnOnlyRequest({ OCR_TOPUP_500: 1 }, [], true)).toEqual({
+      addOns: [{ code: 'OCR_TOPUP_500', quantity: 1 }],
+      applyWalletCredit: true,
+    });
+  });
+
   it('sends add-ons with no plan code or duration', () => {
     expect(buildAddOnOnlyRequest({ SEAT: 2, OCR: 1 }, ['B', 'A'], true)).toEqual({
       addOns: [
