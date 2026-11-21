@@ -8,7 +8,11 @@ import type {
   AdminReasonBody,
 } from '@inventory-platform/admin/types';
 import { adminApi } from '../api/admin.api';
+import { selectAdminTokenStorage } from '../session/adminToken';
 import { adminKeys } from './keys';
+
+// Before the login mutation stores a token, so it lands under the admin key.
+selectAdminTokenStorage();
 
 export function useAdminMeQuery(enabled: boolean) {
   return useQuery({

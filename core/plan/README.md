@@ -10,6 +10,7 @@ Subscription plans: status, payment flow, and marketing/landing plan surfaces.
 - Nav group **Plan & Billing**
 - Plans API, payment helpers, guards
 - Marketing UI pieces used on public/plan pages
+- Admin tool pages (MIS, referral operations, vouchers, campaigns, catalogue) as `planAdminToolRoutes`, mounted only in the admin app (`apps/admin`). The shop app has no admin routes or nav.
 
 ## Does not own
 
@@ -40,3 +41,7 @@ The landing-page carousel (ui-kit `PlanCard`) and the `/plans` cards (`surfaceCh
 ## Plan comparison
 
 `buildPlanComparison` (`ui/planPricing.ts`) builds the `/plans` table in the 2026 brochure's sections. "Billing & stock" rows are fixed text because every plan includes them; every other row comes from the plan API: `features`, `roleLimit` ("Limited (2 roles)" / "Advanced") and `attendanceUserLimit` ("Up to 4 users"), needing inventory-api #341. Rows no plan includes are hidden, so the table degrades cleanly on an older API.
+
+## Tests
+
+`nx test plan` runs `src/**/*.test.ts(x)` with the same setup as `core/user` (`vitest.config.ts`, `vitest.setup.ts`, `tsconfig.spec.json`): `src/ui/**` in jsdom, everything else in node. CI runs it with every other test target.

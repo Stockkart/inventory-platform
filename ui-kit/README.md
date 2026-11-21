@@ -30,12 +30,12 @@ Theme: wrap with `ThemeProvider`, or `@import '@inventory-platform/ui-kit/theme/
 
 ## Layers
 
-| Layer       | Location                                     | Examples                                                     |
-| ----------- | -------------------------------------------- | ------------------------------------------------------------ |
-| Tokens      | `theme/`, `tokens/`                          | `--sk-*` CSS variables                                       |
-| Primitives  | `forms/`, `layout/`, `feedback/`, `overlay/` | `Button`, `Box`, `Alert`, `Drawer`, `FloatingPanel`          |
-| Patterns    | `patterns/`                                  | `PageHeader`, `PaginationBar`, `AppShell`, `CalculatorPanel` |
-| Chrome maps | `patterns/*Chrome*`                          | CSS module class bags for domains                            |
+| Layer       | Location                                     | Examples                                                                                                                                                                       |
+| ----------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Tokens      | `theme/`, `tokens/`                          | `--sk-*` CSS variables                                                                                                                                                         |
+| Primitives  | `forms/`, `layout/`, `feedback/`, `overlay/` | `Button`, `Box`, `Alert`, `Drawer`, `FloatingPanel`                                                                                                                            |
+| Patterns    | `patterns/`                                  | `PageHeader`, `PaginationBar`, `AppShell`, `CalculatorPanel`, `ComparisonTable` (plan feature grid, pinned label column), `SaleBanner` (scrolling sale strip, no close button) |
+| Chrome maps | `patterns/*Chrome*`                          | CSS module class bags for domains                                                                                                                                              |
 
 Dense grids with shop-set column layouts use `GridColGroup` + `denseDataGrid.tableFixed` (fixed
 widths, sideways scroll), `ResizableHeaderCell` (drag or arrow-key resize, optional drag-to-reorder)
@@ -44,6 +44,8 @@ rows are also exported as `ColumnList` (with optional px width fields) for setti
 They are presentation only: the caller owns widths, order and saving.
 
 Domain widgets and pages stay in `core/*/ui` and `core/*/pages`.
+
+**Promo palette.** `--sk-color-promo` / `-promo-hover` / `-promo-text` are the brochure amber of the one headline promo (`Button variant="promo"`, the "Most popular" pills); `--sk-color-on-dark` is text on surfaces that stay dark in both themes (sale strip, My Plan hero). Same values in light and dark.
 
 **Categorical palette.** `--sk-color-category-1` … `-6` (light and dark values in `theme/tokens.css`) tell sibling groups apart, e.g. cafe menu sections. They are not status colours; use `--sk-color-success` / `-warning` / `-danger` / `-info` for state.
 

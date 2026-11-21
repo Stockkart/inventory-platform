@@ -25,6 +25,25 @@
     "tags": [
       "type:app",
       "scope:admin"
-    ]
+    ],
+    "targets": {
+      "build": {
+        "inputs": [
+          "production",
+          "^production",
+          {
+            "externalDependencies": [
+              "@react-router/dev"
+            ]
+          },
+          {
+            "env": "VITE_API_URL"
+          },
+          {
+            "env": "VITE_BUILD_SHA"
+          }
+        ]
+      }
+    }
   }
 }

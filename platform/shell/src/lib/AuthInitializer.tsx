@@ -69,10 +69,14 @@ export function AuthInitializer({ children }: { children: React.ReactNode }) {
         location.pathname.startsWith('/shop-selection') ||
         location.pathname.startsWith('/onboarding');
       if (onDashboard) {
-        navigate('/login', { replace: true, state: { from: location.pathname } });
+        // Keep the query string (e.g. a `?ref=` referral link) for after sign-in.
+        navigate('/login', {
+          replace: true,
+          state: { from: `${location.pathname}${location.search}` },
+        });
       }
     }
-  }, [isAuthenticated, token, location.pathname, navigate]);
+  }, [isAuthenticated, token, location.pathname, location.search, navigate]);
 
   return children;
 }
