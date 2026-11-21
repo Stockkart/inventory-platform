@@ -1,0 +1,379 @@
+/* HR pages (core/hr). Flat classes only; keys in HrChrome.tsx equal these class names. */
+
+/* Row above a register: month/day chooser on the left, actions after it; wraps on phones. */
+.hrPageToolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sk-space-sm, 8px);
+  width: 100%;
+  min-width: 0;
+}
+
+.hrPageToolbarEnd {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sk-space-sm, 8px);
+  margin-left: auto;
+}
+
+/* Month register (employees × days): scrolls sideways, never the whole page. */
+.hrRegisterScroll {
+  /* Containing block for absolutely placed bits inside the cells (screen-reader text, the late
+     dot); without it they escape the frame and widen the whole document (run F10). */
+  position: relative;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--sk-color-border-default, #e2e8f0);
+  border-radius: var(--sk-radius-lg, 12px);
+}
+
+.hrRegisterNameCell {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 10rem;
+  background: var(--sk-color-bg-surface, #fff);
+  white-space: nowrap;
+}
+
+/* Phones: the sticky name column wraps at 9rem so a long name never covers the day columns. */
+@media (max-width: 48rem) {
+  .hrRegisterNameCell.hrRegisterNameCell {
+    min-width: 7rem;
+    width: 9rem;
+    max-width: 9rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  /* The name link (a Button) wraps too instead of running over the day columns. */
+  /* Doubled class: beats the LinkButton's own `.linkButton.linkButton { white-space: nowrap }`. */
+  .hrRegisterNameCell.hrRegisterNameCell button,
+  .hrRegisterNameCell.hrRegisterNameCell button * {
+    max-width: 100%;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: left;
+  }
+
+  .hrRegisterNameCell.hrRegisterNameCell button {
+    justify-content: flex-start;
+  }
+}
+
+.hrRegisterDayCell.hrRegisterDayCell {
+  min-width: 2rem;
+  padding: 0.125rem;
+  text-align: center;
+}
+
+/* Day header of the month register: number over weekday letter, tight. */
+.hrRegisterDayHead {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.0625rem;
+  line-height: 1;
+}
+
+.hrRegisterTotalCell {
+  min-width: 3rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/*
+ * Daily attendance list (run F9): one compact line per employee on wide screens —
+ * who | status | in/out times | note + clear — and two tight lines when the list is narrow
+ * (phones, < 48rem of list width). Sized from the list, not the window, so a sidebar never
+ * pushes the row into a horizontal scrollbar.
+ */
+.hrDailyList {
+  container-type: inline-size;
+  container-name: hr-daily;
+}
+
+.hrDailyRow {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) 12rem 14.25rem minmax(4.5rem, auto);
+  grid-template-areas: 'who status times actions';
+  align-items: center;
+  gap: 0.25rem var(--sk-space-md, 16px);
+  min-height: 3rem;
+  padding: 0.25rem var(--sk-space-xs, 4px);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 70%, transparent);
+}
+
+.hrDailyRow:last-child {
+  border-bottom: none;
+}
+
+/* Avatar + name + code/designation. */
+.hrDailyRowWho {
+  grid-area: who;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+}
+
+.hrDailyRowAvatar {
+  flex-shrink: 0;
+}
+
+.hrDailyRowName {
+  display: flex;
+  flex-direction: column;
+  gap: 0.0625rem;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+/*
+ * Chips first (never shrink, never clipped), then code · designation, which is the part that
+ * shrinks and truncates. Chips that do not fit wrap onto a second line instead of being cut.
+ */
+.hrDailyRowMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.125rem 0.375rem;
+  min-width: 0;
+}
+
+.hrDailyRowMeta > * {
+  flex-shrink: 0;
+}
+
+.hrDailyRowMeta > .hrDailyRowMetaText {
+  flex: 1 1 4rem;
+  min-width: 0;
+}
+
+.hrDailyRowStatus {
+  grid-area: status;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+/* In/out times (Present / Half-day only), or the read-only summary line. */
+.hrDailyRowControls {
+  grid-area: times;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+/* A sentence in place of the times (full-day leave): spans times + actions and wraps. */
+.hrDailyRowControlsWide {
+  grid-column: times-start / actions-end;
+}
+
+.hrDailyRowControls:empty,
+.hrDailyRowActions:empty {
+  display: none;
+}
+
+.hrDailyRowActions {
+  grid-area: actions;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.125rem;
+}
+
+/* Row error under the whole row. */
+.hrDailyRowError {
+  grid-column: 1 / -1;
+}
+
+/*
+ * Narrow list (phones): name + note/clear on the first line, the status buttons on their own
+ * line, the times (or the read-only summary) under them. Nothing sits beside the status
+ * buttons, so a 20rem phone list never overlaps or scrolls sideways.
+ */
+@container hr-daily (max-width: 47.99rem) {
+  .hrDailyRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'who actions'
+      'status status'
+      'times times';
+    gap: 0.375rem var(--sk-space-sm, 8px);
+    padding-block: 0.5rem;
+  }
+
+  .hrDailyRowStatus {
+    flex-wrap: wrap;
+  }
+
+  .hrDailyRowControls {
+    flex-wrap: wrap;
+  }
+
+  .hrDailyRowControlsWide {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Two-digit day box between − / + buttons (HR settings salary month start). */
+.hrDayInput.hrDayInput {
+  width: 3.5rem;
+  text-align: center;
+}
+
+/* Small in/out time boxes on the daily list (fit "10:45 AM" with the clock icon). */
+.hrTimeInput.hrTimeInput {
+  width: 6.75rem;
+  min-height: 2rem;
+  height: 2rem;
+  padding: 0.25rem 0.375rem;
+  font-size: 0.8125rem;
+}
+
+/* Small status chip next to a name (Late, On leave, Not saved). */
+.hrChip.hrChip {
+  padding: 0.0625rem 0.4rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* 2rem icon button for dense rows (note, clear). */
+.hrIconButtonSm.hrIconButtonSm {
+  width: 2rem;
+  height: 2rem;
+  color: var(--sk-color-text-muted, #64748b);
+}
+
+/* Icon button whose value is set (a note is written): brand colour instead of muted. */
+.hrIconButtonActive.hrIconButtonActive {
+  color: var(--sk-color-brand, #1e3a5f);
+}
+
+/* Anchor + panel of the small note popover on the daily list. */
+.hrNoteAnchor {
+  position: relative;
+  display: inline-flex;
+}
+
+.hrNotePanel {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: var(--sk-z-dropdown, 1000);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-sm, 8px);
+  width: 18rem;
+  max-width: calc(100vw - 2rem);
+  padding: var(--sk-space-sm, 8px) 0.75rem 0.75rem;
+  border: 1px solid var(--sk-color-border-default, #e2e8f0);
+  border-radius: var(--sk-radius-md, 8px);
+  background: var(--sk-color-bg-elevated, #fff);
+  box-shadow: var(--sk-shadow-md, 0 4px 12px rgba(15, 23, 42, 0.12));
+}
+
+/*
+ * "Add from your team" dropdown in the Add employee modal: never wider than the modal (phones);
+ * the "label: value" text truncates instead of pushing the button past the edge.
+ */
+.hrTeamPicker,
+.hrTeamPicker > button {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.hrTeamPicker > button > span:first-child {
+  min-width: 0;
+}
+
+/* Line above the list ("Mon, 6 Oct · 4 employees · 1 unmarked"). */
+.hrDailySummary {
+  padding-bottom: var(--sk-space-xs, 4px);
+}
+
+/* A register mark that opens the day detail: no button chrome, keeps the cell compact. */
+.hrRegisterDayButton.hrRegisterDayButton {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  padding: 0.0625rem;
+  border-radius: var(--sk-radius-sm, 4px);
+}
+
+/* Phone icon of a self check-in day; in a register cell it sits on the mark's corner. */
+.hrSourceIcon {
+  flex-shrink: 0;
+  color: var(--sk-color-text-muted);
+}
+
+.hrRegisterDayButton .hrSourceIcon {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.25rem;
+  width: 0.625rem;
+  height: 0.625rem;
+}
+
+/* Side drawer with one employee-day's detail and change history. */
+.hrDayDrawer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-md, 16px);
+  height: 100%;
+  padding: var(--sk-space-lg, 24px);
+  overflow-y: auto;
+}
+
+/* Colour key under a calendar or register. */
+.hrLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sk-space-sm, 8px) var(--sk-space-md, 16px);
+  color: var(--sk-color-text-secondary, #475569);
+  font-size: var(--sk-text-caption, 0.8125rem);
+}
+
+.hrLegendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sk-space-xs, 4px);
+}
+
+/* Inside a CalendarMonthGrid day cell: day number on top, mark below. */
+.hrCalendarDay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.hrCalendarDayNumber {
+  color: var(--sk-color-text-muted, #64748b);
+  font-size: 0.6875rem;
+  line-height: 1;
+}
+
+/* HR settings tab on the Profile page: stacked sections with even spacing. */
+.hrSettingsSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-md, 16px);
+  max-width: 64rem;
+}
+
+/* HR inbox bell: positioning context for the absolutely placed NotificationDot. */
+.hrInboxAnchor {
+  position: relative;
+  display: inline-flex;
+}
