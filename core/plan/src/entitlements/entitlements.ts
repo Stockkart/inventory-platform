@@ -40,10 +40,6 @@ export function usageOfLimit(used: number, limit: number | null): string {
   return limit == null ? usedLabel : `${usedLabel} of ${limit.toLocaleString('en-IN')}`;
 }
 
-export function isAtLimit(used: number, limit: number | null): boolean {
-  return limit != null && used >= limit;
-}
-
 /** Every gated feature, split into what the plan includes and what an upgrade unlocks. */
 export function splitFeatures(entitlements: ShopEntitlementsResponse): {
   included: PlanFeature[];
