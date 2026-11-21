@@ -9,6 +9,7 @@ Subscription plans: status, payment flow, and marketing/landing plan surfaces.
 - Routes `/dashboard/plan-status`, `/dashboard/plan-payment`
 - Nav group **Plan & Billing**
 - Plans API, payment helpers, guards
+- Shop entitlements query (`useShopEntitlementsQuery`, key `planKeys.shopEntitlements(shopId)`). The dashboard layout passes it to the shell for nav and route gating. A verified payment invalidates `planKeys.all`, so the nav shows the new plan without a reload. The key carries the shop id, so a shop switch or a login as another shop never reads the previous shop's entitlements.
 - Marketing UI pieces used on public/plan pages
 
 ## Does not own
