@@ -15,9 +15,9 @@ import {
 import { PlanGrid } from '../ui/PlanGrid';
 import { AddOnTopUpSection } from '../ui/AddOnTopUpSection';
 import { addOnOnlyPaymentPath, canBuyAddOnsAlone, type AddOnOnlyIntent } from '../checkout';
-import { FEATURE_LABELS } from '../ui/planPricing';
+import { FEATURE_LABELS, formatRupees } from '../ui/planPricing';
 import { trialLabel } from '../ui/trialLabel';
-import { isPlanFeature, splitFeatures, usageOfLimit } from '../entitlements';
+import { boughtScansLeftLabel, isPlanFeature, splitFeatures, usageOfLimit } from '../entitlements';
 import { CampaignBanner } from '../campaign';
 import type { PlanResponse } from '@inventory-platform/plan/types';
 import { usePlansQuery, useShopEntitlementsQuery, useShopPlanStatusQuery } from '../queries/hooks';
@@ -86,10 +86,16 @@ export function PlanStatusPage() {
     : 'Active';
   const renewLabel = status.trial || status.planExpired ? 'Expires' : 'Renews';
 
-  const usageItems: { label: string; value: string; danger: boolean; comingSoon?: boolean }[] = [
+  const usageItems: {
+    label: string;
+    value: string;
+    danger: boolean;
+    comingSoon?: boolean;
+    hint?: string | null;
+  }[] = [
     {
       label: 'Billing amount',
-      value: `₹${status.currentUsage?.billingAmountUsed?.toLocaleString('en-IN') ?? 0}`,
+      value: formatRupees(status.currentUsage?.billingAmountUsed ?? 0),
       danger: status.billingLimitReached,
     },
     {
@@ -114,12 +120,13 @@ export function PlanStatusPage() {
     usageItems.push(
       {
         label: 'Team seats',
-        value: usageOfLimit(entitlements.userCount, entitlements.userLimit),
+        value: usageOfLimit(entitlements.userCount, entitlements.userLimit, 'seats'),
         danger: entitlements.seatLimitReached === true,
       },
       {
         label: 'Invoice scans',
-        value: usageOfLimit(entitlements.ocrUsed, entitlements.ocrLimit),
+        value: usageOfLimit(entitlements.ocrUsed, entitlements.ocrLimit, 'scans'),
+        hint: boughtScansLeftLabel(entitlements.ocrTopUpRemaining),
         danger: entitlements.ocrLimitReached === true,
       },
     );
@@ -213,6 +220,11 @@ export function PlanStatusPage() {
               >
                 {item.value}
               </Text>
+              {item.hint ? (
+                <Text as="span" variant="caption" color="secondary">
+                  {item.hint}
+                </Text>
+              ) : null}
             </Box>
           ))}
         </Box>
@@ -279,7 +291,8 @@ export function PlanStatusPage() {
           currentPlanId={status.trial ? null : status.planId}
           onSelectPlan={handleSelectPlan}
           ctaLabel={status.planExpired || status.trialExpired ? 'Select plan' : 'Upgrade'}
-          showTrialBadge
+          showTrialBadge={status.trialAvailable === true}
+          planOptions={status.planOptions}
         />
       </Stack>
 

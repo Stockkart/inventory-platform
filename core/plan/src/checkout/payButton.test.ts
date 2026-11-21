@@ -17,7 +17,7 @@ describe('orderFullyCovered', () => {
 
 describe('pricedPayLabel', () => {
   it('shows the quoted total', () => {
-    expect(pricedPayLabel({ ...idle, quote: due })).toBe('Pay ₹4,999');
+    expect(pricedPayLabel({ ...idle, quote: due })).toBe('Pay ₹4,999.00');
   });
 
   it('asks for an add-on when the cart is empty', () => {

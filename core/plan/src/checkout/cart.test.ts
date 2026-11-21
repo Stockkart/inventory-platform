@@ -51,8 +51,10 @@ describe('maxQuantityFor', () => {
 
 describe('addOnPriceLabel', () => {
   it('labels annual and one-time prices', () => {
-    expect(addOnPriceLabel(addOn({ price: 2999 }))).toBe('₹2,999 / year');
-    expect(addOnPriceLabel(addOn({ price: 499, billingType: 'ONE_TIME' }))).toBe('₹499 one-time');
+    expect(addOnPriceLabel(addOn({ price: 2999 }))).toBe('₹2,999.00 / year');
+    expect(addOnPriceLabel(addOn({ price: 499, billingType: 'ONE_TIME' }))).toBe(
+      '₹499.00 one-time',
+    );
   });
 });
 
@@ -84,6 +86,13 @@ describe('buildQuoteRequest', () => {
 });
 
 describe('buildAddOnOnlyRequest', () => {
+  it('asks for wallet credit on a scan pack bought on its own', () => {
+    expect(buildAddOnOnlyRequest({ OCR_TOPUP_500: 1 }, [], true)).toEqual({
+      addOns: [{ code: 'OCR_TOPUP_500', quantity: 1 }],
+      applyWalletCredit: true,
+    });
+  });
+
   it('sends add-ons with no plan code or duration', () => {
     expect(buildAddOnOnlyRequest({ SEAT: 2, OCR: 1 }, ['B', 'A'], true)).toEqual({
       addOns: [

@@ -450,7 +450,7 @@ export function PlanPaymentPage() {
       quoteFailed: quoteFailure != null,
     });
   } else if (selectedPlan) {
-    payLabel = `Pay ₹${selectedPlan.arcPrice?.toLocaleString('en-IN')}${
+    payLabel = `Pay ${formatRupees(selectedPlan.arcPrice ?? 0)}${
       selectedPlan.planName === 'Extra User Plan' ? ' per user/year' : '/year'
     }`;
   } else {
@@ -573,14 +573,14 @@ export function PlanPaymentPage() {
                     </Text>
                   ) : null}
                   <Text variant="title" weight="bold">
-                    ₹{selectedPlan.arcPrice?.toLocaleString('en-IN')} /{' '}
+                    {formatRupees(selectedPlan.arcPrice ?? 0)} /{' '}
                     {selectedPlan.planName === 'Extra User Plan' ? 'user/year' : 'year'}
                   </Text>
                   {selectedPlan.planName !== 'Extra User Plan' &&
                     selectedPlan.price != null &&
                     selectedPlan.price > 0 && (
                       <Text variant="caption" color="secondary">
-                        One-time ₹{selectedPlan.price?.toLocaleString('en-IN')} if taking support
+                        One-time {formatRupees(selectedPlan.price ?? 0)} if taking support
                       </Text>
                     )}
                   {selectedPlan.bestFor ? (

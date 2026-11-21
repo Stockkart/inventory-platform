@@ -32,8 +32,7 @@ function planCardProps(
     priceLabel: formatRupees(planYearlyPrice(plan)),
     listPriceLabel: planListPriceLabel(plan),
     periodLabel: '/year',
-    oneTimeLabel:
-      plan.price && plan.price > 0 ? `One-time ₹${plan.price.toLocaleString('en-IN')}` : null,
+    oneTimeLabel: plan.price && plan.price > 0 ? `One-time ${formatRupees(plan.price)}` : null,
     features,
     showTrialBadge: showTrial,
     trialLabel: freeTrialLabel(plan.trialDays),

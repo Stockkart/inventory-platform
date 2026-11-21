@@ -35,10 +35,18 @@ export function isPlanFeature(value: string | null | undefined): value is PlanFe
   return value != null && Object.hasOwn(FEATURE_LABELS, value);
 }
 
-/** "3 of 5", or just the count when unlimited. */
-export function usageOfLimit(used: number, limit: number | null): string {
+/** "Used 3 of 5 seats", or "Used 1,200 scans" when unlimited. */
+export function usageOfLimit(used: number, limit: number | null, unit: string): string {
   const usedLabel = used.toLocaleString('en-IN');
-  return limit == null ? usedLabel : `${usedLabel} of ${limit.toLocaleString('en-IN')}`;
+  return limit == null
+    ? `Used ${usedLabel} ${unit}`
+    : `Used ${usedLabel} of ${limit.toLocaleString('en-IN')} ${unit}`;
+}
+
+/** "500 bought scans left" while bought scan credits remain (API `ocrTopUpRemaining`), else null. */
+export function boughtScansLeftLabel(remaining: number | null | undefined): string | null {
+  if (remaining == null || remaining <= 0) return null;
+  return `${remaining.toLocaleString('en-IN')} bought scan${remaining === 1 ? '' : 's'} left`;
 }
 
 /** Every gated feature, split into what the plan includes and what an upgrade unlocks. */

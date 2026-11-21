@@ -157,7 +157,7 @@ describe('display helpers', () => {
   it('describes the discount and usage', () => {
     expect(describeVoucherValue({ type: 'FREE_ADDON', value: null })).toBe('Free');
     expect(describeVoucherValue({ type: 'PERCENT_OFF', value: 20 })).toBe('20% off');
-    expect(describeVoucherValue({ type: 'FLAT_OFF', value: 1500 })).toBe('₹1,500 off');
+    expect(describeVoucherValue({ type: 'FLAT_OFF', value: 1500 })).toBe('₹1,500.00 off');
     expect(voucherUsage(voucher())).toBe('3 / 10 (+1 held)');
     expect(voucherUsage(voucher({ maxRedemptions: null, reservedCount: 0 }))).toBe('3');
   });
