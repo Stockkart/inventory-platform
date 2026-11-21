@@ -177,11 +177,12 @@ export function useVerifyPlanPaymentMutation(
 ) {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (data) => plansApi.verifyPayment(data),
+    // After the spread, so a caller's onSuccess runs alongside the invalidation, never instead.
     onSuccess: (...args) => {
       void queryClient.invalidateQueries({ predicate: isPlanDataExceptQuote });
       options?.onSuccess?.(...args);
     },
-    ...options,
   });
 }

@@ -7,6 +7,7 @@ export {
   newIdempotencyKey,
   normaliseVoucherCode,
   paidFromWallet,
+  quoteFailureMessage,
   readVoucherRejection,
   sellableAddOns,
   voucherRejectionMessage,
@@ -34,3 +35,4 @@ export {
   pricedPayLabel,
   type PricedPayLabelInput,
 } from './payButton';
+export { confirmingMessage, orderStage, type OrderStage } from './orderState';

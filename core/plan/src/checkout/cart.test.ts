@@ -9,6 +9,7 @@ import {
   maxQuantityFor,
   normaliseVoucherCode,
   paidFromWallet,
+  quoteFailureMessage,
   readVoucherRejection,
   sellableAddOns,
   vouchersAfterRejection,
@@ -184,5 +185,34 @@ describe('checkoutFingerprint', () => {
     const before = checkoutFingerprint(request, { grandTotal: 900, walletCredit: 0 });
     expect(checkoutFingerprint(request, { grandTotal: 1000, walletCredit: 0 })).not.toBe(before);
     expect(checkoutFingerprint(request, { grandTotal: 900, walletCredit: 100 })).not.toBe(before);
+  });
+});
+
+describe('quoteFailureMessage', () => {
+  const rejected = (voucherCode: string | null) =>
+    new ApiError('rejected', {
+      status: 400,
+      code: 'VOUCHER_REJECTED',
+      details: { voucherCode, reason: 'NOT_FOUND' },
+    });
+
+  it('is empty without an error', () => {
+    expect(quoteFailureMessage(null, [])).toBeNull();
+  });
+
+  it('leaves a rejected voucher that is applied to the voucher field', () => {
+    expect(quoteFailureMessage(rejected('A'), ['A', 'B'])).toBeNull();
+    expect(quoteFailureMessage(rejected(null), ['A'])).toBeNull();
+  });
+
+  it('reports a rejection that leaves nothing to drop, so the cart is not stuck pricing', () => {
+    expect(quoteFailureMessage(rejected('GONE'), ['A'])).toBe('This voucher code does not exist.');
+    expect(quoteFailureMessage(rejected(null), [])).toBe('This voucher code does not exist.');
+  });
+
+  it('reports any other error', () => {
+    expect(quoteFailureMessage(new ApiError('Server down', { status: 503 }), [])).toBe(
+      'Server down',
+    );
   });
 });

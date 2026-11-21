@@ -137,6 +137,21 @@ export function vouchersAfterRejection(codes: string[], rejection: VoucherDenial
 }
 
 /**
+ * Why the quote failed, for the Retry alert, or null when the voucher field already says it.
+ * A rejected voucher that is not in the applied list (nothing left to drop) would otherwise leave
+ * the cart unpriced with no message, so it counts as a quote failure too.
+ */
+export function quoteFailureMessage(error: unknown, appliedVouchers: string[]): string | null {
+  if (!error) return null;
+  const rejection = readVoucherRejection(error);
+  if (rejection) {
+    const remaining = vouchersAfterRejection(appliedVouchers, rejection);
+    return remaining.length === appliedVouchers.length ? rejection.message : null;
+  }
+  return error instanceof Error ? error.message : 'Could not price this order';
+}
+
+/**
  * What one idempotency key stands for: the cart plus the totals the shopper was shown. The server
  * replays an order for a reused key, so a new total (a voucher ran out, wallet credit moved) must
  * get a new key or the shopper pays the old amount.
