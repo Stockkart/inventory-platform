@@ -32,3 +32,7 @@ Use ui-kit marketing patterns (`PlanCard`, `MarketingHero`, …) and solid butto
 ## Tests
 
 `nx test plan` runs `src/**/*.test.ts(x)` with the same setup as `core/user` (`vitest.config.ts`, `vitest.setup.ts`, `tsconfig.spec.json`): `src/ui/**` in jsdom, everything else in node. CI runs it with every other test target.
+
+## Usage tiles
+
+The seat and scan tiles on My Plan turn red only on the API's `seatLimitReached` / `ocrLimitReached` (entitlements response); the page never compares usage with limits itself.
