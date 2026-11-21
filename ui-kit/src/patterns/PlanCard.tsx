@@ -14,6 +14,8 @@ export interface PlanCardProps {
   oneTimeLabel?: string | null;
   features: string[];
   showTrialBadge?: boolean;
+  /** Trial badge text, e.g. "Free 3-day trial"; the caller formats the API's trial length. */
+  trialLabel?: string;
   highlighted?: boolean;
   showPopularBadge?: boolean;
   ctaLabel?: string;
@@ -31,6 +33,7 @@ export function PlanCard({
   oneTimeLabel,
   features,
   showTrialBadge = true,
+  trialLabel = 'Free trial',
   highlighted = false,
   showPopularBadge = false,
   ctaLabel = 'Get Started',
@@ -47,7 +50,7 @@ export function PlanCard({
       ) : null}
 
       <Box className={styles.inner}>
-        {showTrialBadge ? <span className={styles.trial}>Free 3-day trial</span> : null}
+        {showTrialBadge ? <span className={styles.trial}>{trialLabel}</span> : null}
 
         <Text as="h3" className={styles.name}>
           {name}
