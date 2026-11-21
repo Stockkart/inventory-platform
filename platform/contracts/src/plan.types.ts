@@ -81,6 +81,10 @@ export interface ShopEntitlementsResponse {
   ocrLimit: number | null;
   ocrUsed: number;
   expiresAt: string | null;
+  /** All seats are taken (API decides). Absent on older APIs: then no warning is shown. */
+  seatLimitReached?: boolean;
+  /** Included scans and purchased scan credits are used up (API decides). Absent on older APIs. */
+  ocrLimitReached?: boolean;
 }
 
 /** `code` on a 402 when the plan does not allow an action. */
