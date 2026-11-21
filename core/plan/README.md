@@ -28,3 +28,7 @@ Use ui-kit marketing patterns (`PlanCard`, `MarketingHero`, …) and solid butto
 
 - `@inventory-platform/contracts` — plan types / guards
 - `@inventory-platform/session` — plan status for access
+
+## Tests
+
+`nx test plan` runs `src/**/*.test.ts(x)` with the same setup as `core/user` (`vitest.config.ts`, `vitest.setup.ts`, `tsconfig.spec.json`): `src/ui/**` in jsdom, everything else in node. CI runs it with every other test target.
