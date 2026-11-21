@@ -17,11 +17,11 @@ import {
   TableLoadingRow,
   TableRow,
   Text,
+  ReasonDialog,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import type { AdminCampaign } from '@inventory-platform/plan/types';
-import { useAdminCampaignsQuery, useSetCampaignActiveMutation } from '../admin/hooks';
-import { ReasonDialog } from '../admin/ReasonDialog';
+import { useAdminCampaignsQuery, useSetCampaignActiveMutation } from '../queries/admin.hooks';
 import { adminErrorMessage, formatAdminDate } from '../admin/format';
 import { CAMPAIGN_THEME_LABEL, campaignVisibility } from '../admin/campaigns/campaignForm';
 import { CampaignFormModal } from '../admin/campaigns/CampaignFormModal';

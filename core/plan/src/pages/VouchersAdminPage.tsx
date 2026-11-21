@@ -19,6 +19,7 @@ import {
   TableLoadingRow,
   TableRow,
   Text,
+  ReasonDialog,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import type { AdminVoucher, VoucherTarget } from '@inventory-platform/plan/types';
@@ -26,8 +27,7 @@ import {
   useAdminAddOnsQuery,
   useAdminVouchersQuery,
   useSetVoucherActiveMutation,
-} from '../admin/hooks';
-import { ReasonDialog } from '../admin/ReasonDialog';
+} from '../queries/admin.hooks';
 import { adminErrorMessage, formatAdminDate } from '../admin/format';
 import {
   describeVoucherTarget,

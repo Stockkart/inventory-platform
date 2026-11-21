@@ -14,7 +14,7 @@ import {
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import type { AdminPlan, PlanFeature } from '@inventory-platform/plan/types';
-import { useSavePlanMutation } from '../hooks';
+import { useSavePlanMutation } from '../../queries/admin.hooks';
 import { adminErrorMessage } from '../format';
 import { FEATURE_LABELS } from '../../ui/planPricing';
 import { emptyPlanForm, planFormState, toPlanRequest, type PlanFormState } from './catalogueForm';

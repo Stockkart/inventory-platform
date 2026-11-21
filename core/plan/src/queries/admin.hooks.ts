@@ -14,8 +14,8 @@ import type {
   ReferralRewardStatus,
   WalletAdjustmentRequest,
 } from '@inventory-platform/plan/types';
-import { planKeys } from '../queries/keys';
-import { planAdminApi } from './admin.api';
+import { planAdminApi } from '../api/admin.api';
+import { planKeys } from './keys';
 
 export function useAdminAttributionsQuery(status: ReferralAttributionStatus) {
   return useQuery({

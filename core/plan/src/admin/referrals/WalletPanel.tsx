@@ -19,7 +19,7 @@ import {
   Textarea,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
-import { useAdjustWalletMutation, useAdminWalletQuery } from '../hooks';
+import { useAdjustWalletMutation, useAdminWalletQuery } from '../../queries/admin.hooks';
 import {
   adminErrorMessage,
   formatAdminDate,

@@ -14,7 +14,7 @@ import {
 } from '@inventory-platform/ui-kit';
 import type { BadgeVariant } from '@inventory-platform/ui-kit';
 import type { AdminVoucher, VoucherRedemptionStatus } from '@inventory-platform/plan/types';
-import { useVoucherRedemptionsQuery } from '../hooks';
+import { useVoucherRedemptionsQuery } from '../../queries/admin.hooks';
 import { adminErrorMessage, formatAdminDate } from '../format';
 import { formatRupees } from '../../ui/planPricing';
 

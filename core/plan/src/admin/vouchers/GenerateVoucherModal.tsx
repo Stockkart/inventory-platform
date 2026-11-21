@@ -11,6 +11,7 @@ import {
   Stack,
   Text,
   Textarea,
+  useDebouncedValue,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import type {
@@ -19,8 +20,11 @@ import type {
   VoucherTarget,
   VoucherType,
 } from '@inventory-platform/plan/types';
-import { useAdminPlansQuery, useGenerateVouchersMutation, usePlanVoucherPreview } from '../hooks';
-import { useDebouncedValue } from '../useDebouncedValue';
+import {
+  useAdminPlansQuery,
+  useGenerateVouchersMutation,
+  usePlanVoucherPreview,
+} from '../../queries/admin.hooks';
 import { adminErrorMessage } from '../format';
 import {
   emptyVoucherForm,
