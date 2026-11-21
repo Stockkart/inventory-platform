@@ -20,7 +20,10 @@ export const hrSettingsApi = {
     return response.data;
   },
 
-  /** Partial update; send `revision` once settings have been saved. */
+  /**
+   * Partial update; send `revision` once settings have been saved. `attendanceCapture.biometricApp`
+   * needs MANAGE_SETTINGS like the rest (R1.7).
+   */
   updateSettings: async (body: UpdateHrSettingsRequest): Promise<HrSettingsResponse> => {
     const response = await apiClient.put<ApiResponse<HrSettingsResponse>>(
       HR_ENDPOINTS.SETTINGS,

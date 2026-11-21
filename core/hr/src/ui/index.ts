@@ -27,6 +27,7 @@ export {
 } from './EmployeePicker';
 export { LeaveTypePicker, type LeaveTypePickerProps } from './LeaveTypePicker';
 export { RecordLeaveModal, type RecordLeaveModalProps } from './RecordLeaveModal';
+export { MarkReasonModal, type MarkReasonModalProps } from './MarkReasonModal';
 export { LeaveDecisionModal, type LeaveDecisionModalProps } from './LeaveDecisionModal';
 export { LeaveRequestsTable, type LeaveRequestsTableProps } from './LeaveRequestsTable';
 export { LeaveBalancesTable, type LeaveBalancesTableProps } from './LeaveBalancesTable';
@@ -50,3 +51,11 @@ export {
   type EmployeeNameLinkProps,
 } from './EmployeeNameLink';
 export { HrBackLink, type HrBackLinkProps } from './HrBackLink';
+export {
+  EmployeePairingCard,
+  PairingPanel,
+  type EmployeePairingCardProps,
+  type PairingPanelProps,
+} from './EmployeePairingCard';
+export { MyPairingCard } from './MyPairingCard';
+export { AppHealthBanner, appHealthAlertText, formatFailureRate } from './AppHealthBanner';

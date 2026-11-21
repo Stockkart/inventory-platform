@@ -4,7 +4,7 @@
 # ── Areas (layer) ──────────────────────────────────────────────
 - name: area:app
   color: '7C3AED'
-  description: apps/inventory changes
+  description: apps/* changes (inventory web app, attendance Expo app)
 - name: area:ui-kit
   color: 'EC4899'
   description: Design system / ui-kit
@@ -90,6 +90,12 @@
 - name: module:contracts
   color: '312E81'
   description: platform/contracts
+- name: module:attendance-protocol
+  color: '1E3A8A'
+  description: platform/attendance-protocol
+- name: module:attendance
+  color: '1D4ED8'
+  description: apps/attendance (Expo Attendance app)
 
 # ── Plugins ────────────────────────────────────────────────────
 - name: module:plugin-cafe

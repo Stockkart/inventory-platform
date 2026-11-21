@@ -20,8 +20,9 @@ function toQuery(params: EmployeeListParams): Record<string, string> {
   return query;
 }
 
-/** Employees and the login picker (`EmployeeController`). */
+/** Employees and the login picker (`EmployeeController`); pairing is in `pairing.api.ts`. */
 export const employeesApi = {
+  /** `paired` (true/false) narrows to employees with / without an active paired phone (R8.12). */
   list: async (params: EmployeeListParams = {}): Promise<EmployeesPageResponse> => {
     const response = await apiClient.get<ApiResponse<EmployeesPageResponse>>(
       HR_ENDPOINTS.EMPLOYEES,

@@ -96,6 +96,16 @@ describe('accessNav HR gating', () => {
     expect(canAccessDashboardPath('/dashboard/hr/settings', null)).toBe(false);
   });
 
+  it('opens the Attendance app privacy note to any HR staff or linked employee (HR-module R9.14)', () => {
+    const path = '/dashboard/hr/attendance-app-privacy';
+    expect(canAccessDashboardPath(path, withPerms(['VIEW_EMPLOYEES']))).toBe(true);
+    expect(canAccessDashboardPath(path, withPerms(['SELF_CHECK_IN']))).toBe(true);
+    expect(canAccessDashboardPath(path, withPerms([], 'emp-1'))).toBe(true);
+    expect(canAccessDashboardPath(path, withPerms([]))).toBe(false);
+    expect(canAccessDashboardPath(path, access(null))).toBe(false);
+    expect(canAccessDashboardPath(path, null)).toBe(false);
+  });
+
   it('opens payroll with either RUN_PAYROLL or RECORD_PAYMENTS, advances with MANAGE_ADVANCES', () => {
     expect(canAccessDashboardPath('/dashboard/hr/payroll', withPerms(['RUN_PAYROLL']))).toBe(true);
     expect(

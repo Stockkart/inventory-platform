@@ -12,6 +12,7 @@ import {
 import {
   DAY_STATUS_LABELS,
   captureChips,
+  daySourceIcon,
   MAX_ATTENDANCE_NOTE_LENGTH,
   isFullDayLeave,
   takesNote,
@@ -85,7 +86,8 @@ export function AttendanceDailyRow({
             {row.name}
           </Text>
           <Box as="span" className={hrChrome.hrDailyRowMeta}>
-            <CaptureSourceIcon source={row.markSource} />
+            {/* One icon per day (R8.1–R8.2): hand wins, else the earliest counted punch. */}
+            <CaptureSourceIcon source={daySourceIcon(row)} />
             {row.late ? (
               <Badge variant="warning" className={hrChrome.hrChip}>
                 Late
@@ -106,11 +108,19 @@ export function AttendanceDailyRow({
                 {DAY_STATUS_LABELS[row.status]}
               </Badge>
             ) : null}
+            {/* Each chip at most once per row (R8.3), `captureChips` dedupes the words. */}
             {captureChips(row).map((chip) => (
               <Badge key={chip} variant="warning" className={hrChrome.hrChip}>
                 {chip}
               </Badge>
             ))}
+            {/* Today, Attendance app on, paired phone, no punch and no mark yet (R7.7–R7.8). The
+                day stays Unmarked; the hint only says the app has not been used yet. */}
+            {row.noPunchYet === true ? (
+              <Badge variant="neutral" className={hrChrome.hrChip}>
+                No punch yet
+              </Badge>
+            ) : null}
             {changed ? (
               <Badge variant="neutral" className={hrChrome.hrChip}>
                 Not saved

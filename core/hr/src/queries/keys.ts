@@ -45,6 +45,17 @@ export const hrKeys = {
   /** Every employee (all pages) for pickers; nested so employee writes refresh it. */
   employeeOptions: (shopId: string) => [...employees(shopId), 'options'] as const,
   linkableLogins: (shopId: string) => [...shop(shopId), 'linkable-logins'] as const,
+  /**
+   * One employee's Attendance app pairing state (design: `['hr', shopId, 'pairing', employeeId]`).
+   * Its own sub-tree, not under `employees`: pairing changes refresh the whole shop anyway (the
+   * employee list, settings count and register rows all carry pairing-derived fields).
+   */
+  pairing: (shopId: string, employeeId: string) =>
+    [...shop(shopId), 'pairing', employeeId] as const,
+  /** Open signature-failure alerts for the HR landing banner (R10.5), polled every 5 minutes. */
+  appHealth: (shopId: string) => [...shop(shopId), 'app-health'] as const,
+  /** The latest consent text, read for the privacy note (R9.14); carries no shop data. */
+  consentLatest: (shopId: string) => [...shop(shopId), 'consent-latest'] as const,
   attendance,
   attendanceDaily: (shopId: string, date: string) =>
     [...attendance(shopId), 'daily', date] as const,
@@ -84,6 +95,8 @@ export const hrKeys = {
   mePayslips: (shopId: string) => [...me(shopId), 'payslips'] as const,
   /** Check-in status only; the phone's location is never part of a key. */
   meCheckIn: (shopId: string) => [...me(shopId), 'check-in'] as const,
+  /** The linked employee's own pairing state (R2.13). */
+  mePairing: (shopId: string) => [...me(shopId), 'pairing'] as const,
   /**
    * The inbox (items gathered so far + cursor). Outside the `me` sub-tree on purpose: writes
    * refresh `me`, but the inbox only moves forward by its own polls.

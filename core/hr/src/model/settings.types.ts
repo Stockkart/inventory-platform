@@ -45,10 +45,18 @@ export interface WeeklyOffEntryDto {
 /** Backend `OutsideAction`: what self check-in does outside the shop radius or without a location. */
 export type OutsideAction = 'BLOCK' | 'FLAG';
 
-/** `HrSettingsResponse.AttendanceCaptureDto`: self check-in and location check, defaults filled in. */
+/**
+ * `HrSettingsResponse.AttendanceCaptureDto`: self check-in, biometric app check-in and location
+ * check, defaults filled in.
+ */
 export interface AttendanceCaptureDto {
   selfCheckIn: boolean;
-  /** Only works while `selfCheckIn` is on. */
+  /**
+   * Biometric app check-in (R1.1); off by default and independent of `selfCheckIn` (R1.2). Missing
+   * on older backends (= off).
+   */
+  biometricApp?: boolean | null;
+  /** Limits self check-in and app punches to the shop radius. */
   locationCheck: boolean;
   /** null = shop location not set yet. */
   shopLat?: number | null;
@@ -88,6 +96,11 @@ export interface HrSettingsResponse {
   currentSalaryPeriod?: string | null;
   /** Missing on older backends (= everything off). */
   attendanceCapture?: AttendanceCaptureDto | null;
+  /**
+   * Current (not exited) employees with an active paired Attendance app phone, as of this read
+   * (R1.9); shown whatever the switch says. Missing on older backends (= 0).
+   */
+  pairedEmployeeCount?: number | null;
   /** Send back on PUT for lost-update protection; null = never saved. */
   revision?: number | null;
   updatedAt?: string | null;

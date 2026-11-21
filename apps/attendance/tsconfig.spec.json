@@ -1,0 +1,38 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "outDir": "./out-tsc/vitest",
+    "tsBuildInfoFile": "./out-tsc/vitest/tsconfig.spec.tsbuildinfo",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "customConditions": ["react-native", "@inventory-platform/source"],
+    "lib": ["es2022", "dom"],
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["node", "vitest/importMeta"],
+    "paths": {
+      "@inventory-platform/attendance-protocol": [
+        "../../platform/attendance-protocol/src/index.ts"
+      ],
+      "@inventory-platform/contracts": ["../../platform/contracts/src/index.ts"]
+    }
+  },
+  "include": [
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.tsx",
+    "src/**/*.d.ts",
+    "test-support/**/*.ts",
+    "test-support/**/*.tsx"
+  ],
+  "references": [
+    {
+      "path": "./tsconfig.app.json"
+    }
+  ]
+}

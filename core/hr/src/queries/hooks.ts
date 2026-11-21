@@ -43,17 +43,21 @@ import type {
   HrRolePermissionsResponse,
   HrSettingsResponse,
   LeaveTypeResponse,
+  PairingCodeResponse,
+  PairingStateResponse,
   SaveEmployeeRequest,
   SaveHolidayRequest,
   SaveLeaveTypeRequest,
   UpdateHrRolePermissionsRequest,
   UpdateHrSettingsRequest,
 } from '@inventory-platform/hr/types';
+import { APP_HEALTH_POLL_MS } from '@inventory-platform/hr/types';
 import { advancesApi } from '../api/advances.api';
 import { attendanceApi } from '../api/attendance.api';
 import { employeesApi } from '../api/employees.api';
 import { leaveApi } from '../api/leave.api';
 import { meApi } from '../api/me.api';
+import { pairingApi } from '../api/pairing.api';
 import { payrollApi } from '../api/payroll.api';
 import { hrSettingsApi } from '../api/settings.api';
 import { hrKeys } from './keys';
@@ -794,6 +798,108 @@ export function useCheckInMutation() {
       void queryClient.invalidateQueries({ queryKey: hrKeys.me(shopId) });
       void queryClient.invalidateQueries({ queryKey: hrKeys.attendance(shopId) });
     },
+  });
+}
+
+// ---- Attendance app pairing and health (HR-module spec) ----
+
+/**
+ * A pairing change touches more than the pairing card: the employee list and detail
+ * (`appPaired`), the settings count (`pairedEmployeeCount`), register rows (`markReasonRequired`,
+ * `noPunchYet`) and My HR. Seed the card with the server's answer, then refresh the shop's tree.
+ */
+function onPairingChanged(
+  queryClient: QueryClient,
+  shopId: string,
+  employeeId: string,
+  state: PairingStateResponse,
+) {
+  queryClient.setQueryData(hrKeys.pairing(shopId, employeeId), state);
+  void invalidateShop(queryClient, shopId);
+}
+
+/** ADD_EDIT_EMPLOYEES: the Attendance app section of an employee's page (R2.1–R2.2). */
+export function usePairingQuery(employeeId: string | undefined, enabled = true) {
+  const shopId = useHrShopId();
+  return useQuery({
+    queryKey: hrKeys.pairing(shopId, employeeId ?? ''),
+    // `enabled` guarantees an id here; the fallback only satisfies the type.
+    queryFn: () => pairingApi.state(employeeId ?? ''),
+    enabled: Boolean(shopId) && Boolean(employeeId) && enabled,
+  });
+}
+
+/**
+ * "Pair a phone" / "Replace the old phone?": a fresh code (R2.3, R2.10). The old phone stays paired
+ * until the new pairing completes, so only the card's pending-code state is refreshed here; the
+ * card polls or refetches to learn when the phone has paired.
+ */
+export function useCreatePairingCodeMutation() {
+  const shopId = useHrShopId();
+  const queryClient = useQueryClient();
+  return useMutation<PairingCodeResponse, Error, string>({
+    mutationFn: (employeeId) => pairingApi.createCode(employeeId),
+    onSuccess: (_code, employeeId) => {
+      void queryClient.invalidateQueries({ queryKey: hrKeys.pairing(shopId, employeeId) });
+    },
+  });
+}
+
+/** "Unpair phone" (R2.12, R3.1). */
+export function useUnpairMutation() {
+  const shopId = useHrShopId();
+  const queryClient = useQueryClient();
+  return useMutation<PairingStateResponse, Error, string>({
+    mutationFn: (employeeId) => pairingApi.unpair(employeeId),
+    onSuccess: (state, employeeId) => onPairingChanged(queryClient, shopId, employeeId, state),
+  });
+}
+
+/** Own pairing on My HR (R2.13); `enabled` should follow `useHrAccess().employeeId`. */
+export function useMyPairingQuery(enabled = true) {
+  const shopId = useHrShopId();
+  return useQuery({
+    queryKey: hrKeys.mePairing(shopId),
+    queryFn: () => pairingApi.myState(),
+    enabled: Boolean(shopId) && enabled,
+  });
+}
+
+/** A code for the caller's own phone (R2.13). */
+export function useCreateMyPairingCodeMutation() {
+  const shopId = useHrShopId();
+  const queryClient = useQueryClient();
+  return useMutation<PairingCodeResponse, Error, void>({
+    mutationFn: () => pairingApi.createMyCode(),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: hrKeys.mePairing(shopId) });
+    },
+  });
+}
+
+/**
+ * VIEW_ATTENDANCE: open signature-failure alerts for the HR landing banner (R10.5). Re-read every
+ * 5 minutes while the page is open, the same cadence the server recalculates at (R10.4).
+ */
+export function useAppHealthQuery(enabled = true) {
+  const shopId = useHrShopId();
+  return useQuery({
+    queryKey: hrKeys.appHealth(shopId),
+    queryFn: () => pairingApi.health(),
+    enabled: Boolean(shopId) && enabled,
+    refetchInterval: APP_HEALTH_POLL_MS,
+    staleTime: APP_HEALTH_POLL_MS,
+  });
+}
+
+/** The latest consent text for the privacy note (R9.14). Changes only with a release. */
+export function useConsentLatestQuery(enabled = true) {
+  const shopId = useHrShopId();
+  return useQuery({
+    queryKey: hrKeys.consentLatest(shopId),
+    queryFn: () => pairingApi.consentLatest(),
+    enabled: Boolean(shopId) && enabled,
+    staleTime: Infinity,
   });
 }
 

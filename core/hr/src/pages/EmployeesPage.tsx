@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import {
   Alert,
   Badge,
@@ -53,20 +53,35 @@ import {
 } from '../queries/hooks';
 import { EmployeeForm } from '../ui/EmployeeForm';
 import { employeePath } from '../ui/EmployeeNameLink';
+import { AppHealthBanner } from '../ui/AppHealthBanner';
 import { HrGetStartedCard } from '../ui/HrGetStartedCard';
 import { TeamLoginPicker } from '../ui/TeamLoginPicker';
 
 type StatusFilter = EmployeeStatus | 'ALL';
+/** "App paired" filter (R8.12); `true` / `false` go to the server as `?paired=`. */
+type PairedFilter = 'ALL' | 'true' | 'false';
 
 const STATUS_OPTIONS = [
   { value: 'ACTIVE', label: 'Active' },
   { value: 'EXITED', label: 'Exited' },
   { value: 'ALL', label: 'Everyone' },
 ];
+const PAIRED_OPTIONS: { value: PairedFilter; label: string }[] = [
+  { value: 'ALL', label: 'All' },
+  { value: 'true', label: 'Paired' },
+  { value: 'false', label: 'Not paired' },
+];
 const ANY_DESIGNATION = '';
+
+/** The settings card links here with `?paired=true` (R1.9); anything else means "All". */
+function pairedFilterFrom(params: URLSearchParams): PairedFilter {
+  const raw = params.get('paired');
+  return raw === 'true' || raw === 'false' ? raw : 'ALL';
+}
 
 export function EmployeesPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { can, isOwner } = useHrAccess();
   const currentUserId = useAuthStore((s) => s.user?.userId ?? null);
   const canView = can('VIEW_EMPLOYEES');
@@ -83,11 +98,27 @@ export function EmployeesPage() {
   const [size, setSize] = useState(20);
   const [statusOpen, setStatusOpen] = useState(false);
   const [designationOpen, setDesignationOpen] = useState(false);
+  const [pairedOpen, setPairedOpen] = useState(false);
+  // Kept in the URL, not in state, so the settings-card link preselects it and the page is shareable.
+  const paired = pairedFilterFrom(searchParams);
+  const setPaired = (next: PairedFilter) => {
+    setSearchParams(
+      (prev) => {
+        const out = new URLSearchParams(prev);
+        if (next === 'ALL') out.delete('paired');
+        else out.set('paired', next);
+        return out;
+      },
+      { replace: true },
+    );
+    setPage(0);
+  };
 
   const params: EmployeeListParams = {
     q: query || undefined,
     status: status === 'ALL' ? undefined : status,
     designation: designation || undefined,
+    paired: paired === 'ALL' ? undefined : paired === 'true',
     page,
     size,
   };
@@ -157,7 +188,7 @@ export function EmployeesPage() {
 
   const rows = list.data?.items ?? [];
   const pageMeta = list.data?.page;
-  const noFilters = !query && status === 'ACTIVE' && !designation;
+  const noFilters = !query && status === 'ACTIVE' && !designation && paired === 'ALL';
   // Show the guide instead of an empty table while the shop has no employees at all.
   const showGuide =
     setup.data != null &&
@@ -186,6 +217,8 @@ export function EmployeesPage() {
           </>
         }
       />
+
+      <AppHealthBanner />
 
       {showGuide && setup.data ? (
         <HrGetStartedCard status={setup.data} onAddEmployee={canEdit ? openCreate : undefined} />
@@ -252,6 +285,25 @@ export function EmployeesPage() {
             }}
           />
         </FilterDropdown>
+        <FilterDropdown
+          label="App paired"
+          value={
+            paired === 'ALL' ? undefined : PAIRED_OPTIONS.find((o) => o.value === paired)?.label
+          }
+          open={pairedOpen}
+          onOpenChange={setPairedOpen}
+          onRemove={paired !== 'ALL' ? () => setPaired('ALL') : undefined}
+        >
+          <ChoiceList
+            aria-label="App paired"
+            options={PAIRED_OPTIONS}
+            value={paired}
+            onChange={(v) => {
+              setPaired(v as PairedFilter);
+              setPairedOpen(false);
+            }}
+          />
+        </FilterDropdown>
       </FilterStrip>
 
       {list.error ? <Alert variant="danger">{list.error.message}</Alert> : null}
@@ -273,14 +325,15 @@ export function EmployeesPage() {
                 <TableHeaderCell>Designation</TableHeaderCell>
                 <TableHeaderCell>Phone</TableHeaderCell>
                 <TableHeaderCell>Login</TableHeaderCell>
+                <TableHeaderCell>App paired</TableHeaderCell>
                 <TableHeaderCell>Status</TableHeaderCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {list.isLoading ? (
-                <TableLoadingRow colSpan={6} />
+                <TableLoadingRow colSpan={7} />
               ) : rows.length === 0 ? (
-                <TableEmptyRow colSpan={6} message="No employees found" />
+                <TableEmptyRow colSpan={7} message="No employees found" />
               ) : (
                 rows.map((e) => (
                   <TableRow key={e.id}>
@@ -291,6 +344,7 @@ export function EmployeesPage() {
                     <TableCell>{e.designation || '—'}</TableCell>
                     <TableCell>{e.phone || '—'}</TableCell>
                     <TableCell>{e.userId ? 'Linked' : '—'}</TableCell>
+                    <TableCell>{e.appPaired == null ? '—' : e.appPaired ? 'Yes' : 'No'}</TableCell>
                     <TableCell>
                       <Badge variant={e.status === 'ACTIVE' ? 'success' : 'neutral'}>
                         {EMPLOYEE_STATUS_LABELS[e.status]}

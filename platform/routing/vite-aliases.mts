@@ -142,6 +142,7 @@ export function generateInventoryWorkspaceAliases({
     '@inventory-platform/query': platform('query/src/index.ts'),
     '@inventory-platform/session': platform('session/src/index.ts'),
     '@inventory-platform/api-client': platform('api-client/src/index.ts'),
+    '@inventory-platform/attendance-protocol': platform('attendance-protocol/src/index.ts'),
     '@inventory-platform/routing': platform('routing/src/index.ts'),
     '@inventory-platform/shell/guards': platform('shell/src/guards/index.ts'),
     '@inventory-platform/shell': platform('shell/src/index.ts'),

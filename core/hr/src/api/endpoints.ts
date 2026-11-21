@@ -2,7 +2,8 @@
  * HR REST paths (relative to the api-client base, i.e. without `/api/v1`).
  * Settings, holidays, leave types, role grid, setup status, employees and linkable logins are
  * here (task 13.2); attendance and leave since run F3; advances and payroll (runs, adjustments,
- * finalise, reopen) since run F4; payments, payslips, registers, exports and `/me` since run F5.
+ * finalise, reopen) since run F4; payments, payslips, registers, exports and `/me` since run F5;
+ * Attendance app pairing, health and consent since the HR-module (biometric app) spec.
  */
 export const HR_ENDPOINTS = {
   BASE: '/hr',
@@ -19,6 +20,14 @@ export const HR_ENDPOINTS = {
   EMPLOYEE_SALARY_REVISIONS: (id: string) =>
     `/hr/employees/${encodeURIComponent(id)}/salary-revisions`,
   EMPLOYEE_EXIT: (id: string) => `/hr/employees/${encodeURIComponent(id)}/exit`,
+  // Attendance app pairing of one employee (`EmployeeController`, ADD_EDIT_EMPLOYEES).
+  EMPLOYEE_PAIRING: (id: string) => `/hr/employees/${encodeURIComponent(id)}/pairing`,
+  EMPLOYEE_PAIRING_CODES: (id: string) => `/hr/employees/${encodeURIComponent(id)}/pairing-codes`,
+  EMPLOYEE_PAIRING_UNPAIR: (id: string) => `/hr/employees/${encodeURIComponent(id)}/pairing/unpair`,
+  // Attendance app health alerts (`AttendanceAppController`; Bearer chain, VIEW_ATTENDANCE) and
+  // the consent text the privacy note is built from (public, no shop data).
+  ATTENDANCE_APP_HEALTH: '/hr/attendance-app/health',
+  ATTENDANCE_APP_CONSENT_LATEST: '/hr/attendance-app/consent/latest',
   LINKABLE_LOGINS: '/hr/linkable-logins',
   ATTENDANCE_DAILY: '/hr/attendance/daily',
   ATTENDANCE_DAYS: '/hr/attendance/days',
@@ -66,6 +75,9 @@ export const HR_ENDPOINTS = {
   ME_PAYSLIPS: '/hr/me/payslips',
   ME_CHECK_IN: '/hr/me/check-in',
   ME_PUNCHES: '/hr/me/punches',
+  // The linked employee's own Attendance app pairing (R2.13); `pairedBy` comes back as "self".
+  ME_PAIRING: '/hr/me/pairing',
+  ME_PAIRING_CODES: '/hr/me/pairing-codes',
   ME_PAYSLIP_PDF: (lineId: string) => `/hr/me/payslips/${encodeURIComponent(lineId)}/pdf`,
   ME_NOTIFICATIONS: '/hr/me/notifications',
   ME_NOTIFICATION_READ: (id: string) => `/hr/me/notifications/${encodeURIComponent(id)}/read`,

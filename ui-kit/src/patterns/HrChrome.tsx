@@ -57,10 +57,12 @@ export const hrChrome = {
   hrTeamPicker: styles.hrTeamPicker,
   /** Clickable mark in a month register cell (opens the day detail). */
   hrRegisterDayButton: styles.hrRegisterDayButton,
-  /** Small muted source icon (phone = self check-in) beside a mark or a name. */
+  /** Small muted source icon (hand / phone / fingerprint) beside a name or a punch row. */
   hrSourceIcon: styles.hrSourceIcon,
   /** Day detail drawer body: padded, scrolls on its own. */
   hrDayDrawer: styles.hrDayDrawer,
+  /** A duplicate punch row in the day drawer: greyed out, never hidden. */
+  hrPunchDuplicate: styles.hrPunchDuplicate,
   /** Colour key for attendance marks. */
   hrLegend: styles.hrLegend,
   hrLegendItem: styles.hrLegendItem,

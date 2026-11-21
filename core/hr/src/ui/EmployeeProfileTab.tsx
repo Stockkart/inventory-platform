@@ -33,6 +33,7 @@ import {
   useUpdateEmployeeMutation,
 } from '../queries/hooks';
 import { EmployeeForm } from './EmployeeForm';
+import { EmployeePairingCard } from './EmployeePairingCard';
 import { LoginLinkPicker } from './LoginLinkPicker';
 
 function Detail({ label, children }: { label: string; children: ReactNode }) {
@@ -241,6 +242,9 @@ export function EmployeeProfileTab({ employee }: EmployeeProfileTabProps) {
           </Stack>
         </CardBody>
       </Card>
+
+      {/* Attendance app pairing (R2.1): the card hides itself without ADD_EDIT_EMPLOYEES. */}
+      <EmployeePairingCard employee={employee} />
 
       {canEdit && employee.status === 'ACTIVE' ? (
         <Card>

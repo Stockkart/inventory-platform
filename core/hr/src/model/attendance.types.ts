@@ -1,7 +1,29 @@
 /**
  * Attendance DTOs, 1:1 with `com.inventory.hr.rest.dto` (`AttendanceController`). Dates are
  * `yyyy-MM-dd`, months `YYYY-MM`, times `HH:mm`, instants ISO strings; BigDecimal → number.
+ *
+ * The punch-level enums and `PunchResponse` are shared with the Attendance app through
+ * `@inventory-platform/attendance-protocol` (design DD1) and re-exported here unchanged. A value
+ * the server sends that this build does not know (a newer source or flag) must be rendered as
+ * "unknown", never thrown on: use the `*Label()` helpers in `labels.ts`, not the `Record`s.
  */
+import type {
+  AttendanceSource,
+  ManualMarkReason,
+  PunchDirection,
+  PunchFlag,
+  PunchResponse,
+  PunchSource,
+} from '@inventory-platform/attendance-protocol';
+
+export type {
+  AttendanceSource,
+  ManualMarkReason,
+  PunchDirection,
+  PunchFlag,
+  PunchResponse,
+  PunchSource,
+};
 
 /** `DayStatus`: what an employee-day shows after the resolver. Never stored as such. */
 export type DayStatus =
@@ -20,38 +42,6 @@ export type StoredAttendanceStatus = 'PRESENT' | 'ABSENT' | 'HALF_DAY' | 'WEEK_O
 
 /** Status accepted by `PUT /attendance/days`; `UNMARKED` clears a stored mark. */
 export type SaveAttendanceStatus = StoredAttendanceStatus | 'UNMARKED';
-
-/** `AttendanceSource`: where a stored mark came from. */
-export type AttendanceSource = 'MANUAL' | 'BULK_PRESENT' | 'SELF_CHECK_IN';
-
-/** Backend `PunchFlag`: marks on a stored punch that managers see. */
-export type PunchFlag = 'OUTSIDE_SHOP' | 'LOW_ACCURACY' | 'NO_LOCATION' | 'LOCKED_PERIOD';
-
-/** Backend `PunchDirection`. */
-export type PunchDirection = 'IN' | 'OUT';
-
-/** Backend `PunchSource`; only SELF is written today. */
-export type PunchSource = 'SELF' | 'DEVICE_FILE' | 'BRIDGE';
-
-/** `PunchResponse`: one recorded moment (`GET /attendance/punches`, `GET /me/punches`). */
-export interface PunchResponse {
-  id: string;
-  employeeId: string;
-  /** ISO instant (server time). */
-  at: string;
-  /** HH:mm of `at`, Asia/Kolkata. */
-  time?: string | null;
-  /** yyyy-MM-dd. */
-  localDate?: string | null;
-  direction: PunchDirection;
-  source: PunchSource;
-  /** Self check-in with location check only; the employee's own coordinates are never sent. */
-  distanceMetres?: number | null;
-  accuracyMetres?: number | null;
-  flags?: PunchFlag[] | null;
-  /** false = within 5 minutes of the previous counted punch, so it does not count (R4.2). */
-  counted?: boolean | null;
-}
 
 /** Fields the registers carry for punch-filled days (left out when false or empty). */
 export interface CaptureMarks {
@@ -94,6 +84,22 @@ export interface AttendanceRowResponse extends CaptureMarks {
    * which says what decided the status.
    */
   markSource?: AttendanceSource | null;
+  /**
+   * Source of the day's earliest counted punch (SELF or BIOMETRIC_APP), the register icon when
+   * the day is derived (R8.1–R8.2); null = no counted punch. Daily register only; missing on
+   * older backends.
+   */
+  punchSource?: PunchSource | null;
+  /**
+   * A hand-made mark, change or clear of this day must carry a reason (R7.2): Biometric app
+   * check-in is on and the employee has an active paired phone. Missing on older backends (= no).
+   */
+  markReasonRequired?: boolean | null;
+  /**
+   * "No punch yet" hint (R7.7–R7.8): today's row, Biometric app check-in on, active paired phone,
+   * and neither a punch nor a stored mark. Missing on older backends (= no).
+   */
+  noPunchYet?: boolean | null;
 }
 
 /** `DailyRegisterResponse`: everyone employed on `date`, by name. */
@@ -114,6 +120,13 @@ export interface SaveAttendanceDayRow {
   /** HH:mm; optional, after inTime. */
   outTime?: string | null;
   note?: string | null;
+  /**
+   * Why the day is marked by hand (R7.2–R7.3). The server requires it only when the row's
+   * `markReasonRequired` is true at save time; when given anyway it is still recorded in history.
+   */
+  reason?: ManualMarkReason | null;
+  /** Free text for `OTHER`: 1–{@link MAX_MARK_REASON_TEXT_LENGTH} characters after trimming. */
+  reasonText?: string | null;
 }
 
 /** `SaveAttendanceDaysRequest`: up to {@link MAX_ATTENDANCE_ROWS} rows per call. */
@@ -127,6 +140,13 @@ export interface MarkUnmarkedPresentRequest {
   dates: string[];
   /** null or empty = every employee employed on those dates. */
   employeeIds?: string[] | null;
+  /**
+   * One reason for the whole call (R7.2–R7.3); required only when Biometric app check-in is on
+   * and at least one employee being marked has an active paired phone.
+   */
+  reason?: ManualMarkReason | null;
+  /** Free text for `OTHER`: 1–{@link MAX_MARK_REASON_TEXT_LENGTH} characters after trimming. */
+  reasonText?: string | null;
 }
 
 /** `MarkUnmarkedPresentResponse`. */
@@ -169,6 +189,11 @@ export interface MonthRegisterRow {
   employeeId: string;
   code: string;
   name: string;
+  /**
+   * A hand-made mark, change or clear of any of this employee's days must carry a reason (R7.2),
+   * as of this read. Missing on older backends (= no).
+   */
+  markReasonRequired?: boolean | null;
   /** Same order as `MonthRegisterResponse.dates`. */
   cells: MonthRegisterCell[];
   totals: MonthRegisterTotals;
@@ -202,7 +227,13 @@ export type HrAuditAction =
   /** Email changed; the payload never holds the address (run B5). */
   | 'EMPLOYEE_EMAIL_CHANGED'
   | 'SETTINGS_CHANGED'
-  | 'ROLE_PERMISSIONS_CHANGED';
+  | 'ROLE_PERMISSIONS_CHANGED'
+  /** Attendance app pairing (R2.17, R3.1, R3.6, R3.9); payloads never hold a key or installation id. */
+  | 'PAIRING_CODE_CREATED'
+  | 'DEVICE_PAIRED'
+  | 'DEVICE_REPLACED'
+  | 'DEVICE_UNPAIRED'
+  | 'DEVICE_CONSENT_UPDATED';
 
 /** `AuditEventResponse`: payloads are already stripped of PII and pay. */
 export interface AuditEventResponse {
@@ -233,3 +264,5 @@ export interface AttendanceHistoryResponse {
 /** `AttendanceDayValidator` limits. */
 export const MAX_ATTENDANCE_ROWS = 500;
 export const MAX_ATTENDANCE_NOTE_LENGTH = 200;
+/** Free-text reason limit of the hand-mark prompt (R7.3). */
+export const MAX_MARK_REASON_TEXT_LENGTH = 200;

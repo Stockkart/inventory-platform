@@ -20,8 +20,12 @@ const employeesApi = vi.hoisted(() => ({
   linkableLogins: vi.fn(),
 }));
 const settingsApi = vi.hoisted(() => ({ getSetupStatus: vi.fn() }));
+// The detail page renders `EmployeePairingCard` (R2.1); its own tests live in
+// EmployeePairingCard.test.tsx — here the pairing state just has to answer, not hit the network.
+const pairingApi = vi.hoisted(() => ({ state: vi.fn(), createCode: vi.fn(), unpair: vi.fn() }));
 vi.mock('../api/employees.api', () => ({ employeesApi }));
 vi.mock('../api/settings.api', () => ({ hrSettingsApi: settingsApi }));
+vi.mock('../api/pairing.api', () => ({ pairingApi }));
 
 const SHOP = 'shop-1';
 
@@ -80,6 +84,7 @@ beforeEach(() => {
   employeesApi.list.mockResolvedValue(page([RAVI]));
   employeesApi.designations.mockResolvedValue(['Helper', 'Cook']);
   employeesApi.linkableLogins.mockResolvedValue([]);
+  pairingApi.state.mockResolvedValue({ state: 'NOT_PAIRED' });
   settingsApi.getSetupStatus.mockResolvedValue({
     settingsSaved: true,
     employeeCount: 1,

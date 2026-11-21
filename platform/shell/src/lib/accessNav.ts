@@ -27,6 +27,12 @@ const HR_PATH_RULES: ReadonlyArray<{ prefix: string; allowed: (access: ShopAcces
     prefix: '/dashboard/hr/settings',
     allowed: (a) => (a.hr?.permissions ?? []).some((p) => p !== 'SELF_CHECK_IN'),
   },
+  // The Attendance app privacy note (HR-module R9.14) carries no shop data: anyone with HR
+  // access, staff or a linked employee, may read it.
+  {
+    prefix: '/dashboard/hr/attendance-app-privacy',
+    allowed: (a) => (a.hr?.permissions ?? []).length > 0 || Boolean(a.hr?.employeeId),
+  },
 ];
 
 function hrCan(access: ShopAccess, permission: HrPermission): boolean {

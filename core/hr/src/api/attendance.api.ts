@@ -24,7 +24,11 @@ export const attendanceApi = {
     return response.data;
   },
 
-  /** MARK_ATTENDANCE; ≤ 500 rows, unchanged rows are skipped server-side too. */
+  /**
+   * MARK_ATTENDANCE; ≤ 500 rows, unchanged rows are skipped server-side too. A row whose
+   * `markReasonRequired` was true must carry `reason` (+ `reasonText` for OTHER), else 400 and
+   * nothing is written (R7.2–R7.4).
+   */
   saveDays: async (body: SaveAttendanceDaysRequest): Promise<AttendanceRowResponse[]> => {
     const response = await apiClient.put<ApiResponse<AttendanceRowResponse[]>>(
       HR_ENDPOINTS.ATTENDANCE_DAYS,
@@ -33,7 +37,7 @@ export const attendanceApi = {
     return response.data ?? [];
   },
 
-  /** MARK_ATTENDANCE. */
+  /** MARK_ATTENDANCE; one `reason` for the call when a paired employee is among those marked (R7.2). */
   markUnmarkedPresent: async (
     body: MarkUnmarkedPresentRequest,
   ): Promise<MarkUnmarkedPresentResponse> => {

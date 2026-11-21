@@ -17,6 +17,9 @@ describe('hrKeys', () => {
     ['employee', hrKeys.employee(SHOP, 'e1')],
     ['designations', hrKeys.designations(SHOP)],
     ['linkableLogins', hrKeys.linkableLogins(SHOP)],
+    ['pairing', hrKeys.pairing(SHOP, 'e1')],
+    ['appHealth', hrKeys.appHealth(SHOP)],
+    ['consentLatest', hrKeys.consentLatest(SHOP)],
     ['attendance', hrKeys.attendance(SHOP)],
     ['attendanceDaily', hrKeys.attendanceDaily(SHOP, '2026-10-06')],
     ['attendanceMonth', hrKeys.attendanceMonth(SHOP, '2026-10', 'e1')],
@@ -44,6 +47,7 @@ describe('hrKeys', () => {
     ['meLeavePreview', hrKeys.meLeavePreview(SHOP, { leaveTypeId: 't1', from: 'a', to: 'b' })],
     ['mePayslips', hrKeys.mePayslips(SHOP)],
     ['meCheckIn', hrKeys.meCheckIn(SHOP)],
+    ['mePairing', hrKeys.mePairing(SHOP)],
     ['notifications', hrKeys.notifications(SHOP)],
   ];
 
@@ -119,6 +123,7 @@ describe('hrKeys', () => {
       hrKeys.meLeave(SHOP),
       hrKeys.mePayslips(SHOP),
       hrKeys.meCheckIn(SHOP),
+      hrKeys.mePairing(SHOP),
     ]) {
       expect(key.slice(0, me.length)).toEqual([...me]);
     }
@@ -126,5 +131,14 @@ describe('hrKeys', () => {
     expect(hrKeys.notifications('a')).not.toEqual(hrKeys.notifications('b'));
     // Per-employee balances do not collide with the shop list.
     expect(hrKeys.leaveBalances(SHOP, null, 'e1')).not.toEqual(hrKeys.leaveBalances(SHOP));
+  });
+
+  it('uses the design keys for Attendance app pairing and health (HR-module 10.1)', () => {
+    expect(hrKeys.pairing(SHOP, 'e1')).toEqual(['hr', SHOP, 'pairing', 'e1']);
+    expect(hrKeys.appHealth(SHOP)).toEqual(['hr', SHOP, 'app-health']);
+    expect(hrKeys.pairing(SHOP, 'e1')).not.toEqual(hrKeys.pairing(SHOP, 'e2'));
+    expect(hrKeys.pairing('a', 'e1')).not.toEqual(hrKeys.pairing('b', 'e1'));
+    // A manager's view of an employee never shares a cache entry with the employee's own view.
+    expect(hrKeys.mePairing(SHOP)).not.toEqual(hrKeys.pairing(SHOP, 'me'));
   });
 });

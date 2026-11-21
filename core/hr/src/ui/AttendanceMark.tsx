@@ -1,5 +1,5 @@
-import { Smartphone } from 'lucide-react';
 import {
+  ATTENDANCE_SOURCE_META,
   ATTENDANCE_STATUS_META,
   AttendanceCell,
   Box,
@@ -9,13 +9,18 @@ import {
   hrChrome,
   type AttendanceStatus,
 } from '@inventory-platform/ui-kit';
-import type { DayStatus } from '@inventory-platform/hr/types';
+import type { DayStatus, RegisterSource } from '@inventory-platform/hr/types';
 
 export interface AttendanceMarkProps {
   status: DayStatus;
   late?: boolean;
   /** Spoken prefix, e.g. "Ravi Kumar, Mon, 6 Oct". */
   context?: string;
+  /**
+   * Where the mark came from (R8.1): a small corner icon and ", by hand" / ", by phone" / ", by
+   * Attendance app" in the spoken label. Omit for a day with no mark and no punch.
+   */
+  source?: RegisterSource | null;
   size?: 'sm' | 'md';
   /**
    * A day after today with nothing resolved (server `future` flag + UNMARKED, run B6): blank and
@@ -34,6 +39,7 @@ export function AttendanceMark({
   status,
   late,
   context,
+  source,
   size = 'sm',
   future,
 }: AttendanceMarkProps) {
@@ -54,20 +60,40 @@ export function AttendanceMark({
       </Text>
     );
   }
-  return <AttendanceCell status={status} late={late} context={context} size={size} />;
+  return (
+    <AttendanceCell status={status} late={late} context={context} source={source} size={size} />
+  );
 }
 
-/** Small phone icon for a day filled by self check-in; nothing for a day marked by hand. */
-export function CaptureSourceIcon({ source }: { source?: string | null }) {
-  if (source !== 'SELF_CHECK_IN') return null;
+export interface CaptureSourceIconProps {
+  /** `daySourceIcon(row)` or `sourceOfPunch(punch.source)`; null or unknown renders nothing. */
+  source?: RegisterSource | null;
+  /** The word is written next to it, so the icon itself is not read out. */
+  decorative?: boolean;
+  size?: number;
+}
+
+/**
+ * Small source icon (R8.1): hand for a mark made by a person, phone for My HR self check-in,
+ * fingerprint for the Attendance app; nothing for a day with no mark and no punch. Read as
+ * "by hand" / "by phone" / "by Attendance app" unless `decorative`.
+ */
+export function CaptureSourceIcon({
+  source,
+  decorative = false,
+  size = 12,
+}: CaptureSourceIconProps) {
+  if (!source) return null;
+  const meta = ATTENDANCE_SOURCE_META[source];
   return (
     <Icon
-      icon={Smartphone}
-      size={12}
+      icon={meta.icon}
+      size={size}
       className={hrChrome.hrSourceIcon}
-      role="img"
-      aria-hidden={false}
-      aria-label="by phone"
+      data-source={source}
+      {...(decorative
+        ? {}
+        : { role: 'img' as const, 'aria-hidden': false, 'aria-label': meta.word })}
     />
   );
 }
@@ -103,6 +129,31 @@ export function AttendanceLegend() {
         </Box>
         <Text as="span" variant="caption">
           Dot: came in late
+        </Text>
+      </Box>
+      {/* One icon per source (R8.1): the register shows it on the mark's corner. */}
+      <Box as="span" role="listitem" className={hrChrome.hrLegendItem}>
+        <Box as="span" aria-hidden>
+          <CaptureSourceIcon source="HAND" decorative />
+        </Box>
+        <Text as="span" variant="caption">
+          Hand: marked by a person
+        </Text>
+      </Box>
+      <Box as="span" role="listitem" className={hrChrome.hrLegendItem}>
+        <Box as="span" aria-hidden>
+          <CaptureSourceIcon source="PHONE" decorative />
+        </Box>
+        <Text as="span" variant="caption">
+          Phone: My HR check-in
+        </Text>
+      </Box>
+      <Box as="span" role="listitem" className={hrChrome.hrLegendItem}>
+        <Box as="span" aria-hidden>
+          <CaptureSourceIcon source="APP" decorative />
+        </Box>
+        <Text as="span" variant="caption">
+          Fingerprint: Attendance app
         </Text>
       </Box>
     </Box>

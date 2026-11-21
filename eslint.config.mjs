@@ -140,6 +140,12 @@ export default [
                 'type:ui-kit',
               ],
             },
+            {
+              // Attendance app and its protocol package (platform/attendance-protocol,
+              // apps/attendance): pure TS shared with React Native, so no core, ui-kit or plugin.
+              sourceTag: 'scope:attendance',
+              onlyDependOnLibsWithTags: ['scope:attendance', 'type:platform'],
+            },
           ],
         },
       ],

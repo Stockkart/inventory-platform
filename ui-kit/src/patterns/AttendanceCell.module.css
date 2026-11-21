@@ -70,3 +70,16 @@
   border-radius: 999px;
   background: var(--sk-attendance-late-dot, #dc2626);
 }
+
+/* Source icon (hand / phone / fingerprint) on the bottom-right corner, on a small white disc so it
+   reads on every status colour. The late dot keeps the top-right corner. */
+.sourceIcon {
+  position: absolute;
+  right: -0.2rem;
+  bottom: -0.2rem;
+  box-sizing: content-box;
+  padding: 1px;
+  border-radius: 999px;
+  background: var(--sk-color-bg-surface, #fff);
+  color: var(--sk-color-text-muted, #64748b);
+}

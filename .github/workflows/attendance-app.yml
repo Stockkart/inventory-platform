@@ -1,0 +1,103 @@
+# Attendance app (apps/attendance): proves the Expo app's tests pass and that the native
+# projects for both platforms generate and compile (requirement R4.11 of .kiro/specs/HR-module).
+#
+# Nothing here is released. Android ships through EAS (`eas build --profile preview`, Play
+# internal testing track, see apps/attendance/eas.json); iOS is built, not submitted. The
+# native builds run only when the app or its protocol package change, because they take far
+# longer than the rest of CI.
+name: Attendance app
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/attendance/**'
+      - 'platform/attendance-protocol/**'
+      - '.github/workflows/attendance-app.yml'
+  pull_request:
+    paths:
+      - 'apps/attendance/**'
+      - 'platform/attendance-protocol/**'
+      - '.github/workflows/attendance-app.yml'
+
+permissions:
+  actions: read
+  contents: read
+
+env:
+  # Build-time gate only (apps/attendance/app.config.js refuses a non-https URL). The CI
+  # binaries are never installed anywhere, so the host does not need to exist. Real builds
+  # get the URL from the EAS environment named in eas.json.
+  EXPO_PUBLIC_API_URL: https://ci.invalid/api/v1
+
+jobs:
+  android:
+    name: tests + Android prebuild and compile
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: tree:0
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          version: 9.8.0
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Verify Nx project graph
+        run: pnpm exec nx show projects
+
+      - name: Test, lint, typecheck (app and protocol package)
+        run: pnpm exec nx run-many -t test lint typecheck -p @inventory-platform/attendance @inventory-platform/attendance-protocol
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Android prebuild and assembleDebug
+        run: pnpm exec nx run @inventory-platform/attendance:prebuild:android
+
+  ios:
+    # Builds, not released: this job only proves the shared code base and the Swift signer
+    # module compile for iOS 15.1+ (R4.11). Publishing to the App Store is out of scope.
+    name: iOS prebuild and compile
+    runs-on: macos-latest
+    timeout-minutes: 60
+    continue-on-error: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: tree:0
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          version: 9.8.0
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: iOS prebuild, pod install and xcodebuild (simulator, no signing)
+        run: pnpm exec nx run @inventory-platform/attendance:prebuild:ios

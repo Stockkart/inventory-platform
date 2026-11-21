@@ -311,18 +311,11 @@
   border-radius: var(--sk-radius-sm, 4px);
 }
 
-/* Phone icon of a self check-in day; in a register cell it sits on the mark's corner. */
+/* Source icon (hand / phone / fingerprint) beside a name or a punch row. On a register mark the
+   icon is drawn by `AttendanceCell` itself (its `source` prop). */
 .hrSourceIcon {
   flex-shrink: 0;
   color: var(--sk-color-text-muted);
-}
-
-.hrRegisterDayButton .hrSourceIcon {
-  position: absolute;
-  top: -0.25rem;
-  right: -0.25rem;
-  width: 0.625rem;
-  height: 0.625rem;
 }
 
 /* Side drawer with one employee-day's detail and change history. */
@@ -333,6 +326,12 @@
   height: 100%;
   padding: var(--sk-space-lg, 24px);
   overflow-y: auto;
+}
+
+/* A punch in the day drawer that does not count (within 5 minutes of the last one): greyed out,
+   still listed. */
+.hrPunchDuplicate {
+  opacity: 0.6;
 }
 
 /* Colour key under a calendar or register. */

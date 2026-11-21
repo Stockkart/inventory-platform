@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
+  ATTENDANCE_SOURCE_META,
   Alert,
   Box,
   Button,
@@ -21,12 +22,18 @@ import {
 } from '@inventory-platform/ui-kit';
 import {
   DAY_STATUS_LABELS,
+  NO_REGISTER_FILTERS,
   currentMonth,
+  daySourceIcon,
   formatDayShort,
   formatMonth,
+  hasRegisterFilters,
   isBlankFutureCell,
+  matchesRegisterFilters,
   type MonthRegisterCell,
+  type MonthRegisterRow,
   type MonthRegisterTotals,
+  type RegisterFilters,
 } from '@inventory-platform/hr/types';
 import { useHrAccess } from '../access/useHrAccess';
 import { attendanceApi } from '../api/attendance.api';
@@ -35,7 +42,8 @@ import { useHrDownload, useMonthRegisterQuery } from '../queries/hooks';
 import { AttendanceDayDrawer } from '../ui/AttendanceDayDrawer';
 import { EmployeeNameLink } from '../ui/EmployeeNameLink';
 import { HrInbox } from '../ui/HrInbox';
-import { AttendanceLegend, AttendanceMark, CaptureSourceIcon } from '../ui/AttendanceMark';
+import { RegisterFilterBar } from '../ui/RegisterFilterBar';
+import { AttendanceLegend, AttendanceMark } from '../ui/AttendanceMark';
 
 const WEEKDAY_LETTER = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
@@ -60,10 +68,21 @@ function weekdayOf(date: string): number {
   return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
 }
 
+/** "Asha, Thu, 1 Oct: Present, late, by Attendance app" (R8.1: the source is spoken too). */
 function spoken(name: string, date: string, cell: MonthRegisterCell): string {
+  const source = daySourceIcon(cell);
   return `${name}, ${formatDayShort(date)}: ${DAY_STATUS_LABELS[cell.status]}${
     cell.late ? ', late' : ''
-  }${cell.markSource === 'SELF_CHECK_IN' ? ', by phone' : ''}`;
+  }${source ? `, ${ATTENDANCE_SOURCE_META[source].word}` : ''}`;
+}
+
+/**
+ * The "Source" filter on the month register (R8.10): an employee stays listed when at least one
+ * of their days in the month carries a chosen source. Future days have nothing yet.
+ */
+function rowMatches(row: MonthRegisterRow, filters: RegisterFilters): boolean {
+  if (!hasRegisterFilters(filters)) return true;
+  return row.cells.some((cell) => !cell.future && matchesRegisterFilters(cell, filters));
 }
 
 /**
@@ -84,8 +103,16 @@ export function AttendanceMonthPage() {
     cell: MonthRegisterCell;
   } | null>(null);
 
+  /** "Source" only (R8.10): chips, and so "Flagged", exist on the daily register alone. */
+  const [filters, setFilters] = useState<RegisterFilters>(NO_REGISTER_FILTERS);
+
   const month = useMonthRegisterQuery(period, undefined, canView);
   const download = useHrDownload();
+  const allRows = month.data?.rows;
+  const rows = useMemo(
+    () => (allRows ?? []).filter((row) => rowMatches(row, filters)),
+    [allRows, filters],
+  );
 
   if (!canView) {
     return (
@@ -96,7 +123,7 @@ export function AttendanceMonthPage() {
   }
 
   const data = month.data;
-  const rows = data?.rows ?? [];
+  const total = allRows?.length ?? 0;
   const dates = data?.dates ?? [];
 
   return (
@@ -132,6 +159,14 @@ export function AttendanceMonthPage() {
         </Box>
       </Box>
 
+      {total > 0 ? (
+        <RegisterFilterBar
+          filters={filters}
+          onChange={setFilters}
+          shown={{ matched: rows.length, total }}
+        />
+      ) : null}
+
       {data?.locked ? (
         <Alert variant="warning">
           Payroll for {formatMonth(period)} is finalised, so this month cannot be changed. Reopen
@@ -142,6 +177,8 @@ export function AttendanceMonthPage() {
 
       {month.isLoading ? (
         <CenteredLoader label="Loading register…" />
+      ) : total > 0 && rows.length === 0 ? (
+        <Text color="muted">No employee matches these filters in {formatMonth(period)}.</Text>
       ) : rows.length === 0 && !month.error ? (
         <EmptyState
           title={`Nobody was employed in ${formatMonth(period)}`}
@@ -226,8 +263,11 @@ export function AttendanceMonthPage() {
                                 setOpen({ employeeId: row.employeeId, name: row.name, date, cell })
                               }
                             >
-                              <AttendanceMark status={cell.status} late={cell.late ?? false} />
-                              <CaptureSourceIcon source={cell.markSource} />
+                              <AttendanceMark
+                                status={cell.status}
+                                late={cell.late ?? false}
+                                source={daySourceIcon(cell)}
+                              />
                             </Button>
                           )}
                         </DenseTableCell>

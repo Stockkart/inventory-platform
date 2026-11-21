@@ -54,6 +54,11 @@ export interface EmployeeResponse {
   upiId?: string | null;
   /** True when pay was withheld from this caller (not "not set"). */
   payHidden: boolean;
+  /**
+   * True when the employee has an active paired Attendance app phone (R8.12). Set on the list and
+   * the detail; null on self-service views and missing on older backends.
+   */
+  appPaired?: boolean | null;
   revision?: number | null;
   createdAt?: string | null;
   updatedAt?: string | null;
@@ -135,6 +140,8 @@ export interface EmployeeListParams {
   q?: string;
   status?: EmployeeStatus;
   designation?: string;
+  /** true = only employees with an active paired phone, false = only those without (R8.12). */
+  paired?: boolean;
   page?: number;
   size?: number;
 }

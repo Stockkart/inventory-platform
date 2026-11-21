@@ -1,6 +1,7 @@
 export { HR_ENDPOINTS } from './api/endpoints';
 export { hrSettingsApi } from './api/settings.api';
 export { employeesApi } from './api/employees.api';
+export { pairingApi } from './api/pairing.api';
 export { HR_MODULE_VERSION, hrKeys } from './queries/keys';
 export * from './queries/hooks';
 export { useHrAccess, type HrAccessView } from './access/useHrAccess';
