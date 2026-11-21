@@ -2,6 +2,7 @@ import type { AddOnResponse, ShopPlanStatusResponse } from '@inventory-platform/
 import { isPlanFeature } from '../entitlements/entitlements';
 import { FEATURE_LABELS } from '../ui/planPricing';
 import { eligibleAddOns, maxQuantityFor, type AddOnSelection } from './cart';
+import { formatPlanDate } from '../ui/planDate';
 
 export const PLAN_STATUS_PATH = '/dashboard/plan-status';
 export const PLAN_PAYMENT_PATH = '/dashboard/plan-payment';
@@ -95,15 +96,7 @@ export function resolveAddOnOnlyIntent(
   return { kind: 'ready', selection: { [addOn.code]: quantity } };
 }
 
-/** "31 Mar 2027": the Indian calendar day an add-on term ends; null when absent or unreadable. */
+/** "31 Mar 2027": the day an add-on term ends, in the plan date style; null when absent or unreadable. */
 export function formatTermEnd(iso: string | null | undefined): string | null {
-  if (!iso) return null;
-  const time = Date.parse(iso);
-  if (Number.isNaN(time)) return null;
-  return new Date(time).toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'Asia/Kolkata',
-  });
+  return formatPlanDate(iso);
 }
