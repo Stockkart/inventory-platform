@@ -10,6 +10,8 @@ export const planKeys = {
   shopStatus: () => [...base.all, 'shop-status'] as const,
   transactions: () => [...base.all, 'transactions'] as const,
   usage: () => [...base.all, 'usage'] as const,
+  /** Per shop, so a shop switch or a login as another shop never reads the previous shop's cache. */
+  shopEntitlements: (shopId: string) => [...base.all, 'shop-entitlements', shopId] as const,
   quote: (request: QuoteRequest) => [...base.all, 'quote', request] as const,
   activeCampaign: () => [...base.all, 'active-campaign'] as const,
   addOns: () => [...base.all, 'addons'] as const,
