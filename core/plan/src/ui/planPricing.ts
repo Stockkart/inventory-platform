@@ -66,11 +66,8 @@ export function buildPlanComparison(allPlans: PlanResponse[]): PlanComparison {
     {
       key: 'billing',
       label: 'Billing per month',
-      values: plans.map((plan) =>
-        plan.unlimited || plan.billingLimit == null
-          ? 'Unlimited'
-          : `₹${(plan.billingLimit / 100000).toFixed(1)}L`,
-      ),
+      // The API formats the monthly billing limit ("Unlimited", "₹1.5L").
+      values: plans.map((plan) => plan.billingLimitLabel ?? '—'),
     },
     {
       key: 'bills',

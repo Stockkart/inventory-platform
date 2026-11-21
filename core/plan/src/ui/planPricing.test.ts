@@ -67,6 +67,14 @@ describe('buildPlanComparison', () => {
     expect(byKey.whatsapp).toEqual(['Unlimited', 'Unlimited']);
   });
 
+  it('shows the billing limit as the API words it', () => {
+    const rows = buildPlanComparison([
+      { ...starter, billingLimitLabel: '₹1.5L' },
+      { ...pro, billingLimitLabel: 'Unlimited' },
+    ]).rows;
+    expect(rows.find((row) => row.key === 'billing')?.values).toEqual(['₹1.5L', 'Unlimited']);
+  });
+
   it('adds a row only for features some shown plan includes', () => {
     const rows = buildPlanComparison([starter, pro]).rows;
     const byKey = Object.fromEntries(rows.map((row) => [row.key, row.values]));
