@@ -82,3 +82,7 @@ The seat and scan tiles on My Plan turn red only on the API's `seatLimitReached`
 ## Decisions from the API
 
 The plan screens show what the API decides and never re-derive it: plan selection leaves out plans with `selectable: false`; add-ons offered in a plan cart come from `GET /plans/addons?planCode=X` and top-ups from `GET /plans/shop/addon-options`, keeping those with `eligible !== false`; the My Plan top-up section shows only when plan status says `canBuyAddOnsAlone`; the billing limit text is the plan's `billingLimitLabel`; quote lines show `grossAmount`.
+
+## Add-on catalogue (admin)
+
+The add-on form sends what the admin chose; the API derives `billingType` from the grant type (OCR credits one-time, the rest annual) and, for a feature add-on, `grantsQuantity` 1 and not stackable, and rejects contradictory combinations (`toAddOnRequest` no longer sets them).
