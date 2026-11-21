@@ -7,7 +7,6 @@ import type {
   PlanAdminRequest,
   PlanFeature,
   PlanGrantRequest,
-  PlanResponse,
 } from '@inventory-platform/plan/types';
 import { endOfDayIst } from '../dates';
 
@@ -363,12 +362,12 @@ export const emptyPlanGrantForm = (): PlanGrantFormState => ({
   reason: '',
 });
 
-/** Plans an admin may grant: the plan list's selectable plans (they carry a code). */
+/** Plans an admin may grant: active, selectable catalogue plans (they carry a code). */
 export function planGrantOptions(
-  plans: readonly PlanResponse[],
+  plans: readonly AdminPlan[],
 ): Array<{ value: string; label: string }> {
   return plans
-    .filter((plan) => plan.selectable !== false && plan.code)
+    .filter((plan) => plan.active && plan.selectable !== false && plan.code)
     .map((plan) => ({ value: plan.code as string, label: plan.planName }));
 }
 
