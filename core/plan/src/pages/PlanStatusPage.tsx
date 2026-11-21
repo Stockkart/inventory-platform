@@ -1,7 +1,6 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { Check, Lock } from 'lucide-react';
-import { useAuthStore, usePlanEntitlementsStore } from '@inventory-platform/session';
 import {
   Alert,
   Badge,
@@ -21,7 +20,7 @@ import { trialLabel } from '../ui/trialLabel';
 import { isPlanFeature, splitFeatures, usageOfLimit } from '../entitlements';
 import { CampaignBanner } from '../campaign';
 import type { PlanResponse } from '@inventory-platform/plan/types';
-import { usePlansQuery, useShopPlanStatusQuery } from '../queries/hooks';
+import { usePlansQuery, useShopEntitlementsQuery, useShopPlanStatusQuery } from '../queries/hooks';
 
 export function PlanStatusPage() {
   const navigate = useNavigate();
@@ -35,14 +34,8 @@ export function PlanStatusPage() {
   const [searchParams] = useSearchParams();
   const lockedParam = searchParams.get('locked');
   const lockedFeature = isPlanFeature(lockedParam) ? lockedParam : null;
-  const shopId = useAuthStore((s) => s.user?.shopId ?? null);
-  const fetchEntitlements = usePlanEntitlementsStore((s) => s.fetchEntitlements);
-  const entitlements = usePlanEntitlementsStore((s) => (shopId ? s.byShopId[shopId] : undefined));
-
-  useEffect(() => {
-    if (!shopId) return;
-    void fetchEntitlements({ force: true });
-  }, [fetchEntitlements, shopId]);
+  // Seat and OCR usage change between visits, so this page always refetches on arrival.
+  const { data: entitlements } = useShopEntitlementsQuery({ refetchOnMount: 'always' });
 
   const handleSelectPlan = useCallback(
     (plan: PlanResponse) => {

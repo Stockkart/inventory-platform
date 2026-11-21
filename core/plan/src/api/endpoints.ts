@@ -5,6 +5,7 @@ export const PLAN_ENDPOINTS = {
   SHOP_STATUS: '/plans/shop/status',
   SHOP_SUGGESTED: (shopId: string) => `/plans/shop/${shopId}/suggested`,
   SHOP_USAGE: '/plans/shop/usage',
+  SHOP_ENTITLEMENTS: '/plans/shop/entitlements',
   SHOP_TRANSACTIONS: '/plans/shop/transactions',
   SHOP_WALLET: '/plans/shop/wallet',
   REFERRALS_ME: '/referrals/me',
