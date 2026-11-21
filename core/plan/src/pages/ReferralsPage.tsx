@@ -45,6 +45,24 @@ function Figure({ label, value }: { label: string; value: string }) {
   );
 }
 
+interface RetryAlertProps {
+  message: string;
+  retrying: boolean;
+  onRetry: () => void;
+}
+
+/** A section whose request failed: say so and offer a retry, never show zeros as if they were real. */
+function RetryAlert({ message, retrying, onRetry }: RetryAlertProps) {
+  return (
+    <Stack gap="sm" align="start">
+      <Alert variant="danger">{message}</Alert>
+      <Button type="button" variant="solid" size="sm" loading={retrying} onClick={onRetry}>
+        Try again
+      </Button>
+    </Stack>
+  );
+}
+
 export function ReferralsPage() {
   const summaryQuery = useReferralSummaryQuery();
   const rewardsQuery = useReferralRewardsQuery();
@@ -76,9 +94,6 @@ export function ReferralsPage() {
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
       <PageHeader description="Share your code. When a shop you refer buys a plan, you earn wallet credit towards your own." />
 
-      {summaryQuery.isError ? (
-        <Alert variant="danger">Could not load your referral details.</Alert>
-      ) : null}
       {referredBy ? <Alert variant="info">{referredBy}</Alert> : null}
 
       <Card>
@@ -87,7 +102,13 @@ export function ReferralsPage() {
             <Text variant="heading3" weight="semibold">
               Your referral code
             </Text>
-            {summary?.referralCode ? (
+            {summaryQuery.isError ? (
+              <RetryAlert
+                message="Could not load your referral details."
+                retrying={summaryQuery.isFetching}
+                onRetry={() => void summaryQuery.refetch()}
+              />
+            ) : summary?.referralCode ? (
               <Inline gap="md" align="center">
                 <Text variant="title" weight="bold">
                   {summary.referralCode}
@@ -99,7 +120,7 @@ export function ReferralsPage() {
                   Copy code
                 </Button>
                 {shareLink ? (
-                  <Button variant="outline" onClick={() => void copy(shareLink, 'Link')}>
+                  <Button variant="solid" onClick={() => void copy(shareLink, 'Link')}>
                     Copy sign-up link
                   </Button>
                 ) : null}
@@ -108,10 +129,18 @@ export function ReferralsPage() {
               <Text color="secondary">Your code is being generated. Check back shortly.</Text>
             )}
             <Inline gap="lg">
-              <Figure label="Shops referred" value={String(summary?.resolvedReferrals ?? 0)} />
-              <Figure label="In review" value={String(summary?.pendingReviewReferrals ?? 0)} />
-              <Figure label="Rewards on hold" value={formatRupees(rewards?.pendingAmount ?? 0)} />
-              <Figure label="Rewards credited" value={formatRupees(rewards?.creditedAmount ?? 0)} />
+              {summary ? (
+                <>
+                  <Figure label="Shops referred" value={String(summary.resolvedReferrals)} />
+                  <Figure label="In review" value={String(summary.pendingReviewReferrals)} />
+                </>
+              ) : null}
+              {rewards ? (
+                <>
+                  <Figure label="Rewards on hold" value={formatRupees(rewards.pendingAmount)} />
+                  <Figure label="Rewards credited" value={formatRupees(rewards.creditedAmount)} />
+                </>
+              ) : null}
             </Inline>
           </Stack>
         </CardBody>
@@ -127,41 +156,51 @@ export function ReferralsPage() {
               A reward is held for a short period after the referred shop pays, then added to your
               wallet. It is cancelled if that purchase is refunded.
             </Text>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableHeaderCell>Shop</TableHeaderCell>
-                  <TableHeaderCell>Plan</TableHeaderCell>
-                  <TableHeaderCell>Reward</TableHeaderCell>
-                  <TableHeaderCell>Status</TableHeaderCell>
-                  <TableHeaderCell>Available from</TableHeaderCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {(rewards?.rewards ?? []).length === 0 ? (
-                  <TableEmptyRow colSpan={5} message="No rewards yet." />
-                ) : (
-                  rewards?.rewards.map((reward) => {
-                    const badge = rewardStatusBadge(reward.status);
-                    return (
-                      <TableRow key={reward.id}>
-                        <TableCell>{reward.refereeShopName || '—'}</TableCell>
-                        <TableCell>{reward.planCode ?? '—'}</TableCell>
-                        <TableCell>{formatRupees(reward.rewardAmount)}</TableCell>
-                        <TableCell>
-                          <Badge variant={badge.variant}>{badge.label}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          {formatDate(
-                            reward.status === 'CREDITED' ? reward.creditedAt : reward.holdUntil,
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
+            {rewardsQuery.isError ? (
+              <RetryAlert
+                message="Could not load your rewards."
+                retrying={rewardsQuery.isFetching}
+                onRetry={() => void rewardsQuery.refetch()}
+              />
+            ) : rewardsQuery.isLoading ? (
+              <CenteredLoader label="Loading rewards…" />
+            ) : (
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>Shop</TableHeaderCell>
+                    <TableHeaderCell>Plan</TableHeaderCell>
+                    <TableHeaderCell>Reward</TableHeaderCell>
+                    <TableHeaderCell>Status</TableHeaderCell>
+                    <TableHeaderCell>Available from</TableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(rewards?.rewards ?? []).length === 0 ? (
+                    <TableEmptyRow colSpan={5} message="No rewards yet." />
+                  ) : (
+                    rewards?.rewards.map((reward) => {
+                      const badge = rewardStatusBadge(reward.status);
+                      return (
+                        <TableRow key={reward.id}>
+                          <TableCell>{reward.refereeShopName || '—'}</TableCell>
+                          <TableCell>{reward.planCode ?? '—'}</TableCell>
+                          <TableCell>{formatRupees(reward.rewardAmount)}</TableCell>
+                          <TableCell>
+                            <Badge variant={badge.variant}>{badge.label}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {formatDate(
+                              reward.status === 'CREDITED' ? reward.creditedAt : reward.holdUntil,
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </Stack>
         </CardBody>
       </Card>
@@ -172,46 +211,55 @@ export function ReferralsPage() {
             <Text variant="heading3" weight="semibold">
               Wallet
             </Text>
-            <Inline gap="lg">
-              <Figure label="Available" value={formatRupees(wallet?.availableBalance ?? 0)} />
-              <Figure
-                label="Held for checkout"
-                value={formatRupees(wallet?.reservedBalance ?? 0)}
+            {walletQuery.isError ? (
+              <RetryAlert
+                message="Could not load your wallet."
+                retrying={walletQuery.isFetching}
+                onRetry={() => void walletQuery.refetch()}
               />
-              {wallet && wallet.outstandingClawback > 0 ? (
-                <Figure label="Owed back" value={formatRupees(wallet.outstandingClawback)} />
-              ) : null}
-            </Inline>
+            ) : wallet ? (
+              <Inline gap="lg">
+                <Figure label="Available" value={formatRupees(wallet.availableBalance)} />
+                <Figure label="Held for checkout" value={formatRupees(wallet.reservedBalance)} />
+                {wallet.outstandingClawback > 0 ? (
+                  <Figure label="Owed back" value={formatRupees(wallet.outstandingClawback)} />
+                ) : null}
+              </Inline>
+            ) : (
+              <CenteredLoader label="Loading wallet…" />
+            )}
             <Text variant="caption" color="secondary">
               Use your wallet on the Payment page when you renew or upgrade your plan.
             </Text>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableHeaderCell>Date</TableHeaderCell>
-                  <TableHeaderCell>Activity</TableHeaderCell>
-                  <TableHeaderCell>Amount</TableHeaderCell>
-                  <TableHeaderCell>Balance</TableHeaderCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {(wallet?.entries ?? []).length === 0 ? (
-                  <TableEmptyRow colSpan={4} message="No wallet activity yet." />
-                ) : (
-                  wallet?.entries.map((entry) => (
-                    <TableRow key={`${entry.source}-${entry.sourceId}-${entry.createdAt}`}>
-                      <TableCell>{formatDate(entry.createdAt)}</TableCell>
-                      <TableCell>{walletSourceLabel(entry.source)}</TableCell>
-                      <TableCell>
-                        {entry.availableDelta >= 0 ? '+' : '−'}
-                        {formatRupees(Math.abs(entry.availableDelta))}
-                      </TableCell>
-                      <TableCell>{formatRupees(entry.availableAfter)}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+            {wallet ? (
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>Date</TableHeaderCell>
+                    <TableHeaderCell>Activity</TableHeaderCell>
+                    <TableHeaderCell>Amount</TableHeaderCell>
+                    <TableHeaderCell>Balance</TableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(wallet?.entries ?? []).length === 0 ? (
+                    <TableEmptyRow colSpan={4} message="No wallet activity yet." />
+                  ) : (
+                    wallet?.entries.map((entry) => (
+                      <TableRow key={`${entry.source}-${entry.sourceId}-${entry.createdAt}`}>
+                        <TableCell>{formatDate(entry.createdAt)}</TableCell>
+                        <TableCell>{walletSourceLabel(entry.source)}</TableCell>
+                        <TableCell>
+                          {entry.availableDelta >= 0 ? '+' : '−'}
+                          {formatRupees(Math.abs(entry.availableDelta))}
+                        </TableCell>
+                        <TableCell>{formatRupees(entry.availableAfter)}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            ) : null}
           </Stack>
         </CardBody>
       </Card>
