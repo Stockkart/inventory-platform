@@ -6,7 +6,6 @@ import { apiClient } from '@inventory-platform/api-client';
 import type { LoginDto, SignupDto, AuthState } from '../model/index.js';
 import { useVerticalSchemaStore } from './useVerticalSchemaStore';
 import { usePlanStatusStore } from './usePlanStatusStore';
-import { usePlanEntitlementsStore } from './usePlanEntitlementsStore';
 import { useShopAccessStore } from './useShopAccessStore';
 
 function deriveShopFromUser(
@@ -105,7 +104,6 @@ export const useAuthStore = create<AuthState>()(
       clearSession: () => {
         useVerticalSchemaStore.getState().clear();
         usePlanStatusStore.getState().clear();
-        usePlanEntitlementsStore.getState().clear();
         useShopAccessStore.getState().clear();
         apiClient.setToken(null);
         apiClient.setShopId(null);
@@ -152,7 +150,6 @@ export const useAuthStore = create<AuthState>()(
         try {
           useVerticalSchemaStore.getState().clear();
           usePlanStatusStore.getState().clear();
-          usePlanEntitlementsStore.getState().clear();
           useShopAccessStore.getState().clear();
           await usersApi.setActiveShop(shopId);
           const user = await authApi.getCurrentUser();
