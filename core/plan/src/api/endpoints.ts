@@ -15,6 +15,7 @@ export const PLAN_ENDPOINTS = {
   ORDER_QUOTE: '/plans/orders/quote',
   ORDER_CANCEL: (orderId: string) => `/plans/orders/${encodeURIComponent(orderId)}/cancel`,
   ADDONS: '/plans/addons',
+  ADDON_OPTIONS: '/plans/shop/addon-options',
   VOUCHER_VALIDATE: '/plans/vouchers/validate',
   CAMPAIGN_ACTIVE: '/campaigns/active',
   ADMIN_MIS: '/admin/mis/plans',

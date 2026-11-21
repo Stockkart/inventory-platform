@@ -21,7 +21,7 @@ import {
   topUpAddOns,
   type AddOnOnlyIntent,
 } from '../checkout';
-import { useAddOnsQuery } from '../queries/hooks';
+import { useAddOnOptionsQuery } from '../queries/hooks';
 
 const PANEL_TITLE = 'Add-ons & top-ups';
 
@@ -90,7 +90,7 @@ function AddOnTopUpCard({ addOn, onBuy }: AddOnTopUpCardProps) {
 }
 
 export interface AddOnTopUpSectionProps {
-  status: Pick<ShopPlanStatusResponse, 'trial' | 'planExpired' | 'plan'>;
+  status: Pick<ShopPlanStatusResponse, 'canBuyAddOnsAlone'>;
   onBuy: (intent: AddOnOnlyIntent) => void;
 }
 
@@ -108,7 +108,7 @@ export function AddOnTopUpSection({ status, onBuy }: AddOnTopUpSectionProps) {
     isError,
     isFetching,
     refetch,
-  } = useAddOnsQuery({ enabled: open });
+  } = useAddOnOptionsQuery({ enabled: open });
   const addOns = topUpAddOns(catalogue, status);
 
   return (

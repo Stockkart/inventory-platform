@@ -40,8 +40,9 @@ export function buildPlanFeatures(plan: PlanResponse): PlanFeatureLine[] {
     return features;
   }
 
-  if (plan.billingLimit != null) {
-    add(`Billing cap ₹${(plan.billingLimit / 100000).toFixed(1)}L/month`);
+  // A capped plan: the API words the monthly limit ("₹1.5L").
+  if (plan.billingLimit != null && plan.billingLimitLabel) {
+    add(`Billing cap ${plan.billingLimitLabel}/month`);
   }
 
   if (plan.billCountLimit != null) {

@@ -100,13 +100,27 @@ export function useActiveCampaignQuery(
   });
 }
 
+/** Add-ons for a cart buying `planCode`, each marked eligible or not by the API. */
 export function useAddOnsQuery(
+  planCode: string | null,
   options?: Omit<UseQueryOptions<AddOnResponse[]>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
-    queryKey: planKeys.addOns(),
-    queryFn: () => plansApi.listAddOns(),
+    queryKey: planKeys.addOns(planCode),
+    queryFn: () => plansApi.listAddOns(planCode),
     staleTime: 5 * 60_000,
+    ...options,
+  });
+}
+
+/** Add-ons the shop can buy on their own for its current plan (My Plan top-up). */
+export function useAddOnOptionsQuery(
+  options?: Omit<UseQueryOptions<AddOnResponse[]>, 'queryKey' | 'queryFn'>,
+) {
+  return useQuery({
+    queryKey: planKeys.addOnOptions(),
+    queryFn: () => plansApi.listAddOnOptions(),
+    staleTime: 60_000,
     ...options,
   });
 }
