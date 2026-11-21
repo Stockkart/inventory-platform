@@ -82,6 +82,23 @@ describe('buildPlanComparison', () => {
     expect(byKey.ACCOUNTING).toEqual([false, true]);
     expect(byKey.SALARY).toBeUndefined();
   });
+
+  it('lists the every-plan rows as included for all plans, then brochure sections', () => {
+    const rows = buildPlanComparison([starter, pro]).rows;
+    const scanSell = rows.find((row) => row.key === 'core-scan-sell');
+    expect(scanSell).toMatchObject({ group: 'Billing & stock', values: [true, true] });
+    expect([...new Set(rows.map((row) => row.group))]).toEqual([
+      'Plan limits',
+      'Billing & stock',
+      'Money & accounts',
+    ]);
+  });
+
+  it('tags features that are sold but not live yet', () => {
+    const marketing = plan({ id: 'e', code: 'ENTERPRISE', features: ['MARKETING'] });
+    const row = buildPlanComparison([starter, marketing]).rows.find((r) => r.key === 'MARKETING');
+    expect(row).toMatchObject({ group: 'Grow your business', comingSoon: true });
+  });
 });
 
 describe('plansForSelection', () => {

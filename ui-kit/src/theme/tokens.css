@@ -15,6 +15,13 @@
   --sk-color-text-secondary: #475569;
   --sk-color-text-muted: #64748b;
   --sk-color-text-inverse: #ffffff;
+  /* Brochure amber for the one headline promo (promo button, "Most popular" pill). Same in both
+     themes: it always sits on its own fill with dark text. */
+  --sk-color-promo: #f59e0b;
+  --sk-color-promo-hover: #fbbf24;
+  --sk-color-promo-text: #1f2937;
+  /* Text on surfaces that stay dark in both themes (navy sale strip, My Plan hero). */
+  --sk-color-on-dark: #ffffff;
   --sk-color-border-default: #e2e8f0;
   --sk-color-border-strong: #cbd5e1;
   /* Brand aligned to sidebar navy */
@@ -154,6 +161,13 @@
   --sk-color-text-secondary: #cbd5e1;
   --sk-color-text-muted: #94a3b8;
   --sk-color-text-inverse: #0f172a;
+  /* Brochure amber for the one headline promo (promo button, "Most popular" pill). Same in both
+     themes: it always sits on its own fill with dark text. */
+  --sk-color-promo: #f59e0b;
+  --sk-color-promo-hover: #fbbf24;
+  --sk-color-promo-text: #1f2937;
+  /* Text on surfaces that stay dark in both themes (navy sale strip, My Plan hero). */
+  --sk-color-on-dark: #ffffff;
   /* Shifted one step lighter than the surfaces. border-default was #1e293b,
      identical to --sk-color-bg-elevated, so every card drawn as
      `background: bg-elevated; border: 1px solid border-default` had a border

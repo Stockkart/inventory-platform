@@ -1,11 +1,11 @@
-import type { PlanResponse } from '@inventory-platform/plan/types';
+import { Check } from 'lucide-react';
+import type { PlanFeature, PlanResponse } from '@inventory-platform/plan/types';
 import {
   Badge,
   Box,
   Button,
   Text,
   VisuallyHidden,
-  chartChrome,
   surfaceChrome,
   cn,
 } from '@inventory-platform/ui-kit';
@@ -17,6 +17,8 @@ import {
   plansForSelection,
 } from './planPricing';
 import { trialLabel } from './trialLabel';
+
+const FEATURE_ORDER = Object.keys(FEATURE_LABELS) as PlanFeature[];
 
 /** The backend decides which plan is highlighted. */
 export function isMostPopular(plan: PlanResponse): boolean {
@@ -58,8 +60,9 @@ export function buildPlanFeatures(plan: PlanResponse): string[] {
     features.push(`${plan.ocrLimit.toLocaleString('en-IN')} OCR invoices/month`);
   }
 
-  for (const feature of plan.features ?? []) {
-    features.push(FEATURE_LABELS[feature] ?? feature);
+  // The API sends features as a set, so list them in one fixed order on every card.
+  for (const feature of FEATURE_ORDER) {
+    if (plan.features?.includes(feature)) features.push(FEATURE_LABELS[feature]);
   }
 
   return features;
@@ -99,10 +102,14 @@ function PlanTile({
         !isCurrent && isPopular && surfaceChrome.planCardHighlight,
       )}
     >
+      {!isCurrent && isPopular ? (
+        <Text as="span" className={surfaceChrome.planCardPopularPill}>
+          Most popular
+        </Text>
+      ) : null}
       <Box className={surfaceChrome.planCardBody}>
         <Box className={surfaceChrome.planCardTop}>
           {isCurrent ? <Badge variant="success">Current</Badge> : null}
-          {!isCurrent && isPopular ? <Badge variant="info">Most popular</Badge> : null}
           {showTrialBadge ? <Badge variant="neutral">{trialLabel(plan.trialDays)}</Badge> : null}
         </Box>
 
@@ -138,9 +145,9 @@ function PlanTile({
         <Box className={surfaceChrome.planCardFeatures}>
           {features.map((feature) => (
             <Box key={feature} className={surfaceChrome.planCardFeature}>
-              <Text as="span" className={surfaceChrome.planCardCheck} aria-hidden>
-                ✓
-              </Text>
+              <Box as="span" className={surfaceChrome.planCardCheck} aria-hidden>
+                <Check size={11} strokeWidth={3} />
+              </Box>
               <Text as="span">{feature}</Text>
             </Box>
           ))}
@@ -173,7 +180,7 @@ export function PlanGrid({
 }: PlanGridProps) {
   return (
     <Box className={surfaceChrome.planGridWrap}>
-      <Box display="grid" gap="md" width="full" className={chartChrome.autoGridFillWide}>
+      <Box display="grid" gap="md" width="full" className={surfaceChrome.planCardGrid}>
         {plansForSelection(plans).map((plan) => (
           <PlanTile
             key={plan.id}

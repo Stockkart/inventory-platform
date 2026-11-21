@@ -1,5 +1,14 @@
 import type { PlanResponse } from '@inventory-platform/plan/types';
-import { ComparisonTable, Stack, Text, VisuallyHidden } from '@inventory-platform/ui-kit';
+import { Check } from 'lucide-react';
+import {
+  Badge,
+  Box,
+  ComparisonTable,
+  Stack,
+  Text,
+  VisuallyHidden,
+  surfaceChrome,
+} from '@inventory-platform/ui-kit';
 import { buildPlanComparison, type ComparisonValue } from './planPricing';
 import { isMostPopular } from './PlanGrid';
 
@@ -7,9 +16,9 @@ function renderValue(value: ComparisonValue) {
   if (value === true) {
     return (
       <>
-        <Text as="span" aria-hidden>
-          ✓
-        </Text>
+        <Box as="span" className={surfaceChrome.planCompareTick} aria-hidden>
+          <Check size={13} strokeWidth={3} />
+        </Box>
         <VisuallyHidden>Included</VisuallyHidden>
       </>
     );
@@ -17,7 +26,7 @@ function renderValue(value: ComparisonValue) {
   if (value === false) {
     return (
       <>
-        <Text as="span" color="secondary" aria-hidden>
+        <Text as="span" className={surfaceChrome.planCompareDash} aria-hidden>
           —
         </Text>
         <VisuallyHidden>Not included</VisuallyHidden>
@@ -43,7 +52,7 @@ export function PlanComparisonTable({ plans }: PlanComparisonTableProps) {
       </Text>
       <ComparisonTable
         caption="Plan limits and features side by side"
-        cornerLabel="Features"
+        cornerLabel="What you get"
         columns={comparison.plans.map((plan) => ({
           key: plan.id,
           header: plan.planName,
@@ -51,9 +60,28 @@ export function PlanComparisonTable({ plans }: PlanComparisonTableProps) {
         }))}
         rows={comparison.rows.map((row) => ({
           key: row.key,
-          label: row.label,
+          group: row.group,
+          label: row.comingSoon ? (
+            <>
+              {row.label}{' '}
+              <Badge variant="warning" className={surfaceChrome.planComingSoon}>
+                Coming soon
+              </Badge>
+            </>
+          ) : (
+            row.label
+          ),
           cells: Object.fromEntries(
-            comparison.plans.map((plan, index) => [plan.id, renderValue(row.values[index])]),
+            comparison.plans.map((plan, index) => [
+              plan.id,
+              row.key === 'price' ? (
+                <Text as="span" className={surfaceChrome.planComparePrice}>
+                  {renderValue(row.values[index])}
+                </Text>
+              ) : (
+                renderValue(row.values[index])
+              ),
+            ]),
           ),
         }))}
       />

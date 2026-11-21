@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
+import { Check, Lock } from 'lucide-react';
 import {
   Alert,
   Badge,
@@ -8,7 +9,6 @@ import {
   PageHeader,
   Stack,
   Text,
-  accountingChrome,
   surfaceChrome,
   cn,
 } from '@inventory-platform/ui-kit';
@@ -119,7 +119,7 @@ export function PlanStatusPage() {
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
       <PageHeader description="Subscription, monthly usage, and upgrade options." />
 
-      <CampaignBanner />
+      <CampaignBanner className={surfaceChrome.planCampaignStrip} />
 
       <Box className={surfaceChrome.planStatusSummary}>
         <Box className={surfaceChrome.planStatusSummaryMain}>
@@ -131,13 +131,10 @@ export function PlanStatusPage() {
               {planName}
             </Text>
             <Badge
-              variant={
-                status.trialExpired || status.planExpired
-                  ? 'warning'
-                  : status.trial
-                  ? 'info'
-                  : 'success'
-              }
+              className={cn(
+                surfaceChrome.planStatusBadge,
+                (status.trialExpired || status.planExpired) && surfaceChrome.planStatusBadgeWarning,
+              )}
             >
               {planStateLabel}
             </Badge>
@@ -175,21 +172,27 @@ export function PlanStatusPage() {
 
       <Stack gap="sm">
         <Box className={surfaceChrome.planSectionHeader}>
-          <Text as="h3" className={surfaceChrome.inviteSectionTitle}>
+          <Text as="h3" className={surfaceChrome.planSectionTitle}>
             This month&apos;s usage
           </Text>
         </Box>
-        <Box className={accountingChrome.kpiGrid4}>
+        <Box className={surfaceChrome.planUsageGrid}>
           {usageItems.map((item) => (
-            <Box key={item.label} className={accountingChrome.overviewKpiCard}>
-              <Text as="span" className={accountingChrome.overviewKpiLabel}>
+            <Box
+              key={item.label}
+              className={cn(
+                surfaceChrome.planUsageCard,
+                item.danger && surfaceChrome.planUsageCardDanger,
+              )}
+            >
+              <Text as="span" className={surfaceChrome.planUsageLabel}>
                 {item.label}
               </Text>
               <Text
                 as="span"
                 className={cn(
-                  accountingChrome.overviewKpiValue,
-                  item.danger && accountingChrome.overviewKpiValueWarning,
+                  surfaceChrome.planUsageValue,
+                  item.danger && surfaceChrome.planUsageValueDanger,
                 )}
               >
                 {item.value}
@@ -202,22 +205,37 @@ export function PlanStatusPage() {
       {features ? (
         <Stack gap="sm">
           <Box className={surfaceChrome.planSectionHeader}>
-            <Text as="h3" className={surfaceChrome.inviteSectionTitle}>
-              Features
+            <Text as="h3" className={surfaceChrome.planSectionTitle}>
+              What your plan includes
             </Text>
           </Box>
-          <Box className={accountingChrome.kpiGrid4}>
+          <Box className={surfaceChrome.planFeaturePanel}>
             {features.included.map((feature) => (
-              <Box key={feature} className={accountingChrome.overviewKpiCard}>
-                <Text as="span" className={accountingChrome.overviewKpiLabel}>
+              <Box key={feature} className={surfaceChrome.planFeatureItem}>
+                <Box as="span" className={surfaceChrome.planFeatureIcon}>
+                  <Check size={14} strokeWidth={3} aria-hidden />
+                </Box>
+                <Text as="span" className={surfaceChrome.planFeatureLabel}>
                   {FEATURE_LABELS[feature]}
                 </Text>
-                <Badge variant="success">Included</Badge>
               </Box>
             ))}
             {features.locked.map((feature) => (
-              <Box key={feature} className={accountingChrome.overviewKpiCard}>
-                <Text as="span" className={accountingChrome.overviewKpiLabel}>
+              <Box
+                key={feature}
+                className={cn(
+                  surfaceChrome.planFeatureItem,
+                  surfaceChrome.planFeatureItemLocked,
+                  feature === lockedFeature && surfaceChrome.planFeatureItemHighlight,
+                )}
+              >
+                <Box
+                  as="span"
+                  className={cn(surfaceChrome.planFeatureIcon, surfaceChrome.planFeatureIconLocked)}
+                >
+                  <Lock size={12} aria-hidden />
+                </Box>
+                <Text as="span" className={surfaceChrome.planFeatureLabel}>
                   {FEATURE_LABELS[feature]}
                 </Text>
                 <Badge variant={feature === lockedFeature ? 'warning' : 'neutral'}>Upgrade</Badge>
@@ -229,7 +247,7 @@ export function PlanStatusPage() {
 
       <Stack gap="sm">
         <Box className={surfaceChrome.planSectionHeader}>
-          <Text as="h3" className={surfaceChrome.inviteSectionTitle}>
+          <Text as="h3" className={surfaceChrome.planSectionTitle}>
             {status.planExpired || status.trialExpired ? 'Choose a plan' : 'Available plans'}
           </Text>
           <Text variant="caption" color="secondary">
