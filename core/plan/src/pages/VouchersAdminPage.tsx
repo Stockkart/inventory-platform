@@ -8,6 +8,7 @@ import {
   FormField,
   Inline,
   PageHeader,
+  PaginationBar,
   Select,
   Stack,
   Table,
@@ -32,6 +33,7 @@ import { adminErrorMessage, formatAdminDate } from '../admin/format';
 import {
   describeVoucherTarget,
   describeVoucherValue,
+  isLastVoucherPage,
   TARGET_OPTIONS,
   voucherListFilters,
   voucherUsage,
@@ -50,12 +52,13 @@ function validity(voucher: AdminVoucher): string {
 export function VouchersAdminPage() {
   const [addOnCode, setAddOnCode] = useState('');
   const [target, setTarget] = useState<VoucherTarget | ''>('');
+  const [page, setPage] = useState(0);
   const [generating, setGenerating] = useState(false);
   const [editing, setEditing] = useState<AdminVoucher | null>(null);
   const [viewing, setViewing] = useState<AdminVoucher | null>(null);
   const [toggling, setToggling] = useState<AdminVoucher | null>(null);
   const addOns = useAdminAddOnsQuery();
-  const query = useAdminVouchersQuery(voucherListFilters(addOnCode, target));
+  const query = useAdminVouchersQuery(voucherListFilters(addOnCode, target), page);
   const activeMutation = useSetVoucherActiveMutation();
   const rows = query.data ?? [];
   const catalogue = addOns.data ?? [];
@@ -95,7 +98,10 @@ export function VouchersAdminPage() {
                   id="voucher-filter-target"
                   value={target}
                   options={[{ value: '', label: 'All' }, ...TARGET_OPTIONS]}
-                  onChange={(e) => setTarget(e.target.value as VoucherTarget | '')}
+                  onChange={(e) => {
+                    setTarget(e.target.value as VoucherTarget | '');
+                    setPage(0);
+                  }}
                 />
               </FormField>
               <FormField label="Add-on" htmlFor="voucher-filter-addon">
@@ -106,7 +112,10 @@ export function VouchersAdminPage() {
                     { value: '', label: 'All add-ons' },
                     ...catalogue.map((a) => ({ value: a.code, label: a.name })),
                   ]}
-                  onChange={(e) => setAddOnCode(e.target.value)}
+                  onChange={(e) => {
+                    setAddOnCode(e.target.value);
+                    setPage(0);
+                  }}
                   disabled={target === 'PLAN'}
                 />
               </FormField>
@@ -201,6 +210,14 @@ export function VouchersAdminPage() {
                 )}
               </TableBody>
             </Table>
+            <PaginationBar
+              page={page}
+              prevDisabled={page === 0}
+              nextDisabled={query.isPlaceholderData || isLastVoucherPage(rows.length)}
+              disabled={query.isFetching}
+              onPageChange={setPage}
+              aria-label="Voucher pages"
+            />
           </Stack>
         </CardBody>
       </Card>

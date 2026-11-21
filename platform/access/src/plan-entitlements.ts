@@ -1,26 +1,11 @@
 /**
  * Subscription entitlements, the second gating axis beside {@link ShopUiCapabilities}.
- * A nav item or route is shown only when both allow it.
+ * A nav item or route is shown only when both allow it. Which paths need which feature is
+ * declared on the nav items (`requiresFeature` in `@inventory-platform/routing`).
  */
 export interface PlanEntitlementsView {
   enforcement: 'OFF' | 'LOG_ONLY' | 'ENFORCE';
   features: readonly string[];
-}
-
-/** Dashboard paths that need a plan feature. Matches the path and everything under it. */
-const PATH_FEATURES: ReadonlyArray<readonly [string, string]> = [
-  ['/dashboard/accounting', 'ACCOUNTING'],
-  ['/dashboard/credit', 'CREDIT_BALANCE'],
-  ['/dashboard/barcodes', 'BARCODE_GENERATOR'],
-];
-
-export function planFeatureForPath(path: string): string | null {
-  for (const [prefix, feature] of PATH_FEATURES) {
-    if (path === prefix || path.startsWith(`${prefix}/`)) {
-      return feature;
-    }
-  }
-  return null;
 }
 
 /**
@@ -35,12 +20,4 @@ export function isPlanFeatureEnabled(
     return true;
   }
   return entitlements.features.includes(feature);
-}
-
-export function isPathEntitled(
-  path: string,
-  entitlements: PlanEntitlementsView | null | undefined,
-): boolean {
-  const feature = planFeatureForPath(path);
-  return feature == null || isPlanFeatureEnabled(entitlements, feature);
 }

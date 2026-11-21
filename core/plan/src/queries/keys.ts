@@ -35,7 +35,7 @@ export const planKeys = {
   adminShopAddOns: (shopId: string) => [...base.all, 'admin-shop-addons', shopId] as const,
   adminCampaigns: () => [...base.all, 'admin-campaigns'] as const,
   adminVouchers: () => [...base.all, 'admin-vouchers'] as const,
-  adminVoucherList: (filters: VoucherListFilters) =>
+  adminVoucherList: (filters: VoucherListFilters, page: number) =>
     [
       ...base.all,
       'admin-vouchers',
@@ -43,6 +43,7 @@ export const planKeys = {
       filters.addOnCode ?? 'all',
       filters.planCode ?? 'all',
       filters.target ?? 'all',
+      page,
     ] as const,
   adminVoucherPlanPreview: (planCode: string, type: string, value: number | null) =>
     [...base.all, 'admin-vouchers', 'plan-preview', planCode, type, value] as const,

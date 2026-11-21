@@ -7,6 +7,7 @@ import {
   parseVoucherValue,
   voucherListFilters,
   emptyVoucherForm,
+  isLastVoucherPage,
   toGenerateRequest,
   toUpdateRequest,
   typeOptionsFor,
@@ -281,5 +282,14 @@ describe('voucherListFilters', () => {
 
   it('sends nothing for the all-all view', () => {
     expect(voucherListFilters('', '')).toEqual({ target: undefined, addOnCode: undefined });
+  });
+});
+
+describe('isLastVoucherPage', () => {
+  it('treats a short page as the last one', () => {
+    expect(isLastVoucherPage(0)).toBe(true);
+    expect(isLastVoucherPage(99)).toBe(true);
+    expect(isLastVoucherPage(100)).toBe(false);
+    expect(isLastVoucherPage(3, 3)).toBe(false);
   });
 });

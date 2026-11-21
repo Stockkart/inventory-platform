@@ -16,6 +16,7 @@ import type {
   AdminVoucherRedemption,
   PlanVoucherPreviewRequest,
   PlanVoucherPreviewResponse,
+  PlanGrantRequest,
   VoucherGenerateRequest,
   VoucherListFilters,
   VoucherUpdateRequest,
@@ -26,6 +27,7 @@ import type {
   WalletAdjustmentRequest,
   WalletResponse,
 } from '@inventory-platform/plan/types';
+import type { ShopPlanStatusResponse } from '@inventory-platform/contracts';
 import { PLAN_ENDPOINTS } from '../api/endpoints';
 
 /** Platform admin calls. The API rejects anyone without the platform admin role. */
@@ -107,6 +109,15 @@ export const planAdminApi = {
     return response.data;
   },
 
+  /** Returns the shop's plan status after the grant. */
+  grantPlan: async (shopId: string, body: PlanGrantRequest): Promise<ShopPlanStatusResponse> => {
+    const response = await apiClient.post<ApiResponse<ShopPlanStatusResponse>>(
+      PLAN_ENDPOINTS.ADMIN_SHOP_PLAN_GRANTS(shopId),
+      body,
+    );
+    return response.data;
+  },
+
   listShopAddOns: async (shopId: string): Promise<ShopAddOn[]> => {
     const response = await apiClient.get<ApiResponse<ShopAddOn[]>>(
       PLAN_ENDPOINTS.ADMIN_ADDON_GRANTS,
@@ -135,16 +146,23 @@ export const planAdminApi = {
     return response.data;
   },
 
-  listVouchers: async (filters: VoucherListFilters): Promise<AdminVoucher[]> => {
+  /** One page, newest first; `page` counts from 0. */
+  listVouchers: async (
+    filters: VoucherListFilters,
+    page: number,
+    size: number,
+  ): Promise<AdminVoucher[]> => {
     const { addOnCode, planCode, target } = filters;
     const params = {
       ...(addOnCode ? { addOnCode } : {}),
       ...(planCode ? { planCode } : {}),
       ...(target ? { target } : {}),
+      page: String(page),
+      size: String(size),
     };
     const response = await apiClient.get<ApiResponse<AdminVoucher[]>>(
       PLAN_ENDPOINTS.ADMIN_VOUCHERS,
-      Object.keys(params).length > 0 ? params : undefined,
+      params,
     );
     return response.data;
   },

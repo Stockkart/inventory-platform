@@ -30,6 +30,7 @@ import {
 } from '../../queries/admin.hooks';
 import { adminErrorMessage, formatAdminDate } from '../format';
 import { emptyGrantForm, toGrantRequest, type GrantFormState } from './catalogueForm';
+import { PlanGrantForm } from './PlanGrantForm';
 
 function holding(item: ShopAddOn): string {
   if (item.grantType === 'OCR_CREDITS') {
@@ -182,6 +183,11 @@ export function GrantsPanel() {
 
       {shopId ? (
         <>
+          <Card>
+            <CardBody>
+              <PlanGrantForm shopId={shopId} />
+            </CardBody>
+          </Card>
           <Table>
             <TableHead>
               <TableRow>

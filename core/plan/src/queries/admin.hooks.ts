@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   AddOnAdminRequest,
   AddOnGrantRequest,
@@ -13,9 +13,11 @@ import type {
   ReferralAttributionStatus,
   ReferralRewardStatus,
   WalletAdjustmentRequest,
+  PlanGrantRequest,
 } from '@inventory-platform/plan/types';
 import { planAdminApi } from '../api/admin.api';
 import { planKeys } from './keys';
+import { VOUCHER_PAGE_SIZE } from '../admin/vouchers/voucherForm';
 
 export function useAdminAttributionsQuery(status: ReferralAttributionStatus) {
   return useQuery({
@@ -133,6 +135,13 @@ export function useGrantAddOnMutation() {
   });
 }
 
+export function useGrantPlanMutation() {
+  return useMutation({
+    mutationFn: ({ shopId, body }: { shopId: string; body: PlanGrantRequest }) =>
+      planAdminApi.grantPlan(shopId, body),
+  });
+}
+
 export function useAdminPlansQuery() {
   return useQuery({
     queryKey: planKeys.adminPlans(),
@@ -169,10 +178,11 @@ export function useSetPlanActiveMutation() {
   });
 }
 
-export function useAdminVouchersQuery(filters: VoucherListFilters) {
+export function useAdminVouchersQuery(filters: VoucherListFilters, page: number) {
   return useQuery({
-    queryKey: planKeys.adminVoucherList(filters),
-    queryFn: () => planAdminApi.listVouchers(filters),
+    queryKey: planKeys.adminVoucherList(filters, page),
+    queryFn: () => planAdminApi.listVouchers(filters, page, VOUCHER_PAGE_SIZE),
+    placeholderData: keepPreviousData,
   });
 }
 

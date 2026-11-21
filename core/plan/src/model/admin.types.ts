@@ -130,6 +130,18 @@ export interface AddOnGrantRequest {
   reason: string;
 }
 
+/**
+ * POST /admin/shops/{shopId}/plan-grants. The same plan extends from the later of now and the
+ * current expiry; the API refuses another plan while paid days remain.
+ */
+export interface PlanGrantRequest {
+  planCode: string;
+  /** 1 to 36. */
+  durationMonths: number;
+  /** Required, at most 200 characters; kept in the audit log. */
+  reason: string;
+}
+
 export type ShopAddOnSource = 'ORDER' | 'ADMIN';
 
 export interface ShopAddOn {

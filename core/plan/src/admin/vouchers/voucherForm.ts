@@ -10,6 +10,8 @@ import { endOfDayIst, istDay, startOfDayIst } from '../dates';
 
 /** Mirrors VoucherAdminValidator so most mistakes show before the request. */
 export const VOUCHER_MAX_BATCH = 500;
+/** Rows per page of the admin voucher list (the API allows 1–500, default 100). */
+export const VOUCHER_PAGE_SIZE = 100;
 const CODE = /^[A-Z0-9][A-Z0-9-]{3,29}$/;
 const PREFIX = /^[A-Z0-9]{1,8}$/;
 const MAX_NOTE = 500;
@@ -265,4 +267,9 @@ export function describeVoucherTarget(
   if (voucher.target === 'PLAN') return `Plan: ${voucher.planName ?? voucher.planCode ?? ''}`;
   const code = voucher.addOnCode ?? '';
   return `Add-on: ${addOnName?.(code) ?? code}`;
+}
+
+/** The API returns a plain list per page, so a short page is the last one. */
+export function isLastVoucherPage(rowCount: number, size = VOUCHER_PAGE_SIZE): boolean {
+  return rowCount < size;
 }
