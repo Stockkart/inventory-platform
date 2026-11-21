@@ -78,17 +78,45 @@ export interface LinkableUser {
 // Vendor types
 export type VendorBusinessType = 'WHOLESALE' | 'RETAIL' | 'MANUFACTURER' | 'DISTRIBUTOR';
 
+/** Whether a supplier's line amounts already contain GST. */
+export type PurchaseTaxTreatment = 'INCLUSIVE' | 'EXCLUSIVE';
+
+/** A party's address as fields. `stateCode` is the two-digit GST state code the tax code reads. */
+export interface PostalAddress {
+  line1?: string | null;
+  line2?: string | null;
+  city?: string | null;
+  district?: string | null;
+  stateCode?: string | null;
+  pincode?: string | null;
+}
+
 export interface Vendor {
   vendorId: string;
   name: string;
   contactEmail: string;
   contactPhone: string;
   address: string;
+  postalAddress?: PostalAddress | null;
   companyName: string;
   businessType: VendorBusinessType;
   gstinUin?: string | null;
+  /** When the GST network last confirmed the GSTIN; null when it has not been verified. */
+  gstinVerifiedAt?: string | null;
+  /** The network's status at that time: Active, Cancelled, Suspended, … */
+  gstinStatus?: string | null;
   /** Drug licence number, as printed on a pharmacy bill. */
   dlNo?: string | null;
+  /**
+   * How this supplier states the amounts on their bills.
+   *
+   * INCLUSIVE when they bill at MRP with GST already inside the line amount, EXCLUSIVE when they
+   * quote a rate and add the tax. Set once per supplier: it is a property of their billing
+   * software, not of any one invoice, so stock-in reads it rather than asking every time.
+   *
+   * Omitted reads as EXCLUSIVE, which is what every path assumed before the distinction existed.
+   */
+  defaultTaxTreatment?: PurchaseTaxTreatment | null;
   /** Optional. Set when vendor is linked to a registered user. */
   userId?: string | null;
   createdAt: string;
@@ -100,9 +128,21 @@ export interface CreateVendorDto {
   contactEmail?: string;
   contactPhone: string;
   address?: string;
+  postalAddress?: PostalAddress;
+  companyName?: string;
   businessType: VendorBusinessType;
   gstinUin?: string;
   dlNo?: string;
+  /**
+   * How this supplier states the amounts on their bills.
+   *
+   * INCLUSIVE when they bill at MRP with GST already inside the line amount, EXCLUSIVE when they
+   * quote a rate and add the tax. Set once per supplier: it is a property of their billing
+   * software, not of any one invoice, so stock-in reads it rather than asking every time.
+   *
+   * Omitted reads as EXCLUSIVE, which is what every path assumed before the distinction existed.
+   */
+  defaultTaxTreatment?: PurchaseTaxTreatment | null;
   /** Optional. Links vendor to a registered user account. */
   userId?: string | null;
 }
@@ -113,9 +153,12 @@ export interface VendorResponse {
   contactEmail: string;
   contactPhone: string;
   address: string;
+  postalAddress?: PostalAddress | null;
   companyName: string;
   businessType: VendorBusinessType;
   gstinUin?: string | null;
+  gstinVerifiedAt?: string | null;
+  gstinStatus?: string | null;
   /** Drug licence number, as printed on a pharmacy bill. */
   dlNo?: string | null;
   /** Optional. Set when vendor is linked to a registered user. */
@@ -132,8 +175,11 @@ export interface Customer {
   name: string;
   phone: string;
   address: string | null;
+  postalAddress?: PostalAddress | null;
   email: string | null;
   gstin?: string | null;
+  gstinVerifiedAt?: string | null;
+  gstinStatus?: string | null;
   dlNo?: string | null;
   pan?: string | null;
   partyType?: CustomerPartyType | null;
@@ -149,8 +195,11 @@ export interface CustomerResponse {
   name: string;
   phone: string;
   address: string | null;
+  postalAddress?: PostalAddress | null;
   email: string | null;
   gstin?: string | null;
+  gstinVerifiedAt?: string | null;
+  gstinStatus?: string | null;
   dlNo?: string | null;
   pan?: string | null;
   /** PAN derived from GSTIN: 10 chars from 3rd character (1-based). */
@@ -176,6 +225,8 @@ export interface CreateCustomerDto {
   phone?: string;
   email?: string;
   address?: string;
+  /** Optional fielded address; the state code is what decides IGST on a sale. */
+  postalAddress?: PostalAddress;
   gstin?: string;
   dlNo?: string;
   pan?: string;
@@ -187,6 +238,7 @@ export interface UpdateCustomerDto {
   phone?: string;
   email?: string;
   address?: string;
+  postalAddress?: PostalAddress;
   gstin?: string;
   dlNo?: string;
   pan?: string;
@@ -206,8 +258,19 @@ export interface UpdateVendorDto {
   contactEmail?: string;
   contactPhone?: string;
   address?: string;
+  postalAddress?: PostalAddress;
   companyName?: string;
   businessType?: string;
   gstinUin?: string;
   dlNo?: string;
+  /**
+   * How this supplier states the amounts on their bills.
+   *
+   * INCLUSIVE when they bill at MRP with GST already inside the line amount, EXCLUSIVE when they
+   * quote a rate and add the tax. Set once per supplier: it is a property of their billing
+   * software, not of any one invoice, so stock-in reads it rather than asking every time.
+   *
+   * Omitted reads as EXCLUSIVE, which is what every path assumed before the distinction existed.
+   */
+  defaultTaxTreatment?: PurchaseTaxTreatment | null;
 }
