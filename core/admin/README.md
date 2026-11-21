@@ -21,8 +21,12 @@ accepted by shop APIs.
 
 ## Session
 
-The admin token is stored by `apiClient` like the shop token, but the admin app runs on its own
-origin, so the two never share storage. A 401 anywhere clears the token and returns to `/login`.
+The admin token is kept by `apiClient` in localStorage under its own key, `stockkart_admin_token`
+(`session/adminToken.ts` calls `apiClient.setTokenStorageKey` before the first admin request), never
+the shop app's `auth_token`; the admin app also runs on its own origin. Only a 401 means signed out:
+it clears the token and returns to `/login`. Any other failure of the session check (server error,
+offline) keeps the admin signed in and shows "Could not reach StockKart" with **Try again**
+(`adminSessionStatus`, `SessionUnavailable`).
 When `mustChangePassword` is set, every page except change password redirects there.
 
 ## Hosting
@@ -30,6 +34,10 @@ When `mustChangePassword` is set, every page except change password redirects th
 `apps/admin` is its own Netlify site (`apps/admin/netlify.toml`: static SPA, every path served
 `index.html`). It needs `VITE_API_URL`, and the API's `ADMIN_CLIENT_URL` set to the site's origin.
 See `docs/deploying.md`, "Admin app".
+
+## Tests
+
+`nx test admin` (`vitest.config.ts` copied from `core/user`).
 
 ## Layout
 

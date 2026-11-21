@@ -19,13 +19,18 @@ import { ADMIN_NAV } from '../nav';
 import { useAdminLogoutMutation } from '../queries/hooks';
 import { ADMIN_PATHS } from '../session/adminGuard';
 import { useAdminSession } from '../session/useAdminSession';
+import { SessionUnavailable } from './SessionUnavailable';
 
 /** Admin app chrome: its own header and tool sidebar, no shop menus. */
 export function AdminLayout({ children }: { children: ReactNode }) {
-  const { admin, checking } = useAdminSession('app');
+  const { admin, checking, unavailable, retrying, retry } = useAdminSession('app');
   const location = useLocation();
   const navigate = useNavigate();
   const logout = useAdminLogoutMutation();
+
+  if (unavailable) {
+    return <SessionUnavailable retrying={retrying} onRetry={retry} />;
+  }
 
   if (checking || !admin) {
     return <CenteredLoader label="Checking your admin session…" />;
