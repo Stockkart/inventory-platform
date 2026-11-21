@@ -132,10 +132,15 @@ export const planAdminApi = {
     return response.data;
   },
 
-  listVouchers: async (addOnCode: string | null): Promise<AdminVoucher[]> => {
+  /** One page, newest first; `page` counts from 0. */
+  listVouchers: async (
+    addOnCode: string | null,
+    page: number,
+    size: number,
+  ): Promise<AdminVoucher[]> => {
     const response = await apiClient.get<ApiResponse<AdminVoucher[]>>(
       PLAN_ENDPOINTS.ADMIN_VOUCHERS,
-      addOnCode ? { addOnCode } : undefined,
+      { ...(addOnCode ? { addOnCode } : {}), page: String(page), size: String(size) },
     );
     return response.data;
   },
