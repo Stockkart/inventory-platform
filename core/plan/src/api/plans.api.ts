@@ -1,5 +1,5 @@
 import { apiClient } from '@inventory-platform/api-client';
-import type { ApiResponse } from '@inventory-platform/contracts';
+import type { ApiResponse, ShopEntitlementsResponse } from '@inventory-platform/contracts';
 import type {
   AddOnResponse,
   CampaignResponse,
@@ -45,6 +45,14 @@ export const plansApi = {
 
   getUsage: async (): Promise<UsageResponse> => {
     const response = await apiClient.get<ApiResponse<UsageResponse>>(PLAN_ENDPOINTS.SHOP_USAGE);
+    return response.data;
+  },
+
+  /** Features and limits the shop's plan grants; drives nav and route gating. */
+  getShopEntitlements: async (): Promise<ShopEntitlementsResponse> => {
+    const response = await apiClient.get<ApiResponse<ShopEntitlementsResponse>>(
+      PLAN_ENDPOINTS.SHOP_ENTITLEMENTS,
+    );
     return response.data;
   },
 
