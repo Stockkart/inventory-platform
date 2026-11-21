@@ -22,6 +22,7 @@ describe('labels', () => {
 
   it('names wallet movements', () => {
     expect(walletSourceLabel('ORDER_REDEMPTION')).toBe('Spent on a plan');
+    expect(walletSourceLabel('ORDER_RESERVATION')).toBe('Used at checkout');
   });
 
   it('only explains referrals that are not simply resolved', () => {

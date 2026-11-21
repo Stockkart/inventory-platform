@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react';
-import type { PlanFeature, PlanResponse } from '@inventory-platform/plan/types';
+import type { PlanFeature, PlanOptionResponse, PlanResponse } from '@inventory-platform/plan/types';
 import {
   Badge,
   Box,
@@ -19,6 +19,7 @@ import {
   type PlanFeatureLine,
 } from './planPricing';
 import { trialLabel } from './trialLabel';
+import { planCardCta } from './planCardCta';
 
 const FEATURE_ORDER = Object.keys(FEATURE_LABELS) as PlanFeature[];
 
@@ -90,6 +91,8 @@ export interface PlanGridProps {
   onSelectPlan?: (plan: PlanResponse) => void;
   ctaLabel?: string;
   showTrialBadge?: boolean;
+  /** Plan status `planOptions`: the API's action per plan. Without it `ctaLabel` is used. */
+  planOptions?: PlanOptionResponse[] | null;
 }
 
 function PlanTile({
@@ -99,6 +102,7 @@ function PlanTile({
   onSelectPlan,
   ctaLabel,
   showTrialBadge,
+  option,
 }: {
   plan: PlanResponse;
   isCurrent: boolean;
@@ -106,7 +110,9 @@ function PlanTile({
   onSelectPlan?: (plan: PlanResponse) => void;
   ctaLabel: string;
   showTrialBadge: boolean;
+  option?: PlanOptionResponse;
 }) {
+  const cta = planCardCta(option, ctaLabel, isCurrent);
   const features = buildPlanFeatures(plan);
   const listPriceLabel = planListPriceLabel(plan);
 
@@ -182,11 +188,16 @@ function PlanTile({
               type="button"
               variant={isCurrent ? 'outline' : isPopular ? 'solid' : 'outline'}
               fullWidth
-              disabled={isCurrent}
+              disabled={cta.disabled}
               onClick={() => onSelectPlan(plan)}
             >
-              {isCurrent ? 'Current plan' : ctaLabel}
+              {cta.label}
             </Button>
+            {cta.note ? (
+              <Text variant="caption" color="secondary">
+                {cta.note}
+              </Text>
+            ) : null}
           </Box>
         ) : null}
       </Box>
@@ -200,6 +211,7 @@ export function PlanGrid({
   onSelectPlan,
   ctaLabel = 'Get Started',
   showTrialBadge = true,
+  planOptions,
 }: PlanGridProps) {
   return (
     <Box className={surfaceChrome.planGridWrap}>
@@ -213,6 +225,7 @@ export function PlanGrid({
             onSelectPlan={onSelectPlan}
             ctaLabel={ctaLabel}
             showTrialBadge={showTrialBadge}
+            option={planOptions?.find((o) => o.planId === plan.id)}
           />
         ))}
       </Box>
