@@ -1,0 +1,64 @@
+/* Month calendar: 7 equal columns, Monday first. */
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0.25rem;
+  table-layout: fixed;
+  font-family: var(--sk-font-sans);
+}
+
+.caption {
+  padding-bottom: 0.35rem;
+  color: var(--sk-color-text-primary);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+/* Same technique as VisuallyHidden: still read by screen readers. */
+.captionHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.weekday {
+  padding: 0.25rem 0;
+  color: var(--sk-color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.day {
+  height: 3rem;
+  padding: 0.25rem;
+  border: 1px solid var(--sk-color-border-default);
+  border-radius: var(--sk-radius-md, 8px);
+  background: var(--sk-color-bg-surface, #fff);
+  color: var(--sk-color-text-primary);
+  font-size: 0.8125rem;
+  vertical-align: top;
+}
+
+.blank {
+  height: 3rem;
+}
+
+@media (max-width: 480px) {
+  .table {
+    border-spacing: 0.15rem;
+  }
+
+  .day,
+  .blank {
+    height: 2.5rem;
+    padding: 0.15rem;
+  }
+}

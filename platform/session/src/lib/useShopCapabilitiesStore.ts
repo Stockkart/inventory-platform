@@ -7,7 +7,11 @@ interface ShopCapabilitiesState {
   byShopId: Record<string, ShopUiCapabilities>;
   loading: boolean;
   error: string | null;
-  fetchCapabilities: () => Promise<ShopUiCapabilities | null>;
+  /**
+   * Loads the active shop's capabilities once. `force` reloads them for the active shop only and
+   * keeps the cached value (and `loading` false) until the new one arrives.
+   */
+  fetchCapabilities: (opts?: { force?: boolean }) => Promise<ShopUiCapabilities | null>;
   clear: () => void;
 }
 
@@ -20,16 +24,16 @@ export const useShopCapabilitiesStore = create<ShopCapabilitiesState>((set, get)
   loading: false,
   error: null,
 
-  fetchCapabilities: async () => {
+  fetchCapabilities: async (opts) => {
     const shopId = resolveShopId();
     if (!shopId) {
       return null;
     }
     const cached = get().byShopId[shopId];
-    if (cached?.sellSurface) {
+    if (cached?.sellSurface && !opts?.force) {
       return cached;
     }
-    set({ loading: true, error: null });
+    set(opts?.force && cached ? { error: null } : { loading: true, error: null });
     try {
       const capabilities = await shopCapabilitiesApi.get();
       set((state) => ({

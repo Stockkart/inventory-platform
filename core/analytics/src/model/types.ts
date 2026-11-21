@@ -340,11 +340,35 @@ export interface InventoryAnalytics {
   expiredItems: InventoryItemAnalytics[];
   deadStockItems: InventoryItemAnalytics[];
   allItems: InventoryItemAnalytics[] | null;
+  /**
+   * Rows each paged list has in full; the lists above carry only the first page
+   * (`meta.listLimit` rows). Missing on older servers, which send whole lists.
+   */
+  listTotals?: Partial<Record<InventoryPagedList, number>>;
   meta: {
     totalItems: number;
     expiringSoonDays: number;
     lowStockThreshold: number;
     deadStockDays: number;
     includeAll: boolean;
+    /** Rows per list in this answer and per "Show more" page. */
+    listLimit?: number;
   };
+}
+
+/** Inventory-tab lists that come a page at a time. */
+export type InventoryPagedList =
+  | 'lowStockItems'
+  | 'notSellingItems'
+  | 'deadStockItems'
+  | 'allItems';
+
+/** One page of one list (`GET /analytics/inventory/items`). */
+export interface InventoryAnalyticsItemsPage {
+  list: InventoryPagedList;
+  items: InventoryItemAnalytics[];
+  /** 0-based. */
+  page: number;
+  size: number;
+  total: number;
 }
