@@ -6,6 +6,8 @@ import {
   type UseMutationOptions,
   type UseQueryOptions,
 } from '@tanstack/react-query';
+import { useAuthStore } from '@inventory-platform/session';
+import type { ShopEntitlementsResponse } from '@inventory-platform/contracts';
 import type {
   AddOnResponse,
   CampaignResponse,
@@ -51,6 +53,23 @@ export function useShopPlanStatusQuery(
   return useQuery({
     queryKey: planKeys.shopStatus(),
     queryFn: () => plansApi.getShopStatus(),
+    ...options,
+  });
+}
+
+/**
+ * The signed-in shop's plan entitlements. Feeds the dashboard nav filter and route guard (the app
+ * layout passes the data to the shell) and the plan pages. Off until a shop is selected. Payment
+ * invalidates it through {@link planKeys}, so the nav updates without a reload.
+ */
+export function useShopEntitlementsQuery(
+  options?: Omit<UseQueryOptions<ShopEntitlementsResponse>, 'queryKey' | 'queryFn' | 'enabled'>,
+) {
+  const shopId = useAuthStore((s) => s.user?.shopId ?? '');
+  return useQuery({
+    queryKey: planKeys.shopEntitlements(shopId),
+    queryFn: () => plansApi.getShopEntitlements(),
+    enabled: Boolean(shopId),
     ...options,
   });
 }
