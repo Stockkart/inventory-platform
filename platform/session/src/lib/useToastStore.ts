@@ -19,20 +19,28 @@ interface ToastState {
 export const useToastStore = create<ToastState>((set) => ({
   toasts: [],
 
+  // A toast already on screen with the same type and message is not added again, so a
+  // failure repeated by several calls at once (e.g. every request refused because the plan
+  // expired) shows one message, not a pile.
   show: (toast) =>
-    set((state) => ({
-      toasts: [
-        ...state.toasts,
-        {
-          id:
-            typeof crypto !== 'undefined' && crypto.randomUUID
-              ? crypto.randomUUID()
-              : `${Date.now()}-${Math.random()}`,
-          duration: 4000,
-          ...toast,
-        },
-      ],
-    })),
+    set((state) => {
+      if (state.toasts.some((t) => t.type === toast.type && t.message === toast.message)) {
+        return state;
+      }
+      return {
+        toasts: [
+          ...state.toasts,
+          {
+            id:
+              typeof crypto !== 'undefined' && crypto.randomUUID
+                ? crypto.randomUUID()
+                : `${Date.now()}-${Math.random()}`,
+            duration: 4000,
+            ...toast,
+          },
+        ],
+      };
+    }),
 
   remove: (id) =>
     set((state) => ({
