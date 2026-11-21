@@ -18,6 +18,7 @@ import {
   plansForSelection,
   type PlanFeatureLine,
 } from './planPricing';
+import { trialLabel } from './trialLabel';
 
 const FEATURE_ORDER = Object.keys(FEATURE_LABELS) as PlanFeature[];
 
@@ -124,7 +125,7 @@ function PlanTile({
       <Box className={surfaceChrome.planCardBody}>
         <Box className={surfaceChrome.planCardTop}>
           {isCurrent ? <Badge variant="success">Current</Badge> : null}
-          {showTrialBadge ? <Badge variant="neutral">3-day trial</Badge> : null}
+          {showTrialBadge ? <Badge variant="neutral">{trialLabel(plan.trialDays)}</Badge> : null}
         </Box>
 
         <Text as="h3" className={surfaceChrome.planCardName}>

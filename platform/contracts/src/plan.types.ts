@@ -40,6 +40,8 @@ export interface PlanResponse {
   badge?: string | null;
   /** Struck-through anchor shown beside arcPrice. Display only, never charged; null on legacy plans. */
   listPrice?: number | null;
+  /** Length of the free trial in days (API `plan.trial-days`). Absent on older APIs. */
+  trialDays?: number | null;
 }
 
 export interface UsageResponse {
@@ -57,6 +59,8 @@ export interface ShopPlanStatusResponse {
   plan: PlanResponse | null;
   planExpiryDate: string | null;
   trial: boolean;
+  /** Length of the free trial in days (API `plan.trial-days`). Absent on older APIs. */
+  trialDays?: number | null;
   trialExpired: boolean;
   /** True when planExpiryDate is in the past (trial or paid subscription). */
   planExpired: boolean;
