@@ -257,12 +257,13 @@ describe('describeAddOnGrant', () => {
 });
 
 describe('planGrantOptions', () => {
-  it('offers only selectable plans that have a code', () => {
+  it('offers only active, selectable plans that have a code', () => {
     const options = planGrantOptions([
       plan,
       { ...plan, id: 'p2', code: 'EXTRA_USER', planName: 'Extra User Plan', selectable: false },
       { ...plan, id: 'p3', code: null, planName: 'Legacy' },
       { ...plan, id: 'p4', code: 'PRO', planName: 'Pro', selectable: null },
+      { ...plan, id: 'p5', code: 'OLD', planName: 'Retired', active: false },
     ]);
     expect(options).toEqual([
       { value: 'GROWTH', label: 'Growth' },
