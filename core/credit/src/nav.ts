@@ -6,5 +6,6 @@ export const creditNav: NavContribution = {
   label: 'Credit',
   icon: 'handshake',
   requiredCapability: 'credit',
+  requiresFeature: 'CREDIT_BALANCE',
   items: [{ path: '/dashboard/credit', label: 'Credit balances', icon: 'handshake' }],
 };
