@@ -37,6 +37,9 @@
 - name: module:credit
   color: '14B8A6'
   description: core/credit
+- name: module:hr
+  color: '7C3AED'
+  description: core/hr
 - name: module:mis
   color: '0F766E'
   description: core/mis
@@ -114,6 +117,12 @@
   description: Extra large PR — split before merge
 
 # ── Process ────────────────────────────────────────────────────
+- name: deploy:staging
+  color: '0D9488'
+  description: Deploy this PR to staging (redeploys on every push while present)
+- name: deploy:production
+  color: 'B91C1C'
+  description: Promote this PR (already on staging) to production, after approval
 - name: needs-screenshots
   color: 'DC2626'
   description: UI change missing screenshots

@@ -74,6 +74,9 @@
     },
     {
       "path": "./core/mis"
+    },
+    {
+      "path": "./core/hr"
     }
   ]
 }

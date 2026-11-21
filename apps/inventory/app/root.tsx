@@ -8,7 +8,7 @@ import {
   type LinksFunction,
 } from 'react-router';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { ThemeProvider, AuthInitializer } from '@inventory-platform/shell';
+import { ThemeProvider, AuthInitializer, ScrollbarReveal } from '@inventory-platform/shell';
 import { QueryProvider } from '@inventory-platform/query';
 import '../styles.css';
 
@@ -22,6 +22,11 @@ export const meta: MetaFunction = () => [
       'Streamline your business operations with our comprehensive inventory management platform.',
   },
 ];
+
+// Set by the deploy pipeline (VITE_BUILD_SHA=<commit>) so verify-frontend.sh can
+// prove which commit is live. 'local' for dev builds. Rendered directly in Layout
+// (not via the `meta` export) because a route's own `meta` replaces the root's.
+const BUILD_SHA = import.meta.env.VITE_BUILD_SHA || 'local';
 
 export const links: LinksFunction = () => [
   {
@@ -47,6 +52,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="build-sha" content={BUILD_SHA} />
         <Meta />
         <Links />
         <script
@@ -75,6 +81,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </ThemeProvider>
           </QueryProvider>
         </GoogleOAuthProvider>
+        <ScrollbarReveal />
         <ScrollRestoration />
         <Scripts />
       </body>
