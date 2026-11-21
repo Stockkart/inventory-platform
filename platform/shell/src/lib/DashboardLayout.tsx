@@ -50,11 +50,13 @@ import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 import {
   DASHBOARD_HOTKEY,
   getDashboardModLabel,
+  isCalculatorToggle,
   isFullscreenHotkey,
   isModLetter,
   isQuickNavSlash,
   isShortcutsHelp,
 } from './dashboardHotkeys';
+import { DashboardCalculator } from './DashboardCalculator';
 import { UserMenuShopSection } from './UserMenuShopSection';
 import {
   favoriteShortcutMatches,
@@ -78,6 +80,7 @@ import {
   MessageCircle,
   ChevronDown,
   ChevronUp,
+  Calculator,
   Keyboard,
   Info,
   LogOut,
@@ -89,6 +92,7 @@ import {
 } from 'lucide-react';
 import { ContextualHelpPanel } from './ContextualHelpPanel';
 import { NavIcon } from './NavIcon';
+import { RouteChunkPreloader } from './RouteChunkPreloader';
 
 /**
  * Discovery hint, once per browser *session*. sessionStorage rather than
@@ -117,6 +121,9 @@ function writeSessionFlag(key: string): void {
 
 function isTypingInField(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
+  // The calculator owns its own keys. This listener is capture-phase, so it would
+  // otherwise take '/' and '?' before the panel ever sees them.
+  if (target.closest('[data-sk-keyboard-scope="calculator"]')) return true;
   if (target.isContentEditable) return true;
   const tag = target.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
@@ -203,6 +210,7 @@ export function DashboardLayout({
 
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
+  const [calculatorOpen, setCalculatorOpen] = useState(false);
 
   const {
     isFullscreen,
@@ -373,6 +381,14 @@ export function DashboardLayout({
         void exitFullscreen();
       }
 
+      // Not gated on `inField`: Alt+C types no character, and reaching for the
+      // calculator with the cursor in a price field is the point of the shortcut.
+      if (isCalculatorToggle(e)) {
+        e.preventDefault();
+        setCalculatorOpen((open) => !open);
+        return;
+      }
+
       const inField = isTypingInField(e.target);
       if (isModLetter(e, DASHBOARD_HOTKEY.toggleSidebarModKey)) {
         if (inField) return;
@@ -421,6 +437,8 @@ export function DashboardLayout({
     () => filteredMenuGroups.flatMap((g) => g.items),
     [filteredMenuGroups],
   );
+
+  const preloadPaths = useMemo(() => allMenuItems.map((i) => i.path), [allMenuItems]);
 
   const activeNavPath = useMemo(
     () => bestMatchingNavItemPath(allMenuItems, currentPath),
@@ -571,6 +589,14 @@ export function DashboardLayout({
         pageLabel={currentPageLabel}
       />
       <ToastProvider />
+      <RouteChunkPreloader navPaths={preloadPaths} />
+      {/* Keyed by shop: a switch saves the old shop's tape and loads the new one's. */}
+      <DashboardCalculator
+        key={user?.shopId ?? 'no-shop'}
+        shopId={user?.shopId ?? null}
+        open={calculatorOpen}
+        onOpenChange={setCalculatorOpen}
+      />
       <AppShell
         collapsed={!sidebarOpen}
         mobileOpen={sidebarOpen && isMobile}
@@ -978,6 +1004,18 @@ export function DashboardLayout({
                       </PopoverPanel>
                     )}
                   </Box>
+
+                  <IconButton
+                    label="Calculator"
+                    size="sm"
+                    shape="circle"
+                    aria-pressed={calculatorOpen}
+                    className={shellChrome.headerIconButton}
+                    onClick={() => setCalculatorOpen((open) => !open)}
+                    title="Calculator (Alt+C)"
+                  >
+                    <Calculator size={18} aria-hidden />
+                  </IconButton>
 
                   <IconButton
                     label="Keyboard shortcuts"
