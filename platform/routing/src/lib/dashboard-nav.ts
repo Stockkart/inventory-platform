@@ -12,6 +12,16 @@ export type DashboardMenuGroup = {
 
 export type DashboardNavRow = DashboardMenuItem & { groupLabel: string };
 
+/** Copies a contribution-level `requiresFeature` onto its items, so the menu carries it per item. */
+function contributionItems(contribution: NavContribution): NavContributionItem[] {
+  const feature = contribution.requiresFeature;
+  if (!feature) return [...contribution.items];
+  return contribution.items.map((item) => ({
+    ...item,
+    requiresFeature: item.requiresFeature ?? feature,
+  }));
+}
+
 export function mergeNavContributions(
   contributions: NavContribution[],
   groupOrder: string[],
@@ -25,13 +35,13 @@ export function mergeNavContributions(
         id: contribution.groupId,
         label: contribution.label,
         icon: contribution.icon,
-        items: [...contribution.items],
+        items: contributionItems(contribution),
       });
       continue;
     }
 
     const paths = new Set(existing.items.map((item) => item.path));
-    for (const item of contribution.items) {
+    for (const item of contributionItems(contribution)) {
       if (!paths.has(item.path)) {
         existing.items.push(item);
         paths.add(item.path);

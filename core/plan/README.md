@@ -57,3 +57,7 @@ The seat and scan tiles on My Plan turn red only on the API's `seatLimitReached`
 ## Add-on catalogue (admin)
 
 The add-on form sends what the admin chose; the API derives `billingType` from the grant type (OCR credits one-time, the rest annual) and, for a feature add-on, `grantsQuantity` 1 and not stackable, and rejects contradictory combinations (`toAddOnRequest` no longer sets them).
+
+## Plan grants (admin)
+
+Plans & add-ons → **Shop plan & add-ons**: after looking up a shop, **Grant a plan** (`PlanGrantForm`) takes a plan (the plan list's selectable plans, `planGrantOptions`), 1–36 months and a reason (at most 200 characters). **Review grant** opens a confirm dialog that repeats the shop, plan, months and reason; **Grant plan** sends `POST /admin/shops/{shopId}/plan-grants` and shows the plan and expiry from the returned plan status. The API decides the term (the same plan extends from the current expiry) and refuses another plan while paid days remain; its message is shown in the dialog.
