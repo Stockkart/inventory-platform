@@ -24,7 +24,7 @@ export function QuoteSummary({ quote, loading }: QuoteSummaryProps) {
               {item.name}
               {item.quantity > 1 ? ` × ${item.quantity}` : ''}
             </Text>
-            <Text>{formatRupees(item.unitPrice * item.quantity)}</Text>
+            <Text>{formatRupees(item.grossAmount)}</Text>
           </Inline>
           {item.discount > 0 ? (
             <Inline justify="between" width="full">
