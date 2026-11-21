@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import {
+  isShopPlanExpired,
   useAuthStore,
   usePlanStatusStore,
   useVerticalSchemaStore,
@@ -8,11 +9,10 @@ import {
 } from '@inventory-platform/session';
 import { isPlanFeatureEnabled, type PlanEntitlementsView } from '@inventory-platform/access';
 import type { DashboardMenuGroup } from '@inventory-platform/routing';
-import { apiClient } from '@inventory-platform/api-client';
-import { isPlanExpiryAllowedPath } from '@inventory-platform/contracts';
 import { CenteredLoader } from '@inventory-platform/ui-kit';
 import { canAccessDashboardPath } from '../lib/accessNav';
 import { planFeatureForPath } from '../lib/planEntitlementNav';
+import { mustLeaveForPlanStatus, PLAN_STATUS_PATH } from '../lib/planExpiryRedirect';
 
 export type DashboardRouteGuardState = {
   isReady: boolean;
@@ -36,6 +36,12 @@ export function useDashboardRouteGuard(
   const planStatus = usePlanStatusStore((s) =>
     user?.shopId ? s.byShopId[user.shopId] : undefined,
   );
+  // From the plan status or from any call the API refused as plan-expired (AuthInitializer).
+  const planExpired = usePlanStatusStore((s) => isShopPlanExpired(s, user?.shopId));
+  const leaveForPlanStatus =
+    isAuthenticated &&
+    Boolean(user?.shopId) &&
+    mustLeaveForPlanStatus(location.pathname, planExpired);
   const shopAccess = useShopAccessStore((s) =>
     user?.shopId ? s.byShopId[user.shopId] : undefined,
   );
@@ -44,15 +50,6 @@ export function useDashboardRouteGuard(
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
   const hasCheckedAuth = useRef(false);
   const isCheckingRef = useRef(false);
-
-  useEffect(() => {
-    apiClient.setPlanExpiredHandler(() => {
-      if (!isPlanExpiryAllowedPath(window.location.pathname)) {
-        navigate('/dashboard/plan-status', { replace: true });
-      }
-    });
-    return () => apiClient.setPlanExpiredHandler(null);
-  }, [navigate]);
 
   useEffect(() => {
     if (!isAuthenticated || !user?.shopId) {
@@ -117,33 +114,40 @@ export function useDashboardRouteGuard(
     void checkAuth();
   }, [isAuthenticated, isLoading, user, token, navigate, fetchCurrentUser, location.pathname]);
 
+  // Runs again after every navigation (`location.key`), so a redirect that another navigation
+  // cancelled (a click while My Plan's code is still downloading) is sent again, not lost.
   useEffect(() => {
-    if (!isAuthenticated || !user?.shopId || planStatusLoading) {
-      return;
+    if (leaveForPlanStatus) {
+      navigate(PLAN_STATUS_PATH, { replace: true });
     }
-    if (planStatus?.planExpired && !isPlanExpiryAllowedPath(location.pathname)) {
-      navigate('/dashboard/plan-status', { replace: true });
+  }, [leaveForPlanStatus, location.key, navigate]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.shopId || planStatusLoading || planExpired) {
       return;
     }
     const feature = planFeatureForPath(menuGroups, location.pathname);
     if (feature && !isPlanFeatureEnabled(planEntitlements, feature)) {
-      navigate(`/dashboard/plan-status?locked=${feature}`, { replace: true });
+      navigate(`${PLAN_STATUS_PATH}?locked=${feature}`, { replace: true });
     }
   }, [
     menuGroups,
     planEntitlements,
     isAuthenticated,
     user?.shopId,
-    planStatus?.planExpired,
+    planExpired,
     planStatusLoading,
     location.pathname,
     navigate,
   ]);
 
+  // An expired shop's screens are not rendered on the way to My Plan: each would ask the API,
+  // be refused, and show its own error.
   if (
     isLoading ||
     (token && !hasCheckedAuth.current && !isAuthenticated) ||
-    (isAuthenticated && user?.shopId && planStatusLoading && !planStatus)
+    (isAuthenticated && user?.shopId && planStatusLoading && !planStatus) ||
+    leaveForPlanStatus
   ) {
     return {
       isReady: false,
