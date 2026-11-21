@@ -127,6 +127,21 @@ export function useSetVoucherActiveMutation() {
   });
 }
 
+/** The API's view of an adjustment before it is made; fetched only while the confirm dialog is open. */
+export function useWalletAdjustmentPreviewQuery(
+  shopId: string,
+  amount: number | null,
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: planKeys.adminWalletPreview(shopId, amount ?? 0),
+    queryFn: () => planAdminApi.previewWalletAdjustment(shopId, amount ?? 0),
+    enabled: enabled && amount !== null,
+    retry: false,
+    staleTime: 0,
+  });
+}
+
 export function useAdjustWalletMutation(shopId: string) {
   const queryClient = useQueryClient();
   return useMutation({
