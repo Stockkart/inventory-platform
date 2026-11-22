@@ -38,6 +38,8 @@ export interface PlanResponse {
   billingLimitLabel?: string | null;
   /** False for legacy add-on rows that must not be offered as a plan. Absent = selectable. */
   selectable?: boolean | null;
+  /** Length of the free trial in days (API `plan.trial-days`). Absent on older APIs. */
+  trialDays?: number | null;
 }
 
 export interface UsageResponse {
@@ -55,6 +57,8 @@ export interface ShopPlanStatusResponse {
   plan: PlanResponse | null;
   planExpiryDate: string | null;
   trial: boolean;
+  /** Length of the free trial in days (API `plan.trial-days`). Absent on older APIs. */
+  trialDays?: number | null;
   trialExpired: boolean;
   /** True when planExpiryDate is in the past (trial or paid subscription). */
   planExpired: boolean;

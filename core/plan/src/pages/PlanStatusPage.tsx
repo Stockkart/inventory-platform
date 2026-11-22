@@ -14,6 +14,7 @@ import {
 } from '@inventory-platform/ui-kit';
 import { PlanGrid } from '../ui/PlanGrid';
 import { CampaignBanner } from '../campaign';
+import { trialLabel } from '../ui/trialLabel';
 import type { PlanResponse } from '@inventory-platform/plan/types';
 import { usePlansQuery, useShopPlanStatusQuery } from '../queries/hooks';
 
@@ -120,7 +121,7 @@ export function PlanStatusPage() {
             </Badge>
           </Box>
           <Text as="p" className={surfaceChrome.planStatusMeta}>
-            {status.trial ? '30-day trial · ' : null}
+            {status.trial ? `${trialLabel(status.trialDays)} · ` : null}
             {renewLabel} {formatDate(status.planExpiryDate)}
           </Text>
         </Box>
