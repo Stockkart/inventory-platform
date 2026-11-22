@@ -1,4 +1,4 @@
-import type { PlanResponse } from '@inventory-platform/plan/types';
+import type { PlanFeature, PlanResponse } from '@inventory-platform/plan/types';
 import {
   Badge,
   Box,
@@ -8,11 +8,27 @@ import {
   surfaceChrome,
   cn,
 } from '@inventory-platform/ui-kit';
+import { trialLabel } from './trialLabel';
 
 const EXTRA_USER_PLAN = 'Extra User Plan';
 const EXTRA_SHOP_PLAN = 'Extra Shop Plan';
 const EXTRA_PLANS = [EXTRA_USER_PLAN, EXTRA_SHOP_PLAN];
-const POPULAR_PLAN = 'Silver';
+
+const FEATURE_LABELS: Record<PlanFeature, string> = {
+  CREDIT_BALANCE: 'Credit balance',
+  ACCOUNTING: 'Accounting',
+  BARCODE_GENERATOR: 'Barcode generator',
+  LOW_STOCK_NOTIFICATION: 'Reminder & low-stock notifications',
+  MARKETING: 'Marketing (SMS/WhatsApp)',
+  SALARY: 'Salary',
+  BIOMETRIC_ATTENDANCE: 'Biometric attendance',
+  ADVANCED_ACCESS_CONTROL: 'Advanced access control',
+};
+
+/** The backend decides which plan is highlighted. */
+export function isMostPopular(plan: PlanResponse): boolean {
+  return plan.badge === 'MOST_POPULAR';
+}
 
 export function buildPlanFeatures(plan: PlanResponse): string[] {
   if (EXTRA_PLANS.includes(plan.planName)) {
@@ -39,20 +55,27 @@ export function buildPlanFeatures(plan: PlanResponse): string[] {
     features.push(`${plan.billCountLimit} bills/month`);
   }
 
-  if (plan.smsLimit != null && plan.smsLimit > 0) {
-    features.push(`${plan.smsLimit} SMS/month`);
-  } else {
-    features.push('No SMS');
+  // A null limit is unmetered on the backend, not "none".
+  if (plan.smsLimit != null) {
+    features.push(plan.smsLimit > 0 ? `${plan.smsLimit} SMS/month` : 'No SMS');
   }
 
-  if (plan.whatsappLimit != null && plan.whatsappLimit > 0) {
-    features.push(`${plan.whatsappLimit} WhatsApp/month`);
-  } else {
-    features.push('No WhatsApp');
+  if (plan.whatsappLimit != null) {
+    features.push(plan.whatsappLimit > 0 ? `${plan.whatsappLimit} WhatsApp/month` : 'No WhatsApp');
   }
 
   if (plan.userLimit != null) {
     features.push(`${plan.userLimit} user${plan.userLimit > 1 ? 's' : ''}`);
+  } else if (plan.code) {
+    features.push('Unlimited users');
+  }
+
+  if (plan.ocrLimit != null) {
+    features.push(`${plan.ocrLimit.toLocaleString('en-IN')} OCR invoices/month`);
+  }
+
+  for (const feature of plan.features ?? []) {
+    features.push(FEATURE_LABELS[feature] ?? feature);
   }
 
   return features;
@@ -96,7 +119,9 @@ function PlanTile({
         <Box className={surfaceChrome.planCardTop}>
           {isCurrent ? <Badge variant="success">Current</Badge> : null}
           {!isCurrent && isPopular ? <Badge variant="info">Most popular</Badge> : null}
-          {showTrialBadge && !isExtra ? <Badge variant="neutral">30-day trial</Badge> : null}
+          {showTrialBadge && !isExtra ? (
+            <Badge variant="neutral">{trialLabel(plan.trialDays)}</Badge>
+          ) : null}
         </Box>
 
         <Text as="h3" className={surfaceChrome.planCardName}>
@@ -171,7 +196,7 @@ export function PlanGrid({
             key={plan.id}
             plan={plan}
             isCurrent={currentPlanId != null && plan.id === currentPlanId}
-            isPopular={plan.planName === POPULAR_PLAN}
+            isPopular={isMostPopular(plan)}
             onSelectPlan={onSelectPlan}
             ctaLabel={ctaLabel}
             showTrialBadge={showTrialBadge}

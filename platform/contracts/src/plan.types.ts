@@ -1,5 +1,16 @@
 /** Plan catalog and shop subscription status (API response shapes). */
 
+/** Gated capability a plan includes. Features every plan has are not listed. */
+export type PlanFeature =
+  | 'CREDIT_BALANCE'
+  | 'ACCOUNTING'
+  | 'BARCODE_GENERATOR'
+  | 'LOW_STOCK_NOTIFICATION'
+  | 'MARKETING'
+  | 'SALARY'
+  | 'BIOMETRIC_ATTENDANCE'
+  | 'ADVANCED_ACCESS_CONTROL';
+
 export interface PlanResponse {
   id: string;
   planName: string;
@@ -13,6 +24,16 @@ export interface PlanResponse {
   unlimited: boolean;
   linkedId: string | null;
   bestFor: string | null;
+  /** Catalogue fields; absent on legacy plans and on older API versions. */
+  code?: string | null;
+  displayOrder?: number | null;
+  /** OCR invoices included per month. */
+  ocrLimit?: number | null;
+  features?: PlanFeature[] | null;
+  /** Marketing highlight chosen by the backend, e.g. MOST_POPULAR. */
+  badge?: string | null;
+  /** Length of the free trial in days (API `plan.trial-days`). Absent on older APIs. */
+  trialDays?: number | null;
 }
 
 export interface UsageResponse {
@@ -30,6 +51,8 @@ export interface ShopPlanStatusResponse {
   plan: PlanResponse | null;
   planExpiryDate: string | null;
   trial: boolean;
+  /** Length of the free trial in days (API `plan.trial-days`). Absent on older APIs. */
+  trialDays?: number | null;
   trialExpired: boolean;
   /** True when planExpiryDate is in the past (trial or paid subscription). */
   planExpired: boolean;
