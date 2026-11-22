@@ -40,6 +40,8 @@ export interface PlanResponse {
   billingLimitLabel?: string | null;
   /** False for legacy add-on rows that must not be offered as a plan. Absent = selectable. */
   selectable?: boolean | null;
+  /** Length of the free trial in days (API `plan.trial-days`). Absent on older APIs. */
+  trialDays?: number | null;
 }
 
 export interface UsageResponse {
