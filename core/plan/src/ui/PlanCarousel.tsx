@@ -2,6 +2,7 @@ import type { PlanResponse } from '@inventory-platform/plan/types';
 import { PlanCard, PlanCarousel3D } from '@inventory-platform/ui-kit';
 import { buildPlanFeatures, isMostPopular } from './PlanGrid';
 import { formatRupees, planListPriceLabel, planYearlyPrice } from './planPricing';
+import { freeTrialLabel } from './trialLabel';
 
 const EXTRA_PLANS = ['Extra User Plan', 'Extra Shop Plan'];
 
@@ -37,6 +38,7 @@ function planCardProps(
         : null,
     features,
     showTrialBadge: showTrial,
+    trialLabel: freeTrialLabel(plan.trialDays),
     highlighted: Boolean(options.isCenter),
     showPopularBadge: showPopular,
     ctaLabel: options.ctaLabel,
