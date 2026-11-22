@@ -6,5 +6,7 @@ export { Pricing } from './Pricing';
 export { PlanGrid, buildPlanFeatures } from './PlanGrid';
 export type { PlanGridProps } from './PlanGrid';
 export { PlanCarousel } from './PlanCarousel';
+export { PlanComparisonTable } from './PlanComparisonTable';
+export type { PlanComparisonTableProps } from './PlanComparisonTable';
 export { CTA } from './CTA';
 export { Footer } from './Footer';
