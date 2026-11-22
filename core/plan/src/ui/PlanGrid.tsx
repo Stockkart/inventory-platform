@@ -10,6 +10,7 @@ import {
   cn,
 } from '@inventory-platform/ui-kit';
 import { FEATURE_LABELS, formatRupees, planListPriceLabel, planYearlyPrice } from './planPricing';
+import { trialLabel } from './trialLabel';
 
 const EXTRA_USER_PLAN = 'Extra User Plan';
 const EXTRA_SHOP_PLAN = 'Extra Shop Plan';
@@ -110,7 +111,9 @@ function PlanTile({
         <Box className={surfaceChrome.planCardTop}>
           {isCurrent ? <Badge variant="success">Current</Badge> : null}
           {!isCurrent && isPopular ? <Badge variant="info">Most popular</Badge> : null}
-          {showTrialBadge && !isExtra ? <Badge variant="neutral">30-day trial</Badge> : null}
+          {showTrialBadge && !isExtra ? (
+            <Badge variant="neutral">{trialLabel(plan.trialDays)}</Badge>
+          ) : null}
         </Box>
 
         <Text as="h3" className={surfaceChrome.planCardName}>
