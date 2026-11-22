@@ -17,6 +17,7 @@ import { formatPlanDate } from '../ui/planDate';
 import { FEATURE_LABELS, formatRupees } from '../ui/planPricing';
 import { boughtScansLeftLabel, isPlanFeature, splitFeatures, usageOfLimit } from '../entitlements';
 import { CampaignBanner } from '../campaign';
+import { trialLabel } from '../ui/trialLabel';
 import type { PlanResponse } from '@inventory-platform/plan/types';
 import { usePlansQuery, useShopEntitlementsQuery, useShopPlanStatusQuery } from '../queries/hooks';
 
@@ -142,7 +143,7 @@ export function PlanStatusPage() {
             </Badge>
           </Box>
           <Text as="p" className={surfaceChrome.planStatusMeta}>
-            {status.trial ? '30-day trial · ' : null}
+            {status.trial ? `${trialLabel(status.trialDays)} · ` : null}
             {renewLabel} {formatPlanDate(status.planExpiryDate) ?? '—'}
           </Text>
         </Box>
