@@ -32,6 +32,8 @@ export interface PlanResponse {
   features?: PlanFeature[] | null;
   /** Marketing highlight chosen by the backend, e.g. MOST_POPULAR. */
   badge?: string | null;
+  /** Length of the free trial in days (API `plan.trial-days`). Absent on older APIs. */
+  trialDays?: number | null;
 }
 
 export interface UsageResponse {
@@ -49,6 +51,8 @@ export interface ShopPlanStatusResponse {
   plan: PlanResponse | null;
   planExpiryDate: string | null;
   trial: boolean;
+  /** Length of the free trial in days (API `plan.trial-days`). Absent on older APIs. */
+  trialDays?: number | null;
   trialExpired: boolean;
   /** True when planExpiryDate is in the past (trial or paid subscription). */
   planExpired: boolean;
