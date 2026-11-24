@@ -62,6 +62,13 @@ const COMPACT_CSS = `.compact{align-items:stretch;padding:1.5mm;font-family:"Ari
     .compact .code{font-size:9pt;letter-spacing:1px;text-align:center}`;
 
 /**
+ * A `STACKED` line the renderer chose to wrap ({@link planStackedSticker}): it breaks at word
+ * breaks onto at most two lines, then ends in "…"; it never shrinks, or the sticker's column flexbox
+ * squeezes its second row under the next line. Every other line stays on one line.
+ */
+const WRAP_CSS = `.line.wrap{white-space:normal;overflow-wrap:break-word;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;flex-shrink:0}`;
+
+/**
  * Sticker-level CSS shared by every page-based layout (`SHEET` and a `ROLL` with a
  * `rollSpec`): the sticker is sized by its inline style, has no dashed border and
  * no margin because the grid cell places it exactly on the label. Every text line
@@ -75,6 +82,7 @@ const PAGE_STICKER_CSS = `.sticker{box-sizing:border-box;display:inline-flex;fle
     .code{font-size:9pt;letter-spacing:.5px}
     .line{font-size:9pt}
     .code+.line,.bars+.line{font-weight:700}
+    ${WRAP_CSS}
     ${COMPACT_CSS}`;
 
 export function escapeHtml(value: string): string {
@@ -205,6 +213,69 @@ function round1(value: number): number {
   return Math.floor(value * 10) / 10;
 }
 
+/** Horizontal padding of a stacked sticker (2 mm left + 2 mm right, from the sticker CSS). */
+const STACKED_SIDE_PADDING_MM = 4;
+/** A wrapped line may not push the text below this size; past it the line keeps its "…". */
+export const MIN_WRAP_LINE_PT = 8;
+
+/**
+ * Glyph width as a share of the font size for the semibold system font, by character class,
+ * slightly generous so a line judged to fit on one row really does. (On a 38 mm sticker at
+ * 9 pt this cuts "LEGGINGS ELASTAN…" after about 17 capitals, as printed.)
+ */
+function glyphEm(ch: string): number {
+  if (ch === ' ') return 0.28;
+  if ("iljfrtI1.,:;'|!()[]".includes(ch)) return 0.32;
+  if ('MW'.includes(ch)) return 0.85;
+  if ('mw'.includes(ch)) return 0.8;
+  if (/[A-Z0-9₹%&@#]/.test(ch)) return 0.64;
+  return 0.53;
+}
+
+/** Estimated printed width of `text` at `pt` points, in mm. */
+export function estimateTextWidthMm(text: string, pt: number): number {
+  let em = 0;
+  for (const ch of text) em += glyphEm(ch);
+  return em * pt * PT_TO_MM;
+}
+
+/** Bars/text fit (as {@link fitStackedSticker}) plus which field lines print on two lines. */
+export type StackedPlan = { fit: StackedFit | null; wrap: boolean[] };
+
+/**
+ * Decides which field lines of a `STACKED` sticker wrap onto a second line instead of being cut
+ * with "…". A line wraps only when it is too wide for one row and the sticker still has room
+ * for the extra line: every line, the wrapped ones counted twice, must fit the height with bars
+ * of at least {@link STACKED_MIN_BARS_MM} and text of at least {@link MIN_WRAP_LINE_PT}. Lines
+ * are tried in print order (the product name usually comes first); one that does not fit keeps
+ * its single line, and so does every line after it, since each costs the same height.
+ */
+export function planStackedSticker(
+  widthMm: number,
+  heightMm: number,
+  fieldTexts: readonly string[],
+  hasCodeLine: boolean,
+): StackedPlan {
+  const wrap = fieldTexts.map(() => false);
+  let fit = fitStackedSticker(heightMm, fieldTexts.length, hasCodeLine);
+  const usableMm = widthMm - STACKED_SIDE_PADDING_MM;
+  const ptAt = (f: StackedFit | null) => f?.linePt ?? STACKED_LINE_PT;
+
+  let extra = 0;
+  for (let i = 0; i < fieldTexts.length; i += 1) {
+    if (estimateTextWidthMm(fieldTexts[i], ptAt(fit)) <= usableMm) continue;
+    const candidate = fitStackedSticker(heightMm, fieldTexts.length + extra + 1, hasCodeLine);
+    const roomy =
+      candidate === null ||
+      (candidate.barsMm >= STACKED_MIN_BARS_MM && candidate.linePt >= MIN_WRAP_LINE_PT);
+    if (!roomy) break;
+    wrap[i] = true;
+    extra += 1;
+    fit = candidate;
+  }
+  return { fit, wrap };
+}
+
 /**
  * Renders one `STACKED` sticker: the bars with the code line under them, and the field
  * lines in one centred column. `barcodePosition: 'BOTTOM'` moves the bars and code below
@@ -216,7 +287,12 @@ function renderSticker(label: LabelData, layout: EffectiveLabelLayout, index: nu
   const lines = computeStickerLines(label, layout);
   const codeLines = lines.filter((line) => line.kind === 'code');
   const fieldLines = lines.filter((line) => line.kind !== 'code');
-  const fit = fitStackedSticker(heightMm, fieldLines.length, codeLines.length > 0);
+  const { fit, wrap } = planStackedSticker(
+    widthMm,
+    heightMm,
+    fieldLines.map((line) => line.text),
+    codeLines.length > 0,
+  );
   const textStyle = fit
     ? ` style="font-size:${fit.linePt}pt;line-height:${STACKED_LINE_HEIGHT}"`
     : '';
@@ -225,7 +301,10 @@ function renderSticker(label: LabelData, layout: EffectiveLabelLayout, index: nu
     .map((line) => `<div class="code"${textStyle}>${escapeHtml(line.text)}</div>`)
     .join('');
   const fieldsHtml = fieldLines
-    .map((line) => `<div class="line"${textStyle}>${escapeHtml(line.text)}</div>`)
+    .map(
+      (line, i) =>
+        `<div class="${wrap[i] ? 'line wrap' : 'line'}"${textStyle}>${escapeHtml(line.text)}</div>`,
+    )
     .join('');
   const bars = `<svg class="bars"${barsStyle} data-idx="${index}" data-code="${code}"></svg>${codeHtml}`;
   const body = layout.barcodePosition === 'BOTTOM' ? fieldsHtml + bars : bars + fieldsHtml;
@@ -520,6 +599,7 @@ export function renderBarcodeLabelsHtml(
     .code{font-size:10pt;letter-spacing:.5px}
     .line{font-size:9pt}
     .code+.line,.bars+.line{font-weight:600}
+    ${WRAP_CSS}
     ${COMPACT_CSS}
     @media print {
       .sticker { border-color: transparent; }

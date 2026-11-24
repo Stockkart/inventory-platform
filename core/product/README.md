@@ -191,6 +191,14 @@ Product Search and Scan & Sell call `POST /inventory/search` (`inventoryApi.sear
   `fitStackedSticker` shortens the bars (down to 7 mm) and only then shrinks the text (down to
   6.5 pt). Layouts that already fit print exactly as before. Needs the matching inventory-api
   change deployed, or Save rejects more than the old limits.
+- **Long lines wrap when there is room (Stacked).** A line too wide for one row (estimated per
+  character, `estimateTextWidthMm`) breaks at word breaks onto a second line instead of ending in
+  "…", but only if the sticker still fits it: `planStackedSticker` counts the wrapped line twice
+  and accepts it only while the bars stay at least 7 mm and the text at least 8 pt
+  (`MIN_WRAP_LINE_PT`). Lines are tried in print order, so the product name usually wins; a line
+  past that keeps its "…", and nothing goes past two lines. A 2-up 38x38 Sports King sticker
+  prints "LEGGINGS ELASTANO N (S)" whole on two lines; a 25 mm sticker with four lines has no
+  room and keeps the "…". The layout preview uses the same renderer, so it shows the same lines.
 - **Barcode position.** `TOP` (default) or `BOTTOM` applies to both templates. On Stacked, `BOTTOM`
   prints the field lines first, then the bars with the code under them.
 - **Copies of each sticker.** The Print barcode stickers popup asks how many copies of each
