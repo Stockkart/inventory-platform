@@ -80,9 +80,6 @@
     },
     {
       "path": "./platform/attendance-protocol"
-    },
-    {
-      "path": "./apps/attendance"
     }
   ]
 }

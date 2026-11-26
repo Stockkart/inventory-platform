@@ -38,4 +38,3 @@
 
 /.github/ @your-org/stockkart-frontend
 /apps/inventory/ @your-org/stockkart-frontend
-/apps/attendance/ @your-org/stockkart-frontend

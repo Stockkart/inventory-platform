@@ -9,6 +9,7 @@ import {
 import { useNotifications } from './useNotifications';
 import { useFullscreen } from './useFullscreen';
 import { shopsApi } from '@inventory-platform/user/shops';
+import { isWorkerRole } from '@inventory-platform/access';
 import type { DashboardLayoutProps } from '@inventory-platform/shell/types';
 import type { Location as LocationType } from '@inventory-platform/user/types';
 import { ThemeToggle } from './ThemeToggle';
@@ -1092,20 +1093,22 @@ export function DashboardLayout({
 
                         <UserMenuShopSection onClose={() => setUserMenuOpen(false)} />
 
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          fullWidth
-                          align="start"
-                          leftIcon={<User size={16} aria-hidden />}
-                          className={`${shellChrome.menuItem} ${shellChrome.menuItemBordered}`}
-                          onClick={() => {
-                            setUserMenuOpen(false);
-                            navigate('/dashboard/profile');
-                          }}
-                        >
-                          View profile
-                        </Button>
+                        {isWorkerRole(user?.role) ? null : (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            fullWidth
+                            align="start"
+                            leftIcon={<User size={16} aria-hidden />}
+                            className={`${shellChrome.menuItem} ${shellChrome.menuItemBordered}`}
+                            onClick={() => {
+                              setUserMenuOpen(false);
+                              navigate('/dashboard/profile');
+                            }}
+                          >
+                            View profile
+                          </Button>
+                        )}
 
                         <Button
                           type="button"

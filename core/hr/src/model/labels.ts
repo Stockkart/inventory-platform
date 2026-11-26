@@ -9,8 +9,10 @@ import type {
   PunchSource,
 } from './attendance.types';
 import type { EmployeeStatus, HrPaymentMethod, PayType } from './employee.types';
+import type { WorkerJoinStatus } from './join-request.types';
 import type { LeaveRequestStatus } from './leave.types';
 import type { AdvanceStatus } from './advance.types';
+import type { HrNotificationType } from './me.types';
 import type { ManualItemKind, PayrollRunStatus, SalaryPaymentStatus } from './payroll.types';
 import type { DayOfWeek, HrGridRole, LeaveYearStartMonth, PerDayBasis } from './settings.types';
 
@@ -105,6 +107,10 @@ export const AUDIT_ACTION_LABELS: Partial<Record<HrAuditAction, string>> = {
   DEVICE_REPLACED: 'Phone replaced',
   DEVICE_UNPAIRED: 'Phone unpaired',
   DEVICE_CONSENT_UPDATED: 'Consent updated',
+  JOIN_REQUEST_APPROVED: 'Join request approved',
+  JOIN_REQUEST_REJECTED: 'Join request rejected',
+  PAIRING_CODE_REFUSED: 'Pairing code refused',
+  PROFILE_REQUESTED: 'Profile details requested',
 };
 
 export const ADVANCE_STATUS_LABELS: Record<AdvanceStatus, string> = {
@@ -215,6 +221,44 @@ export function attendanceSourceLabel(source: string | null | undefined): string
 /** Plain words for a hand-mark reason; `"unknown"` for one this build does not know. */
 export function manualMarkReasonLabel(reason: string | null | undefined): string {
   return labelOf(MANUAL_MARK_REASON_LABELS, reason);
+}
+
+// ---- worker join requests and notifications (worker-app spec) ----
+
+/** Status words of a join request; `APPROVING` is a short claim a reader should never meet. */
+export const JOIN_REQUEST_STATUS_LABELS: Record<WorkerJoinStatus, string> = {
+  PENDING: 'Pending',
+  APPROVING: 'Being approved',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected',
+  WITHDRAWN: 'Withdrawn',
+};
+
+/**
+ * What kind of row an inbox notification is (R6.9, R10.5, R4.13, R8.7). The row's `text` is the
+ * sentence the server wrote; this is the short heading next to it.
+ */
+export const NOTIFICATION_TYPE_LABELS: Record<HrNotificationType, string> = {
+  LEAVE_REQUESTED: 'Leave requested',
+  LEAVE_APPROVED: 'Leave approved',
+  LEAVE_REJECTED: 'Leave rejected',
+  JOIN_REQUEST_RECEIVED: 'Join request',
+  JOIN_REQUEST_APPROVED: 'Join request accepted',
+  JOIN_REQUEST_REJECTED: 'Join request not accepted',
+  PROFILE_REQUESTED: 'Profile details requested',
+};
+
+/** Plain words for a join request status; `"unknown"` for one this build does not know. */
+export function joinRequestStatusLabel(status: string | null | undefined): string {
+  return labelOf(JOIN_REQUEST_STATUS_LABELS, status);
+}
+
+/**
+ * Plain words for a notification type; `"unknown"` for a type this build does not know, so a
+ * newer backend's rows still render (their `text` is shown either way) and nothing throws.
+ */
+export function notificationTypeLabel(type: string | null | undefined): string {
+  return labelOf(NOTIFICATION_TYPE_LABELS, type);
 }
 
 /**

@@ -112,17 +112,40 @@ Modal.Header = ModalHeader;
 Modal.Body = ModalBody;
 Modal.Footer = ModalFooter;
 
+export type DrawerSize = 'md' | 'lg';
+
 export interface DrawerProps {
   open: boolean;
   onClose?: () => void;
   children: ReactNode;
   /** Which edge the drawer slides from. Default: left. */
   side?: 'left' | 'right';
+  /** `md` = 400 px, `lg` = 480 px (both full width on narrower screens). Default: md. */
+  size?: DrawerSize;
   /** Optional labelled-by id for accessibility. */
   labelledBy?: string;
 }
 
-export function Drawer({ open, onClose, children, side = 'left', labelledBy }: DrawerProps) {
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), ' +
+  'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** Tabbable elements inside `root`, in DOM order. */
+function focusableWithin(root: HTMLElement): HTMLElement[] {
+  return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+    (el) => el.getAttribute('aria-hidden') !== 'true',
+  );
+}
+
+export function Drawer({
+  open,
+  onClose,
+  children,
+  side = 'left',
+  size = 'md',
+  labelledBy,
+}: DrawerProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -132,17 +155,48 @@ export function Drawer({ open, onClose, children, side = 'left', labelledBy }: D
     if (!open) {
       return;
     }
+    // Focus moves into the drawer on open and back to the opener (the row, the button) on close.
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         onCloseRef.current?.();
+        return;
+      }
+      // Tab stays inside the dialog: wrap from the last tabbable to the first and back.
+      if (event.key === 'Tab') {
+        const panel = panelRef.current;
+        if (!panel) return;
+        const items = focusableWithin(panel);
+        if (items.length === 0) {
+          event.preventDefault();
+          panel.focus();
+          return;
+        }
+        const first = items[0];
+        const last = items[items.length - 1];
+        const active = document.activeElement;
+        const inside = active instanceof Node && panel.contains(active);
+        if (event.shiftKey) {
+          if (!inside || active === first || active === panel) {
+            event.preventDefault();
+            last.focus();
+          }
+        } else if (!inside || active === last) {
+          event.preventDefault();
+          first.focus();
+        }
       }
     };
     document.addEventListener('keydown', onKeyDown);
+    panelRef.current?.focus();
     return () => {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', onKeyDown);
+      if (opener && opener.isConnected) {
+        opener.focus();
+      }
     };
   }, [open]);
 
@@ -163,10 +217,16 @@ export function Drawer({ open, onClose, children, side = 'left', labelledBy }: D
       }}
     >
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
-        className={cn(styles.drawer, side === 'left' ? styles.drawerLeft : styles.drawerRight)}
+        tabIndex={-1}
+        className={cn(
+          styles.drawer,
+          size === 'lg' && styles.drawerLg,
+          side === 'left' ? styles.drawerLeft : styles.drawerRight,
+        )}
         onClick={(event) => event.stopPropagation()}
       >
         {children}

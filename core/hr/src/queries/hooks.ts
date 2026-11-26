@@ -36,12 +36,16 @@ import {
 } from '@inventory-platform/hr/types';
 import type {
   AddSalaryRevisionRequest,
+  ApproveJoinRequestRequest,
+  BulkJoinResult,
   EmployeeListParams,
   EmployeeResponse,
   ExitEmployeeRequest,
   HolidayResponse,
   HrRolePermissionsResponse,
   HrSettingsResponse,
+  JoinRequestDecision,
+  JoinRequestListParams,
   LeaveTypeResponse,
   PairingCodeResponse,
   PairingStateResponse,
@@ -51,10 +55,15 @@ import type {
   UpdateHrRolePermissionsRequest,
   UpdateHrSettingsRequest,
 } from '@inventory-platform/hr/types';
-import { APP_HEALTH_POLL_MS } from '@inventory-platform/hr/types';
+import {
+  APP_HEALTH_POLL_MS,
+  JOIN_REQUESTS_POLL_MS,
+  normaliseRejectReason,
+} from '@inventory-platform/hr/types';
 import { advancesApi } from '../api/advances.api';
 import { attendanceApi } from '../api/attendance.api';
 import { employeesApi } from '../api/employees.api';
+import { joinRequestsApi } from '../api/join-requests.api';
 import { leaveApi } from '../api/leave.api';
 import { meApi } from '../api/me.api';
 import { pairingApi } from '../api/pairing.api';
@@ -900,6 +909,104 @@ export function useConsentLatestQuery(enabled = true) {
     queryFn: () => pairingApi.consentLatest(),
     enabled: Boolean(shopId) && enabled,
     staleTime: Infinity,
+  });
+}
+
+// ---- worker join requests (worker-app spec) ----
+
+/**
+ * A decision changes the inbox (the row moves tab, `pendingCount` drops) and the employees tree
+ * (approval creates an employee or links one; "Request profile details" stamps one). Run on
+ * `onSettled`: a refusal (8038–8040, "already handled") means another approver got there first and
+ * the cached list is stale too.
+ */
+function invalidateJoinRequests(queryClient: QueryClient, shopId: string) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: hrKeys.joinRequests(shopId) }),
+    queryClient.invalidateQueries({ queryKey: hrKeys.employees(shopId) }),
+    // Approval adds a member and an employee: the get-started counts move.
+    queryClient.invalidateQueries({ queryKey: hrKeys.setupStatus(shopId) }),
+  ]);
+}
+
+/**
+ * ADD_EDIT_EMPLOYEES: one page of the Join requests tab (R4.1–R4.2). Pass `enabled=false` without
+ * the permission (the server answers 403). Re-read every 60 s while mounted so the tab count
+ * (`pendingCount`) keeps pace with the bell; `keepPreviousData` keeps the table in place while a
+ * new page or status loads.
+ */
+export function useJoinRequestsQuery(params: JoinRequestListParams, enabled = true) {
+  const shopId = useHrShopId();
+  return useQuery({
+    queryKey: hrKeys.joinRequestList(shopId, params),
+    queryFn: () => joinRequestsApi.list(params),
+    enabled: Boolean(shopId) && enabled,
+    placeholderData: keepPreviousData,
+    refetchInterval: JOIN_REQUESTS_POLL_MS,
+    refetchIntervalInBackground: false,
+  });
+}
+
+/** ADD_EDIT_EMPLOYEES: one request with its possible match, for the detail drawer (R4.3). */
+export function useJoinRequestQuery(id: string | undefined, enabled = true) {
+  const shopId = useHrShopId();
+  return useQuery({
+    queryKey: hrKeys.joinRequest(shopId, id ?? ''),
+    // `enabled` guarantees an id here; the fallback only satisfies the type.
+    queryFn: () => joinRequestsApi.detail(id ?? ''),
+    enabled: Boolean(shopId) && Boolean(id) && enabled,
+  });
+}
+
+/** Approve one request: `CREATE` a new employee, or `LINK` to `employeeId` (R4.4–R4.5, R4.8). */
+export function useApproveJoinRequestMutation() {
+  const shopId = useHrShopId();
+  const queryClient = useQueryClient();
+  return useMutation<JoinRequestDecision, Error, { id: string; body: ApproveJoinRequestRequest }>({
+    mutationFn: ({ id, body }) => joinRequestsApi.approve(id, body),
+    onSettled: () => void invalidateJoinRequests(queryClient, shopId),
+  });
+}
+
+/** Reject one request; the reason is trimmed and a blank one is sent as none (R4.7). */
+export function useRejectJoinRequestMutation() {
+  const shopId = useHrShopId();
+  const queryClient = useQueryClient();
+  return useMutation<JoinRequestDecision, Error, { id: string; reason?: string | null }>({
+    mutationFn: ({ id, reason }) =>
+      joinRequestsApi.reject(id, { reason: normaliseRejectReason(reason) }),
+    onSettled: () => void invalidateJoinRequests(queryClient, shopId),
+  });
+}
+
+/**
+ * "Approve selected" / "Reject selected" (R4.6): one call for ≤ 50 ids. The answer partitions the
+ * selection into `approved`, `skipped` (possible match, still Pending) and `failed`; the tab shows
+ * "Approved 6. 2 need your review" from it.
+ */
+export function useBulkJoinRequestsMutation() {
+  const shopId = useHrShopId();
+  const queryClient = useQueryClient();
+  return useMutation<
+    BulkJoinResult,
+    Error,
+    { decision: 'approve' | 'reject'; ids: string[]; reason?: string | null }
+  >({
+    mutationFn: ({ decision, ids, reason }) =>
+      decision === 'approve'
+        ? joinRequestsApi.bulkApprove(ids)
+        : joinRequestsApi.bulkReject(ids, normaliseRejectReason(reason)),
+    onSettled: () => void invalidateJoinRequests(queryClient, shopId),
+  });
+}
+
+/** "Request profile details" on an employee's page (R8.7); seeds the detail with the stamp. */
+export function useRequestProfileMutation() {
+  const shopId = useHrShopId();
+  const queryClient = useQueryClient();
+  return useMutation<EmployeeResponse, Error, string>({
+    mutationFn: (employeeId) => joinRequestsApi.requestProfile(employeeId),
+    onSuccess: (saved) => onEmployeeSaved(queryClient, shopId, saved),
   });
 }
 

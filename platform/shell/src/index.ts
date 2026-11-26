@@ -16,7 +16,12 @@ export {
   useDashboardVerticalPlugin,
   VerticalPluginProvider,
 } from '@inventory-platform/routing';
-export { filterDashboardMenuGroupsByAccess, canAccessDashboardPath } from './lib/accessNav';
+export {
+  filterDashboardMenuGroupsByAccess,
+  canAccessDashboardPath,
+  WORKER_HOME_PATH,
+} from './lib/accessNav';
+export { NotInShopPage, NOT_IN_SHOP_MESSAGE } from './lib/NotInShopPage';
 export { AuthInitializer } from './lib/AuthInitializer';
 export { ScrollbarReveal } from './lib/ScrollbarReveal';
 export { CommandPalette } from './lib/CommandPalette';

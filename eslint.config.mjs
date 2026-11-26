@@ -141,8 +141,8 @@ export default [
               ],
             },
             {
-              // Attendance app and its protocol package (platform/attendance-protocol,
-              // apps/attendance): pure TS shared with React Native, so no core, ui-kit or plugin.
+              // Protocol package (platform/attendance-protocol): pure TS, also vendored into the
+              // React Native app (stockkart-team-app), so no core, ui-kit or plugin.
               sourceTag: 'scope:attendance',
               onlyDependOnLibsWithTags: ['scope:attendance', 'type:platform'],
             },

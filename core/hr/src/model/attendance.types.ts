@@ -233,7 +233,12 @@ export type HrAuditAction =
   | 'DEVICE_PAIRED'
   | 'DEVICE_REPLACED'
   | 'DEVICE_UNPAIRED'
-  | 'DEVICE_CONSENT_UPDATED';
+  | 'DEVICE_CONSENT_UPDATED'
+  /** Worker join requests and the pairing rule (worker-app R4.11, R7.3, R8.7). */
+  | 'JOIN_REQUEST_APPROVED'
+  | 'JOIN_REQUEST_REJECTED'
+  | 'PAIRING_CODE_REFUSED'
+  | 'PROFILE_REQUESTED';
 
 /** `AuditEventResponse`: payloads are already stripped of PII and pay. */
 export interface AuditEventResponse {

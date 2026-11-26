@@ -10,7 +10,6 @@ Work inside `inventory-platform` with strict package boundaries.
 ## Topology
 
 - `apps/inventory` — compose routes/providers only
-- `apps/attendance` — Expo / React Native Attendance app; imports only `platform/attendance-protocol` and `platform/contracts` (no ui-kit, api-client, shell, core)
 - `platform/*` — shell, session, api-client, query, schema, routing (no domain UI except shell chrome)
 - `ui-kit` — presentation only; **never** import APIs, session, or `core/*`
 - `core/<domain>` — owns `api/`, `queries/`, `pages/`, `ui/`, `routes.ts`, `nav.ts`

@@ -3,6 +3,7 @@ export * from './settings.types.js';
 export * from './employee.types.js';
 export * from './attendance.types.js';
 export * from './pairing.types.js';
+export * from './join-request.types.js';
 export * from './attendance-app-privacy.js';
 export * from './leave.types.js';
 export * from './advance.types.js';

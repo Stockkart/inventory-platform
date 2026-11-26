@@ -88,3 +88,60 @@ export {
   withAskManagerToMark,
 } from './messages.js';
 export type { AppErrorCode } from './messages.js';
+
+// ── Stockkart Team (worker-app) ─────────────────────────────────────────────
+
+export type {
+  ApproveJoinRequestRequest,
+  ApproveMode,
+  BulkJoinFailed,
+  BulkJoinRequest,
+  BulkJoinResult,
+  BulkJoinSkipped,
+  BulkSkipReason,
+  CreateJoinRequestRequest,
+  EmployeeStatus,
+  HrNotificationResponse,
+  HrNotificationType,
+  JoinOutcome,
+  JoinRequestDecision,
+  JoinRequestDetail,
+  JoinRequestOutcome,
+  JoinRequestRow,
+  JoinRequestSelfResponse,
+  JoinRequestsPageResponse,
+  MarkNotificationReadResponse,
+  ModuleKey,
+  PossibleMatch,
+  RejectJoinRequestRequest,
+  ShopLookupResponse,
+  ShopLookupRow,
+  UpdateWorkerProfileRequest,
+  WorkerAccount,
+  WorkerAccountRole,
+  WorkerEmployee,
+  WorkerJoinStatus,
+  WorkerNotificationsResponse,
+  WorkerNotificationsSummary,
+  WorkerPairing,
+  WorkerProfileResponse,
+  WorkerShop,
+  WorkerState,
+  WorkerStateResponse,
+  WorkerToday,
+} from './worker.types.js';
+export { MODULE_KEYS, WORKER_NOTIFICATION_TYPES, isModuleKey } from './worker.types.js';
+
+export {
+  OAUTH_ACCOUNT_NOT_FOUND,
+  OAUTH_ACCOUNT_NOT_FOUND_CODE,
+  TOO_MANY_ATTEMPTS_WORKER,
+  WORKER_ERROR_CODE_NUMBERS,
+  WORKER_SERVER_MESSAGES,
+  matchExitedMessage,
+  matchLinkedElsewhereMessage,
+  workerRefusalText,
+} from './worker-messages.js';
+export type { WorkerErrorCode } from './worker-messages.js';
+
+export { PHONE_COUNTRY_CODE, PHONE_LOCAL_DIGITS, isValidPhone, normalisePhone } from './phone.js';

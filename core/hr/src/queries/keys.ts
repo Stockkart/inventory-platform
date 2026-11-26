@@ -1,6 +1,7 @@
 import { createQueryKeyFactory } from '@inventory-platform/query';
 import type {
   EmployeeListParams,
+  JoinRequestListParams,
   LeavePreviewParams,
   LeaveRequestListParams,
   MyLeavePreviewParams,
@@ -28,6 +29,12 @@ const payroll = (shopId: string) => [...shop(shopId), 'payroll'] as const;
  * staff attendance, leave and payroll writes do too (they change what My HR shows).
  */
 const me = (shopId: string) => [...shop(shopId), 'me'] as const;
+/**
+ * Worker join requests (worker-app R4): the inbox pages and details. Its own sub-tree, outside
+ * `employees`: a decision refreshes both (approval creates or links an employee), but the inbox
+ * polls on its own and an employee edit never changes a request.
+ */
+const joinRequests = (shopId: string) => [...shop(shopId), 'join-requests'] as const;
 
 export const hrKeys = {
   ...base,
@@ -102,6 +109,12 @@ export const hrKeys = {
    * refresh `me`, but the inbox only moves forward by its own polls.
    */
   notifications: (shopId: string) => [...shop(shopId), 'notifications'] as const,
+  joinRequests,
+  /** One page of one status (`['hr', shopId, 'join-requests', 'list', params]`). */
+  joinRequestList: (shopId: string, params: JoinRequestListParams) =>
+    [...joinRequests(shopId), 'list', params] as const,
+  /** One request with its possible match (`['hr', shopId, 'join-requests', 'detail', id]`). */
+  joinRequest: (shopId: string, id: string) => [...joinRequests(shopId), 'detail', id] as const,
 };
 
 export const HR_MODULE_VERSION = '0.1.0';

@@ -18,7 +18,6 @@ Resolved versions from `pnpm-lock.yaml`; ranges in `package.json`.
 | Nx                                            | 22.1.2                   | inferred targets from `@nx/js/typescript`, `@nx/vite`, `@nx/eslint`, `@nx/react/router-plugin` (`nx.json`)     |
 | React / React DOM                             | 19.2.0                   |                                                                                                                |
 | React Router                                  | 7.9.6                    | framework mode, SSR on (`apps/inventory/react-router.config.ts`)                                               |
-| Expo SDK / React Native                       | 55 / 0.83.10             | `apps/attendance` only (`apps/attendance/package.json`); Expo 56+ needs iOS 16.4, the spec floor is iOS 15     |
 | TypeScript                                    | 5.9.3                    | `strict` (`tsconfig.base.json`)                                                                                |
 | Vite / Vitest                                 | 7.2.4 / 4.0.14           |                                                                                                                |
 | Testing Library React / jest-dom / fast-check | 16.3.0 / 6.6.3 / 3.23.2  |                                                                                                                |
@@ -32,16 +31,15 @@ Resolved versions from `pnpm-lock.yaml`; ranges in `package.json`.
 - There are 27 projects (`pnpm exec nx show projects`). Tags come from each package's `package.json` `nx.tags`. ui-kit declares its tag in both `ui-kit/package.json` and `ui-kit/project.json`.
 - Boundaries are enforced by `@nx/enforce-module-boundaries` in root `eslint.config.mjs`:
 
-| Source tag      | Projects                            | May import tags                |
-| --------------- | ----------------------------------- | ------------------------------ |
-| `type:app`      | `apps/inventory`, `apps/attendance` | app, platform, plugin          |
-| `type:plugin`   | `plugins/cafe`, `plugins/registry`  | platform, core, plugin, ui-kit |
-| `type:core`     | `core/*`                            | platform, core, ui-kit         |
-| `type:platform` | `platform/*`                        | platform, plugin, core, ui-kit |
-| `type:ui-kit`   | `ui-kit`                            | ui-kit only                    |
+| Source tag      | Projects                           | May import tags                |
+| --------------- | ---------------------------------- | ------------------------------ |
+| `type:app`      | `apps/inventory`                   | app, platform, plugin          |
+| `type:plugin`   | `plugins/cafe`, `plugins/registry` | platform, core, plugin, ui-kit |
+| `type:core`     | `core/*`                           | platform, core, ui-kit         |
+| `type:platform` | `platform/*`                       | platform, plugin, core, ui-kit |
+| `type:ui-kit`   | `ui-kit`                           | ui-kit only                    |
 
-- `scope:attendance` (`platform/attendance-protocol`, `apps/attendance`) adds a second constraint on top of its `type:*` one: it may import `scope:attendance` and `type:platform` only, because the Expo app loads the same code and cannot load core, ui-kit or plugins.
-- `apps/attendance` is the Expo / React Native Attendance app (Expo SDK 55, React Native 0.83, `apps/attendance/README.md`). Its workspace dependencies are exactly `attendance-protocol` and `contracts`; `apps/attendance/eslint.config.mjs` bans `@inventory-platform/ui-kit`, `api-client` and `shell` by `no-restricted-imports`. It has `test`, `lint` and `typecheck` targets but no Nx `build` target: EAS builds the binaries (`apps/attendance/eas.json`).
+- `scope:attendance` (`platform/attendance-protocol`) adds a second constraint on top of its `type:*` one: it may import `scope:attendance` and `type:platform` only, because the same code is vendored into the Stockkart Team app (`stockkart-team-app/packages/attendance-protocol`, kept identical by that repository's `scripts/protocol-parity.mjs`; change both copies, platform first, then app) and the app cannot load core, ui-kit or plugins.
 
 - `type:journey` is declared in the config. No project carries it.
 - `apps/inventory` composes only through `@inventory-platform/plugin-registry/routes` (plus the `plugin-registry` barrel, `shell`, `query`, `session`, `routing`). A `no-restricted-imports` block in root `eslint.config.mjs` bans domain packages, `*/api`, `*/ui` and `*/pages/*` there. Example: `apps/inventory/app/routes.tsx`.
@@ -50,13 +48,12 @@ Resolved versions from `pnpm-lock.yaml`; ranges in `package.json`.
 - Import another package only through its `package.json` `exports` (`.`, `/types`, `/nav`, `/routes/*`). Never import its `src/` paths. Example: `core/reminders/package.json`.
 - Domain-to-domain imports use the public barrel. Example: `core/reminders/src/pages/RemindersPage.tsx` imports `InventoryAlertDetails` from `@inventory-platform/product`.
 - Each package `eslint.config.mjs` spreads the root config and adds `domainUiKitHtmlBan`. Example: `core/user/eslint.config.mjs`.
-  - Exceptions (no JSX): `platform/access/eslint.config.mjs`, `platform/contracts/eslint.config.mjs`. Exception (React Native, no HTML): `apps/attendance/eslint.config.mjs`.
+  - Exceptions (no JSX): `platform/access/eslint.config.mjs`, `platform/contracts/eslint.config.mjs`.
 
 ## Repository layout
 
 ```text
 apps/inventory/      route composer, providers, global reset only
-apps/attendance/     Expo / React Native Attendance app (biometric check-in); test, lint, typecheck only in CI
 core/<domain>/       one business domain each
 platform/<infra>/    access, api-client, attendance-protocol, contracts, query, routing, schema, session, shell
 plugins/cafe/        vertical extras
@@ -84,7 +81,7 @@ scripts/deploy/      Vercel deploy and verify scripts
 | `checkout`      | **scaffold only** — real checkout still in `product`               |
 | `notifications` | **scaffold only** — bell UI in `platform/shell`                    |
 
-- Platform: access (capabilities), api-client (HTTP), attendance-protocol (Attendance app wire types and pure helpers, no React), contracts (shared types), query (QueryClient, key factory), routing (`RouteModule`, nav types), schema (vertical fields), session (auth, shop, toasts), shell (dashboard chrome).
+- Platform: access (capabilities), api-client (HTTP), attendance-protocol (Stockkart Team app wire types and pure helpers, no React; the app repository carries an identical copy), contracts (shared types), query (QueryClient, key factory), routing (`RouteModule`, nav types), schema (vertical fields), session (auth, shop, toasts), shell (dashboard chrome).
 - Standard domain layout: `api/ model/ queries/ pages/ ui/ routes/ routes.ts nav.ts index.ts`. Example: `core/reminders/src/routes.ts`.
   - `core/checkout` and `core/notifications` have only `queries/` (keys only) and `index.ts`.
   - `core/pricing` has no `ui/`.
@@ -198,8 +195,6 @@ Worked examples:
 
 Other names in `.env-example` and `docker-compose.yml`: `INVENTORY_PLATFORM_PORT` (host port), `NODE_ENV` (Node environment), `DB_URI` and `CLIENT_URL` (backend service, commented out in compose).
 
-`EXPO_PUBLIC_*` (Attendance app only): `EXPO_PUBLIC_API_URL` is read in `apps/attendance/src/config.ts`, inlined by Metro, and must start with `https://` (`apps/attendance/app.config.js` refuses to build otherwise). Declared in `apps/attendance/.env-example` and in the EAS environments named in `apps/attendance/eas.json`. Same rule as `VITE_*`: public in the bundle, never a secret.
-
 ## Routing
 
 - React Router 7 framework mode with SSR. `apps/inventory/app/routes.tsx` composes `publicRoutes()` and the `dashboard` layout with `composedDashboardRoutes()` from `plugins/registry`.
@@ -228,7 +223,7 @@ Other names in `.env-example` and `docker-compose.yml`: `INVENTORY_PLATFORM_PORT
 
 ## Testing
 
-- Test targets exist only in `core/product`, `core/user`, `core/hr` (`vitest.config.ts` + `vitest.setup.ts`), `platform/schema`, `platform/attendance-protocol` and `apps/attendance` (`vite.config.mts`). Example: `core/user/vitest.config.ts`.
+- Test targets exist only in `core/product`, `core/user`, `core/hr`, `ui-kit` (`vitest.config.ts` + `vitest.setup.ts`), `platform/schema` and `platform/attendance-protocol` (`vite.config.mts`). Example: `core/user/vitest.config.ts`. `ui-kit` tests render primitives in jsdom with no workspace aliases (`ui-kit/src/overlay/Modal.test.tsx`).
 - Put `<name>.test.ts(x)` next to the source file. Example: `core/product/src/search/searchUrl.test.ts`.
 - `core/product/vitest.config.ts` runs `src/ui/**` in jsdom and everything else in node. Render tests live under `src/ui/`.
 - Render-test ui components with behaviour (forms, flows, tab order). Example: `core/user/src/ui/CustomerEditForm.test.tsx`.
@@ -258,7 +253,7 @@ cp .env-example .env && docker-compose up          # frontend container only; fi
 
 - Short project names work (`nx lint product`).
 - The `NODE_ENV` values here (`development`, `production`) are the only env values in this file. They are shell overrides for running tests, not configuration. With `NODE_ENV=production` vitest loads the production React build and render tests fail.
-- CI runs lint (`.github/workflows/eslint.yml`), format (`.github/workflows/format.yml`), test + build + typecheck (`.github/workflows/ci.yml`) and package tracking. Changes under `apps/attendance/**` or `platform/attendance-protocol/**` also run `.github/workflows/attendance-app.yml`: the app's `test lint typecheck`, then `nx run attendance:prebuild:android` (Gradle `assembleDebug`, ubuntu) and `nx run attendance:prebuild:ios` (`xcodebuild` for the simulator, `macos-latest`). Both are compile checks; nothing is released from CI (see `apps/attendance/README.md` → CI).
+- CI runs lint (`.github/workflows/eslint.yml`), format (`.github/workflows/format.yml`), test + build + typecheck (`.github/workflows/ci.yml`) and package tracking. The Stockkart Team app has its own repository and CI (`stockkart-team-app`); nothing mobile is built here.
 
 Status, run in the task workspace on 2026-10-17 (pnpm 10.24.0, Node 20.20.2):
 
@@ -270,7 +265,7 @@ Status, run in the task workspace on 2026-10-17 (pnpm 10.24.0, Node 20.20.2):
 | `nx run-many -t test --all` with `NODE_ENV=production` | fail: `TypeError: React.act is not a function`; `core/user` 20/32 and `core/product` 27/218 fail, `platform/schema` passes |
 | `nx build inventory`                                   | pass                                                                                                                       |
 | `node .github/scripts/check-package-tracking.mjs`      | pass                                                                                                                       |
-| `pnpm run format:check`                                | pass (`out-tsc/` is in `.prettierignore` since the attendance app scaffold)                                                |
+| `pnpm run format:check`                                | pass (`out-tsc/`, the vitest `tsBuildInfo` output, is in `.prettierignore`)                                                |
 
 ## Do and Don't
 

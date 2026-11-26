@@ -1,9 +1,15 @@
-import type { HrPermission, ShopAccess } from '@inventory-platform/access';
+import { isWorkerRole, type HrPermission, type ShopAccess } from '@inventory-platform/access';
 import type { DashboardMenuGroup, DashboardMenuItem } from '@inventory-platform/routing';
 
 const ACCOUNTING_PREFIX = '/dashboard/accounting';
 const MIS_PREFIX = '/dashboard/mis';
 const HR_PREFIX = '/dashboard/hr';
+
+/**
+ * The one dashboard page a WORKER login reaches (worker-app R2.1, R2.2). It is allowed even with
+ * no linked employee: the shell renders the "not part of a shop yet" page there instead of My HR.
+ */
+export const WORKER_HOME_PATH = '/dashboard/hr/me';
 
 /**
  * HR pages and the permission each needs (design "Frontend routes" table). Longer prefixes
@@ -76,6 +82,11 @@ function isRbacGatedPath(path: string): boolean {
 }
 
 function isPathAllowed(path: string, access: ShopAccess): boolean {
+  // A WORKER membership grants nothing on the staff side (worker-app R2.1): My HR only, every
+  // other route, menu item and module is denied whatever the shop's modules or HR grid say.
+  if (isWorkerRole(access.role)) {
+    return matchesPrefix(path, WORKER_HOME_PATH);
+  }
   if (path === '/dashboard/access-control') {
     return access.canManageAccess;
   }
@@ -119,11 +130,29 @@ function filterGroupItems(items: DashboardMenuItem[], access: ShopAccess): Dashb
   return items.filter((item) => isPathAllowed(item.path, access));
 }
 
-/** Filter sidebar groups using effective shop access from the API. */
+/** The menu a WORKER login sees: My HR and nothing else (worker-app R2.1). */
+function workerMenuGroups(groups: DashboardMenuGroup[]): DashboardMenuGroup[] {
+  return groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => matchesPrefix(item.path, WORKER_HOME_PATH)),
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
+/**
+ * Filter sidebar groups using effective shop access from the API. `role` is the signed-in login's
+ * role from the session: a WORKER sees My HR only, even before `/shops/me/access` has loaded, so
+ * the shop modules never flash in the sidebar.
+ */
 export function filterDashboardMenuGroupsByAccess(
   groups: DashboardMenuGroup[],
   access: ShopAccess | null | undefined,
+  role?: string | null,
 ): DashboardMenuGroup[] {
+  if (isWorkerRole(role) || (access && isWorkerRole(access.role))) {
+    return workerMenuGroups(groups);
+  }
   if (!access) {
     return groups
       .map((group) => ({
@@ -140,7 +169,7 @@ export function filterDashboardMenuGroupsByAccess(
       };
     }
     const items = filterGroupItems(group.items, access);
-    if (access.canManageAccess) {
+    if (access.canManageAccess && !isWorkerRole(access.role)) {
       const hasAccessControl = items.some((i) => i.path === '/dashboard/access-control');
       if (!hasAccessControl) {
         items.push({
@@ -156,10 +185,18 @@ export function filterDashboardMenuGroupsByAccess(
   return withAccessControl.filter((group) => group.items.length > 0);
 }
 
+/**
+ * Whether the signed-in login may open `path`. `role` is the session role: a WORKER may open My HR
+ * only, whether or not `/shops/me/access` has answered (worker-app R2.1, R2.2).
+ */
 export function canAccessDashboardPath(
   path: string,
   access: ShopAccess | null | undefined,
+  role?: string | null,
 ): boolean {
+  if (isWorkerRole(role)) {
+    return matchesPrefix(path, WORKER_HOME_PATH);
+  }
   if (!access) {
     return !isRbacGatedPath(path);
   }

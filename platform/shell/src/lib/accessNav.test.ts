@@ -161,3 +161,114 @@ describe('accessNav HR gating', () => {
     expect(canAccessDashboardPath('/dashboard/accounting', access(null))).toBe(false);
   });
 });
+
+// Feature: worker-app, R2.1, R2.2, R2.5: a WORKER login sees My HR and nothing else.
+describe('accessNav for a WORKER login', () => {
+  const STAFF_GROUPS: DashboardMenuGroup[] = [
+    {
+      id: 'products',
+      label: 'Products',
+      icon: 'package',
+      items: [
+        { path: '/dashboard/products', label: 'Products', icon: 'package' },
+        { path: '/dashboard/scan-sell', label: 'Scan and sell', icon: 'smartphone' },
+      ],
+    } as DashboardMenuGroup,
+    {
+      id: 'team',
+      label: 'Team',
+      icon: 'users',
+      items: [
+        { path: '/dashboard/shop-users', label: 'Users', icon: 'users' },
+        { path: '/dashboard/my-invitations', label: 'My invitations', icon: 'inbox' },
+      ],
+    } as DashboardMenuGroup,
+    HR_GROUP,
+  ];
+
+  // Everything a generous (buggy or stale) backend could switch on: the role alone decides.
+  function worker(employeeId: string | null): ShopAccess {
+    const a = access({ permissions: ['VIEW_EMPLOYEES', 'RUN_PAYROLL'], employeeId });
+    a.role = 'WORKER';
+    a.canManageAccess = true;
+    a.modules = {
+      accounting: true,
+      analytics: true,
+      mis: true,
+      taxes: true,
+      stockCorrection: true,
+      marketing: true,
+      paymentPlan: true,
+      productSearchEdit: true,
+      rateRulesEdit: true,
+      hr: true,
+    };
+    a.team = {
+      manageInvitations: true,
+      manageJoinRequests: true,
+      manageShopUsers: true,
+      viewMyInvitations: true,
+    };
+    return a;
+  }
+
+  const EVERY_OTHER_PATH = [
+    '/dashboard',
+    '/dashboard/products',
+    '/dashboard/scan-sell',
+    '/dashboard/profile',
+    '/dashboard/shops',
+    '/dashboard/shop-users',
+    '/dashboard/my-invitations',
+    '/dashboard/access-control',
+    '/dashboard/accounting',
+    '/dashboard/plan-status',
+    '/dashboard/hr',
+    '/dashboard/hr/employees',
+    '/dashboard/hr/attendance',
+    '/dashboard/hr/leave',
+    '/dashboard/hr/payroll',
+    '/dashboard/hr/advances',
+    '/dashboard/hr/settings',
+    '/dashboard/hr/attendance-app-privacy',
+    '/dashboard/hr/meX',
+  ];
+
+  it('shows only My HR in the menu, whatever the shop switched on', () => {
+    expect(paths(filterDashboardMenuGroupsByAccess(STAFF_GROUPS, worker('emp-1')))).toEqual([
+      '/dashboard/hr/me',
+    ]);
+    // No "Access control" is appended for the team group either.
+    expect(filterDashboardMenuGroupsByAccess(STAFF_GROUPS, worker('emp-1'))).toHaveLength(1);
+  });
+
+  it('shows only My HR before access has loaded when the session role is WORKER', () => {
+    expect(paths(filterDashboardMenuGroupsByAccess(STAFF_GROUPS, null, 'WORKER'))).toEqual([
+      '/dashboard/hr/me',
+    ]);
+    // Staff roles keep today's behaviour: ungated items while access loads.
+    expect(paths(filterDashboardMenuGroupsByAccess(STAFF_GROUPS, null, 'MANAGER'))).toEqual([
+      '/dashboard/products',
+      '/dashboard/scan-sell',
+      '/dashboard/my-invitations',
+    ]);
+  });
+
+  it('opens My HR to a WORKER, linked or not, and denies every other path', () => {
+    expect(canAccessDashboardPath('/dashboard/hr/me', worker('emp-1'))).toBe(true);
+    // Not linked yet: the shell shows the "not part of a shop yet" page there (R2.2).
+    expect(canAccessDashboardPath('/dashboard/hr/me', worker(null))).toBe(true);
+    expect(canAccessDashboardPath('/dashboard/hr/me', null, 'WORKER')).toBe(true);
+    for (const path of EVERY_OTHER_PATH) {
+      expect(canAccessDashboardPath(path, worker('emp-1')), path).toBe(false);
+      expect(canAccessDashboardPath(path, null, 'WORKER'), path).toBe(false);
+    }
+  });
+
+  it('does not change a staff login whose access happens to carry the same flags', () => {
+    const manager = worker('emp-1');
+    manager.role = 'MANAGER';
+    expect(canAccessDashboardPath('/dashboard/hr/employees', manager)).toBe(true);
+    expect(canAccessDashboardPath('/dashboard/accounting', manager, 'MANAGER')).toBe(true);
+  });
+});

@@ -153,11 +153,6 @@
       - any-glob-to-any-file:
           - 'platform/attendance-protocol/**'
 
-'module:attendance':
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'apps/attendance/**'
-
 'module:plugin-cafe':
   - changed-files:
       - any-glob-to-any-file:

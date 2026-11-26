@@ -8,6 +8,7 @@
 import type { LeaveBalanceRow, LeaveRequestResponse } from './leave.types';
 import type { SalaryPaymentStatus } from './payroll.types';
 import type { PunchDirection, PunchFlag } from './attendance.types';
+import type { HrNotificationResponse } from '@inventory-platform/attendance-protocol';
 
 /** `MyLeaveResponse`. */
 export interface MyLeaveResponse {
@@ -54,20 +55,17 @@ export interface MyPayslipResponse {
   paidAt?: string | null;
 }
 
-/** Backend `HrNotificationType` (R6.9). */
-export type HrNotificationType = 'LEAVE_REQUESTED' | 'LEAVE_APPROVED' | 'LEAVE_REJECTED';
-
-/** `HrNotificationResponse`. */
-export interface HrNotificationResponse {
-  id: string;
-  type: HrNotificationType;
-  leaveRequestId?: string | null;
-  /** Plain-English line written by the server. */
-  text: string;
-  /** ISO instant. */
-  createdAt: string;
-  read: boolean;
-}
+/**
+ * Backend `HrNotificationType` and `HrNotificationResponse` (R6.9). Shared with the Stockkart Team app
+ * through `@inventory-platform/attendance-protocol`: the three leave types plus the four worker-app
+ * types (join request received, approved or rejected, profile requested), and the row's
+ * `joinRequestId` next to `leaveRequestId`. A type this build does not know is rendered, never
+ * thrown (`notificationTypeLabel` in `labels.ts`).
+ */
+export type {
+  HrNotificationResponse,
+  HrNotificationType,
+} from '@inventory-platform/attendance-protocol';
 
 /**
  * `HrNotificationsResponse`: at most 20 rows. Without `since` the newest 20; with it the oldest 20

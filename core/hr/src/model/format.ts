@@ -218,6 +218,37 @@ export function formatDateTime(instant: string | null | undefined): string {
   return Number.isNaN(d.getTime()) ? instant : DATE_TIME.format(d);
 }
 
+const IST_DATE_TIME = new Intl.DateTimeFormat('en-IN', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZone: 'Asia/Kolkata',
+});
+
+/** ISO instant → "12 May 2026, 2:00 pm" in Indian time, whatever the browser's zone (R4.2). */
+export function formatDateTimeIst(instant: string | null | undefined): string {
+  if (!instant) return '—';
+  const d = new Date(instant);
+  return Number.isNaN(d.getTime()) ? instant : IST_DATE_TIME.format(d);
+}
+
+const IST_DATE = new Intl.DateTimeFormat('en-CA', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  timeZone: 'Asia/Kolkata',
+});
+
+/** ISO instant → "12 May 2026", the calendar day in Indian time; `—` when unknown. */
+export function formatInstantDate(instant: string | null | undefined): string {
+  if (!instant) return '—';
+  const d = new Date(instant);
+  // en-CA prints `YYYY-MM-DD`, which `formatDate` already knows how to spell out.
+  return Number.isNaN(d.getTime()) ? instant : formatDate(IST_DATE.format(d));
+}
+
 const CLOCK = new Intl.DateTimeFormat('en-GB', {
   hour: '2-digit',
   minute: '2-digit',

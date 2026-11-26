@@ -1,16 +1,23 @@
 import { describe, expect, it } from 'vitest';
+import { WORKER_NOTIFICATION_TYPES } from '@inventory-platform/attendance-protocol';
 import type { AttendanceSource, PunchFlag, PunchSource } from './attendance.types';
+import type { WorkerJoinStatus } from './join-request.types';
+import type { HrNotificationType } from './me.types';
 import {
   ATTENDANCE_SOURCE_LABELS,
   AUDIT_ACTION_LABELS,
+  JOIN_REQUEST_STATUS_LABELS,
   MANUAL_MARK_REASONS,
   MANUAL_MARK_REASON_LABELS,
+  NOTIFICATION_TYPE_LABELS,
   PUNCH_FLAG_LABELS,
   PUNCH_SOURCE_LABELS,
   UNKNOWN_LABEL,
   attendanceSourceLabel,
   captureChips,
+  joinRequestStatusLabel,
   manualMarkReasonLabel,
+  notificationTypeLabel,
   punchFlagLabel,
   punchSourceLabel,
 } from './labels';
@@ -96,6 +103,65 @@ describe('Attendance app labels (R8.1, R8.3, R7.3)', () => {
     expect(AUDIT_ACTION_LABELS.DEVICE_UNPAIRED).toBe('Phone unpaired');
     expect(AUDIT_ACTION_LABELS.PAIRING_CODE_CREATED).toBe('Pairing code created');
     expect(AUDIT_ACTION_LABELS.DEVICE_CONSENT_UPDATED).toBe('Consent updated');
+  });
+
+  it('describes the four worker-app history actions', () => {
+    expect(AUDIT_ACTION_LABELS.JOIN_REQUEST_APPROVED).toBe('Join request approved');
+    expect(AUDIT_ACTION_LABELS.JOIN_REQUEST_REJECTED).toBe('Join request rejected');
+    expect(AUDIT_ACTION_LABELS.PAIRING_CODE_REFUSED).toBe('Pairing code refused');
+    expect(AUDIT_ACTION_LABELS.PROFILE_REQUESTED).toBe('Profile details requested');
+  });
+});
+
+describe('worker join request and notification labels (worker-app R4.2, R4.13, R10.5)', () => {
+  const STATUSES: WorkerJoinStatus[] = [
+    'PENDING',
+    'APPROVING',
+    'APPROVED',
+    'REJECTED',
+    'WITHDRAWN',
+  ];
+  const LEAVE_TYPES: HrNotificationType[] = ['LEAVE_REQUESTED', 'LEAVE_APPROVED', 'LEAVE_REJECTED'];
+
+  it('labels every status and notification type with a non-empty word', () => {
+    for (const s of STATUSES) expect(joinRequestStatusLabel(s)).toBe(JOIN_REQUEST_STATUS_LABELS[s]);
+    for (const t of [...LEAVE_TYPES, ...WORKER_NOTIFICATION_TYPES]) {
+      expect(notificationTypeLabel(t)).toBe(NOTIFICATION_TYPE_LABELS[t]);
+    }
+    for (const label of [
+      ...Object.values(JOIN_REQUEST_STATUS_LABELS),
+      ...Object.values(NOTIFICATION_TYPE_LABELS),
+    ]) {
+      expect(label.trim().length).toBeGreaterThan(0);
+      expect(label).not.toBe(UNKNOWN_LABEL);
+    }
+  });
+
+  it('has a heading for each of the four new notification types and the three leave ones', () => {
+    expect(Object.keys(NOTIFICATION_TYPE_LABELS).sort()).toEqual(
+      [...LEAVE_TYPES, ...WORKER_NOTIFICATION_TYPES].sort(),
+    );
+    expect(Object.keys(NOTIFICATION_TYPE_LABELS)).toHaveLength(7);
+    expect(NOTIFICATION_TYPE_LABELS.JOIN_REQUEST_RECEIVED).toBe('Join request');
+    expect(NOTIFICATION_TYPE_LABELS.PROFILE_REQUESTED).toBe('Profile details requested');
+  });
+
+  it('renders the removed LINK_REQUEST_* types as plain "unknown" text, never throws (D11, R10.2)', () => {
+    expect(NOTIFICATION_TYPE_LABELS).not.toHaveProperty('LINK_REQUEST_APPROVED');
+    expect(NOTIFICATION_TYPE_LABELS).not.toHaveProperty('LINK_REQUEST_REJECTED');
+    expect(notificationTypeLabel('LINK_REQUEST_APPROVED')).toBe(UNKNOWN_LABEL);
+    expect(notificationTypeLabel('LINK_REQUEST_REJECTED')).toBe(UNKNOWN_LABEL);
+  });
+
+  it('renders a type this build does not know as "unknown" and never throws', () => {
+    for (const odd of ['SOMETHING_NEW', '', 'join', 'toString', 'constructor', '__proto__']) {
+      expect(joinRequestStatusLabel(odd)).toBe('unknown');
+      expect(notificationTypeLabel(odd)).toBe('unknown');
+    }
+    expect(joinRequestStatusLabel(null)).toBe('unknown');
+    expect(joinRequestStatusLabel(undefined)).toBe('unknown');
+    expect(notificationTypeLabel(null)).toBe('unknown');
+    expect(notificationTypeLabel(undefined)).toBe('unknown');
   });
 });
 

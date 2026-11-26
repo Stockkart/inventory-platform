@@ -24,6 +24,7 @@ import {
   TableHeaderCell,
   TableLoadingRow,
   TableRow,
+  Tabs,
   Text,
   surfaceChrome,
   LinkButton,
@@ -49,6 +50,7 @@ import {
   useEmployeeDesignationsQuery,
   useEmployeesQuery,
   useHrSetupStatusQuery,
+  useJoinRequestsQuery,
   useLinkableLoginsQuery,
 } from '../queries/hooks';
 import { EmployeeForm } from '../ui/EmployeeForm';
@@ -56,6 +58,7 @@ import { employeePath } from '../ui/EmployeeNameLink';
 import { AppHealthBanner } from '../ui/AppHealthBanner';
 import { HrGetStartedCard } from '../ui/HrGetStartedCard';
 import { TeamLoginPicker } from '../ui/TeamLoginPicker';
+import { JoinRequestsTab } from '../ui/JoinRequestsTab';
 
 type StatusFilter = EmployeeStatus | 'ALL';
 /** "App paired" filter (R8.12); `true` / `false` go to the server as `?paired=`. */
@@ -77,6 +80,19 @@ const ANY_DESIGNATION = '';
 function pairedFilterFrom(params: URLSearchParams): PairedFilter {
   const raw = params.get('paired');
   return raw === 'true' || raw === 'false' ? raw : 'ALL';
+}
+
+/** The two tabs of the page; the bell links here with `?tab=join-requests` (worker-app R10.5). */
+type PageTab = 'employees' | 'join-requests';
+const JOIN_REQUESTS_TAB: PageTab = 'join-requests';
+
+function tabFrom(params: URLSearchParams, canReview: boolean): PageTab {
+  return canReview && params.get('tab') === JOIN_REQUESTS_TAB ? JOIN_REQUESTS_TAB : 'employees';
+}
+
+/** "Join requests (3)" / "Join requests" while the count is still loading (R4.1). */
+export function joinRequestsTabLabel(pendingCount: number | undefined): string {
+  return pendingCount == null ? 'Join requests' : `Join requests (${pendingCount})`;
 }
 
 export function EmployeesPage() {
@@ -125,6 +141,23 @@ export function EmployeesPage() {
   const list = useEmployeesQuery(params, canView);
   const designations = useEmployeeDesignationsQuery(canView);
   const setup = useHrSetupStatusQuery(canView);
+
+  // The tab lives in the URL so the bell can open the inbox directly and the page is shareable.
+  const tab = tabFrom(searchParams, canEdit);
+  const setTab = (next: string) => {
+    setSearchParams(
+      (prev) => {
+        const out = new URLSearchParams(prev);
+        if (next === JOIN_REQUESTS_TAB) out.set('tab', next);
+        else out.delete('tab');
+        return out;
+      },
+      { replace: true },
+    );
+  };
+  // One cheap read for the tab count (R4.1); the tab itself reads its own pages. Only with the
+  // permission: the server answers 403 to anyone else.
+  const pendingPage = useJoinRequestsQuery({ status: 'PENDING', page: 0, size: 1 }, canEdit);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState<EmployeeFormValue>(() => newEmployeeForm());
@@ -202,28 +235,8 @@ export function EmployeesPage() {
     ...(designations.data ?? []).map((d) => ({ value: d, label: d })),
   ];
 
-  return (
+  const employeesPanel = (
     <Stack gap="md">
-      <PageHeader
-        description="Everyone who works in your shop, with or without a login."
-        actions={
-          <>
-            {canEdit ? (
-              <Button type="button" variant="solid" onClick={openCreate}>
-                Add employee
-              </Button>
-            ) : null}
-            <HrInbox />
-          </>
-        }
-      />
-
-      <AppHealthBanner />
-
-      {showGuide && setup.data ? (
-        <HrGetStartedCard status={setup.data} onAddEmployee={canEdit ? openCreate : undefined} />
-      ) : null}
-
       <Inline gap="sm" flexWrap align="stretch" width="full">
         <Box flex="1" className={surfaceChrome.minW280}>
           <SearchInput
@@ -372,6 +385,47 @@ export function EmployeesPage() {
           setPage(0);
         }}
       />
+    </Stack>
+  );
+
+  return (
+    <Stack gap="md">
+      <PageHeader
+        description="Everyone who works in your shop, with or without a login."
+        actions={
+          <>
+            {canEdit ? (
+              <Button type="button" variant="solid" onClick={openCreate}>
+                Add employee
+              </Button>
+            ) : null}
+            <HrInbox />
+          </>
+        }
+      />
+
+      <AppHealthBanner />
+
+      {showGuide && setup.data ? (
+        <HrGetStartedCard status={setup.data} onAddEmployee={canEdit ? openCreate : undefined} />
+      ) : null}
+
+      {canEdit ? (
+        <Tabs
+          value={tab}
+          onChange={setTab}
+          items={[
+            { value: 'employees', label: 'Employees', panel: employeesPanel },
+            {
+              value: JOIN_REQUESTS_TAB,
+              label: joinRequestsTabLabel(pendingPage.data?.pendingCount),
+              panel: <JoinRequestsTab />,
+            },
+          ]}
+        />
+      ) : (
+        employeesPanel
+      )}
 
       <EditModal
         open={createOpen}

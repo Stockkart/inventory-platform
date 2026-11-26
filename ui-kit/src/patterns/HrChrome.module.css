@@ -376,3 +376,131 @@
   position: relative;
   display: inline-flex;
 }
+
+/* ── Join-request drawer (worker-app R4.14–R4.17) ─────────────────────────────────────────────
+   Header · scrolling body · sticky footer inside `Drawer size="lg"`. Every value is a token, so
+   both web themes come from tokens.css; nothing here is theme-specific. */
+.hrJoinDrawer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.hrJoinDrawerHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sk-space-md, 16px);
+  padding: var(--sk-space-lg, 24px) var(--sk-space-lg, 24px) var(--sk-space-md, 16px);
+  border-bottom: 1px solid var(--sk-color-border-default, #e2e8f0);
+}
+
+/* Name over status chip · relative time; shrinks and truncates before the avatar does. */
+.hrJoinDrawerTitle {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sk-space-xs, 4px);
+  min-width: 0;
+}
+
+/* 56 px avatar or photo in the drawer header. Doubled selector: it must win over the `Avatar`
+   size class of equal specificity whatever the stylesheet order. */
+.hrJoinDrawerAvatar.hrJoinDrawerAvatar {
+  width: 3.5rem;
+  height: 3.5rem;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+/* 32 px avatar or photo on a Join requests table row. */
+.hrJoinRowAvatar.hrJoinRowAvatar {
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.8125rem;
+  flex-shrink: 0;
+}
+
+/* The requester's photo (an `img`) drawn like an `Avatar`; size it with one of the two above. */
+.hrJoinPhoto {
+  display: block;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--sk-radius-full, 9999px);
+  object-fit: cover;
+}
+
+.hrJoinDrawerBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sk-space-lg, 24px);
+  min-height: 0;
+  padding: var(--sk-space-lg, 24px);
+  overflow-y: auto;
+}
+
+/* "Contact" / "Request": overline title over its rows. */
+.hrJoinDrawerSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-sm, 8px);
+}
+
+/* One row of a section: label + value on the left, an optional action on the right. */
+.hrJoinDrawerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sk-space-sm, 8px);
+  min-height: 2.5rem;
+}
+
+/* The possible-match card: brand-soft surface, token border and radius. */
+.hrJoinMatchCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-sm, 8px);
+  padding: var(--sk-space-md, 16px);
+  background: var(--sk-color-brand-soft, rgba(30, 58, 95, 0.12));
+  border: 1px solid var(--sk-color-border-default, #e2e8f0);
+  border-radius: var(--sk-radius-lg, 12px);
+}
+
+/* Link to existing · Create new inside the card; the refusal text sits under them. */
+.hrJoinMatchCardActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sk-space-sm, 8px);
+  padding-top: var(--sk-space-xs, 4px);
+}
+
+/* The inline reject reason (textarea + counter) that replaces the second dialog. */
+.hrJoinReasonField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-xs, 4px);
+}
+
+.hrJoinDrawerFooter {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sk-space-sm, 8px);
+  padding: var(--sk-space-md, 16px) var(--sk-space-lg, 24px);
+  border-top: 1px solid var(--sk-color-border-default, #e2e8f0);
+  background: var(--sk-color-bg-elevated, #fff);
+}
+
+/* Error or status line in the footer: takes its own row above the buttons. */
+.hrJoinDrawerFooterText {
+  flex-basis: 100%;
+}
+
+/* A Join requests row that bulk approve skipped (possible match): highlighted, still Pending. */
+.hrJoinRowSkipped {
+  background: var(--sk-color-warning-soft, rgba(217, 119, 6, 0.12));
+}

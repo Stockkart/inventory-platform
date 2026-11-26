@@ -92,6 +92,7 @@ export {
   DropdownMenu,
   type ModalProps,
   type DrawerProps,
+  type DrawerSize,
   type PopoverProps,
   type TooltipProps,
   type DropdownMenuProps,

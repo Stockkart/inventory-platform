@@ -3,7 +3,8 @@
  * Settings, holidays, leave types, role grid, setup status, employees and linkable logins are
  * here (task 13.2); attendance and leave since run F3; advances and payroll (runs, adjustments,
  * finalise, reopen) since run F4; payments, payslips, registers, exports and `/me` since run F5;
- * Attendance app pairing, health and consent since the HR-module (biometric app) spec.
+ * Attendance app pairing, health and consent since the HR-module (biometric app) spec; the
+ * worker join-request inbox and "Request profile details" since the worker-app spec.
  */
 export const HR_ENDPOINTS = {
   BASE: '/hr',
@@ -24,6 +25,18 @@ export const HR_ENDPOINTS = {
   EMPLOYEE_PAIRING: (id: string) => `/hr/employees/${encodeURIComponent(id)}/pairing`,
   EMPLOYEE_PAIRING_CODES: (id: string) => `/hr/employees/${encodeURIComponent(id)}/pairing-codes`,
   EMPLOYEE_PAIRING_UNPAIR: (id: string) => `/hr/employees/${encodeURIComponent(id)}/pairing/unpair`,
+  // Worker-app: "Request profile details" on an employee's page (`EmployeeController`,
+  // ADD_EDIT_EMPLOYEES, R8.7).
+  EMPLOYEE_REQUEST_PROFILE: (id: string) =>
+    `/hr/employees/${encodeURIComponent(id)}/request-profile`,
+  // Worker-app: the manager's join-request inbox (`JoinRequestInboxController`; Bearer chain,
+  // `hr` module on, ADD_EDIT_EMPLOYEES). The worker's own calls (`/hr/worker/**`) are not here:
+  // the browser is never the Stockkart Team app.
+  JOIN_REQUESTS: '/hr/join-requests',
+  JOIN_REQUEST_BY_ID: (id: string) => `/hr/join-requests/${encodeURIComponent(id)}`,
+  JOIN_REQUEST_DECISION: (id: string, decision: 'approve' | 'reject') =>
+    `/hr/join-requests/${encodeURIComponent(id)}/${decision}`,
+  JOIN_REQUESTS_BULK: (decision: 'approve' | 'reject') => `/hr/join-requests/bulk/${decision}`,
   // Attendance app health alerts (`AttendanceAppController`; Bearer chain, VIEW_ATTENDANCE) and
   // the consent text the privacy note is built from (public, no shop data).
   ATTENDANCE_APP_HEALTH: '/hr/attendance-app/health',

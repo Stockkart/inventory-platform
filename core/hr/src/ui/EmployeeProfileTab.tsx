@@ -35,6 +35,7 @@ import {
 import { EmployeeForm } from './EmployeeForm';
 import { EmployeePairingCard } from './EmployeePairingCard';
 import { LoginLinkPicker } from './LoginLinkPicker';
+import { RequestProfileButton } from './RequestProfileButton';
 
 function Detail({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -245,6 +246,9 @@ export function EmployeeProfileTab({ employee }: EmployeeProfileTabProps) {
 
       {/* Attendance app pairing (R2.1): the card hides itself without ADD_EDIT_EMPLOYEES. */}
       <EmployeePairingCard employee={employee} />
+
+      {/* Worker-app R8.7: hidden without ADD_EDIT_EMPLOYEES or when no login is linked. */}
+      <RequestProfileButton employee={employee} />
 
       {canEdit && employee.status === 'ACTIVE' ? (
         <Card>

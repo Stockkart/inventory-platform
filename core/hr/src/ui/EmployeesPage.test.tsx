@@ -18,9 +18,14 @@ const employeesApi = vi.hoisted(() => ({
 }));
 const settingsApi = vi.hoisted(() => ({ getSetupStatus: vi.fn() }));
 const pairingApi = vi.hoisted(() => ({ health: vi.fn() }));
+const joinRequestsApi = vi.hoisted(() => ({ list: vi.fn(), detail: vi.fn() }));
+// The bell polls for ADD_EDIT_EMPLOYEES since the Join requests inbox (worker-app R10.5).
+const meApi = vi.hoisted(() => ({ notifications: vi.fn() }));
 vi.mock('../api/employees.api', () => ({ employeesApi }));
 vi.mock('../api/settings.api', () => ({ hrSettingsApi: settingsApi }));
 vi.mock('../api/pairing.api', () => ({ pairingApi }));
+vi.mock('../api/join-requests.api', () => ({ joinRequestsApi }));
+vi.mock('../api/me.api', () => ({ meApi }));
 
 const SHOP = 'shop-1';
 
@@ -93,6 +98,8 @@ beforeEach(() => {
   employeesApi.designations.mockResolvedValue(['Helper']);
   employeesApi.linkableLogins.mockResolvedValue([]);
   pairingApi.health.mockResolvedValue({ alerts: [] });
+  joinRequestsApi.list.mockResolvedValue({ items: [], pendingCount: 2, page: 0 });
+  meApi.notifications.mockResolvedValue({ items: [], cursor: null });
   settingsApi.getSetupStatus.mockResolvedValue({
     settingsSaved: true,
     employeeCount: 3,
@@ -235,5 +242,44 @@ describe('appHealthAlertText', () => {
     expect(appHealthAlertText({ ...ALERT, failed: 1, attempts: 20, rate: 0.05 }, 'Corner')).toBe(
       'Corner: 5.0% of Attendance app punches could not be verified in the last hour (1 failed punch of 20).',
     );
+  });
+});
+
+// Worker-app 10.2: the Join requests tab (R4.1).
+describe('EmployeesPage — Join requests tab (worker-app R4.1)', () => {
+  it('shows "Join requests (N)" next to Employees for ADD_EDIT_EMPLOYEES and opens it from ?tab=', async () => {
+    signIn(['VIEW_EMPLOYEES', 'ADD_EDIT_EMPLOYEES']);
+    renderAt('/dashboard/hr/employees?tab=join-requests');
+    expect(await screen.findByRole('tab', { name: 'Join requests (2)' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByRole('tab', { name: 'Employees' })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    );
+    expect(await screen.findByRole('table', { name: 'Join requests' })).toBeInTheDocument();
+    expect(joinRequestsApi.list).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'PENDING' }),
+    );
+  });
+
+  it('keeps the employees list as the first tab and switches with the URL', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_EMPLOYEES', 'ADD_EDIT_EMPLOYEES']);
+    const router = renderAt('/dashboard/hr/employees');
+    await screen.findByRole('button', { name: 'Ravi Kumar' });
+    await user.click(await screen.findByRole('tab', { name: 'Join requests (2)' }));
+    expect(router.state.location.search).toBe('?tab=join-requests');
+    expect(screen.queryByRole('button', { name: 'Ravi Kumar' })).not.toBeInTheDocument();
+  });
+
+  it('shows neither the tab nor the count without ADD_EDIT_EMPLOYEES, even with ?tab=', async () => {
+    signIn(['VIEW_EMPLOYEES']);
+    renderAt('/dashboard/hr/employees?tab=join-requests');
+    await screen.findByRole('button', { name: 'Ravi Kumar' });
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Join requests/)).not.toBeInTheDocument();
+    expect(joinRequestsApi.list).not.toHaveBeenCalled();
   });
 });

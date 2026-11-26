@@ -16,7 +16,14 @@ import {
   unlinkedLogins,
 } from './employee-form';
 import { lockedPermissions, togglePermission, type HrRequiresMap } from './permission-closure';
-import { cycleRange, formatInr, formatMonth, formatSalaryPeriod } from './format';
+import {
+  cycleRange,
+  formatInr,
+  formatInstantDate,
+  formatDateTimeIst,
+  formatMonth,
+  formatSalaryPeriod,
+} from './format';
 import type { EmployeeResponse } from './employee.types';
 
 const REQUIRES: HrRequiresMap = {
@@ -240,6 +247,23 @@ describe('formatting', () => {
     expect(formatInr(123456.5)).toBe('₹1,23,456.50');
     expect(formatInr(null)).toBe('—');
     expect(formatMonth('2026-04')).toBe('April 2026');
+  });
+
+  it('spells an instant as its Indian calendar day', () => {
+    // 20:30 UTC on 11 May is already 12 May in Asia/Kolkata (+05:30).
+    expect(formatInstantDate('2026-05-11T20:30:00Z')).toBe('12 May 2026');
+    expect(formatInstantDate('2026-05-11T18:29:59Z')).toBe('11 May 2026');
+    expect(formatInstantDate(null)).toBe('—');
+    expect(formatInstantDate('not a date')).toBe('not a date');
+  });
+
+  it('spells an instant with its Indian clock time (the Join requests tab)', () => {
+    // 08:30 UTC = 14:00 IST; the browser's own zone must not leak in.
+    expect(formatDateTimeIst('2026-05-12T08:30:00Z').replace(/\u202f/g, ' ')).toBe(
+      '12 May 2026, 2:00 pm',
+    );
+    expect(formatDateTimeIst(null)).toBe('—');
+    expect(formatDateTimeIst('not a date')).toBe('not a date');
   });
 });
 

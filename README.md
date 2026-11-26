@@ -7,7 +7,6 @@ Nx + React monorepo for the StockKart inventory web app. Domains live under `cor
 ```text
 inventory-platform/
 ├── apps/inventory/     # App shell: providers, route composer, env
-├── apps/attendance/    # Expo / React Native Attendance app (biometric check-in)
 ├── platform/           # Infra only (no business UI)
 ├── ui-kit/             # Design system (primitives + chrome patterns)
 ├── core/               # Domain modules (api, queries, pages, routes, nav)
@@ -18,7 +17,6 @@ inventory-platform/
 | Layer        | Package examples                             | May depend on                                          |
 | ------------ | -------------------------------------------- | ------------------------------------------------------ |
 | App          | `@inventory-platform/inventory`              | everything                                             |
-| App (mobile) | `@inventory-platform/attendance`             | `attendance-protocol`, `contracts` only (React Native) |
 | Plugins      | `plugin-cafe`, `plugin-registry`             | platform, ui-kit, contracts, selected core public APIs |
 | Core domains | `product`, `accounting`, `user`, …           | platform, ui-kit, contracts                            |
 | Platform     | `shell`, `session`, `api-client`, `query`, … | ui-kit (shell), contracts                              |

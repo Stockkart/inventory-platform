@@ -1,9 +1,0 @@
-{
-  "platforms": ["android", "ios"],
-  "android": {
-    "modules": ["expo.modules.biometricsigner.BiometricSignerModule"]
-  },
-  "apple": {
-    "modules": ["BiometricSignerModule"]
-  }
-}

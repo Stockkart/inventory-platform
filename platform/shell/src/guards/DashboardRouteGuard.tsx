@@ -7,16 +7,29 @@ import {
   useShopAccessStore,
 } from '@inventory-platform/session';
 import { apiClient } from '@inventory-platform/api-client';
+import { isWorkerRole } from '@inventory-platform/access';
 import { isPlanExpiryAllowedPath } from '@inventory-platform/contracts';
 import { CenteredLoader } from '@inventory-platform/ui-kit';
-import { canAccessDashboardPath } from '../lib/accessNav';
+import { WORKER_HOME_PATH, canAccessDashboardPath } from '../lib/accessNav';
+import { NotInShopPage } from '../lib/NotInShopPage';
 
 export type DashboardRouteGuardState = {
   isReady: boolean;
   blockingContent: ReactNode | null;
 };
 
-/** Session, plan expiry, and shop-access bootstrap for dashboard routes. */
+function isWorkerHomePath(pathname: string): boolean {
+  return pathname === WORKER_HOME_PATH || pathname.startsWith(`${WORKER_HOME_PATH}/`);
+}
+
+/**
+ * Session, plan expiry, and shop-access bootstrap for dashboard routes.
+ *
+ * A WORKER login (worker-app R2.2) is sent straight to My HR. With no shop, or when
+ * `/shops/me/access` fails or names no linked employee, it sees the "not part of a shop yet" page
+ * and nothing else; the plan-expiry redirect does not apply to it (the backend decides what a
+ * worker's own pages may answer while the shop's plan is expired).
+ */
 export function useDashboardRouteGuard(): DashboardRouteGuardState {
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,13 +43,19 @@ export function useDashboardRouteGuard(): DashboardRouteGuardState {
     user?.shopId ? s.byShopId[user.shopId] : undefined,
   );
   const accessLoading = useShopAccessStore((s) => s.loading);
+  const accessError = useShopAccessStore((s) => s.error);
   const fetchAccess = useShopAccessStore((s) => s.fetchAccess);
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
   const hasCheckedAuth = useRef(false);
   const isCheckingRef = useRef(false);
+  const isWorker = isAuthenticated && isWorkerRole(user?.role);
 
   useEffect(() => {
     apiClient.setPlanExpiredHandler(() => {
+      // A worker has no plan page to go to (R2.1); their own pages stay where they are.
+      if (isWorkerRole(useAuthStore.getState().user?.role)) {
+        return;
+      }
       if (!isPlanExpiryAllowedPath(window.location.pathname)) {
         navigate('/dashboard/plan-status', { replace: true });
       }
@@ -53,14 +72,31 @@ export function useDashboardRouteGuard(): DashboardRouteGuardState {
     void fetchShopSchema();
   }, [isAuthenticated, user?.shopId, fetchPlanStatus, fetchAccess, fetchShopSchema]);
 
+  // WORKER: every dashboard path other than My HR goes to My HR (R2.2), before access has loaded.
+  useEffect(() => {
+    if (!isWorker || isWorkerHomePath(location.pathname)) {
+      return;
+    }
+    navigate(WORKER_HOME_PATH, { replace: true });
+  }, [isWorker, location.pathname, navigate]);
+
   useEffect(() => {
     if (!isAuthenticated || !user?.shopId || accessLoading || !shopAccess) {
       return;
     }
-    if (!canAccessDashboardPath(location.pathname, shopAccess)) {
-      navigate('/dashboard', { replace: true });
+    if (!canAccessDashboardPath(location.pathname, shopAccess, user.role)) {
+      navigate(isWorker ? WORKER_HOME_PATH : '/dashboard', { replace: true });
     }
-  }, [isAuthenticated, user?.shopId, accessLoading, shopAccess, location.pathname, navigate]);
+  }, [
+    isAuthenticated,
+    isWorker,
+    user?.shopId,
+    user?.role,
+    accessLoading,
+    shopAccess,
+    location.pathname,
+    navigate,
+  ]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -99,7 +135,9 @@ export function useDashboardRouteGuard(): DashboardRouteGuardState {
             replace: true,
           });
         }
-      } else if (isAuthenticated && user && !user.shopId) {
+      } else if (isAuthenticated && user && !user.shopId && !isWorkerRole(user.role)) {
+        // A worker with no shop stays here and sees the "not part of a shop yet" page (R2.2);
+        // shop selection (create a shop, ask for a staff role) is for staff logins only.
         navigate('/shop-selection', { replace: true });
       }
     };
@@ -108,7 +146,7 @@ export function useDashboardRouteGuard(): DashboardRouteGuardState {
   }, [isAuthenticated, isLoading, user, token, navigate, fetchCurrentUser, location.pathname]);
 
   useEffect(() => {
-    if (!isAuthenticated || !user?.shopId || planStatusLoading) {
+    if (!isAuthenticated || !user?.shopId || planStatusLoading || isWorker) {
       return;
     }
     if (planStatus?.planExpired && !isPlanExpiryAllowedPath(location.pathname)) {
@@ -116,6 +154,7 @@ export function useDashboardRouteGuard(): DashboardRouteGuardState {
     }
   }, [
     isAuthenticated,
+    isWorker,
     user?.shopId,
     planStatus?.planExpired,
     planStatusLoading,
@@ -136,6 +175,31 @@ export function useDashboardRouteGuard(): DashboardRouteGuardState {
 
   if (!isAuthenticated && !token) {
     return { isReady: false, blockingContent: null };
+  }
+
+  if (isWorker && user) {
+    // No shop: there is no access to fetch, so the page is the answer.
+    if (!user.shopId) {
+      return { isReady: false, blockingContent: <NotInShopPage /> };
+    }
+    if (!shopAccess) {
+      if (accessLoading || !accessError) {
+        return {
+          isReady: false,
+          blockingContent: <CenteredLoader fill minHeight="100dvh" label="Loading…" />,
+        };
+      }
+      // `/shops/me/access` failed: nothing of the dashboard can be shown.
+      return { isReady: false, blockingContent: <NotInShopPage /> };
+    }
+    if (!shopAccess.hr?.employeeId) {
+      return { isReady: false, blockingContent: <NotInShopPage /> };
+    }
+    if (!isWorkerHomePath(location.pathname)) {
+      // The redirect effect above is about to move to My HR; render nothing meanwhile.
+      return { isReady: false, blockingContent: null };
+    }
+    return { isReady: true, blockingContent: null };
   }
 
   if (isAuthenticated && user && !user.shopId) {

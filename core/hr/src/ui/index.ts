@@ -58,4 +58,37 @@ export {
   type PairingPanelProps,
 } from './EmployeePairingCard';
 export { MyPairingCard } from './MyPairingCard';
+export { RequestProfileButton, type RequestProfileButtonProps } from './RequestProfileButton';
 export { AppHealthBanner, appHealthAlertText, formatFailureRate } from './AppHealthBanner';
+// Worker-app: the manager's Join requests inbox (R4).
+export { JoinRequestsTab, bulkResultText, joinRequestPageMeta } from './JoinRequestsTab';
+export {
+  JoinRequestRow,
+  JoinRequestStatusBadge,
+  RequestedTime,
+  type JoinRequestRowProps,
+  type RequestedTimeProps,
+} from './JoinRequestRow';
+export {
+  DRAWER_IDLE,
+  drawerReducer,
+  exactTimeIst,
+  reasonCounter,
+  reasonTooLong,
+  relativeTime,
+  type DrawerAction,
+  type DrawerSavingMode,
+  type DrawerState,
+} from './joinRequestDrawer';
+export {
+  PossibleMatchPanel,
+  linkOrCreateQuestion,
+  matchLabel,
+  type PossibleMatchPanelProps,
+} from './PossibleMatchPanel';
+export {
+  RejectReasonModal,
+  rejectReasonError,
+  type RejectReasonModalProps,
+} from './RejectReasonModal';
+export { JoinRequestPhoto, photoPath, type JoinRequestPhotoProps } from './JoinRequestPhoto';

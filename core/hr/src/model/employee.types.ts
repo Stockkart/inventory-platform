@@ -59,6 +59,11 @@ export interface EmployeeResponse {
    * the detail; null on self-service views and missing on older backends.
    */
   appPaired?: boolean | null;
+  /**
+   * ISO instant of the last "Request profile details" (worker-app R8.7); null or missing = never
+   * asked. Set on the detail only.
+   */
+  profileRequestedAt?: string | null;
   revision?: number | null;
   createdAt?: string | null;
   updatedAt?: string | null;

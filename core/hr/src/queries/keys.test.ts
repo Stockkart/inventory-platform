@@ -49,6 +49,9 @@ describe('hrKeys', () => {
     ['meCheckIn', hrKeys.meCheckIn(SHOP)],
     ['mePairing', hrKeys.mePairing(SHOP)],
     ['notifications', hrKeys.notifications(SHOP)],
+    ['joinRequests', hrKeys.joinRequests(SHOP)],
+    ['joinRequestList', hrKeys.joinRequestList(SHOP, { status: 'PENDING', page: 0 })],
+    ['joinRequest', hrKeys.joinRequest(SHOP, 'r1')],
   ];
 
   it.each(builders)('%s starts with ["hr", shopId]', (_name, key) => {
@@ -140,5 +143,28 @@ describe('hrKeys', () => {
     expect(hrKeys.pairing('a', 'e1')).not.toEqual(hrKeys.pairing('b', 'e1'));
     // A manager's view of an employee never shares a cache entry with the employee's own view.
     expect(hrKeys.mePairing(SHOP)).not.toEqual(hrKeys.pairing(SHOP, 'me'));
+  });
+
+  it('nests join-request keys under their own sub-tree, outside employees (worker-app 10.1)', () => {
+    const jr = hrKeys.joinRequests(SHOP);
+    expect(jr).toEqual(['hr', SHOP, 'join-requests']);
+    for (const key of [
+      hrKeys.joinRequestList(SHOP, { status: 'PENDING' }),
+      hrKeys.joinRequestList(SHOP, { status: 'REJECTED', page: 2, size: 50 }),
+      hrKeys.joinRequest(SHOP, 'r1'),
+    ]) {
+      expect(key.slice(0, jr.length)).toEqual([...jr]);
+    }
+    const emp = hrKeys.employees(SHOP);
+    expect(jr.slice(0, emp.length)).not.toEqual([...emp]);
+    // Pending and Rejected pages, and different pages of one status, are separate entries.
+    expect(hrKeys.joinRequestList(SHOP, { status: 'PENDING' })).not.toEqual(
+      hrKeys.joinRequestList(SHOP, { status: 'REJECTED' }),
+    );
+    expect(hrKeys.joinRequestList(SHOP, { status: 'PENDING', page: 0 })).not.toEqual(
+      hrKeys.joinRequestList(SHOP, { status: 'PENDING', page: 1 }),
+    );
+    expect(hrKeys.joinRequest(SHOP, 'r1')).not.toEqual(hrKeys.joinRequest(SHOP, 'r2'));
+    expect(hrKeys.joinRequest('a', 'r1')).not.toEqual(hrKeys.joinRequest('b', 'r1'));
   });
 });

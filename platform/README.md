@@ -14,4 +14,4 @@ Infrastructure shared by the app and domains. **No domain business UI** here (ex
 | [session](./session/)                         | `@inventory-platform/session`             | Auth, shop, capabilities, toasts stores             |
 | [shell](./shell/)                             | `@inventory-platform/shell`               | Dashboard layout, nav composition UI, help          |
 
-Dependency direction: **domains → platform → ui-kit** (shell may use ui-kit). Platform must not import `core/*`. `attendance-protocol` is also consumed by the React Native app (`apps/attendance`), so it imports nothing but other `type:platform` packages (`scope:attendance` constraint in root `eslint.config.mjs`).
+Dependency direction: **domains → platform → ui-kit** (shell may use ui-kit). Platform must not import `core/*`. `attendance-protocol` is also vendored into the React Native app (`stockkart-team-app/packages/attendance-protocol`), so it imports nothing but other `type:platform` packages (`scope:attendance` constraint in root `eslint.config.mjs`).

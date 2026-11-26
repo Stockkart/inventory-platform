@@ -23,9 +23,19 @@ const settingsApi = vi.hoisted(() => ({ getSetupStatus: vi.fn() }));
 // The detail page renders `EmployeePairingCard` (R2.1); its own tests live in
 // EmployeePairingCard.test.tsx — here the pairing state just has to answer, not hit the network.
 const pairingApi = vi.hoisted(() => ({ state: vi.fn(), createCode: vi.fn(), unpair: vi.fn() }));
+// Worker-app: "Request profile details" (R8.7) and the Join requests tab count (R4.1).
+const joinRequestsApi = vi.hoisted(() => ({ list: vi.fn(), requestProfile: vi.fn() }));
+// Anyone with ADD_EDIT_EMPLOYEES gets the HR inbox (R10.5); keep its polls off the network.
+const meApi = vi.hoisted(() => ({
+  notifications: vi.fn(),
+  markNotificationRead: vi.fn(),
+  markAllNotificationsRead: vi.fn(),
+}));
 vi.mock('../api/employees.api', () => ({ employeesApi }));
+vi.mock('../api/me.api', () => ({ meApi }));
 vi.mock('../api/settings.api', () => ({ hrSettingsApi: settingsApi }));
 vi.mock('../api/pairing.api', () => ({ pairingApi }));
+vi.mock('../api/join-requests.api', () => ({ joinRequestsApi }));
 
 const SHOP = 'shop-1';
 
@@ -85,6 +95,12 @@ beforeEach(() => {
   employeesApi.designations.mockResolvedValue(['Helper', 'Cook']);
   employeesApi.linkableLogins.mockResolvedValue([]);
   pairingApi.state.mockResolvedValue({ state: 'NOT_PAIRED' });
+  meApi.notifications.mockResolvedValue({ items: [], cursor: null });
+  joinRequestsApi.list.mockResolvedValue({
+    items: [],
+    pendingCount: 0,
+    page: { page: 0, size: 20, totalItems: 0, totalPages: 0 },
+  });
   settingsApi.getSetupStatus.mockResolvedValue({
     settingsSaved: true,
     employeeCount: 1,
@@ -470,5 +486,55 @@ describe('links and back links (run F9)', () => {
     expect(buttons[0]).toBe(back);
     await user.click(back);
     expect(await screen.findByRole('button', { name: 'Ravi Kumar' })).toBeInTheDocument();
+  });
+});
+
+describe('Request profile details (worker-app R8.7)', () => {
+  const LINKED = { ...RAVI, userId: 'u9' };
+
+  it('asks the server and then shows when it was requested, as an Indian calendar day', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_EMPLOYEES', 'ADD_EDIT_EMPLOYEES']);
+    // 20:30 UTC on 11 May is 12 May in Asia/Kolkata.
+    const requested = { ...LINKED, profileRequestedAt: '2026-05-11T20:30:00Z' };
+    // The server answers with the flag set and keeps it on later reads (the save invalidates
+    // the shop's queries, so the detail is fetched again).
+    employeesApi.get.mockResolvedValueOnce(LINKED).mockResolvedValue(requested);
+    joinRequestsApi.requestProfile.mockResolvedValue(requested);
+    renderAt('/dashboard/hr/employees/e1');
+
+    await user.click(await screen.findByRole('button', { name: 'Request profile details' }));
+    await waitFor(() => expect(joinRequestsApi.requestProfile).toHaveBeenCalledWith('e1'));
+    expect(await screen.findByText('Requested on 12 May 2026')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Request profile details' })).toBeNull();
+  });
+
+  it('shows the requested-on line instead of the button when already asked', async () => {
+    signIn(['VIEW_EMPLOYEES', 'ADD_EDIT_EMPLOYEES']);
+    employeesApi.get.mockResolvedValue({ ...LINKED, profileRequestedAt: '2026-05-12T04:00:00Z' });
+    renderAt('/dashboard/hr/employees/e1');
+
+    expect(await screen.findByText('Requested on 12 May 2026')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Request profile details' })).toBeNull();
+  });
+
+  it('is hidden without ADD_EDIT_EMPLOYEES', async () => {
+    signIn(['VIEW_EMPLOYEES']);
+    employeesApi.get.mockResolvedValue(LINKED);
+    renderAt('/dashboard/hr/employees/e1');
+
+    await screen.findByRole('tab', { name: 'Profile' });
+    expect(screen.queryByRole('button', { name: 'Request profile details' })).toBeNull();
+    expect(screen.queryByText('Profile details')).toBeNull();
+  });
+
+  it('is hidden when the employee has no linked login', async () => {
+    signIn(['VIEW_EMPLOYEES', 'ADD_EDIT_EMPLOYEES']);
+    employeesApi.get.mockResolvedValue(RAVI);
+    renderAt('/dashboard/hr/employees/e1');
+
+    await screen.findByRole('tab', { name: 'Profile' });
+    expect(screen.queryByRole('button', { name: 'Request profile details' })).toBeNull();
+    expect(screen.queryByText('Profile details')).toBeNull();
   });
 });
