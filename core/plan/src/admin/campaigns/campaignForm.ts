@@ -1,5 +1,6 @@
 import type {
   AdminCampaign,
+  AdminCampaignTheme,
   CampaignRequest,
   CampaignState,
   CampaignTheme,
@@ -18,13 +19,33 @@ export const CAMPAIGN_LIMITS = {
   priority: 100,
 } as const;
 
-export const CAMPAIGN_THEME_LABEL: Record<CampaignTheme, string> = {
-  DEFAULT: 'Default',
-  MONSOON: 'Monsoon',
-  SUMMER: 'Summer',
-  DIWALI: 'Diwali',
-  NEW_YEAR: 'New Year',
-};
+/** The theme's label from the API's theme list, or the code itself while the list is loading or lacks it. */
+export function campaignThemeLabel(
+  themes: readonly AdminCampaignTheme[] | undefined,
+  code: CampaignTheme,
+): string {
+  return themes?.find((theme) => theme.code === code)?.label ?? code;
+}
+
+/**
+ * Theme picker options in the API's order: the switched-on themes, plus the campaign's current
+ * theme when it is switched off or missing, so editing never silently changes it.
+ */
+export function campaignThemeOptions(
+  themes: readonly AdminCampaignTheme[] | undefined,
+  current: CampaignTheme,
+): { value: CampaignTheme; label: string }[] {
+  const options = (themes ?? [])
+    .filter((theme) => theme.active || theme.code === current)
+    .map((theme) => ({
+      value: theme.code,
+      label: theme.active ? theme.label : `${theme.label} (switched off)`,
+    }));
+  if (current && !options.some((option) => option.value === current)) {
+    options.push({ value: current, label: current });
+  }
+  return options;
+}
 
 /** Date-time fields hold datetime-local values, read as IST. */
 export interface CampaignFormState {
@@ -100,6 +121,7 @@ export function toCampaignRequest(
   const code = form.code.trim().toUpperCase();
   if (isNew && !CODE.test(code)) errors.code = '3–40 characters of A–Z, 0–9 or _.';
 
+  if (!form.theme) errors.theme = 'Required.';
   if (!form.headline.trim()) errors.headline = 'Required.';
   else errors.headline = tooLong(form.headline, CAMPAIGN_LIMITS.headline);
   errors.upcomingHeadline = tooLong(form.upcomingHeadline, CAMPAIGN_LIMITS.headline);
