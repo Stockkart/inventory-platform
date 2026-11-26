@@ -20,16 +20,21 @@ import {
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import type { AdminCampaign } from '@inventory-platform/plan/types';
-import { useAdminCampaignsQuery, useSetCampaignActiveMutation } from '../admin/hooks';
+import {
+  useAdminCampaignThemesQuery,
+  useAdminCampaignsQuery,
+  useSetCampaignActiveMutation,
+} from '../admin/hooks';
 import { ReasonDialog } from '../admin/ReasonDialog';
 import { adminErrorMessage, formatAdminDate } from '../admin/format';
-import { CAMPAIGN_THEME_LABEL, campaignVisibility } from '../admin/campaigns/campaignForm';
+import { campaignThemeLabel, campaignVisibility } from '../admin/campaigns/campaignForm';
 import { CampaignFormModal } from '../admin/campaigns/CampaignFormModal';
 
 export function CampaignsAdminPage() {
   const [form, setForm] = useState<{ campaign: AdminCampaign | null } | null>(null);
   const [toggling, setToggling] = useState<AdminCampaign | null>(null);
   const query = useAdminCampaignsQuery();
+  const themes = useAdminCampaignThemesQuery();
   const activeMutation = useSetCampaignActiveMutation();
   const rows = query.data ?? [];
 
@@ -93,7 +98,7 @@ export function CampaignsAdminPage() {
                             {c.code}
                           </Text>
                         </TableCell>
-                        <TableCell>{CAMPAIGN_THEME_LABEL[c.theme]}</TableCell>
+                        <TableCell>{campaignThemeLabel(themes.data, c.theme)}</TableCell>
                         <TableCell>
                           {formatAdminDate(c.startsAt)} – {formatAdminDate(c.endsAt)}
                           {c.announceFrom ? (
