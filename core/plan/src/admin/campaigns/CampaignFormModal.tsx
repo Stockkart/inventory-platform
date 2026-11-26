@@ -12,22 +12,17 @@ import {
   Textarea,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
-import type { AdminCampaign, CampaignTheme } from '@inventory-platform/plan/types';
-import { useSaveCampaignMutation } from '../hooks';
+import type { AdminCampaign } from '@inventory-platform/plan/types';
+import { useAdminCampaignThemesQuery, useSaveCampaignMutation } from '../hooks';
 import { adminErrorMessage } from '../format';
 import {
   CAMPAIGN_LIMITS,
-  CAMPAIGN_THEME_LABEL,
+  campaignThemeOptions,
   campaignFormState,
   emptyCampaignForm,
   toCampaignRequest,
   type CampaignFormState,
 } from './campaignForm';
-
-const THEME_OPTIONS = (Object.keys(CAMPAIGN_THEME_LABEL) as CampaignTheme[]).map((theme) => ({
-  value: theme,
-  label: CAMPAIGN_THEME_LABEL[theme],
-}));
 
 export interface CampaignFormModalProps {
   open: boolean;
@@ -40,6 +35,7 @@ export function CampaignFormModal({ open, campaign, onClose }: CampaignFormModal
   const [form, setForm] = useState<CampaignFormState>(emptyCampaignForm);
   const [showErrors, setShowErrors] = useState(false);
   const mutation = useSaveCampaignMutation();
+  const themes = useAdminCampaignThemesQuery();
   const isNew = campaign === null;
   const result = toCampaignRequest(form, isNew);
   const errors = showErrors && !result.ok ? result.errors : {};
@@ -142,13 +138,23 @@ export function CampaignFormModal({ open, campaign, onClose }: CampaignFormModal
                 />
               </FormField>
             ) : null}
-            <FormField label="Theme" htmlFor="campaign-theme" required>
+            <FormField
+              label="Theme"
+              htmlFor="campaign-theme"
+              required
+              error={
+                errors.theme ??
+                (themes.isError
+                  ? adminErrorMessage(themes.error, 'Could not load themes.')
+                  : undefined)
+              }
+            >
               <Select
                 id="campaign-theme"
                 value={form.theme}
-                options={THEME_OPTIONS}
-                onChange={(e) => set('theme', e.target.value as CampaignTheme)}
-                disabled={busy}
+                options={campaignThemeOptions(themes.data, form.theme)}
+                onChange={(e) => set('theme', e.target.value)}
+                disabled={busy || themes.isLoading}
               />
             </FormField>
           </Inline>
