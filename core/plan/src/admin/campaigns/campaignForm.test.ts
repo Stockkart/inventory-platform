@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { AdminCampaign } from '@inventory-platform/plan/types';
+import type { AdminCampaign, AdminCampaignTheme } from '@inventory-platform/plan/types';
 import {
   campaignFormState,
+  campaignThemeLabel,
+  campaignThemeOptions,
   campaignVisibility,
   emptyCampaignForm,
   toCampaignRequest,
@@ -122,5 +124,43 @@ describe('campaignVisibility', () => {
     expect(campaignVisibility({ ...campaign, endsAt: '2026-09-01T00:00:00Z' }, now).label).toBe(
       'Ended',
     );
+  });
+});
+
+const themes: AdminCampaignTheme[] = [
+  { code: 'DEFAULT', label: 'Default', sortOrder: 1, active: true },
+  { code: 'DIWALI', label: 'Diwali', sortOrder: 2, active: true },
+  { code: 'VIP', label: 'VIP', sortOrder: 3, active: false },
+];
+
+describe('campaign themes from the API', () => {
+  it('offers only switched-on themes, in the API order', () => {
+    expect(campaignThemeOptions(themes, 'DIWALI')).toEqual([
+      { value: 'DEFAULT', label: 'Default' },
+      { value: 'DIWALI', label: 'Diwali' },
+    ]);
+  });
+
+  it('keeps the current theme when it is switched off or missing', () => {
+    expect(campaignThemeOptions(themes, 'VIP')).toContainEqual({
+      value: 'VIP',
+      label: 'VIP (switched off)',
+    });
+    expect(campaignThemeOptions(themes, 'HOLI')).toContainEqual({ value: 'HOLI', label: 'HOLI' });
+    expect(campaignThemeOptions(undefined, 'DEFAULT')).toEqual([
+      { value: 'DEFAULT', label: 'DEFAULT' },
+    ]);
+  });
+
+  it('labels a theme from the list, or shows its code', () => {
+    expect(campaignThemeLabel(themes, 'DIWALI')).toBe('Diwali');
+    expect(campaignThemeLabel(themes, 'HOLI')).toBe('HOLI');
+    expect(campaignThemeLabel(undefined, 'DIWALI')).toBe('DIWALI');
+  });
+
+  it('requires a theme', () => {
+    const result = toCampaignRequest(filled({ theme: '' }), true);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.theme).toBe('Required.');
   });
 });
