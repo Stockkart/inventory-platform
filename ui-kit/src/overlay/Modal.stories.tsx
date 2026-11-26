@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import { Modal } from './Modal';
+import { Drawer, Modal } from './Modal';
 import { Button } from '../forms/Button';
-import { Text, Stack } from '../layout';
+import { Box, Inline, Text, Stack } from '../layout';
+import { Avatar } from '../feedback/Avatar';
+import { Badge } from '../feedback/Badge';
+import { IconButton } from '../forms/IconButton';
+import { hrChrome } from '../patterns/HrChrome';
 import { FormField } from '../forms/FormField';
 
 const meta: Meta<typeof Modal> = {
@@ -84,6 +88,67 @@ export const Playground: Story = {
           </Modal.Footer>
         </Modal>
       </Stack>
+    );
+  },
+};
+
+/**
+ * `Drawer size="lg"` (480 px, full width below that) with the HR join-request layout: header,
+ * scrolling sections and a sticky footer, all from `hrChrome` classes.
+ */
+export const DrawerLarge: Story = {
+  parameters: { layout: 'fullscreen' },
+  render: function DrawerLargeStory() {
+    const [open, setOpen] = useState(true);
+    return (
+      <Box padding="lg">
+        <Button onClick={() => setOpen(true)}>Open drawer</Button>
+        <Drawer open={open} onClose={() => setOpen(false)} side="right" size="lg">
+          <Box className={hrChrome.hrJoinDrawer}>
+            <Box as="header" className={hrChrome.hrJoinDrawerHeader}>
+              <Avatar name="Priya Sharma" className={hrChrome.hrJoinDrawerAvatar} />
+              <Box className={hrChrome.hrJoinDrawerTitle}>
+                <Text variant="heading4" as="h2">
+                  Priya Sharma
+                </Text>
+                <Inline gap="sm" flexWrap>
+                  <Badge>Pending</Badge>
+                  <Text variant="caption" color="secondary">
+                    2 h ago
+                  </Text>
+                </Inline>
+              </Box>
+              <IconButton label="Close" onClick={() => setOpen(false)}>
+                ×
+              </IconButton>
+            </Box>
+            <Box className={hrChrome.hrJoinDrawerBody}>
+              <Box as="section" className={hrChrome.hrJoinDrawerSection}>
+                <Text variant="overline" color="muted">
+                  Contact
+                </Text>
+                <Box className={hrChrome.hrJoinDrawerRow}>
+                  <Text>9876543210</Text>
+                  <IconButton label="Copy phone" size="sm">
+                    ⧉
+                  </IconButton>
+                </Box>
+              </Box>
+              <Box as="section" className={hrChrome.hrJoinMatchCard}>
+                <Text weight="semibold">Possible match</Text>
+                <Text>EMP-014 Ravi</Text>
+                <Box className={hrChrome.hrJoinMatchCardActions}>
+                  <Button variant="solid">Link to existing</Button>
+                  <Button variant="outline">Create new</Button>
+                </Box>
+              </Box>
+            </Box>
+            <Box as="footer" className={hrChrome.hrJoinDrawerFooter}>
+              <Button variant="outline">Reject</Button>
+            </Box>
+          </Box>
+        </Drawer>
+      </Box>
     );
   },
 };

@@ -57,10 +57,12 @@ export const hrChrome = {
   hrTeamPicker: styles.hrTeamPicker,
   /** Clickable mark in a month register cell (opens the day detail). */
   hrRegisterDayButton: styles.hrRegisterDayButton,
-  /** Small muted source icon (phone = self check-in) beside a mark or a name. */
+  /** Small muted source icon (hand / phone / fingerprint) beside a name or a punch row. */
   hrSourceIcon: styles.hrSourceIcon,
   /** Day detail drawer body: padded, scrolls on its own. */
   hrDayDrawer: styles.hrDayDrawer,
+  /** A duplicate punch row in the day drawer: greyed out, never hidden. */
+  hrPunchDuplicate: styles.hrPunchDuplicate,
   /** Colour key for attendance marks. */
   hrLegend: styles.hrLegend,
   hrLegendItem: styles.hrLegendItem,
@@ -71,4 +73,34 @@ export const hrChrome = {
   hrSettingsSection: styles.hrSettingsSection,
   /** Wrapper of the HR inbox bell, so the unread dot sits on its corner. */
   hrInboxAnchor: styles.hrInboxAnchor,
+  /** Join-request drawer (R4.14–R4.17): flex column filling `Drawer size="lg"`. */
+  hrJoinDrawer: styles.hrJoinDrawer,
+  /** Header: 56 px avatar · name over status chip and relative time · close button. */
+  hrJoinDrawerHeader: styles.hrJoinDrawerHeader,
+  /** The name / chip / time column of the header. */
+  hrJoinDrawerTitle: styles.hrJoinDrawerTitle,
+  /** 56 px size for the header `Avatar` or `hrJoinPhoto`. */
+  hrJoinDrawerAvatar: styles.hrJoinDrawerAvatar,
+  /** 32 px size for the table-row `Avatar` or `hrJoinPhoto`. */
+  hrJoinRowAvatar: styles.hrJoinRowAvatar,
+  /** The requester's photo `img`, round like an `Avatar`; pair with a size class above. */
+  hrJoinPhoto: styles.hrJoinPhoto,
+  /** Scrolling body between header and footer. */
+  hrJoinDrawerBody: styles.hrJoinDrawerBody,
+  /** "Contact" / "Request" section: overline title over rows. */
+  hrJoinDrawerSection: styles.hrJoinDrawerSection,
+  /** One label + value row, with an optional action (copy) on the right. */
+  hrJoinDrawerRow: styles.hrJoinDrawerRow,
+  /** Possible-match card on the brand-soft surface. */
+  hrJoinMatchCard: styles.hrJoinMatchCard,
+  /** Link to existing · Create new row inside the match card. */
+  hrJoinMatchCardActions: styles.hrJoinMatchCardActions,
+  /** Inline reject reason field (textarea + counter). */
+  hrJoinReasonField: styles.hrJoinReasonField,
+  /** Sticky footer: Reject · Approve, or Cancel · Confirm reject. */
+  hrJoinDrawerFooter: styles.hrJoinDrawerFooter,
+  /** Error / status text spanning the footer above its buttons. */
+  hrJoinDrawerFooterText: styles.hrJoinDrawerFooterText,
+  /** Table row that bulk approve skipped because of a possible match. */
+  hrJoinRowSkipped: styles.hrJoinRowSkipped,
 } as const;

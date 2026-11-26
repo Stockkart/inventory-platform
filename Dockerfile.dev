@@ -15,6 +15,7 @@ COPY nx.json tsconfig.base.json tsconfig.json ./
 COPY apps/inventory/package.json ./apps/inventory/
 COPY platform/access/package.json ./platform/access/
 COPY platform/api-client/package.json ./platform/api-client/
+COPY platform/attendance-protocol/package.json ./platform/attendance-protocol/
 COPY platform/contracts/package.json ./platform/contracts/
 COPY platform/query/package.json ./platform/query/
 COPY platform/routing/package.json ./platform/routing/

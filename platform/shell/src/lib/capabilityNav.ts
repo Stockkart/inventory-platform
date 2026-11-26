@@ -124,7 +124,6 @@ export function getDashboardMenuGroupsWithCapabilities(
   access?: ShopAccess | null,
   plugin?: NavCapablePlugin | null,
 ): DashboardMenuGroup[] {
-  void role;
   let groups = baseMenuGroups;
   if (capabilities?.sellSurface === 'MENU_LIST') {
     const capItems = plugin?.navContributions?.length
@@ -133,5 +132,5 @@ export function getDashboardMenuGroupsWithCapabilities(
     groups = mergeMenuListProductNav(baseMenuGroups, capItems);
   }
 
-  return filterDashboardMenuGroupsByAccess(filterReturnsGroup(groups, capabilities), access);
+  return filterDashboardMenuGroupsByAccess(filterReturnsGroup(groups, capabilities), access, role);
 }

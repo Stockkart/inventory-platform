@@ -18,6 +18,9 @@
     ],
     "paths": {
       "@inventory-platform/api-client": ["../../platform/api-client/src/index.ts"],
+      "@inventory-platform/attendance-protocol": [
+        "../../platform/attendance-protocol/src/index.ts"
+      ],
       "@inventory-platform/schema": ["../../platform/schema/src/index.ts"],
       "@inventory-platform/session/api": ["../../platform/session/src/api/index.ts"],
       "@inventory-platform/query": ["../../platform/query/src/index.ts"],

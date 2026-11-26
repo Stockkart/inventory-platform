@@ -7,6 +7,8 @@ out-tsc
 
 # dependencies
 node_modules
+# pnpm content-addressable store when a container run points --store-dir at the repo
+.pnpm-store
 
 # IDEs and editors
 /.idea
@@ -55,4 +57,4 @@ Thumbs.db
 .github/instructions/nx.instructions.md
 
 vite.config.*.timestamp*
-ui-kit/storybook-static
+ui-kit/storybook-staticcore.*

@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { AttendanceRowResponse } from './attendance.types';
-import { buildSaveRows, chunkRows, draftFromRow, validateDraft } from './attendance-draft';
+import {
+  buildSaveRows,
+  chunkRows,
+  draftFromRow,
+  markReasonFields,
+  validateDraft,
+  validateMarkReason,
+} from './attendance-draft';
 import {
   formatDayRange,
   formatDayShort,
@@ -93,6 +100,34 @@ describe('buildSaveRows', () => {
     expect(
       validateDraft({ status: 'ABSENT', inTime: '', outTime: '', note: 'x'.repeat(201) }),
     ).toMatch(/200/);
+  });
+});
+
+describe('hand-mark reason (R7.3–R7.4)', () => {
+  it('needs a quick pick; any pick but Other is enough on its own', () => {
+    expect(validateMarkReason(null, 'anything')).not.toBeNull();
+    expect(validateMarkReason('FORGOT_PHONE', '')).toBeNull();
+    expect(validateMarkReason('NO_NETWORK', '   ')).toBeNull();
+  });
+
+  it('Other needs 1–200 characters after trimming', () => {
+    expect(validateMarkReason('OTHER', '')).not.toBeNull();
+    expect(validateMarkReason('OTHER', ' \n\t ')).not.toBeNull();
+    expect(validateMarkReason('OTHER', 'x')).toBeNull();
+    expect(validateMarkReason('OTHER', 'x'.repeat(200))).toBeNull();
+    expect(validateMarkReason('OTHER', ` ${'x'.repeat(200)} `)).toBeNull();
+    expect(validateMarkReason('OTHER', 'x'.repeat(201))).not.toBeNull();
+  });
+
+  it('sends the text only with Other, trimmed', () => {
+    expect(markReasonFields('FORGOT_PHONE', 'ignored')).toEqual({
+      reason: 'FORGOT_PHONE',
+      reasonText: null,
+    });
+    expect(markReasonFields('OTHER', '  late bus  ')).toEqual({
+      reason: 'OTHER',
+      reasonText: 'late bus',
+    });
   });
 });
 

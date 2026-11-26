@@ -55,17 +55,26 @@ export interface ShopUser {
   userId: string;
   name: string;
   email: string;
+  /** `MembershipRole`; `'WORKER'` rows are listed in the Users page's "Workers" group (R2.5). */
   role: string;
   relationship: UserRelationship;
   active: boolean;
   joinedAt: string | null;
+  /**
+   * WORKER rows only: the code of the shop's employee this login is linked to. Absent for staff
+   * rows and for a worker with no linked employee.
+   */
+  linkedEmployeeCode?: string | null;
 }
 
 export interface ShopUsersResponse {
   data: ShopUser[];
 }
 
-// User Role type
+/**
+ * Roles a staff login can be given on the web: invite, join request, Users page. `WORKER` is not
+ * one of them (worker-app R2.4): it is set only by approving a worker's join request.
+ */
 export type UserRole = 'ADMIN' | 'MANAGER' | 'CASHIER';
 
 /** Minimal user info when searching to link vendor/customer to a registered user */

@@ -27,6 +27,7 @@ export {
 } from './EmployeePicker';
 export { LeaveTypePicker, type LeaveTypePickerProps } from './LeaveTypePicker';
 export { RecordLeaveModal, type RecordLeaveModalProps } from './RecordLeaveModal';
+export { MarkReasonModal, type MarkReasonModalProps } from './MarkReasonModal';
 export { LeaveDecisionModal, type LeaveDecisionModalProps } from './LeaveDecisionModal';
 export { LeaveRequestsTable, type LeaveRequestsTableProps } from './LeaveRequestsTable';
 export { LeaveBalancesTable, type LeaveBalancesTableProps } from './LeaveBalancesTable';
@@ -50,3 +51,44 @@ export {
   type EmployeeNameLinkProps,
 } from './EmployeeNameLink';
 export { HrBackLink, type HrBackLinkProps } from './HrBackLink';
+export {
+  EmployeePairingCard,
+  PairingPanel,
+  type EmployeePairingCardProps,
+  type PairingPanelProps,
+} from './EmployeePairingCard';
+export { MyPairingCard } from './MyPairingCard';
+export { RequestProfileButton, type RequestProfileButtonProps } from './RequestProfileButton';
+export { AppHealthBanner, appHealthAlertText, formatFailureRate } from './AppHealthBanner';
+// Worker-app: the manager's Join requests inbox (R4).
+export { JoinRequestsTab, bulkResultText, joinRequestPageMeta } from './JoinRequestsTab';
+export {
+  JoinRequestRow,
+  JoinRequestStatusBadge,
+  RequestedTime,
+  type JoinRequestRowProps,
+  type RequestedTimeProps,
+} from './JoinRequestRow';
+export {
+  DRAWER_IDLE,
+  drawerReducer,
+  exactTimeIst,
+  reasonCounter,
+  reasonTooLong,
+  relativeTime,
+  type DrawerAction,
+  type DrawerSavingMode,
+  type DrawerState,
+} from './joinRequestDrawer';
+export {
+  PossibleMatchPanel,
+  linkOrCreateQuestion,
+  matchLabel,
+  type PossibleMatchPanelProps,
+} from './PossibleMatchPanel';
+export {
+  RejectReasonModal,
+  rejectReasonError,
+  type RejectReasonModalProps,
+} from './RejectReasonModal';
+export { JoinRequestPhoto, photoPath, type JoinRequestPhotoProps } from './JoinRequestPhoto';

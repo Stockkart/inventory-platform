@@ -41,13 +41,15 @@
   "dependencies": {
     "@inventory-platform/access": "workspace:*",
     "@inventory-platform/api-client": "workspace:*",
+    "@inventory-platform/attendance-protocol": "workspace:*",
     "@inventory-platform/contracts": "workspace:*",
     "@inventory-platform/query": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
     "@inventory-platform/session": "workspace:*",
     "@inventory-platform/ui-kit": "workspace:*",
     "axios": "^1.13.2",
-    "lucide-react": "^0.554.0"
+    "lucide-react": "^0.554.0",
+    "qrcode.react": "^3.1.0"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.90.0",

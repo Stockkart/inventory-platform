@@ -17,6 +17,7 @@
 /platform/schema/ @your-org/stockkart-frontend
 /platform/access/ @your-org/stockkart-frontend
 /platform/contracts/ @your-org/stockkart-frontend
+/platform/attendance-protocol/ @your-org/stockkart-frontend
 
 /core/accounting/ @your-org/stockkart-frontend
 /core/analytics/ @your-org/stockkart-frontend

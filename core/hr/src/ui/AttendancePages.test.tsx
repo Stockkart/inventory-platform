@@ -5,10 +5,11 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HrPermission, ShopAccess } from '@inventory-platform/access';
 import { useAuthStore, useNotify, useShopAccessStore } from '@inventory-platform/session';
-import type {
-  AttendanceRowResponse,
-  DailyRegisterResponse,
-  MonthRegisterResponse,
+import {
+  todayIso,
+  type AttendanceRowResponse,
+  type DailyRegisterResponse,
+  type MonthRegisterResponse,
 } from '@inventory-platform/hr/types';
 import { AttendanceDailyPage } from '../pages/AttendanceDailyPage';
 import { AttendanceMonthPage } from '../pages/AttendanceMonthPage';
@@ -730,11 +731,592 @@ describe('self check-in on the registers', () => {
     await user.click(within(table).getByRole('button', { name: /Asha, Thu, 1 Oct: .*by phone/ }));
 
     const list = await screen.findByRole('list', { name: 'Check-ins on this day' });
-    expect(within(list).getByText('09:12 · In by phone')).toBeInTheDocument();
-    expect(within(list).getByText('42 m from shop')).toBeInTheDocument();
-    expect(within(list).getByText('18:40 · Out by phone')).toBeInTheDocument();
-    expect(within(list).getByText('310 m from shop · Outside shop')).toBeInTheDocument();
-    expect(within(list).getByText(/Not counted/)).toBeInTheDocument();
+    const items = within(list).getAllByRole('listitem');
+    expect(items).toHaveLength(3);
+    expect(within(items[0]).getByText('09:12 · In')).toBeInTheDocument();
+    expect(within(items[0]).getByText('My HR')).toBeInTheDocument();
+    expect(within(items[0]).getByText('42 m from shop')).toBeInTheDocument();
+    expect(within(items[1]).getByText('18:40 · Out')).toBeInTheDocument();
+    expect(within(items[1]).getByText('310 m from shop · Outside shop')).toBeInTheDocument();
+    expect(within(items[2]).getByText(/Not counted/)).toBeInTheDocument();
     expect(attendanceApi.punches).toHaveBeenCalledWith('e1', '2026-10-01');
+  });
+});
+
+describe('hand-mark reason for Attendance app users (R7.1–R7.4)', () => {
+  const PAIRED_ASHA = { ...ASHA, markReasonRequired: true };
+
+  it('asks for a reason only when a changed row needs one, and sends it on that row only', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_ATTENDANCE', 'MARK_ATTENDANCE']);
+    attendanceApi.daily.mockResolvedValue(register({ rows: [PAIRED_ASHA, RAVI] }));
+    renderAt('/dashboard/hr/attendance');
+
+    const asha = await screen.findByRole('group', { name: 'Attendance for Asha' });
+    await user.click(within(asha).getByRole('button', { name: 'Present' }));
+    const ravi = screen.getByRole('group', { name: 'Attendance for Ravi' });
+    await user.click(within(ravi).getByRole('button', { name: 'Absent' }));
+    await user.click(screen.getByRole('button', { name: 'Save 2 changes' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Why mark this by hand?')).toBeInTheDocument();
+    expect(within(dialog).getByText(/Asha uses the Attendance app/)).toBeInTheDocument();
+    expect(attendanceApi.saveDays).not.toHaveBeenCalled();
+
+    await user.click(within(dialog).getByRole('radio', { name: 'Phone not working' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Save 2 changes' }));
+
+    await waitFor(() => expect(attendanceApi.saveDays).toHaveBeenCalledTimes(1));
+    const rows = attendanceApi.saveDays.mock.calls[0][0].rows;
+    expect(rows).toHaveLength(2);
+    expect(rows.find((r: { employeeId: string }) => r.employeeId === 'e1')).toMatchObject({
+      status: 'PRESENT',
+      reason: 'PHONE_NOT_WORKING',
+      reasonText: null,
+    });
+    const raviRow = rows.find((r: { employeeId: string }) => r.employeeId === 'e2');
+    expect(raviRow).toMatchObject({ status: 'ABSENT' });
+    expect(raviRow).not.toHaveProperty('reason');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+
+  it('saves without any prompt when no changed row needs a reason', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_ATTENDANCE', 'MARK_ATTENDANCE']);
+    attendanceApi.daily.mockResolvedValue(register({ rows: [PAIRED_ASHA, RAVI] }));
+    renderAt('/dashboard/hr/attendance');
+
+    await user.click(await screen.findByRole('button', { name: 'Clear mark for Ravi' }));
+    await user.click(screen.getByRole('button', { name: 'Save 1 change' }));
+
+    await waitFor(() => expect(attendanceApi.saveDays).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    const [sent] = attendanceApi.saveDays.mock.calls[0][0].rows;
+    expect(sent).toMatchObject({ employeeId: 'e2', status: 'UNMARKED' });
+    expect(sent).not.toHaveProperty('reason');
+  });
+
+  it('cancelling the prompt saves nothing and keeps the edit', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_ATTENDANCE', 'MARK_ATTENDANCE']);
+    attendanceApi.daily.mockResolvedValue(register({ rows: [PAIRED_ASHA, RAVI] }));
+    renderAt('/dashboard/hr/attendance');
+
+    const asha = await screen.findByRole('group', { name: 'Attendance for Asha' });
+    await user.click(within(asha).getByRole('button', { name: 'Present' }));
+    await user.click(screen.getByRole('button', { name: 'Save 1 change' }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(attendanceApi.saveDays).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Save 1 change' })).toBeEnabled();
+  });
+
+  it('shows the server’s "reason is required" message and leaves the day unchanged', async () => {
+    const user = userEvent.setup();
+    const notifyError = vi.spyOn(useNotify, 'error');
+    signIn(['VIEW_ATTENDANCE', 'MARK_ATTENDANCE']);
+    attendanceApi.daily.mockResolvedValue(register({ rows: [PAIRED_ASHA, RAVI] }));
+    attendanceApi.saveDays.mockRejectedValue(
+      new Error('A reason is required when the employee uses the Attendance app'),
+    );
+    renderAt('/dashboard/hr/attendance');
+
+    const asha = await screen.findByRole('group', { name: 'Attendance for Asha' });
+    await user.click(within(asha).getByRole('button', { name: 'Present' }));
+    await user.click(screen.getByRole('button', { name: 'Save 1 change' }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('radio', { name: 'Forgot phone' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Save 1 change' }));
+
+    await waitFor(() =>
+      expect(notifyError).toHaveBeenCalledWith(
+        'A reason is required when the employee uses the Attendance app',
+      ),
+    );
+    // The register is refetched (the mutation always invalidates) and still shows the day as it
+    // was; the edit is kept and the prompt stays open so the manager can try again or cancel.
+    await waitFor(() => expect(attendanceApi.daily).toHaveBeenCalledTimes(2));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Save 1 change' })).toHaveLength(2);
+  });
+
+  it('"Mark all unmarked as Present" asks once and sends the reason with the batch', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_ATTENDANCE', 'MARK_ATTENDANCE']);
+    attendanceApi.daily.mockResolvedValue(
+      register({
+        rows: [
+          PAIRED_ASHA,
+          row({ employeeId: 'e3', name: 'Meena', code: 'EMP-003', markReasonRequired: true }),
+          row({ employeeId: 'e4', name: 'Sunil', code: 'EMP-004' }),
+          RAVI,
+        ],
+      }),
+    );
+    renderAt('/dashboard/hr/attendance');
+
+    await user.click(await screen.findByRole('button', { name: 'Mark all unmarked as Present' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(/Asha and Meena use the Attendance app/)).toBeInTheDocument();
+    expect(attendanceApi.markUnmarkedPresent).not.toHaveBeenCalled();
+
+    await user.click(within(dialog).getByRole('radio', { name: 'Other' }));
+    await user.type(within(dialog).getByRole('textbox', { name: /Reason/ }), ' app down ');
+    await user.click(within(dialog).getByRole('button', { name: 'Mark as Present' }));
+
+    await waitFor(() => expect(attendanceApi.markUnmarkedPresent).toHaveBeenCalledTimes(1));
+    expect(attendanceApi.markUnmarkedPresent.mock.calls[0][0]).toMatchObject({
+      reason: 'OTHER',
+      reasonText: 'app down',
+    });
+    expect(attendanceApi.markUnmarkedPresent.mock.calls[0][0].dates).toHaveLength(1);
+  });
+
+  it('"Mark all unmarked as Present" sends no reason when nobody unmarked needs one', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_ATTENDANCE', 'MARK_ATTENDANCE']);
+    // Ravi is paired but already marked, so the batch does not touch him.
+    attendanceApi.daily.mockResolvedValue(
+      register({ rows: [ASHA, { ...RAVI, markReasonRequired: true }] }),
+    );
+    renderAt('/dashboard/hr/attendance');
+
+    await user.click(await screen.findByRole('button', { name: 'Mark all unmarked as Present' }));
+    await waitFor(() => expect(attendanceApi.markUnmarkedPresent).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(attendanceApi.markUnmarkedPresent.mock.calls[0][0]).not.toHaveProperty('reason');
+  });
+});
+
+// HR-module task 10.5: source icons, chips, the "No punch yet" hint, drawer rows and the
+// Source / Flagged filters (R7.7–R7.8, R8.1–R8.7, R8.10–R8.11).
+describe('register source icons (R8.1–R8.2)', () => {
+  it('shows one icon per daily row: hand, phone or fingerprint, and none for an empty day', async () => {
+    signIn(['VIEW_ATTENDANCE']);
+    attendanceApi.daily.mockResolvedValue(
+      register({
+        rows: [
+          row({
+            employeeId: 'e1',
+            name: 'Asha',
+            status: 'PRESENT',
+            source: 'MARK',
+            markSource: 'MANUAL',
+          }),
+          row({
+            employeeId: 'e2',
+            name: 'Ravi',
+            status: 'PRESENT',
+            source: 'MARK',
+            markSource: 'SELF_CHECK_IN',
+            punchSource: 'SELF',
+          }),
+          row({
+            employeeId: 'e3',
+            name: 'Meena',
+            status: 'PRESENT',
+            source: 'MARK',
+            markSource: 'BIOMETRIC_APP',
+            punchSource: 'BIOMETRIC_APP',
+          }),
+          row({ employeeId: 'e4', name: 'Sunil', status: 'UNMARKED', source: 'NONE' }),
+        ],
+      }),
+    );
+    renderAt('/dashboard/hr/attendance');
+
+    const asha = await screen.findByRole('listitem', { name: 'Asha' });
+    expect(within(asha).getByRole('img', { name: 'by hand' })).toHaveAttribute(
+      'data-source',
+      'HAND',
+    );
+    const ravi = screen.getByRole('listitem', { name: 'Ravi' });
+    expect(within(ravi).getByRole('img', { name: 'by phone' })).toHaveAttribute(
+      'data-source',
+      'PHONE',
+    );
+    const meena = screen.getByRole('listitem', { name: 'Meena' });
+    expect(within(meena).getByRole('img', { name: 'by Attendance app' })).toHaveAttribute(
+      'data-source',
+      'APP',
+    );
+    const sunil = screen.getByRole('listitem', { name: 'Sunil' });
+    expect(within(sunil).queryByRole('img', { name: /^by / })).toBeNull();
+  });
+
+  it('a hand mark wins over the day’s app punches on the daily row', async () => {
+    signIn(['VIEW_ATTENDANCE']);
+    attendanceApi.daily.mockResolvedValue(
+      register({
+        rows: [
+          row({
+            employeeId: 'e1',
+            name: 'Asha',
+            status: 'PRESENT',
+            source: 'MARK',
+            markSource: 'MANUAL',
+            punchSource: 'BIOMETRIC_APP',
+          }),
+        ],
+      }),
+    );
+    renderAt('/dashboard/hr/attendance');
+    const asha = await screen.findByRole('listitem', { name: 'Asha' });
+    expect(within(asha).getByRole('img', { name: 'by hand' })).toBeInTheDocument();
+    expect(within(asha).queryByRole('img', { name: 'by Attendance app' })).toBeNull();
+  });
+
+  it('speaks the source on the month cell and marks it with the fingerprint', async () => {
+    signIn(['VIEW_ATTENDANCE']);
+    attendanceApi.month.mockResolvedValue({
+      ...MONTH,
+      rows: [
+        {
+          ...MONTH.rows[0],
+          cells: [
+            { status: 'PRESENT', markSource: 'BIOMETRIC_APP' },
+            { status: 'PRESENT', markSource: 'SELF_CHECK_IN' },
+            { status: 'ABSENT' },
+          ],
+        },
+      ],
+    });
+    renderAt('/dashboard/hr/attendance/month');
+
+    const table = await screen.findByRole('table', { name: /Attendance register/ });
+    const app = within(table).getByRole('button', {
+      name: 'Asha, Thu, 1 Oct: Present, by Attendance app. Show day detail',
+    });
+    expect(
+      within(app).getByRole('img', { name: 'Present, by Attendance app' }),
+    ).toBeInTheDocument();
+    expect(app.querySelector('[data-source="APP"]')).not.toBeNull();
+    expect(
+      within(table).getByRole('button', {
+        name: 'Asha, Fri, 2 Oct: Present, by phone. Show day detail',
+      }),
+    ).toBeInTheDocument();
+    // The month register leaves MANUAL out of the cell; a stored Absent is still a hand mark.
+    expect(
+      within(table).getByRole('button', {
+        name: 'Asha, Sat, 3 Oct: Absent, by hand. Show day detail',
+      }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe('register chips and the "No punch yet" hint (R7.7–R7.8, R8.3–R8.4)', () => {
+  it('shows Fake location and Recorded offline at most once each, next to the existing chips', async () => {
+    signIn(['VIEW_ATTENDANCE']);
+    attendanceApi.daily.mockResolvedValue(
+      register({
+        rows: [
+          row({
+            employeeId: 'e1',
+            name: 'Asha',
+            status: 'PRESENT',
+            source: 'MARK',
+            markSource: 'BIOMETRIC_APP',
+            missingCheckOut: true,
+            flags: [
+              'RECORDED_OFFLINE',
+              'FAKE_LOCATION',
+              'RECORDED_OFFLINE',
+              'OUTSIDE_SHOP',
+              'LOW_ACCURACY',
+              'NO_LOCATION',
+            ],
+          }),
+        ],
+      }),
+    );
+    renderAt('/dashboard/hr/attendance');
+
+    const asha = await screen.findByRole('listitem', { name: 'Asha' });
+    expect(within(asha).getAllByText('Fake location')).toHaveLength(1);
+    expect(within(asha).getAllByText('Recorded offline')).toHaveLength(1);
+    expect(within(asha).getAllByText('Outside shop')).toHaveLength(1);
+    expect(within(asha).getAllByText('Location unclear')).toHaveLength(1);
+    expect(within(asha).getAllByText('Missing check-out')).toHaveLength(1);
+  });
+
+  it('shows "No punch yet" only on rows the server flags', async () => {
+    signIn(['VIEW_ATTENDANCE', 'MARK_ATTENDANCE']);
+    attendanceApi.daily.mockResolvedValue(
+      register({
+        rows: [
+          row({ employeeId: 'e1', name: 'Asha', noPunchYet: true, markReasonRequired: true }),
+          row({ employeeId: 'e2', name: 'Ravi', noPunchYet: false, markReasonRequired: true }),
+          row({ employeeId: 'e3', name: 'Meena' }),
+        ],
+      }),
+    );
+    renderAt('/dashboard/hr/attendance');
+
+    const asha = await screen.findByRole('listitem', { name: 'Asha' });
+    expect(within(asha).getByText('No punch yet')).toBeInTheDocument();
+    // The hint does not change the day: it is still Unmarked and can be marked.
+    expect(within(asha).getByRole('group', { name: 'Attendance for Asha' })).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('listitem', { name: 'Ravi' })).queryByText('No punch yet'),
+    ).toBeNull();
+    expect(
+      within(screen.getByRole('listitem', { name: 'Meena' })).queryByText('No punch yet'),
+    ).toBeNull();
+  });
+});
+
+describe('day drawer punch rows (R8.5–R8.7)', () => {
+  it('shows time, source, distance or "—", every flag, the phone model for app punches, and greys out duplicates', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_ATTENDANCE']);
+    attendanceApi.month.mockResolvedValue({
+      ...MONTH,
+      rows: [
+        {
+          ...MONTH.rows[0],
+          cells: [
+            { status: 'PRESENT', markSource: 'BIOMETRIC_APP' },
+            { status: 'LEAVE' },
+            { status: 'UNMARKED' },
+          ],
+        },
+      ],
+    });
+    attendanceApi.punches.mockResolvedValue([
+      {
+        id: 'p1',
+        employeeId: 'e1',
+        at: '2026-10-01T03:42:00Z',
+        time: '09:12',
+        direction: 'IN',
+        source: 'BIOMETRIC_APP',
+        distanceMetres: 12.4,
+        flags: ['RECORDED_OFFLINE'],
+        deviceModel: 'Redmi Note 11',
+      },
+      {
+        id: 'p2',
+        employeeId: 'e1',
+        at: '2026-10-01T03:44:00Z',
+        time: '09:14',
+        direction: 'IN',
+        source: 'BIOMETRIC_APP',
+        flags: ['FAKE_LOCATION'],
+        counted: false,
+        deviceModel: 'Redmi Note 11',
+      },
+      {
+        id: 'p3',
+        employeeId: 'e1',
+        at: '2026-10-01T13:10:00Z',
+        time: '18:40',
+        direction: 'OUT',
+        source: 'SELF',
+        distanceMetres: 310,
+        flags: ['OUTSIDE_SHOP'],
+      },
+    ]);
+    renderAt('/dashboard/hr/attendance/month');
+
+    const table = await screen.findByRole('table', { name: /Attendance register/ });
+    await user.click(within(table).getByRole('button', { name: /Asha, Thu, 1 Oct/ }));
+
+    const list = await screen.findByRole('list', { name: 'Check-ins on this day' });
+    const items = within(list).getAllByRole('listitem');
+    expect(items).toHaveLength(3);
+
+    expect(within(items[0]).getByText('09:12 · In')).toBeInTheDocument();
+    expect(within(items[0]).getByText('Attendance app')).toBeInTheDocument();
+    expect(items[0].querySelector('[data-source="APP"]')).not.toBeNull();
+    expect(
+      within(items[0]).getByText('12 m from shop · Recorded offline · Redmi Note 11'),
+    ).toBeInTheDocument();
+    expect(items[0]).toHaveAttribute('data-counted', 'true');
+
+    // A duplicate is listed, greyed out, with "—" for its missing distance and every flag.
+    expect(within(items[1]).getByText('09:14 · In')).toBeInTheDocument();
+    expect(
+      within(items[1]).getByText(
+        '— · Fake location · Redmi Note 11 · Not counted (within 5 minutes of the last one)',
+      ),
+    ).toBeInTheDocument();
+    expect(items[1]).toHaveAttribute('data-counted', 'false');
+    expect(items[1].className).toMatch(/hrPunchDuplicate/);
+
+    // My HR punch: phone icon and label, no phone model.
+    expect(within(items[2]).getByText('My HR')).toBeInTheDocument();
+    expect(items[2].querySelector('[data-source="PHONE"]')).not.toBeNull();
+    expect(within(items[2]).getByText('310 m from shop · Outside shop')).toBeInTheDocument();
+    expect(within(items[2]).queryByText(/Redmi/)).toBeNull();
+  });
+});
+
+describe('register filters (R8.10–R8.11)', () => {
+  const HAND = row({
+    employeeId: 'e1',
+    name: 'Asha',
+    status: 'PRESENT',
+    source: 'MARK',
+    markSource: 'MANUAL',
+  });
+  const PHONE = row({
+    employeeId: 'e2',
+    name: 'Ravi',
+    status: 'PRESENT',
+    source: 'MARK',
+    markSource: 'SELF_CHECK_IN',
+    punchSource: 'SELF',
+    missingCheckOut: true,
+  });
+  const APP = row({
+    employeeId: 'e3',
+    name: 'Meena',
+    status: 'PRESENT',
+    source: 'MARK',
+    markSource: 'BIOMETRIC_APP',
+    punchSource: 'BIOMETRIC_APP',
+  });
+  const NONE = row({ employeeId: 'e4', name: 'Sunil' });
+
+  it('Source narrows the daily register, several sources add up, and Flagged ANDs with it', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_ATTENDANCE']);
+    attendanceApi.daily.mockResolvedValue(register({ rows: [HAND, PHONE, APP, NONE] }));
+    renderAt('/dashboard/hr/attendance');
+
+    const list = await screen.findByRole('list', { name: /Attendance on/ });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(4);
+
+    await user.click(screen.getByRole('button', { name: /^Source/ }));
+    await user.click(screen.getByRole('checkbox', { name: 'Attendance app' }));
+    expect(
+      within(list)
+        .getAllByRole('listitem')
+        .map((li) => li.getAttribute('aria-label')),
+    ).toEqual(['Meena']);
+    expect(screen.getByText('1 of 4 shown')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('checkbox', { name: 'My HR' }));
+    expect(
+      within(list)
+        .getAllByRole('listitem')
+        .map((li) => li.getAttribute('aria-label')),
+    ).toEqual(['Ravi', 'Meena']);
+
+    // Flagged: only Ravi shows a chip (Missing check-out).
+    await user.click(screen.getByRole('checkbox', { name: 'Flagged' }));
+    expect(
+      within(list)
+        .getAllByRole('listitem')
+        .map((li) => li.getAttribute('aria-label')),
+    ).toEqual(['Ravi']);
+
+    // Removing the Source filter keeps Flagged on its own.
+    await user.click(screen.getByRole('button', { name: 'Remove Source filter' }));
+    expect(
+      within(list)
+        .getAllByRole('listitem')
+        .map((li) => li.getAttribute('aria-label')),
+    ).toEqual(['Ravi']);
+    await user.click(screen.getByRole('checkbox', { name: 'Flagged' }));
+    expect(within(list).getAllByRole('listitem')).toHaveLength(4);
+    expect(screen.queryByText(/of 4 shown/)).toBeNull();
+  });
+
+  it('Source AND Flagged stay on across the existing date filter and apply to the new day’s rows', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_ATTENDANCE']);
+    // Today: Ravi (My HR, Missing check-out) is the only flagged phone/app day. Yesterday: an
+    // app day flagged Fake location for Sunil and an unflagged My HR day for Asha.
+    const today = todayIso();
+    const yesterdayRows = [
+      row({ ...PHONE, employeeId: 'e1', name: 'Asha', missingCheckOut: false }),
+      row({ ...APP, employeeId: 'e4', name: 'Sunil', flags: ['FAKE_LOCATION'] }),
+    ];
+    attendanceApi.daily.mockImplementation(async (date: string) =>
+      date === today
+        ? register({ date, rows: [HAND, PHONE, APP, NONE] })
+        : register({ date, rows: yesterdayRows }),
+    );
+    renderAt('/dashboard/hr/attendance');
+
+    const names = () =>
+      within(screen.getByRole('list', { name: /Attendance on/ }))
+        .getAllByRole('listitem')
+        .map((li) => li.getAttribute('aria-label'));
+
+    await screen.findByRole('list', { name: /Attendance on/ });
+    await user.click(screen.getByRole('button', { name: /^Source/ }));
+    await user.click(screen.getByRole('checkbox', { name: 'My HR' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Attendance app' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Flagged' }));
+    expect(names()).toEqual(['Ravi']);
+
+    // Step the date: the register reloads for yesterday and the same Source + Flagged filters
+    // apply to those rows — AND with the existing date filter (R8.11).
+    await user.click(screen.getByRole('button', { name: 'Previous day' }));
+    await waitFor(() => expect(attendanceApi.daily).toHaveBeenCalledTimes(2));
+    expect(attendanceApi.daily.mock.calls[1][0]).not.toBe(today);
+    await waitFor(() => expect(names()).toEqual(['Sunil']));
+    expect(screen.getByText('1 of 2 shown')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Flagged' })).toBeChecked();
+
+    // Flagged off: Asha’s unflagged My HR day comes back; Source still rules out nobody else.
+    await user.click(screen.getByRole('checkbox', { name: 'Flagged' }));
+    expect(names()).toEqual(['Asha', 'Sunil']);
+  });
+
+  it('says so when no row matches', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_ATTENDANCE']);
+    attendanceApi.daily.mockResolvedValue(register({ rows: [HAND, NONE] }));
+    renderAt('/dashboard/hr/attendance');
+
+    await screen.findByRole('list', { name: /Attendance on/ });
+    await user.click(screen.getByRole('button', { name: /^Source/ }));
+    await user.click(screen.getByRole('checkbox', { name: 'Attendance app' }));
+    expect(screen.getByText('No employee matches these filters on this day.')).toBeInTheDocument();
+    expect(screen.queryByRole('listitem', { name: 'Asha' })).toBeNull();
+  });
+
+  it('the month register has Source but no Flagged, and keeps employees with a matching day', async () => {
+    const user = userEvent.setup();
+    signIn(['VIEW_ATTENDANCE']);
+    attendanceApi.month.mockResolvedValue({
+      ...MONTH,
+      rows: [
+        MONTH.rows[0],
+        {
+          ...MONTH.rows[0],
+          employeeId: 'e2',
+          code: 'EMP-002',
+          name: 'Ravi',
+          cells: [
+            { status: 'PRESENT', markSource: 'BIOMETRIC_APP' },
+            { status: 'ABSENT' },
+            { status: 'UNMARKED' },
+          ],
+        },
+      ],
+    });
+    renderAt('/dashboard/hr/attendance/month');
+
+    const table = await screen.findByRole('table', { name: /Attendance register/ });
+    expect(within(table).getAllByRole('row')).toHaveLength(3); // header + 2
+    expect(screen.queryByRole('checkbox', { name: 'Flagged' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: /^Source/ }));
+    await user.click(screen.getByRole('checkbox', { name: 'Attendance app' }));
+    expect(within(table).getAllByRole('row')).toHaveLength(2);
+    expect(within(table).getByRole('row', { name: /Ravi/ })).toBeInTheDocument();
+    expect(within(table).queryByRole('row', { name: /Asha/ })).toBeNull();
+    expect(screen.getByText('1 of 2 shown')).toBeInTheDocument();
+
+    // Hand: both employees have a hand mark (Asha's Present, Ravi's Absent).
+    await user.click(screen.getByRole('checkbox', { name: 'Hand' }));
+    expect(within(table).getAllByRole('row')).toHaveLength(3);
   });
 });

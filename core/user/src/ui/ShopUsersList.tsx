@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { isWorkerRole } from '@inventory-platform/access';
 import { invitationsApi } from '../api/invitations.api';
 import type { ShopUser, UserRole } from '@inventory-platform/user/types';
 import { RoleBadge } from './RoleBadge';
@@ -55,6 +56,33 @@ function relationshipRank(user: ShopUser) {
   return 2;
 }
 
+function byActiveThenName(a: ShopUser, b: ShopUser) {
+  const activeDiff = Number(b.active) - Number(a.active);
+  if (activeDiff !== 0) return activeDiff;
+  return a.name.localeCompare(b.name);
+}
+
+/**
+ * Staff and workers of the shop, as two groups (worker-app R2.5). Staff rows are the team: they
+ * carry a role and count towards the plan's user seats. WORKER rows sit below under "Workers" with
+ * name, e-mail and the linked employee's code; they have no role to pick and are not counted in
+ * the team figure.
+ */
+export function splitShopUsers(users: readonly ShopUser[]): {
+  staff: ShopUser[];
+  workers: ShopUser[];
+} {
+  const staff = users
+    .filter((u) => !isWorkerRole(u.role))
+    .sort((a, b) => {
+      const rel = relationshipRank(a) - relationshipRank(b);
+      if (rel !== 0) return rel;
+      return byActiveThenName(a, b);
+    });
+  const workers = users.filter((u) => isWorkerRole(u.role)).sort(byActiveThenName);
+  return { staff, workers };
+}
+
 export function ShopUsersList({ shopId }: ShopUsersListProps) {
   const [users, setUsers] = useState<ShopUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,17 +107,7 @@ export function ShopUsersList({ shopId }: ShopUsersListProps) {
     void fetchUsers();
   }, [fetchUsers]);
 
-  const rows = useMemo(
-    () =>
-      [...users].sort((a, b) => {
-        const rel = relationshipRank(a) - relationshipRank(b);
-        if (rel !== 0) return rel;
-        const activeDiff = Number(b.active) - Number(a.active);
-        if (activeDiff !== 0) return activeDiff;
-        return a.name.localeCompare(b.name);
-      }),
-    [users],
-  );
+  const { staff: rows, workers } = useMemo(() => splitShopUsers(users), [users]);
 
   const ownerCount = rows.filter((u) => relationshipLabel(u) === 'Owner').length;
   const activeCount = rows.filter((u) => u.active).length;
@@ -119,59 +137,116 @@ export function ShopUsersList({ shopId }: ShopUsersListProps) {
   }
 
   return (
-    <Stack gap="sm" width="full">
-      <Text as="h3" className={surfaceChrome.inviteSectionTitle}>
-        Team
-        {` · ${rows.length} total · ${ownerCount} owner${
-          ownerCount === 1 ? '' : 's'
-        } · ${activeCount} active`}
-      </Text>
+    <Stack gap="lg" width="full">
+      <Stack gap="sm" width="full">
+        <Text as="h3" className={surfaceChrome.inviteSectionTitle}>
+          Team
+          {` · ${rows.length} total · ${ownerCount} owner${
+            ownerCount === 1 ? '' : 's'
+          } · ${activeCount} active`}
+        </Text>
 
-      <Card>
-        <CardBody>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableHeaderCell>User</TableHeaderCell>
-                <TableHeaderCell>Role</TableHeaderCell>
-                <TableHeaderCell>Type</TableHeaderCell>
-                <TableHeaderCell>Joined</TableHeaderCell>
-                <TableHeaderCell>Status</TableHeaderCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {rows.map((user) => (
-                <TableRow key={user.userId}>
-                  <TableCell>
-                    <Box className={surfaceChrome.invitePrimaryCell}>
-                      <Text as="p" className={surfaceChrome.invitePrimaryName}>
-                        {user.name}
-                      </Text>
-                      <Text as="p" className={surfaceChrome.invitePrimaryMeta}>
-                        {user.email}
-                      </Text>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <RoleBadge role={user.role as UserRole} />
-                  </TableCell>
-                  <TableCell>
-                    <Text variant="caption">{relationshipLabel(user)}</Text>
-                  </TableCell>
-                  <TableCell className={surfaceChrome.inviteDateCell}>
-                    {formatDate(user.joinedAt)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={user.active ? 'success' : 'neutral'}>
-                      {user.active ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </TableCell>
+        <Card>
+          <CardBody>
+            <Table aria-label="Team">
+              <TableHead>
+                <TableRow>
+                  <TableHeaderCell>User</TableHeaderCell>
+                  <TableHeaderCell>Role</TableHeaderCell>
+                  <TableHeaderCell>Type</TableHeaderCell>
+                  <TableHeaderCell>Joined</TableHeaderCell>
+                  <TableHeaderCell>Status</TableHeaderCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardBody>
-      </Card>
+              </TableHead>
+              <TableBody>
+                {rows.map((user) => (
+                  <TableRow key={user.userId}>
+                    <TableCell>
+                      <Box className={surfaceChrome.invitePrimaryCell}>
+                        <Text as="p" className={surfaceChrome.invitePrimaryName}>
+                          {user.name}
+                        </Text>
+                        <Text as="p" className={surfaceChrome.invitePrimaryMeta}>
+                          {user.email}
+                        </Text>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <RoleBadge role={user.role as UserRole} />
+                    </TableCell>
+                    <TableCell>
+                      <Text variant="caption">{relationshipLabel(user)}</Text>
+                    </TableCell>
+                    <TableCell className={surfaceChrome.inviteDateCell}>
+                      {formatDate(user.joinedAt)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={user.active ? 'success' : 'neutral'}>
+                        {user.active ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardBody>
+        </Card>
+      </Stack>
+
+      {workers.length > 0 ? (
+        <Stack gap="sm" width="full">
+          <Text as="h3" className={surfaceChrome.inviteSectionTitle}>
+            Workers
+            {` · ${workers.length}`}
+          </Text>
+          <Text color="secondary" variant="caption">
+            Logins from the Stockkart Team app. They are not counted in the team and have no role to
+            set here.
+          </Text>
+
+          <Card>
+            <CardBody>
+              <Table aria-label="Workers">
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>Worker</TableHeaderCell>
+                    <TableHeaderCell>Employee code</TableHeaderCell>
+                    <TableHeaderCell>Status</TableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {workers.map((worker) => (
+                    <TableRow key={worker.userId}>
+                      <TableCell>
+                        <Box className={surfaceChrome.invitePrimaryCell}>
+                          <Text as="p" className={surfaceChrome.invitePrimaryName}>
+                            {worker.name}
+                          </Text>
+                          <Text as="p" className={surfaceChrome.invitePrimaryMeta}>
+                            {worker.email}
+                          </Text>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        {worker.linkedEmployeeCode ? (
+                          <Text>{worker.linkedEmployeeCode}</Text>
+                        ) : (
+                          <Text color="muted">Not linked</Text>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={worker.active ? 'success' : 'neutral'}>
+                          {worker.active ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardBody>
+          </Card>
+        </Stack>
+      ) : null}
     </Stack>
   );
 }

@@ -105,6 +105,11 @@
   overflow: hidden;
 }
 
+/* Detail drawers with sections and a sticky footer (the HR join-request drawer). */
+.drawerLg {
+  width: min(480px, 100%);
+}
+
 .drawerLeft {
   border-right: 1px solid
     color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 85%, transparent);

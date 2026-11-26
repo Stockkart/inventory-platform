@@ -13,19 +13,21 @@ import { useAuthStore } from '@inventory-platform/session';
 import {
   AUDIT_ACTION_LABELS,
   DAY_STATUS_LABELS,
-  PUNCH_FLAG_LABELS,
+  daySourceIcon,
   formatClock,
   formatDateTime,
   formatDayShort,
   isBlankFutureCell,
+  punchFlagLabel,
+  punchSourceLabel,
+  sourceOfPunch,
   type AuditEventResponse,
   type DayStatus,
   type MonthRegisterCell,
   type PunchResponse,
-  type PunchSource,
 } from '@inventory-platform/hr/types';
 import { useAttendanceHistoryQuery, useAttendancePunchesQuery } from '../queries/hooks';
-import { AttendanceMark } from './AttendanceMark';
+import { AttendanceMark, CaptureSourceIcon } from './AttendanceMark';
 
 export interface AttendanceDayDrawerProps {
   /** null = closed. */
@@ -50,18 +52,17 @@ function describeEvent(e: AuditEventResponse): string {
   return label;
 }
 
-const PUNCH_SOURCE_WORDS: Record<PunchSource, string> = {
-  SELF: 'by phone',
-  DEVICE_FILE: 'from machine file',
-  BRIDGE: 'from machine',
-};
-
-/** "42 m from shop · Outside shop"; empty when there is nothing to add. */
-function punchDetail(p: PunchResponse): string {
-  const flags = [...new Set((p.flags ?? []).map((f) => PUNCH_FLAG_LABELS[f]))];
-  const distance = p.distanceMetres != null ? `${Math.round(p.distanceMetres)} m from shop` : null;
+/**
+ * Second line of a punch row (R8.5–R8.6): the distance in whole metres ("—" when the punch has
+ * none), every flag in plain words (two flags with the same words read once), the phone model for
+ * Attendance app punches (nothing for My HR), and why a duplicate is greyed out.
+ */
+export function punchDetail(p: PunchResponse): string {
+  const distance = p.distanceMetres != null ? `${Math.round(p.distanceMetres)} m from shop` : '—';
+  const flags = [...new Set((p.flags ?? []).map((f) => punchFlagLabel(f)))];
+  const model = p.deviceModel?.trim() || null;
   const duplicate = p.counted === false ? 'Not counted (within 5 minutes of the last one)' : null;
-  return [distance, ...flags, duplicate].filter(Boolean).join(' · ');
+  return [distance, ...flags, model, duplicate].filter(Boolean).join(' · ');
 }
 
 /**
@@ -107,7 +108,12 @@ export function AttendanceDayDrawer({ day, canSeeHistory, onClose }: AttendanceD
             <Text color="muted">Not yet. This day has not come yet.</Text>
           ) : (
             <Inline gap="sm">
-              <AttendanceMark status={day.cell.status} late={day.cell.late ?? false} size="md" />
+              <AttendanceMark
+                status={day.cell.status}
+                late={day.cell.late ?? false}
+                source={daySourceIcon(day.cell)}
+                size="md"
+              />
               <Text>
                 {DAY_STATUS_LABELS[day.cell.status]}
                 {day.cell.halfDayLeave
@@ -127,19 +133,31 @@ export function AttendanceDayDrawer({ day, canSeeHistory, onClose }: AttendanceD
                 Check-ins
               </Text>
               <Stack as="ul" gap="sm" aria-label="Check-ins on this day">
+                {/* Every punch of the day, duplicates included and greyed out (R8.5, R8.7). */}
                 {punches.data.map((p, i) => {
-                  const detail = punchDetail(p);
+                  const duplicate = p.counted === false;
                   return (
-                    <Box as="li" key={`${p.at}-${i}`}>
-                      <Text color={p.counted === false ? 'muted' : undefined}>
-                        {p.time ?? formatClock(p.at)} · {p.direction === 'IN' ? 'In' : 'Out'}{' '}
-                        {PUNCH_SOURCE_WORDS[p.source] ?? ''}
-                      </Text>
-                      {detail ? (
-                        <Text variant="caption" color="muted">
-                          {detail}
+                    <Box
+                      as="li"
+                      key={`${p.at}-${i}`}
+                      className={duplicate ? hrChrome.hrPunchDuplicate : undefined}
+                      data-counted={duplicate ? 'false' : 'true'}
+                    >
+                      <Inline gap="xs" align="center">
+                        <Text as="span" color={duplicate ? 'muted' : undefined}>
+                          {p.time ?? formatClock(p.at)} · {p.direction === 'IN' ? 'In' : 'Out'}
                         </Text>
-                      ) : null}
+                        <Text as="span" color="muted" aria-hidden>
+                          ·
+                        </Text>
+                        <CaptureSourceIcon source={sourceOfPunch(p.source)} decorative />
+                        <Text as="span" color={duplicate ? 'muted' : 'secondary'}>
+                          {punchSourceLabel(p.source)}
+                        </Text>
+                      </Inline>
+                      <Text variant="caption" color="muted">
+                        {punchDetail(p)}
+                      </Text>
                     </Box>
                   );
                 })}

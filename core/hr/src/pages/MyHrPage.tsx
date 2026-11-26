@@ -54,6 +54,7 @@ import { paymentText } from '../ui/EmployeeProfileTab';
 import { HrInbox } from '../ui/HrInbox';
 import { LeaveBalancesTable } from '../ui/LeaveBalancesTable';
 import { LeaveRequestsTable } from '../ui/LeaveRequestsTable';
+import { MyPairingCard } from '../ui/MyPairingCard';
 
 /** Months a request touches (YYYY-MM), first and last. */
 function monthsOf(r: LeaveRequestResponse): string[] {
@@ -289,6 +290,8 @@ export function MyHrPage() {
     <Stack gap="lg">
       <PageHeader description="Your own attendance, leave and payslips." actions={<HrInbox />} />
       <CheckInCard />
+      {/* Own Attendance app pairing (R2.13); the card renders only for a linked employee. */}
+      <MyPairingCard />
       {profile.error ? <Alert variant="danger">{profile.error.message}</Alert> : null}
       {me ? (
         <Card>

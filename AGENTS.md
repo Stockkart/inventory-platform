@@ -28,7 +28,7 @@ Resolved versions from `pnpm-lock.yaml`; ranges in `package.json`.
 
 ## Nx workspace structure and project boundaries
 
-- There are 24 projects (`pnpm exec nx show projects`). Tags come from each package's `package.json` `nx.tags`. ui-kit declares its tag in both `ui-kit/package.json` and `ui-kit/project.json`.
+- There are 27 projects (`pnpm exec nx show projects`). Tags come from each package's `package.json` `nx.tags`. ui-kit declares its tag in both `ui-kit/package.json` and `ui-kit/project.json`.
 - Boundaries are enforced by `@nx/enforce-module-boundaries` in root `eslint.config.mjs`:
 
 | Source tag      | Projects                           | May import tags                |
@@ -38,6 +38,8 @@ Resolved versions from `pnpm-lock.yaml`; ranges in `package.json`.
 | `type:core`     | `core/*`                           | platform, core, ui-kit         |
 | `type:platform` | `platform/*`                       | platform, plugin, core, ui-kit |
 | `type:ui-kit`   | `ui-kit`                           | ui-kit only                    |
+
+- `scope:attendance` (`platform/attendance-protocol`) adds a second constraint on top of its `type:*` one: it may import `scope:attendance` and `type:platform` only, because the same code is vendored into the Stockkart Team app (`stockkart-team-app/packages/attendance-protocol`, kept identical by that repository's `scripts/protocol-parity.mjs`; change both copies, platform first, then app) and the app cannot load core, ui-kit or plugins.
 
 - `type:journey` is declared in the config. No project carries it.
 - `apps/inventory` composes only through `@inventory-platform/plugin-registry/routes` (plus the `plugin-registry` barrel, `shell`, `query`, `session`, `routing`). A `no-restricted-imports` block in root `eslint.config.mjs` bans domain packages, `*/api`, `*/ui` and `*/pages/*` there. Example: `apps/inventory/app/routes.tsx`.
@@ -53,7 +55,7 @@ Resolved versions from `pnpm-lock.yaml`; ranges in `package.json`.
 ```text
 apps/inventory/      route composer, providers, global reset only
 core/<domain>/       one business domain each
-platform/<infra>/    access, api-client, contracts, query, routing, schema, session, shell
+platform/<infra>/    access, api-client, attendance-protocol, contracts, query, routing, schema, session, shell
 plugins/cafe/        vertical extras
 plugins/registry/    merges core + plugin routes, nav, profile tabs
 ui-kit/              design system: primitives, patterns, chrome maps, tokens
@@ -79,7 +81,7 @@ scripts/deploy/      Vercel deploy and verify scripts
 | `checkout`      | **scaffold only** — real checkout still in `product`               |
 | `notifications` | **scaffold only** — bell UI in `platform/shell`                    |
 
-- Platform: access (capabilities), api-client (HTTP), contracts (shared types), query (QueryClient, key factory), routing (`RouteModule`, nav types), schema (vertical fields), session (auth, shop, toasts), shell (dashboard chrome).
+- Platform: access (capabilities), api-client (HTTP), attendance-protocol (Stockkart Team app wire types and pure helpers, no React; the app repository carries an identical copy), contracts (shared types), query (QueryClient, key factory), routing (`RouteModule`, nav types), schema (vertical fields), session (auth, shop, toasts), shell (dashboard chrome).
 - Standard domain layout: `api/ model/ queries/ pages/ ui/ routes/ routes.ts nav.ts index.ts`. Example: `core/reminders/src/routes.ts`.
   - `core/checkout` and `core/notifications` have only `queries/` (keys only) and `index.ts`.
   - `core/pricing` has no `ui/`.
@@ -221,7 +223,7 @@ Other names in `.env-example` and `docker-compose.yml`: `INVENTORY_PLATFORM_PORT
 
 ## Testing
 
-- Test targets exist only in `core/product`, `core/user` (`vitest.config.ts` + `vitest.setup.ts`) and `platform/schema` (`vite.config.mts`). Example: `core/user/vitest.config.ts`.
+- Test targets exist only in `core/product`, `core/user`, `core/hr`, `ui-kit` (`vitest.config.ts` + `vitest.setup.ts`), `platform/schema` and `platform/attendance-protocol` (`vite.config.mts`). Example: `core/user/vitest.config.ts`. `ui-kit` tests render primitives in jsdom with no workspace aliases (`ui-kit/src/overlay/Modal.test.tsx`).
 - Put `<name>.test.ts(x)` next to the source file. Example: `core/product/src/search/searchUrl.test.ts`.
 - `core/product/vitest.config.ts` runs `src/ui/**` in jsdom and everything else in node. Render tests live under `src/ui/`.
 - Render-test ui components with behaviour (forms, flows, tab order). Example: `core/user/src/ui/CustomerEditForm.test.tsx`.
@@ -251,7 +253,7 @@ cp .env-example .env && docker-compose up          # frontend container only; fi
 
 - Short project names work (`nx lint product`).
 - The `NODE_ENV` values here (`development`, `production`) are the only env values in this file. They are shell overrides for running tests, not configuration. With `NODE_ENV=production` vitest loads the production React build and render tests fail.
-- CI runs lint (`.github/workflows/eslint.yml`), format (`.github/workflows/format.yml`), test + build + typecheck (`.github/workflows/ci.yml`) and package tracking.
+- CI runs lint (`.github/workflows/eslint.yml`), format (`.github/workflows/format.yml`), test + build + typecheck (`.github/workflows/ci.yml`) and package tracking. The Stockkart Team app has its own repository and CI (`stockkart-team-app`); nothing mobile is built here.
 
 Status, run in the task workspace on 2026-10-17 (pnpm 10.24.0, Node 20.20.2):
 
@@ -263,7 +265,7 @@ Status, run in the task workspace on 2026-10-17 (pnpm 10.24.0, Node 20.20.2):
 | `nx run-many -t test --all` with `NODE_ENV=production` | fail: `TypeError: React.act is not a function`; `core/user` 20/32 and `core/product` 27/218 fail, `platform/schema` passes |
 | `nx build inventory`                                   | pass                                                                                                                       |
 | `node .github/scripts/check-package-tracking.mjs`      | pass                                                                                                                       |
-| `pnpm run format:check`                                | pass on tracked files; fails locally after `nx typecheck` (29 files in gitignored `out-tsc/`, not in `.prettierignore`)    |
+| `pnpm run format:check`                                | pass (`out-tsc/`, the vitest `tsBuildInfo` output, is in `.prettierignore`)                                                |
 
 ## Do and Don't
 

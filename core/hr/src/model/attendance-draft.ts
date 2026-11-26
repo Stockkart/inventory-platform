@@ -1,10 +1,15 @@
 import type {
   AttendanceRowResponse,
   DayStatus,
+  ManualMarkReason,
   SaveAttendanceDayRow,
   SaveAttendanceStatus,
 } from './attendance.types';
-import { MAX_ATTENDANCE_NOTE_LENGTH, MAX_ATTENDANCE_ROWS } from './attendance.types';
+import {
+  MAX_ATTENDANCE_NOTE_LENGTH,
+  MAX_ATTENDANCE_ROWS,
+  MAX_MARK_REASON_TEXT_LENGTH,
+} from './attendance.types';
 
 /**
  * Editable copy of one daily-register row. `status` is what the screen shows; it starts as the
@@ -124,4 +129,31 @@ export function validateDraft(draft: AttendanceDraft): string | null {
     return `A note may have at most ${MAX_ATTENDANCE_NOTE_LENGTH} characters`;
   }
   return null;
+}
+
+/**
+ * Client copy of the hand-mark reason rule (R7.3–R7.4): a quick pick is required; "Other" also
+ * needs 1–{@link MAX_MARK_REASON_TEXT_LENGTH} characters after trimming, so whitespace-only text
+ * counts as empty. Returns the message to show, or null when the reason can be saved.
+ */
+export function validateMarkReason(
+  reason: ManualMarkReason | null,
+  reasonText: string,
+): string | null {
+  if (reason == null) return 'Choose a reason for marking this by hand';
+  if (reason !== 'OTHER') return null;
+  const text = reasonText.trim();
+  if (text.length === 0) return 'Please say why in a few words';
+  if (text.length > MAX_MARK_REASON_TEXT_LENGTH) {
+    return `A reason may have at most ${MAX_MARK_REASON_TEXT_LENGTH} characters`;
+  }
+  return null;
+}
+
+/** The `reason` / `reasonText` fields to send: the text only travels with "Other". */
+export function markReasonFields(
+  reason: ManualMarkReason,
+  reasonText: string,
+): Pick<SaveAttendanceDayRow, 'reason' | 'reasonText'> {
+  return { reason, reasonText: reason === 'OTHER' ? reasonText.trim() : null };
 }

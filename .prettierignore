@@ -1,13 +1,16 @@
 # Build outputs
 dist
 build
+out-tsc
 coverage
 storybook-static
 .react-router
+.netlify
 
 # Tooling caches
 .nx
 node_modules
+.pnpm-store
 
 # Lockfiles (formatting churn, no value)
 pnpm-lock.yaml

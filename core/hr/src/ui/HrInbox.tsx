@@ -20,24 +20,36 @@ import { useHrInbox } from '../queries/hooks';
 
 export const HR_LEAVE_PATH = '/dashboard/hr/leave';
 export const MY_HR_PATH = '/dashboard/hr/me';
+/** The Join requests tab of the Employees page (worker-app R10.5). */
+export const HR_JOIN_REQUESTS_PATH = '/dashboard/hr/employees?tab=join-requests';
 
-/** Where a row leads: approvers to the leave requests, requesters to their own leave. */
+/**
+ * Where a row leads: approvers to the leave or join requests, requesters to their own leave. A
+ * type this build does not know still shows its text and falls back to My HR, never throws.
+ */
 function linkOf(n: HrNotificationResponse): { path: string; label: string } {
-  return n.type === 'LEAVE_REQUESTED'
-    ? { path: HR_LEAVE_PATH, label: 'Open leave requests' }
-    : { path: MY_HR_PATH, label: 'Open My HR' };
+  switch (n.type) {
+    case 'LEAVE_REQUESTED':
+      return { path: HR_LEAVE_PATH, label: 'Open leave requests' };
+    case 'JOIN_REQUEST_RECEIVED':
+      return { path: HR_JOIN_REQUESTS_PATH, label: 'Open join requests' };
+    default:
+      return { path: MY_HR_PATH, label: 'Open My HR' };
+  }
 }
 
 /**
  * The small HR inbox (R6.9): a bell on HR pages that polls `/me/notifications` every 60 s and when
- * the window regains focus. Approvers see new leave requests; employees see decisions on theirs.
- * Only those two groups ever get rows, so other members do not poll at all.
+ * the window regains focus. Leave approvers see new leave requests, employee approvers see new
+ * join requests (worker-app R10.5), and employees see decisions on theirs. Only those groups ever
+ * get rows, so other members do not poll at all.
  */
 export function HrInbox() {
   const navigate = useNavigate();
   const titleId = useId();
   const { can, employeeId, accessLoaded } = useHrAccess();
-  const receives = accessLoaded && (employeeId != null || can('APPROVE_LEAVE'));
+  const receives =
+    accessLoaded && (employeeId != null || can('APPROVE_LEAVE') || can('ADD_EDIT_EMPLOYEES'));
   const inbox = useHrInbox(receives);
   const [open, setOpen] = useState(false);
 
@@ -90,7 +102,9 @@ export function HrInbox() {
             </Box>
           ) : null}
           {inbox.items.length === 0 ? (
-            <Text color="muted">Nothing new. Leave requests and decisions show up here.</Text>
+            <Text color="muted">
+              Nothing new. Leave and join requests, and decisions on them, show up here.
+            </Text>
           ) : (
             <Stack as="ul" gap="sm" aria-label="HR notifications">
               {inbox.items.map((n) => {

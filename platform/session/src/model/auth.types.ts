@@ -9,7 +9,9 @@ export interface ShopMembership {
 
 export interface User {
   userId: string;
+  /** `MembershipRole` from `@inventory-platform/access`; `'WORKER'` for a worker-app login. */
   role: string;
+  /** The active shop; `null` for a login with no shop yet (a WORKER whose request is pending). */
   shopId: string | null;
   email?: string;
   name?: string;

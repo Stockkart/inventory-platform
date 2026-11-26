@@ -119,8 +119,10 @@ export {
 } from './CalendarMonthGrid';
 export {
   AttendanceCell,
+  ATTENDANCE_SOURCE_META,
   ATTENDANCE_STATUS_META,
   type AttendanceCellProps,
+  type AttendanceSourceKind,
   type AttendanceStatus,
 } from './AttendanceCell';
 export {

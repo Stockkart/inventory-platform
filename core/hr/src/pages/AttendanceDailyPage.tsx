@@ -16,15 +16,21 @@ import {
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import {
+  NO_REGISTER_FILTERS,
   buildSaveRows,
   draftChanged,
   draftFromRow,
   formatDayShort,
   formatMonth,
+  hasRegisterFilters,
+  matchesRegisterFilters,
   todayIso,
   validateDraft,
   type AttendanceDraft,
   type AttendanceRowResponse,
+  type MarkUnmarkedPresentRequest,
+  type RegisterFilters,
+  type SaveAttendanceDayRow,
 } from '@inventory-platform/hr/types';
 import { useHrAccess } from '../access/useHrAccess';
 import { HrInbox } from '../ui/HrInbox';
@@ -34,7 +40,9 @@ import {
   useSaveAttendanceDaysMutation,
 } from '../queries/hooks';
 import { AttendanceDailyRow } from '../ui/AttendanceDailyRow';
+import { MarkReasonModal } from '../ui/MarkReasonModal';
 import { RecordLeaveModal } from '../ui/RecordLeaveModal';
+import { RegisterFilterBar } from '../ui/RegisterFilterBar';
 
 export const ATTENDANCE_DAILY_PATH = '/dashboard/hr/attendance';
 export const ATTENDANCE_MONTH_PATH = '/dashboard/hr/attendance/month';
@@ -49,7 +57,8 @@ interface DraftState {
  * Daily attendance register (R5.2–R5.10, R5.16): one row per employee employed that day, quick
  * P / A / Half-day / Leave marks, optional times and a note, saved together (changed rows only).
  * Leave is recorded as approved leave, never as a mark. Locked months and users without
- * MARK_ATTENDANCE get a read-only register.
+ * MARK_ATTENDANCE get a read-only register. A hand-made mark for an employee who uses the
+ * Attendance app asks for a reason first (R7.2, `MarkReasonModal`).
  */
 export function AttendanceDailyPage() {
   const navigate = useNavigate();
@@ -61,12 +70,20 @@ export function AttendanceDailyPage() {
   const [date, setDate] = useState(today);
   const [drafts, setDrafts] = useState<DraftState>({ date: today, byEmployee: {} });
   const [leaveFor, setLeaveFor] = useState<AttendanceRowResponse | null>(null);
+  /** Which save is waiting on the hand-mark reason prompt (R7.2); null = prompt closed. */
+  const [reasonFor, setReasonFor] = useState<'save' | 'markAll' | null>(null);
+  /** "Source" and "Flagged" (R8.10–R8.11); narrow the list only, never what is saved. */
+  const [filters, setFilters] = useState<RegisterFilters>(NO_REGISTER_FILTERS);
 
   const daily = useDailyRegisterQuery(date, canView);
   const save = useSaveAttendanceDaysMutation();
   const markAll = useMarkUnmarkedPresentMutation();
 
   const rows = useMemo(() => daily.data?.rows ?? [], [daily.data]);
+  const shownRows = useMemo(
+    () => rows.filter((r) => matchesRegisterFilters(r, filters)),
+    [rows, filters],
+  );
   const locked = daily.data?.locked === true;
   const editable = canMark && !locked;
   const edits = drafts.date === date ? drafts.byEmployee : {};
@@ -76,8 +93,23 @@ export function AttendanceDailyPage() {
   const rowErrors = rows
     .map((r) => [r.employeeId, edits[r.employeeId] ? validateDraft(edits[r.employeeId]) : null])
     .filter((e): e is [string, string] => e[1] != null);
-  const unmarked = rows.filter((r) => r.status === 'UNMARKED').length;
+  const unmarkedRows = rows.filter((r) => r.status === 'UNMARKED');
+  const unmarked = unmarkedRows.length;
   const dirty = changes.length > 0;
+
+  // Rows whose hand-made mark needs a reason (R7.2): Biometric app check-in on and an active
+  // paired phone, as the server said when the register was read. Other rows save as before (R7.1).
+  const needsReason = (employeeId: string) =>
+    rows.find((r) => r.employeeId === employeeId)?.markReasonRequired === true;
+  const changesNeedingReason = changes.filter((c) => needsReason(c.employeeId));
+  const unmarkedNeedingReason = unmarkedRows.filter((r) => r.markReasonRequired === true);
+  const reasonNames = (
+    reasonFor === 'markAll'
+      ? unmarkedNeedingReason
+      : changesNeedingReason.map((c) => rows.find((r) => r.employeeId === c.employeeId))
+  )
+    .map((r) => r?.name)
+    .filter((n): n is string => n != null);
 
   const changeDate = (next: string) => {
     setDate(next);
@@ -91,36 +123,64 @@ export function AttendanceDailyPage() {
     setDrafts({ date, byEmployee: {} });
   };
 
+  const submitSave = (toSave: SaveAttendanceDayRow[]) => {
+    save.mutate(toSave, {
+      onSuccess: (saved) => {
+        useNotify.success(
+          `Saved attendance for ${saved.length} employee${saved.length === 1 ? '' : 's'}`,
+        );
+        setReasonFor(null);
+        discard();
+      },
+      // Plain-English server message, e.g. locked month, "change or cancel the leave first" or
+      // "A reason is required when the employee uses the Attendance app". Edits are kept, so the
+      // day is left as it was.
+      onError: (err) => useNotify.error(err.message || 'Could not save attendance'),
+    });
+  };
+
   const handleSave = () => {
     if (rowErrors.length > 0) {
       useNotify.error('Please fix the highlighted rows.');
       return;
     }
-    save.mutate(changes, {
-      onSuccess: (saved) => {
+    if (changesNeedingReason.length > 0) {
+      setReasonFor('save');
+      return;
+    }
+    submitSave(changes);
+  };
+
+  const submitMarkAll = (body: MarkUnmarkedPresentRequest) => {
+    markAll.mutate(body, {
+      onSuccess: (res) => {
         useNotify.success(
-          `Saved attendance for ${saved.length} employee${saved.length === 1 ? '' : 's'}`,
+          res.marked === 0
+            ? 'Everyone is already marked'
+            : `Marked ${res.marked} employee${res.marked === 1 ? '' : 's'} as Present`,
         );
-        discard();
+        setReasonFor(null);
       },
-      // Plain-English server message, e.g. locked month or "change or cancel the leave first".
-      onError: (err) => useNotify.error(err.message || 'Could not save attendance'),
+      onError: (err) => useNotify.error(err.message || 'Could not mark attendance'),
     });
   };
 
   const handleMarkAll = () => {
-    markAll.mutate(
-      { dates: [date] },
-      {
-        onSuccess: (res) =>
-          useNotify.success(
-            res.marked === 0
-              ? 'Everyone is already marked'
-              : `Marked ${res.marked} employee${res.marked === 1 ? '' : 's'} as Present`,
-          ),
-        onError: (err) => useNotify.error(err.message || 'Could not mark attendance'),
-      },
-    );
+    // One reason covers the whole batch (`MarkUnmarkedPresentRequest.reason`); the server refuses
+    // the batch without it when anyone being marked uses the Attendance app.
+    if (unmarkedNeedingReason.length > 0) {
+      setReasonFor('markAll');
+      return;
+    }
+    submitMarkAll({ dates: [date] });
+  };
+
+  const confirmReason = (fields: Pick<SaveAttendanceDayRow, 'reason' | 'reasonText'>) => {
+    if (reasonFor === 'markAll') {
+      submitMarkAll({ dates: [date], ...fields });
+    } else {
+      submitSave(changes.map((c) => (needsReason(c.employeeId) ? { ...c, ...fields } : c)));
+    }
   };
 
   if (!canView) {
@@ -165,6 +225,15 @@ export function AttendanceDailyPage() {
         </Box>
       </Box>
 
+      {rows.length > 0 ? (
+        <RegisterFilterBar
+          filters={filters}
+          onChange={setFilters}
+          showFlagged
+          shown={{ matched: shownRows.length, total: rows.length }}
+        />
+      ) : null}
+
       {locked ? (
         <Alert variant="warning">
           Payroll for {formatMonth(date.slice(0, 7))} is finalised, so this day cannot be changed.
@@ -207,12 +276,15 @@ export function AttendanceDailyPage() {
                 {unmarked} unmarked
                 {dirty ? ` · ${changes.length} not saved` : ''}
               </Text>
+              {shownRows.length === 0 && hasRegisterFilters(filters) ? (
+                <Text color="muted">No employee matches these filters on this day.</Text>
+              ) : null}
               <Box
                 role="list"
                 aria-label={`Attendance on ${formatDayShort(date)}`}
                 className={hrChrome.hrDailyList}
               >
-                {rows.map((row) => {
+                {shownRows.map((row) => {
                   const draft = draftOf(row);
                   return (
                     <AttendanceDailyRow
@@ -256,6 +328,19 @@ export function AttendanceDailyPage() {
           </Box>
         </Box>
       ) : null}
+
+      <MarkReasonModal
+        open={reasonFor != null}
+        employeeNames={reasonNames}
+        saveLabel={
+          reasonFor === 'markAll'
+            ? 'Mark as Present'
+            : `Save ${changes.length} change${changes.length === 1 ? '' : 's'}`
+        }
+        saving={save.isPending || markAll.isPending}
+        onClose={() => setReasonFor(null)}
+        onConfirm={confirmReason}
+      />
 
       <RecordLeaveModal
         open={leaveFor != null}

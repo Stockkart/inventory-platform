@@ -88,7 +88,7 @@ No native `<select>` or `<datalist>`, here or in any package (ESLint bans them).
 | Export          | Use for                                                                                                    |
 | --------------- | ---------------------------------------------------------------------------------------------------------- |
 | `Modal`         | Exclusive dialogs — dims the page, closes on backdrop click and Escape                                     |
-| `Drawer`        | Side sheets; locks body scroll                                                                             |
+| `Drawer`        | Side sheets; locks body scroll, traps focus and returns it to the opener; `size="lg"` is 480 px            |
 | `Popover`       | Anchored transient surfaces                                                                                |
 | `FloatingPanel` | Persistent, **non-modal** surfaces the page keeps working underneath — draggable, portalled, no focus trap |
 

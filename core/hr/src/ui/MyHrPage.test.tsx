@@ -37,12 +37,16 @@ const staff = vi.hoisted(() => ({
   payroll: { list: vi.fn(), get: vi.fn(), payslipPdf: vi.fn() },
 }));
 const download = vi.hoisted(() => ({ deliverHrFile: vi.fn() }));
+// `MyPairingCard` (R2.13) reads the linked employee's own pairing; its behaviour is tested in
+// EmployeePairingCard.test.tsx — here it only has to answer instead of hitting the network.
+const pairingApi = vi.hoisted(() => ({ myState: vi.fn(), createMyCode: vi.fn() }));
 vi.mock('../api/me.api', () => ({ meApi }));
 vi.mock('../api/employees.api', () => ({ employeesApi: staff.employees }));
 vi.mock('../api/attendance.api', () => ({ attendanceApi: staff.attendance }));
 vi.mock('../api/leave.api', () => ({ leaveApi: staff.leave }));
 vi.mock('../api/payroll.api', () => ({ payrollApi: staff.payroll }));
 vi.mock('../api/download', () => download);
+vi.mock('../api/pairing.api', () => ({ pairingApi }));
 
 const SHOP = 'shop-1';
 
@@ -125,6 +129,7 @@ const CHECK_IN_OFF = {
 
 beforeEach(() => {
   meApi.checkInStatus.mockResolvedValue(CHECK_IN_OFF);
+  pairingApi.myState.mockResolvedValue({ state: 'NOT_PAIRED' });
   meApi.profile.mockResolvedValue({
     id: 'e1',
     code: 'EMP-001',

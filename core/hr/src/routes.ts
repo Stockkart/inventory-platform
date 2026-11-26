@@ -62,6 +62,12 @@ export const hrRoutes: RouteModule = {
       file: 'routes/settings.tsx',
       lazy: () => import('./routes/settings'),
     },
+    // HR-module (biometric app): the plain-English privacy note linked from the Attendance card.
+    {
+      path: 'attendance-app-privacy',
+      file: 'routes/attendance-app-privacy.tsx',
+      lazy: () => import('./routes/attendance-app-privacy'),
+    },
   ],
 };
 

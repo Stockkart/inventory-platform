@@ -1,5 +1,6 @@
 // Run F5 (task 21): the HR inbox polls `/me/notifications?since=` every 60 s and on focus,
-// keeps the cursor, and marks rows read.
+// keeps the cursor, and marks rows read. Worker-app 10.3: join requests reach approvers too
+// (R10.5) and link to the Join requests tab.
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';
@@ -10,7 +11,7 @@ import { useAuthStore, useShopAccessStore } from '@inventory-platform/session';
 import { Text } from '@inventory-platform/ui-kit';
 import type { HrNotificationResponse } from '@inventory-platform/hr/types';
 import { HR_INBOX_POLL_MS } from '../queries/hooks';
-import { HrInbox } from './HrInbox';
+import { HR_JOIN_REQUESTS_PATH, HrInbox } from './HrInbox';
 
 const meApi = vi.hoisted(() => ({
   notifications: vi.fn(),
@@ -67,6 +68,14 @@ const LATER: HrNotificationResponse = {
   leaveRequestId: 'r2',
   text: 'Ravi asked for leave on 9 Oct',
   createdAt: T2,
+};
+const JOIN: HrNotificationResponse = {
+  id: 'n3',
+  type: 'JOIN_REQUEST_RECEIVED',
+  joinRequestId: 'j1',
+  text: 'Priya asked to join',
+  createdAt: T1,
+  read: false,
 };
 
 beforeEach(() => {
@@ -146,5 +155,55 @@ describe('HrInbox', () => {
     });
     expect(screen.queryByRole('button', { name: /^Notifications/ })).toBeNull();
     expect(meApi.notifications).not.toHaveBeenCalled();
+  });
+
+  it('shows the bell to someone who adds employees but does not approve leave (R10.5)', async () => {
+    signIn(['VIEW_EMPLOYEES', 'ADD_EDIT_EMPLOYEES'], null);
+    meApi.notifications.mockResolvedValue({ items: [JOIN], cursor: T1 });
+    renderInbox();
+
+    expect(
+      await screen.findByRole('button', { name: 'Notifications, 1 unread' }),
+    ).toBeInTheDocument();
+    expect(meApi.notifications).toHaveBeenCalledWith(null);
+  });
+
+  it('takes an approver from a join request to the Join requests tab and marks it read', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    signIn(['VIEW_EMPLOYEES', 'ADD_EDIT_EMPLOYEES'], null);
+    meApi.notifications.mockResolvedValue({ items: [JOIN], cursor: T1 });
+    const router = renderInbox();
+
+    await user.click(await screen.findByRole('button', { name: 'Notifications, 1 unread' }));
+    const drawer = await screen.findByRole('dialog', { name: 'Notifications' });
+    expect(within(drawer).getByText('Priya asked to join')).toBeInTheDocument();
+    expect(within(drawer).queryByRole('button', { name: 'Open leave requests' })).toBeNull();
+    await user.click(within(drawer).getByRole('button', { name: 'Open join requests' }));
+
+    await waitFor(() =>
+      expect(router.state.location.pathname + router.state.location.search).toBe(
+        HR_JOIN_REQUESTS_PATH,
+      ),
+    );
+    expect(HR_JOIN_REQUESTS_PATH).toBe('/dashboard/hr/employees?tab=join-requests');
+    expect(meApi.markNotificationRead).toHaveBeenCalledWith('n3');
+  });
+
+  it('renders a type this build does not know as plain text, linking to My HR', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    signIn(['VIEW_ATTENDANCE'], 'e1');
+    const unknown = {
+      ...JOIN,
+      id: 'n4',
+      type: 'SOMETHING_NEW',
+      text: 'A newer backend wrote this',
+    } as unknown as HrNotificationResponse;
+    meApi.notifications.mockResolvedValue({ items: [unknown], cursor: T1 });
+    renderInbox();
+
+    await user.click(await screen.findByRole('button', { name: 'Notifications, 1 unread' }));
+    const drawer = await screen.findByRole('dialog', { name: 'Notifications' });
+    expect(within(drawer).getByText('A newer backend wrote this')).toBeInTheDocument();
+    expect(within(drawer).getByRole('button', { name: 'Open My HR' })).toBeInTheDocument();
   });
 });

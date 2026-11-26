@@ -2,7 +2,9 @@
  * HR REST paths (relative to the api-client base, i.e. without `/api/v1`).
  * Settings, holidays, leave types, role grid, setup status, employees and linkable logins are
  * here (task 13.2); attendance and leave since run F3; advances and payroll (runs, adjustments,
- * finalise, reopen) since run F4; payments, payslips, registers, exports and `/me` since run F5.
+ * finalise, reopen) since run F4; payments, payslips, registers, exports and `/me` since run F5;
+ * Attendance app pairing, health and consent since the HR-module (biometric app) spec; the
+ * worker join-request inbox and "Request profile details" since the worker-app spec.
  */
 export const HR_ENDPOINTS = {
   BASE: '/hr',
@@ -19,6 +21,26 @@ export const HR_ENDPOINTS = {
   EMPLOYEE_SALARY_REVISIONS: (id: string) =>
     `/hr/employees/${encodeURIComponent(id)}/salary-revisions`,
   EMPLOYEE_EXIT: (id: string) => `/hr/employees/${encodeURIComponent(id)}/exit`,
+  // Attendance app pairing of one employee (`EmployeeController`, ADD_EDIT_EMPLOYEES).
+  EMPLOYEE_PAIRING: (id: string) => `/hr/employees/${encodeURIComponent(id)}/pairing`,
+  EMPLOYEE_PAIRING_CODES: (id: string) => `/hr/employees/${encodeURIComponent(id)}/pairing-codes`,
+  EMPLOYEE_PAIRING_UNPAIR: (id: string) => `/hr/employees/${encodeURIComponent(id)}/pairing/unpair`,
+  // Worker-app: "Request profile details" on an employee's page (`EmployeeController`,
+  // ADD_EDIT_EMPLOYEES, R8.7).
+  EMPLOYEE_REQUEST_PROFILE: (id: string) =>
+    `/hr/employees/${encodeURIComponent(id)}/request-profile`,
+  // Worker-app: the manager's join-request inbox (`JoinRequestInboxController`; Bearer chain,
+  // `hr` module on, ADD_EDIT_EMPLOYEES). The worker's own calls (`/hr/worker/**`) are not here:
+  // the browser is never the Stockkart Team app.
+  JOIN_REQUESTS: '/hr/join-requests',
+  JOIN_REQUEST_BY_ID: (id: string) => `/hr/join-requests/${encodeURIComponent(id)}`,
+  JOIN_REQUEST_DECISION: (id: string, decision: 'approve' | 'reject') =>
+    `/hr/join-requests/${encodeURIComponent(id)}/${decision}`,
+  JOIN_REQUESTS_BULK: (decision: 'approve' | 'reject') => `/hr/join-requests/bulk/${decision}`,
+  // Attendance app health alerts (`AttendanceAppController`; Bearer chain, VIEW_ATTENDANCE) and
+  // the consent text the privacy note is built from (public, no shop data).
+  ATTENDANCE_APP_HEALTH: '/hr/attendance-app/health',
+  ATTENDANCE_APP_CONSENT_LATEST: '/hr/attendance-app/consent/latest',
   LINKABLE_LOGINS: '/hr/linkable-logins',
   ATTENDANCE_DAILY: '/hr/attendance/daily',
   ATTENDANCE_DAYS: '/hr/attendance/days',
@@ -66,6 +88,9 @@ export const HR_ENDPOINTS = {
   ME_PAYSLIPS: '/hr/me/payslips',
   ME_CHECK_IN: '/hr/me/check-in',
   ME_PUNCHES: '/hr/me/punches',
+  // The linked employee's own Attendance app pairing (R2.13); `pairedBy` comes back as "self".
+  ME_PAIRING: '/hr/me/pairing',
+  ME_PAIRING_CODES: '/hr/me/pairing-codes',
   ME_PAYSLIP_PDF: (lineId: string) => `/hr/me/payslips/${encodeURIComponent(lineId)}/pdf`,
   ME_NOTIFICATIONS: '/hr/me/notifications',
   ME_NOTIFICATION_READ: (id: string) => `/hr/me/notifications/${encodeURIComponent(id)}/read`,
