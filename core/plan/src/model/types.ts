@@ -5,6 +5,8 @@ export type {
   PlanResponse,
   UsageResponse,
   ShopPlanStatusResponse,
+  PlanAction,
+  PlanOptionResponse,
   QuoteAddOnLine,
   QuoteRequest,
   QuoteItemType,
@@ -14,6 +16,11 @@ export type {
   CampaignState,
   CampaignTheme,
   CampaignResponse,
+  EntitlementSource,
+  EntitlementEnforcement,
+  ShopEntitlementsResponse,
+  EntitlementErrorCode,
+  EntitlementErrorDetails,
 } from '@inventory-platform/contracts';
 
 export interface PaymentConfigResponse {

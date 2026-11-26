@@ -7,11 +7,11 @@ import {
   useVerticalSchemaStore,
   useShopAccessStore,
 } from '@inventory-platform/session';
-import type { PlanEntitlementsView } from '@inventory-platform/access';
+import { isPlanFeatureEnabled, type PlanEntitlementsView } from '@inventory-platform/access';
 import type { DashboardMenuGroup } from '@inventory-platform/routing';
 import { CenteredLoader } from '@inventory-platform/ui-kit';
 import { canAccessDashboardPath } from '../lib/accessNav';
-import { isPathEntitled } from '../lib/planEntitlementNav';
+import { planFeatureForPath } from '../lib/planEntitlementNav';
 import { mustLeaveForPlanStatus, PLAN_STATUS_PATH } from '../lib/planExpiryRedirect';
 
 export type DashboardRouteGuardState = {
@@ -126,8 +126,9 @@ export function useDashboardRouteGuard(
     if (!isAuthenticated || !user?.shopId || planStatusLoading || planExpired) {
       return;
     }
-    if (!isPathEntitled(menuGroups, location.pathname, planEntitlements)) {
-      navigate(PLAN_STATUS_PATH, { replace: true });
+    const feature = planFeatureForPath(menuGroups, location.pathname);
+    if (feature && !isPlanFeatureEnabled(planEntitlements, feature)) {
+      navigate(`${PLAN_STATUS_PATH}?locked=${feature}`, { replace: true });
     }
   }, [
     menuGroups,

@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import {
   Alert,
   Badge,
@@ -13,10 +13,13 @@ import {
   cn,
 } from '@inventory-platform/ui-kit';
 import { PlanGrid } from '../ui/PlanGrid';
+import { formatPlanDate } from '../ui/planDate';
+import { FEATURE_LABELS, formatRupees } from '../ui/planPricing';
+import { boughtScansLeftLabel, isPlanFeature, splitFeatures, usageOfLimit } from '../entitlements';
 import { CampaignBanner } from '../campaign';
 import { trialLabel } from '../ui/trialLabel';
 import type { PlanResponse } from '@inventory-platform/plan/types';
-import { usePlansQuery, useShopPlanStatusQuery } from '../queries/hooks';
+import { usePlansQuery, useShopEntitlementsQuery, useShopPlanStatusQuery } from '../queries/hooks';
 
 export function PlanStatusPage() {
   const navigate = useNavigate();
@@ -27,6 +30,11 @@ export function PlanStatusPage() {
     error: statusErr,
   } = useShopPlanStatusQuery();
   const { data: plans = [] } = usePlansQuery();
+  const [searchParams] = useSearchParams();
+  const lockedParam = searchParams.get('locked');
+  const lockedFeature = isPlanFeature(lockedParam) ? lockedParam : null;
+  // Seat and OCR usage change between visits, so this page always refetches on arrival.
+  const { data: entitlements } = useShopEntitlementsQuery({ refetchOnMount: 'always' });
 
   const handleSelectPlan = useCallback(
     (plan: PlanResponse) => {
@@ -57,8 +65,6 @@ export function PlanStatusPage() {
     return null;
   }
 
-  const formatDate = (iso: string | null) =>
-    iso ? new Date(iso).toLocaleDateString('en-IN') : '—';
   const currentPlanIndex = status.plan ? plans.findIndex((p) => p.id === status.planId) : -1;
   const planName = status.trial ? 'Free trial' : status.plan?.planName ?? 'No active plan';
   const planStateLabel = status.trial
@@ -70,10 +76,10 @@ export function PlanStatusPage() {
     : 'Active';
   const renewLabel = status.trial || status.planExpired ? 'Expires' : 'Renews';
 
-  const usageItems = [
+  const usageItems: { label: string; value: string; danger: boolean; hint?: string | null }[] = [
     {
       label: 'Billing amount',
-      value: `₹${status.currentUsage?.billingAmountUsed?.toLocaleString('en-IN') ?? 0}`,
+      value: formatRupees(status.currentUsage?.billingAmountUsed ?? 0),
       danger: status.billingLimitReached,
     },
     {
@@ -92,6 +98,22 @@ export function PlanStatusPage() {
       danger: status.whatsappLimitReached,
     },
   ];
+  if (entitlements) {
+    usageItems.push(
+      {
+        label: 'Team seats',
+        value: usageOfLimit(entitlements.userCount, entitlements.userLimit, 'seats'),
+        danger: entitlements.seatLimitReached === true,
+      },
+      {
+        label: 'Invoice scans',
+        value: usageOfLimit(entitlements.ocrUsed, entitlements.ocrLimit, 'scans'),
+        hint: boughtScansLeftLabel(entitlements.ocrTopUpRemaining),
+        danger: entitlements.ocrLimitReached === true,
+      },
+    );
+  }
+  const features = entitlements ? splitFeatures(entitlements) : null;
 
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
@@ -122,7 +144,7 @@ export function PlanStatusPage() {
           </Box>
           <Text as="p" className={surfaceChrome.planStatusMeta}>
             {status.trial ? `${trialLabel(status.trialDays)} · ` : null}
-            {renewLabel} {formatDate(status.planExpiryDate)}
+            {renewLabel} {formatPlanDate(status.planExpiryDate) ?? '—'}
           </Text>
         </Box>
         {!status.trial && currentPlanIndex >= 0 ? (
@@ -136,6 +158,13 @@ export function PlanStatusPage() {
           </Box>
         ) : null}
       </Box>
+
+      {lockedFeature ? (
+        <Alert variant="info">
+          {FEATURE_LABELS[lockedFeature]} isn&apos;t included in your plan. Upgrade below to unlock
+          it.
+        </Alert>
+      ) : null}
 
       {status.trialExpired || status.planExpired ? (
         <Alert variant="warning">
@@ -165,10 +194,43 @@ export function PlanStatusPage() {
               >
                 {item.value}
               </Text>
+              {item.hint ? (
+                <Text as="span" variant="caption" color="secondary">
+                  {item.hint}
+                </Text>
+              ) : null}
             </Box>
           ))}
         </Box>
       </Stack>
+
+      {features ? (
+        <Stack gap="sm">
+          <Box className={surfaceChrome.planSectionHeader}>
+            <Text as="h3" className={surfaceChrome.inviteSectionTitle}>
+              Features
+            </Text>
+          </Box>
+          <Box className={accountingChrome.kpiGrid4}>
+            {features.included.map((feature) => (
+              <Box key={feature} className={accountingChrome.overviewKpiCard}>
+                <Text as="span" className={accountingChrome.overviewKpiLabel}>
+                  {FEATURE_LABELS[feature]}
+                </Text>
+                <Badge variant="success">Included</Badge>
+              </Box>
+            ))}
+            {features.locked.map((feature) => (
+              <Box key={feature} className={accountingChrome.overviewKpiCard}>
+                <Text as="span" className={accountingChrome.overviewKpiLabel}>
+                  {FEATURE_LABELS[feature]}
+                </Text>
+                <Badge variant={feature === lockedFeature ? 'warning' : 'neutral'}>Upgrade</Badge>
+              </Box>
+            ))}
+          </Box>
+        </Stack>
+      ) : null}
 
       <Stack gap="sm">
         <Box className={surfaceChrome.planSectionHeader}>
@@ -184,7 +246,8 @@ export function PlanStatusPage() {
           currentPlanId={status.trial ? null : status.planId}
           onSelectPlan={handleSelectPlan}
           ctaLabel={status.planExpired || status.trialExpired ? 'Select plan' : 'Upgrade'}
-          showTrialBadge
+          showTrialBadge={status.trialAvailable === true}
+          planOptions={status.planOptions}
         />
       </Stack>
 
