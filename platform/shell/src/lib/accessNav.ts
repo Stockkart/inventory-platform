@@ -3,6 +3,11 @@ import type { DashboardMenuGroup, DashboardMenuItem } from '@inventory-platform/
 
 const ACCOUNTING_PREFIX = '/dashboard/accounting';
 const MIS_PREFIX = '/dashboard/mis';
+const PLAN_PATHS = new Set([
+  '/dashboard/plan-payment',
+  '/dashboard/plan-status',
+  '/dashboard/referrals',
+]);
 const HR_PREFIX = '/dashboard/hr';
 
 /**
@@ -59,7 +64,7 @@ function isRbacGatedPath(path: string): boolean {
   if (path === '/dashboard/analytics') return true;
   if (path === '/dashboard/taxes') return true;
   if (path === '/dashboard/whatsapp-marketing') return true;
-  if (path === '/dashboard/plan-payment' || path === '/dashboard/plan-status') {
+  if (PLAN_PATHS.has(path)) {
     return true;
   }
   if (path === '/dashboard/invitations') return true;
@@ -88,7 +93,7 @@ function isPathAllowed(path: string, access: ShopAccess): boolean {
   if (path === '/dashboard/whatsapp-marketing') {
     return access.modules.marketing;
   }
-  if (path === '/dashboard/plan-payment' || path === '/dashboard/plan-status') {
+  if (PLAN_PATHS.has(path)) {
     return access.modules.paymentPlan;
   }
   if (path === '/dashboard/invitations') {

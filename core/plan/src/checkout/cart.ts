@@ -1,6 +1,7 @@
 import { isApiError } from '@inventory-platform/api-client';
 import type {
   AddOnResponse,
+  PlanCheckoutResponse,
   PlanResponse,
   QuoteRequest,
   VoucherRejectedDetails,
@@ -45,6 +46,7 @@ export function buildQuoteRequest(
   planCode: string,
   selection: AddOnSelection,
   voucherCodes: string[],
+  applyWalletCredit = false,
 ): QuoteRequest {
   const addOns = Object.entries(selection)
     .filter(([, quantity]) => quantity > 0)
@@ -53,7 +55,13 @@ export function buildQuoteRequest(
   const request: QuoteRequest = { planCode, durationMonths: 12 };
   if (addOns.length > 0) request.addOns = addOns;
   if (voucherCodes.length > 0) request.voucherCodes = [...voucherCodes].sort();
+  if (applyWalletCredit) request.applyWalletCredit = true;
   return request;
+}
+
+/** The wallet covered the whole order: the server paid and fulfilled it, no gateway to open. */
+export function paidFromWallet(checkout: PlanCheckoutResponse): boolean {
+  return checkout.provider === 'wallet';
 }
 
 /** Same rule as the server, so a code typed in lower case matches the applied list. */

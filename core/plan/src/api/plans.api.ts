@@ -10,11 +10,14 @@ import type {
   PlanTransactionResponse,
   QuoteRequest,
   QuoteResponse,
+  ReferralRewardsResponse,
+  ReferralSummaryResponse,
   ShopPlanStatusResponse,
   UsageResponse,
   VerifyPlanPaymentRequest,
   VerifyPlanPaymentResponse,
   VoucherCheckResponse,
+  WalletResponse,
 } from '@inventory-platform/plan/types';
 import { PLAN_ENDPOINTS } from './endpoints';
 
@@ -59,6 +62,25 @@ export const plansApi = {
   listTransactions: async (): Promise<PlanTransactionResponse[]> => {
     const response = await apiClient.get<ApiResponse<PlanTransactionResponse[]>>(
       PLAN_ENDPOINTS.SHOP_TRANSACTIONS,
+    );
+    return response.data;
+  },
+
+  getWallet: async (): Promise<WalletResponse> => {
+    const response = await apiClient.get<ApiResponse<WalletResponse>>(PLAN_ENDPOINTS.SHOP_WALLET);
+    return response.data;
+  },
+
+  getReferralSummary: async (): Promise<ReferralSummaryResponse> => {
+    const response = await apiClient.get<ApiResponse<ReferralSummaryResponse>>(
+      PLAN_ENDPOINTS.REFERRALS_ME,
+    );
+    return response.data;
+  },
+
+  getReferralRewards: async (): Promise<ReferralRewardsResponse> => {
+    const response = await apiClient.get<ApiResponse<ReferralRewardsResponse>>(
+      PLAN_ENDPOINTS.REFERRAL_REWARDS,
     );
     return response.data;
   },
