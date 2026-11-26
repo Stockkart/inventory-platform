@@ -1,18 +1,10 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router';
-import type { CampaignTheme } from '@inventory-platform/plan/types';
-import { SaleBanner, type SaleBannerTheme } from '@inventory-platform/ui-kit';
+import { SaleBanner } from '@inventory-platform/ui-kit';
 import { useActiveCampaignQuery } from '../queries/hooks';
+import { bannerTheme } from './bannerTheme';
 import { STATE_EYEBROW } from './countdown';
 import { useCampaignCountdown } from './useCampaignCountdown';
-
-const THEMES: Record<CampaignTheme, SaleBannerTheme> = {
-  DEFAULT: 'default',
-  MONSOON: 'monsoon',
-  SUMMER: 'summer',
-  DIWALI: 'diwali',
-  NEW_YEAR: 'newYear',
-};
 
 function isAppPath(path: string | null): path is string {
   return path != null && path.startsWith('/') && !path.startsWith('//');
@@ -40,7 +32,7 @@ export function CampaignBanner({ className }: CampaignBannerProps) {
   return (
     <SaleBanner
       className={className}
-      theme={THEMES[campaign.theme] ?? 'default'}
+      theme={bannerTheme(campaign.theme)}
       eyebrow={STATE_EYEBROW[campaign.state]}
       headline={campaign.headline}
       subtext={campaign.subtext}
