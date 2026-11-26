@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router';
+import { useNavigate, useLocation, Link } from 'react-router';
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import { useAuthStore } from '@inventory-platform/session';
 import {
@@ -15,6 +15,7 @@ import {
   cn,
   journeyChrome,
 } from '@inventory-platform/ui-kit';
+import { rememberReferralCode } from '../../onboarding/referral';
 
 /** Normalize to 10-digit Indian mobile; accepts 10 digits or +91 / 91 prefix. */
 function normalizePhone(raw: string): string | null {
@@ -30,6 +31,7 @@ function normalizePhone(raw: string): string | null {
 
 export function SignupForm() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signup, isAuthenticated, isLoading, error, clearError } = useAuthStore();
   const [formData, setFormData] = useState({
     name: '',
@@ -39,6 +41,11 @@ export function SignupForm() {
     confirmPassword: '',
   });
   const [localError, setLocalError] = useState<string | null>(null);
+
+  // A shared referral link (`/signup?ref=CODE`) is kept for the onboarding referral step.
+  useEffect(() => {
+    rememberReferralCode(location.search);
+  }, [location.search]);
 
   useEffect(() => {
     if (isAuthenticated) {
