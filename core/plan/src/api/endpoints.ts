@@ -41,6 +41,7 @@ export const PLAN_ENDPOINTS = {
   ADMIN_VOUCHER_ACTIVE: (id: string) => `/admin/vouchers/${id}/active`,
   ADMIN_VOUCHER_REDEMPTIONS: (id: string) => `/admin/vouchers/${id}/redemptions`,
   ADMIN_CAMPAIGNS: '/admin/campaigns',
+  ADMIN_CAMPAIGN_THEMES: '/admin/campaigns/themes',
   ADMIN_CAMPAIGN: (id: string) => `/admin/campaigns/${id}`,
   ADMIN_CAMPAIGN_ACTIVE: (id: string) => `/admin/campaigns/${id}/active`,
   ADMIN_WALLET: (shopId: string) => `/admin/wallets/${encodeURIComponent(shopId)}`,

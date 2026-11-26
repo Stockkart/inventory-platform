@@ -246,6 +246,14 @@ export function useAdminCampaignsQuery() {
   });
 }
 
+/** Theme rows are written directly in the database, so the list only changes between visits. */
+export function useAdminCampaignThemesQuery() {
+  return useQuery({
+    queryKey: planKeys.adminCampaignThemes(),
+    queryFn: () => planAdminApi.listCampaignThemes(),
+  });
+}
+
 /** Also refreshes the banner query so the admin sees the effect right away. */
 function useInvalidateCampaigns() {
   const queryClient = useQueryClient();
