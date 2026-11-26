@@ -239,7 +239,11 @@ export interface QuoteResponse {
 /** Derived on the server from the campaign dates (Asia/Kolkata calendar days). */
 export type CampaignState = 'UPCOMING' | 'STARTING_SOON' | 'LIVE' | 'ENDING_SOON';
 
-export type CampaignTheme = 'DEFAULT' | 'MONSOON' | 'SUMMER' | 'DIWALI' | 'NEW_YEAR';
+/**
+ * Code of a row in the API's campaign_themes collection, e.g. 'DIWALI'. Themes are managed in the
+ * database, so this is any string; the banner shows the default look for a code it does not know.
+ */
+export type CampaignTheme = string;
 
 /** The one sale banner to show, from GET /campaigns/active (null when none). */
 export interface CampaignResponse {
