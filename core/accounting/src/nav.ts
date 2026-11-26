@@ -6,6 +6,7 @@ export const accountingNav: NavContribution = {
   label: 'Accounting',
   icon: 'book-open',
   requiredCapability: 'accounting',
+  requiresFeature: 'ACCOUNTING',
   items: [
     { path: '/dashboard/accounting', label: 'Overview', icon: 'layout-dashboard' },
     { path: '/dashboard/accounting/journal', label: 'Journal', icon: 'pencil-line' },
