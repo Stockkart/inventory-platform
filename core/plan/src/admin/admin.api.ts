@@ -4,6 +4,7 @@ import type {
   AdminActiveRequest,
   AdminAddOn,
   AdminCampaign,
+  AdminCampaignTheme,
   CampaignRequest,
   AdminReferralAttribution,
   AdminReferralReward,
@@ -123,6 +124,13 @@ export const planAdminApi = {
   listCampaigns: async (): Promise<AdminCampaign[]> => {
     const response = await apiClient.get<ApiResponse<AdminCampaign[]>>(
       PLAN_ENDPOINTS.ADMIN_CAMPAIGNS,
+    );
+    return response.data;
+  },
+
+  listCampaignThemes: async (): Promise<AdminCampaignTheme[]> => {
+    const response = await apiClient.get<ApiResponse<AdminCampaignTheme[]>>(
+      PLAN_ENDPOINTS.ADMIN_CAMPAIGN_THEMES,
     );
     return response.data;
   },

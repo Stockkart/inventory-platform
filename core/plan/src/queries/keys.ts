@@ -27,6 +27,7 @@ export const planKeys = {
   adminWallet: (shopId: string) => [...base.all, 'admin-wallet', shopId] as const,
   adminAddOns: () => [...base.all, 'admin-addons'] as const,
   adminCampaigns: () => [...base.all, 'admin-campaigns'] as const,
+  adminCampaignThemes: () => [...base.all, 'admin-campaign-themes'] as const,
   adminVouchers: () => [...base.all, 'admin-vouchers'] as const,
   adminVoucherList: (addOnCode: string | null, page: number) =>
     [...base.all, 'admin-vouchers', 'list', addOnCode ?? 'all', page] as const,

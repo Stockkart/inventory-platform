@@ -157,6 +157,15 @@ export interface AdminCampaign extends CampaignRequest {
   updatedAt: string | null;
 }
 
+/** A row of the API's campaign_themes collection, from GET /admin/campaigns/themes. */
+export interface AdminCampaignTheme {
+  code: CampaignTheme;
+  label: string;
+  sortOrder: number | null;
+  /** Switched-off themes are listed so existing campaigns keep a label, but cannot be picked. */
+  active: boolean;
+}
+
 /** Body for the PATCH …/active endpoints. */
 export interface AdminActiveRequest {
   active: boolean;
