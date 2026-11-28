@@ -21,7 +21,7 @@ export function CatalogueAdminPage() {
             items={[
               { value: 'plans', label: 'Plans', panel: <PlansPanel /> },
               { value: 'addons', label: 'Add-ons', panel: <AddOnsPanel /> },
-              { value: 'grants', label: 'Shop plan & add-ons', panel: <GrantsPanel /> },
+              { value: 'grants', label: 'Shop add-ons', panel: <GrantsPanel /> },
             ]}
           />
         </CardBody>

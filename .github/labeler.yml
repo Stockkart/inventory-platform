@@ -48,12 +48,6 @@
       - any-glob-to-any-file:
           - 'core/accounting/**'
 
-'module:admin':
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'core/admin/**'
-          - 'apps/admin/**'
-
 'module:analytics':
   - changed-files:
       - any-glob-to-any-file:

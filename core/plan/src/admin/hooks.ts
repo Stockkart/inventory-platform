@@ -11,7 +11,6 @@ import type {
   ReferralAttributionStatus,
   ReferralRewardStatus,
   WalletAdjustmentRequest,
-  PlanGrantRequest,
 } from '@inventory-platform/plan/types';
 import { planKeys } from '../queries/keys';
 import { planAdminApi } from './admin.api';
@@ -130,13 +129,6 @@ export function useGrantAddOnMutation() {
     mutationFn: (body: AddOnGrantRequest) => planAdminApi.grantAddOn(body),
     onSuccess: (_granted, body) =>
       queryClient.invalidateQueries({ queryKey: planKeys.adminShopAddOns(body.shopId) }),
-  });
-}
-
-export function useGrantPlanMutation() {
-  return useMutation({
-    mutationFn: ({ shopId, body }: { shopId: string; body: PlanGrantRequest }) =>
-      planAdminApi.grantPlan(shopId, body),
   });
 }
 

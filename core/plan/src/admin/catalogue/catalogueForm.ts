@@ -6,7 +6,6 @@ import type {
   AdminPlan,
   PlanAdminRequest,
   PlanFeature,
-  PlanGrantRequest,
 } from '@inventory-platform/plan/types';
 import { endOfDayIst } from '../dates';
 
@@ -24,8 +23,6 @@ export const CATALOGUE_LIMITS = {
   displayOrder: 1000,
   grantsQuantity: 1000,
   reason: 500,
-  planGrantReason: 200,
-  planGrantMonths: 36,
 } as const;
 
 /** New shops are measured against it, so the server refuses to hide it. */
@@ -333,50 +330,6 @@ export function toGrantRequest(
     addOnCode: addOn?.code ?? '',
     quantity: quantity as number,
     expiresAt: !credits && form.expiresOn ? endOfDayIst(form.expiresOn) : undefined,
-    reason,
-  }));
-}
-
-export interface PlanGrantFormState {
-  planCode: string;
-  months: string;
-  reason: string;
-}
-
-export const emptyPlanGrantForm = (): PlanGrantFormState => ({
-  planCode: '',
-  months: '12',
-  reason: '',
-});
-
-/** Plans an admin may grant: active, selectable catalogue plans (they carry a code). */
-export function planGrantOptions(
-  plans: readonly AdminPlan[],
-): Array<{ value: string; label: string }> {
-  return plans
-    .filter((plan) => plan.active && plan.selectable !== false && plan.code)
-    .map((plan) => ({ value: plan.code as string, label: plan.planName }));
-}
-
-/** Mirrors the API's plan-grant checks; the API still decides whether the grant is allowed. */
-export function toPlanGrantRequest(
-  form: PlanGrantFormState,
-): Result<PlanGrantRequest, PlanGrantFormState> {
-  const errors: Errors<PlanGrantFormState> = {};
-  if (!form.planCode) errors.planCode = 'Choose a plan.';
-  const months = optionalWhole(form.months, 1, CATALOGUE_LIMITS.planGrantMonths);
-  if (months === null || months === 'invalid') {
-    errors.months = `A whole number from 1 to ${CATALOGUE_LIMITS.planGrantMonths}.`;
-  }
-  const reason = form.reason.trim();
-  if (!reason) errors.reason = 'Required; kept in the audit log.';
-  else if (reason.length > CATALOGUE_LIMITS.planGrantReason) {
-    errors.reason = `At most ${CATALOGUE_LIMITS.planGrantReason} characters.`;
-  }
-
-  return done(errors, () => ({
-    planCode: form.planCode,
-    durationMonths: months as number,
     reason,
   }));
 }

@@ -11,7 +11,7 @@ import type {
 } from '@inventory-platform/routing';
 import { resolveSellPath } from '@inventory-platform/routing';
 import { isCustomerReturnEnabled, isVendorReturnEnabled } from '@inventory-platform/routing';
-import { filterDashboardMenuGroupsByAccess } from './accessNav';
+import { filterDashboardMenuGroupsByAccess, filterPlatformAdminGroups } from './accessNav';
 import { filterMenuGroupsByEntitlements } from './planEntitlementNav';
 
 export { isCustomerReturnEnabled, isVendorReturnEnabled };
@@ -122,7 +122,10 @@ function mergeMenuListProductNav(
 
 export { resolveSellPath };
 
-/** Vertical capability, shop access and plan entitlements must all allow an item. */
+/**
+ * Vertical capability, shop access and plan entitlements must all allow an item; platform admin
+ * pages are shown only to platform admins.
+ */
 export function getDashboardMenuGroupsWithCapabilities(
   baseMenuGroups: DashboardMenuGroup[],
   role: string | undefined,
@@ -130,6 +133,7 @@ export function getDashboardMenuGroupsWithCapabilities(
   access?: ShopAccess | null,
   plugin?: NavCapablePlugin | null,
   entitlements?: PlanEntitlementsView | null,
+  platformAdmin = false,
 ): DashboardMenuGroup[] {
   void role;
   let groups = baseMenuGroups;
@@ -140,8 +144,11 @@ export function getDashboardMenuGroupsWithCapabilities(
     groups = mergeMenuListProductNav(baseMenuGroups, capItems);
   }
 
-  return filterMenuGroupsByEntitlements(
-    filterDashboardMenuGroupsByAccess(filterReturnsGroup(groups, capabilities), access),
-    entitlements,
+  return filterPlatformAdminGroups(
+    filterMenuGroupsByEntitlements(
+      filterDashboardMenuGroupsByAccess(filterReturnsGroup(groups, capabilities), access),
+      entitlements,
+    ),
+    platformAdmin,
   );
 }

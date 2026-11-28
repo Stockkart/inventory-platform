@@ -11,7 +11,7 @@ import { analyticsNav } from '@inventory-platform/analytics/nav';
 import { creditNav } from '@inventory-platform/credit/nav';
 import { hrNav } from '@inventory-platform/hr/nav';
 import { misNav } from '@inventory-platform/mis/nav';
-import { planNav } from '@inventory-platform/plan/nav';
+import { planNav, platformAdminNav } from '@inventory-platform/plan/nav';
 import { pricingNav } from '@inventory-platform/pricing/nav';
 import { productNav, productReturnsNav } from '@inventory-platform/product/nav';
 import { remindersNav } from '@inventory-platform/reminders/nav';
@@ -41,6 +41,7 @@ const NAV_GROUP_ORDER: string[] = [
   'team',
   'hr',
   'plan-billing',
+  'platform-admin',
 ];
 
 /** Shell-owned home link; merged into overview with user nav contributions. */
@@ -69,6 +70,7 @@ export const CORE_NAV_CONTRIBUTIONS: NavContribution[] = [
   userTeamNav,
   hrNav,
   planNav,
+  platformAdminNav,
 ];
 
 export { mergeNavContributions };
