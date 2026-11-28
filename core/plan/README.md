@@ -52,10 +52,6 @@ Plan status `planOptions` (inventory-api) gives each catalogue plan an `action`:
 
 The Referrals page lists `GET /plans/shop/wallet` entries with their `availableDelta` and `availableAfter`. The API returns only rows that moved the available balance, so a paid order shows one "Used at checkout" row (its `ORDER_RESERVATION`) and no "+₹0.00" "Spent on a plan" row; an unpaid order that ended adds "Checkout hold released". Amounts use `formatRupees` (two decimals).
 
-## Add-on catalogue (admin)
-
-The add-on form sends what the admin chose; the API derives `billingType` from the grant type (OCR credits one-time, the rest annual) and, for a feature add-on, `grantsQuantity` 1 and not stackable, and rejects contradictory combinations (`toAddOnRequest` no longer sets them).
-
 ## Dates
 
 Every plan-area date (My Plan "Renews"/"Expires", "Available from" on plan cards, past purchases, wallet history, add-on "Valid until") goes through `formatPlanDate` (`ui/planDate.ts`): the Indian calendar day as "21 Nov 2027", the day-month-year style the rest of the app shows. The API sends ISO instants only.

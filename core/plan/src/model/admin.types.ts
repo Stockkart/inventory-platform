@@ -1,11 +1,7 @@
 import type {
-  AddOnBillingType,
-  AddOnGrantType,
   AddOnResponse,
   CampaignState,
   CampaignTheme,
-  PlanFeature,
-  PlanResponse,
   ReferralAttributionStatus,
   ReferralRewardStatus,
   VoucherType,
@@ -69,81 +65,6 @@ export interface AdminAddOn extends AddOnResponse {
   active: boolean;
   createdAt: string | null;
   updatedAt: string | null;
-}
-
-/** Create or full edit; `code` is fixed after create, as is `grantType`. */
-export interface AddOnAdminRequest {
-  code: string;
-  name: string;
-  description: string | null;
-  price: number;
-  /** Omitted: the API derives it from grantType (OCR credits one-time, the rest annual). */
-  billingType?: AddOnBillingType;
-  grantType: AddOnGrantType;
-  grantsFeature: PlanFeature | null;
-  /** Omitted for a feature add-on: the API sets 1. */
-  grantsQuantity?: number | null;
-  /** Omitted for a feature add-on: the API sets false. */
-  stackable?: boolean;
-  maxQuantity: number | null;
-  displayOrder: number | null;
-}
-
-/** GET /admin/plans: the catalogue including hidden plans. */
-export interface AdminPlan extends PlanResponse {
-  active: boolean;
-  /** Lowest the plan line may be charged after wallet credit; null = no floor. Admin only. */
-  basePrice: number | null;
-}
-
-/** Create or full edit; `code` is fixed after create. `listPrice` is not editable here. */
-export interface PlanAdminRequest {
-  code: string;
-  planName: string;
-  arcPrice: number;
-  /** Floor for the plan line after wallet credit; the server checks it is at most `arcPrice`. */
-  basePrice: number | null;
-  price: number | null;
-  billingLimit: number | null;
-  billCountLimit: number | null;
-  smsLimit: number | null;
-  whatsappLimit: number | null;
-  userLimit: number | null;
-  ocrLimit: number | null;
-  unlimited: boolean;
-  features: PlanFeature[];
-  displayOrder: number | null;
-  badge: string | null;
-  bestFor: string | null;
-  linkedId: string | null;
-}
-
-export interface AddOnGrantRequest {
-  shopId: string;
-  addOnCode: string;
-  quantity: number;
-  /** Defaults to the end of the shop's current term; ignored for OCR credits. */
-  expiresAt?: string;
-  reason: string;
-}
-
-export type ShopAddOnSource = 'ORDER' | 'ADMIN';
-
-export interface ShopAddOn {
-  id: string;
-  shopId: string;
-  addOnCode: string;
-  name: string | null;
-  grantType: AddOnGrantType;
-  grantsFeature: PlanFeature | null;
-  quantity: number;
-  grantedQuantity: number;
-  remainingCredits: number | null;
-  purchasedAt: string | null;
-  expiresAt: string | null;
-  source: ShopAddOnSource;
-  sourceOrderId: string | null;
-  live: boolean;
 }
 
 export interface AdminVoucher {

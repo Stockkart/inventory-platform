@@ -43,11 +43,6 @@ export const platformAdminRoutes: RouteModule = {
       file: 'routes/platform-admin-campaigns.tsx',
       lazy: () => import('./routes/platform-admin-campaigns'),
     },
-    {
-      path: 'catalogue',
-      file: 'routes/platform-admin-catalogue.tsx',
-      lazy: () => import('./routes/platform-admin-catalogue'),
-    },
   ],
 };
 
