@@ -8,7 +8,8 @@ export type ButtonVariant =
   | 'brand'
   | 'brandOutline'
   | 'onBrand'
-  | 'inverseOutline';
+  | 'inverseOutline'
+  | 'promo';
 
 export type LinkTone = 'accent' | 'brand' | 'muted' | 'nav';
 

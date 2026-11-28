@@ -35,11 +35,11 @@ export default function PlansPage() {
       <Header banner={<CampaignBanner />} />
       <Box as="main" flex="1" className={surfaceChrome.planPageMain}>
         <FormKeyboardNavScope>
+          <RouterLink to="/">
+            <Text color="secondary">← Back to home</Text>
+          </RouterLink>
           <Stack gap="xl" maxWidth="lg" mx="auto">
             <Stack gap="sm" align="center">
-              <RouterLink to="/">
-                <Text color="secondary">← Back to home</Text>
-              </RouterLink>
               <Text as="h1" variant="heading1" align="center">
                 All Plans & Pricing
               </Text>

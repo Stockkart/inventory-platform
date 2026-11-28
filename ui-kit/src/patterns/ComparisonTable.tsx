@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { cn } from '../utils/cn';
+import { Box } from '../layout/Box';
 import styles from './ComparisonTable.module.css';
 
 export interface ComparisonColumn {
@@ -13,6 +14,8 @@ export interface ComparisonRow {
   label: ReactNode;
   /** Cell per column key; a missing key renders empty. */
   cells: Record<string, ReactNode>;
+  /** Section title. A title row is drawn wherever it differs from the row above. */
+  group?: string;
 }
 
 export interface ComparisonTableProps {
@@ -25,7 +28,12 @@ export interface ComparisonTableProps {
   className?: string;
 }
 
-/** Feature-by-option grid. Row labels stay pinned while the columns scroll on narrow screens. */
+/**
+ * Feature-by-option grid. Row labels stay pinned while the columns scroll on narrow screens.
+ * Rows that carry a `group` get a section title row, like the brochure's "Billing & stock".
+ * The table itself stays native elements: the `Table` primitive's row rules and header fill would
+ * override the pinned label column and the navy header rule.
+ */
 export function ComparisonTable({
   caption,
   columns,
@@ -34,7 +42,7 @@ export function ComparisonTable({
   className,
 }: ComparisonTableProps) {
   return (
-    <div className={cn(styles.scroll, className)}>
+    <Box className={cn(styles.scroll, className)}>
       <table className={styles.table}>
         <caption className={styles.caption}>{caption}</caption>
         <thead>
@@ -58,27 +66,36 @@ export function ComparisonTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr key={row.key} className={styles.row}>
-              <th scope="row" className={cn(styles.cell, styles.rowHeader)}>
-                {row.label}
-              </th>
-              {columns.map((column) => (
-                <td
-                  key={column.key}
-                  className={cn(
-                    styles.cell,
-                    styles.value,
-                    column.highlighted && styles.highlighted,
-                  )}
-                >
-                  {row.cells[column.key]}
-                </td>
-              ))}
-            </tr>
+          {rows.map((row, index) => (
+            <Fragment key={row.key}>
+              {row.group && row.group !== rows[index - 1]?.group ? (
+                <tr className={styles.groupRow}>
+                  <th scope="colgroup" colSpan={columns.length + 1} className={styles.groupCell}>
+                    {row.group}
+                  </th>
+                </tr>
+              ) : null}
+              <tr className={styles.row}>
+                <th scope="row" className={cn(styles.cell, styles.rowHeader)}>
+                  {row.label}
+                </th>
+                {columns.map((column) => (
+                  <td
+                    key={column.key}
+                    className={cn(
+                      styles.cell,
+                      styles.value,
+                      column.highlighted && styles.highlighted,
+                    )}
+                  >
+                    {row.cells[column.key]}
+                  </td>
+                ))}
+              </tr>
+            </Fragment>
           ))}
         </tbody>
       </table>
-    </div>
+    </Box>
   );
 }

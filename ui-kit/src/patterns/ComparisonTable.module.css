@@ -54,16 +54,39 @@
   }
 }
 
+/* Brochure header: small uppercase labels over a brand-navy rule. */
 .corner,
 .colHeader {
+  background: var(--sk-color-bg-elevated);
+  border-bottom: 2px solid var(--sk-color-brand);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-muted);
+}
+
+.colHeader.highlighted {
+  color: var(--sk-color-brand);
+}
+
+.groupCell {
+  position: sticky;
+  left: 0;
+  padding: 0.5rem 0.85rem;
+  text-align: left;
   background: var(--sk-color-bg-muted);
-  font-weight: 600;
-  color: var(--sk-color-text-primary);
+  border-bottom: 1px solid var(--sk-color-border-default);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sk-color-brand);
 }
 
 .rowHeader {
   font-weight: 500;
-  color: var(--sk-color-text-secondary);
+  color: var(--sk-color-text-primary);
 }
 
 .value {
@@ -71,6 +94,7 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* A faint brand tint: enough to pick the column out without a grey band. */
 .highlighted {
-  background: var(--sk-color-accent-soft);
+  background: color-mix(in srgb, var(--sk-color-brand-cyan) 6%, var(--sk-color-bg-elevated));
 }

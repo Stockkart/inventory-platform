@@ -461,24 +461,25 @@
   transform: none;
 }
 
+/* My Plan: brand-navy hero for the current plan, like the brochure's highlighted plan card. */
 .planStatusSummary {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem 1.5rem;
   width: 100%;
-  padding: 1rem 1.15rem;
-  border-radius: var(--sk-radius-md, 8px);
-  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 92%, transparent);
-  background: var(--sk-color-bg-elevated, #fff);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  padding: 1.35rem 1.5rem;
+  border-radius: var(--sk-radius-lg, 12px);
+  background: var(--sk-color-brand, #1e3a5f);
+  color: var(--sk-color-text-inverse, #fff);
+  box-shadow: 0 8px 24px -12px color-mix(in srgb, var(--sk-color-brand, #1e3a5f) 70%, transparent);
 }
 
 .planStatusSummaryMain {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.4rem;
   min-width: 0;
   flex: 1 1 16rem;
 }
@@ -486,53 +487,70 @@
 .planStatusEyebrow {
   margin: 0;
   font-size: 0.6875rem;
-  font-weight: 650;
-  letter-spacing: 0.06em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--sk-color-text-secondary, #94a3b8);
+  color: color-mix(in srgb, var(--sk-color-text-inverse, #fff) 68%, transparent);
 }
 
 .planStatusNameRow {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem 0.65rem;
+  gap: 0.5rem 0.75rem;
 }
 
 .planStatusName {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.625rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--sk-color-text-primary, #0f172a);
-  line-height: 1.2;
+  color: inherit;
+  line-height: 1.15;
+}
+
+/* Badge on the navy hero; the default soft badges disappear on a dark fill. */
+.planStatusBadge {
+  background: color-mix(in srgb, var(--sk-color-text-inverse, #fff) 16%, transparent);
+  color: inherit;
+}
+
+.planStatusBadgeWarning {
+  background: color-mix(in srgb, var(--sk-color-warning) 78%, var(--sk-color-on-dark, #fff));
+  color: var(--sk-color-promo-text, #1f2937);
 }
 
 .planStatusMeta {
   margin: 0;
   font-size: 0.875rem;
-  color: var(--sk-color-text-secondary, #64748b);
+  color: color-mix(in srgb, var(--sk-color-text-inverse, #fff) 78%, transparent);
 }
 
 .planStatusSide {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.25rem;
+  gap: 0.2rem;
+  padding: 0.65rem 1rem;
+  border-radius: var(--sk-radius-md, 8px);
+  background: color-mix(in srgb, var(--sk-color-text-inverse, #fff) 10%, transparent);
   text-align: right;
 }
 
 .planStatusSideLabel {
   margin: 0;
-  font-size: 0.75rem;
-  color: var(--sk-color-text-secondary, #94a3b8);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--sk-color-text-inverse, #fff) 68%, transparent);
 }
 
 .planStatusSideValue {
   margin: 0;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--sk-color-text-primary, #0f172a);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: inherit;
   font-variant-numeric: tabular-nums;
 }
 
@@ -542,11 +560,125 @@
   gap: 0.2rem;
 }
 
+.planSectionTitle {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--sk-color-text-primary, #0f172a);
+}
+
+/* One row of tiles on wide screens whether the shop shows four or six counters. */
+.planUsageGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.planUsageCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--sk-radius-md, 8px);
+  border: 1px solid var(--sk-color-border-default, #e2e8f0);
+  border-top: 3px solid var(--sk-color-brand, #1e3a5f);
+  background: var(--sk-color-bg-elevated, #fff);
+}
+
+.planUsageCardDanger {
+  border-top-color: var(--sk-color-danger, #dc2626);
+}
+
+.planUsageLabel {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--sk-color-text-muted, #64748b);
+}
+
+.planUsageValue {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--sk-color-text-primary, #0f172a);
+  font-variant-numeric: tabular-nums;
+}
+
+.planUsageValueDanger {
+  color: var(--sk-color-danger, #dc2626);
+}
+
+/* Feature checklist: one panel of tick rows, like the brochure's "What you get" table. */
+.planFeaturePanel {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 0;
+  width: 100%;
+  padding: 0.35rem 0;
+  border-radius: var(--sk-radius-md, 8px);
+  border: 1px solid var(--sk-color-border-default, #e2e8f0);
+  background: var(--sk-color-bg-elevated, #fff);
+}
+
+.planFeatureItem {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 0.65rem 1rem;
+  font-size: 0.875rem;
+  color: var(--sk-color-text-primary, #0f172a);
+}
+
+.planFeatureItemLocked {
+  color: var(--sk-color-text-muted, #64748b);
+}
+
+.planFeatureItemHighlight {
+  background: var(--sk-color-warning-soft);
+}
+
+.planFeatureIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: var(--sk-radius-full, 9999px);
+  background: var(--sk-color-success-soft);
+  color: var(--sk-color-success);
+}
+
+.planFeatureIconLocked {
+  background: var(--sk-color-bg-muted, #f1f5f9);
+  color: var(--sk-color-text-muted, #64748b);
+}
+
+.planFeatureLabel {
+  flex: 1;
+  min-width: 0;
+}
+
+.planCampaignStrip {
+  border-radius: var(--sk-radius-md, 8px);
+}
+
 .planGridWrap {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
   width: 100%;
+  /* Room for the "Most popular" pill that sits on the card's top edge. */
+  padding-top: 0.75rem;
+}
+
+/* Four plans fit side by side on a wide page, like the brochure; fewer columns as space runs out. */
+.planCardGrid {
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
 }
 
 .planGridAddonsTitle {
@@ -558,7 +690,8 @@
   color: var(--sk-color-text-secondary, #64748b);
 }
 
-/* Two subgrid rows (body, then the button's reason note) so buttons line up across a row of cards. */
+/* Plan cards follow the 2026 brochure: white cards, brand-navy type, amber "Most popular".
+   Two subgrid rows (body, then the button's reason note) so buttons line up across a row of cards. */
 .planCard {
   position: relative;
   display: grid;
@@ -566,17 +699,16 @@
   grid-row: span 2;
   row-gap: 0;
   height: 100%;
-  overflow: hidden;
-  border-radius: var(--sk-radius-md, 8px);
-  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 92%, transparent);
+  border-radius: var(--sk-radius-lg, 12px);
+  border: 1px solid var(--sk-color-border-default, #e2e8f0);
   background: var(--sk-color-bg-elevated, #fff);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .planCard:hover {
-  border-color: color-mix(in srgb, #3b82f6 28%, var(--sk-color-border-default, #e2e8f0));
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  border-color: color-mix(in srgb, var(--sk-color-brand) 35%, var(--sk-color-border-default));
+  box-shadow: 0 6px 18px -8px rgba(15, 23, 42, 0.18);
 }
 
 .planCardCurrent {
@@ -596,21 +728,38 @@
 }
 
 .planCardHighlight {
-  border-color: color-mix(in srgb, #2563eb 42%, transparent);
-  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.08);
+  border: 2px solid var(--sk-color-brand);
+  box-shadow: 0 10px 28px -14px color-mix(in srgb, var(--sk-color-brand) 70%, transparent);
 }
 
 .planCardHighlight:hover {
-  border-color: color-mix(in srgb, #2563eb 55%, transparent);
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.1);
+  border-color: var(--sk-color-brand);
+  box-shadow: 0 14px 32px -14px color-mix(in srgb, var(--sk-color-brand) 80%, transparent);
+}
+
+.planCardPopularPill {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--sk-radius-full, 9999px);
+  background: var(--sk-color-promo, #f59e0b);
+  color: var(--sk-color-promo-text, #1f2937);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .planCardBody {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.75rem;
   flex: 1;
-  padding: 1rem 1.05rem 1.05rem;
+  padding: 1.35rem 1.25rem 1.25rem;
   min-height: 0;
 }
 
@@ -624,34 +773,35 @@
 
 .planCardName {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--sk-color-text-primary, #0f172a);
-  line-height: 1.25;
+  color: var(--sk-color-brand, #1e3a5f);
+  line-height: 1.2;
 }
 
 .planCardBestFor {
-  margin: 0;
+  margin: -0.4rem 0 0;
   font-size: 0.8125rem;
   line-height: 1.4;
-  color: var(--sk-color-text-secondary, #64748b);
+  color: var(--sk-color-text-muted, #64748b);
 }
 
 .planCardPriceRow {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.3rem 0.4rem;
+  gap: 0.3rem 0.45rem;
+  padding-top: 0.25rem;
 }
 
 .planCardPrice {
   margin: 0;
-  font-size: 1.65rem;
-  font-weight: 750;
+  font-size: 2rem;
+  font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1;
-  color: var(--sk-color-text-primary, #0f172a);
+  color: var(--sk-color-brand, #1e3a5f);
   font-variant-numeric: tabular-nums;
 }
 
@@ -665,7 +815,7 @@
 .planCardPeriod {
   margin: 0;
   font-size: 0.8125rem;
-  color: var(--sk-color-text-secondary, #64748b);
+  color: var(--sk-color-text-muted, #64748b);
 }
 
 .planCardOneTime {
@@ -677,37 +827,75 @@
 .planCardFeatures {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  margin: 0;
-  padding: 0;
+  gap: 0.55rem;
+  margin: 0.25rem 0 0;
+  padding: 1rem 0 0;
+  border-top: 1px solid var(--sk-color-border-default, #e2e8f0);
   flex: 1;
 }
 
 .planCardFeature {
   display: flex;
   align-items: flex-start;
-  gap: 0.45rem;
+  gap: 0.55rem;
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   line-height: 1.4;
-  color: var(--sk-color-text-secondary, #475569);
+  color: var(--sk-color-text-primary, #0f172a);
 }
 
 .planCardCheck {
+  display: inline-flex;
   flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.125rem;
+  height: 1.125rem;
   margin-top: 0.05rem;
-  color: #16a34a;
-  font-weight: 700;
-  font-size: 0.75rem;
+  border-radius: var(--sk-radius-full, 9999px);
+  background: var(--sk-color-success-soft);
+  color: var(--sk-color-success);
 }
 
 .planCardCta {
   margin-top: auto;
-  padding-top: 0.35rem;
+  padding-top: 0.5rem;
 }
 
 .planCardNote {
-  padding: 0 1.05rem 1.05rem;
+  margin-top: -0.75rem;
+  padding: 0 1.25rem 1.25rem;
+}
+
+/* Plan comparison table cells. */
+.planCompareTick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: var(--sk-radius-full, 9999px);
+  background: var(--sk-color-success-soft);
+  color: var(--sk-color-success);
+  vertical-align: middle;
+}
+
+.planCompareDash {
+  color: var(--sk-color-border-strong, #cbd5e1);
+}
+
+.planComingSoon {
+  margin-left: 0.25rem;
+  font-size: 0.625rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.planComparePrice {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--sk-color-brand, #1e3a5f);
 }
 
 .reminderPriority {
