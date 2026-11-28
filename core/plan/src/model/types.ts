@@ -98,7 +98,8 @@ export type WalletEntrySource =
   | 'RESERVATION_RELEASE'
   | 'ORDER_REDEMPTION'
   | 'MANUAL_ADJUSTMENT'
-  | 'CLAWBACK';
+  | 'CLAWBACK'
+  | 'ORDER_REFUND';
 
 export interface WalletEntryResponse {
   source: WalletEntrySource;

@@ -151,3 +151,18 @@ describe('accessNav HR gating', () => {
     expect(canAccessDashboardPath('/dashboard/accounting', access(null))).toBe(false);
   });
 });
+
+describe('accessNav plan pages', () => {
+  it('opens My Plan, Payment and Referrals with the paymentPlan module only', () => {
+    const allowed = access(null);
+    allowed.modules.paymentPlan = true;
+    for (const path of [
+      '/dashboard/plan-status',
+      '/dashboard/plan-payment',
+      '/dashboard/referrals',
+    ]) {
+      expect(canAccessDashboardPath(path, allowed)).toBe(true);
+      expect(canAccessDashboardPath(path, access(null))).toBe(false);
+    }
+  });
+});
