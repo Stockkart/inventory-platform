@@ -89,7 +89,7 @@ export function AddOnsPanel() {
                   {describeAddOnGrant(a, (f) => FEATURE_LABELS[f], a.grantsFeature)}
                   {a.stackable ? (
                     <Text variant="caption" color="secondary">
-                      {a.maxQuantity ? `Up to ${a.maxQuantity} per purchase` : 'Stackable'}
+                      {a.maxQuantity ? `Up to ${a.maxQuantity} per order` : 'Stackable'}
                     </Text>
                   ) : null}
                 </TableCell>

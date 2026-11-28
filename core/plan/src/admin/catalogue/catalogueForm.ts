@@ -85,8 +85,6 @@ export interface PlanFormState {
   whatsappLimit: string;
   userLimit: string;
   ocrLimit: string;
-  roleLimit: string;
-  attendanceUserLimit: string;
   unlimited: boolean;
   features: PlanFeature[];
   displayOrder: string;
@@ -107,8 +105,6 @@ export const emptyPlanForm = (): PlanFormState => ({
   whatsappLimit: '',
   userLimit: '',
   ocrLimit: '',
-  roleLimit: '',
-  attendanceUserLimit: '',
   unlimited: false,
   features: [],
   displayOrder: '',
@@ -129,8 +125,6 @@ export const planFormState = (plan: AdminPlan): PlanFormState => ({
   whatsappLimit: numberText(plan.whatsappLimit),
   userLimit: numberText(plan.userLimit),
   ocrLimit: numberText(plan.ocrLimit),
-  roleLimit: numberText(plan.roleLimit),
-  attendanceUserLimit: numberText(plan.attendanceUserLimit),
   unlimited: plan.unlimited,
   features: [...(plan.features ?? [])].sort(),
   displayOrder: numberText(plan.displayOrder),
@@ -177,11 +171,6 @@ export function toPlanRequest(
   }
   const userLimit = optionalWhole(form.userLimit, 1);
   if (userLimit === 'invalid') errors.userLimit = 'At least 1, or empty for none.';
-  const roleLimit = optionalWhole(form.roleLimit, 1);
-  if (roleLimit === 'invalid') errors.roleLimit = 'At least 1, or empty for no cap.';
-  const attendanceUserLimit = optionalWhole(form.attendanceUserLimit, 1);
-  if (attendanceUserLimit === 'invalid')
-    errors.attendanceUserLimit = 'At least 1, or empty for no cap.';
   const displayOrder = optionalWhole(form.displayOrder, 0, CATALOGUE_LIMITS.displayOrder);
   if (displayOrder === 'invalid') errors.displayOrder = `0–${CATALOGUE_LIMITS.displayOrder}.`;
 
@@ -203,8 +192,6 @@ export function toPlanRequest(
     billingLimit: billingLimit as number | null,
     ...counts,
     userLimit: userLimit as number | null,
-    roleLimit: roleLimit as number | null,
-    attendanceUserLimit: attendanceUserLimit as number | null,
     unlimited: form.unlimited,
     features: [...form.features].sort(),
     displayOrder: displayOrder as number | null,

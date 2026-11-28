@@ -150,10 +150,6 @@ export function PlanFormModal({ open, plan, plans, onClose }: PlanFormModalProps
             {field('whatsappLimit', 'WhatsApp', { numeric: true })}
             {field('ocrLimit', 'OCR invoices / month', { numeric: true })}
           </Inline>
-          <Inline gap="md" flexWrap align="start">
-            {field('roleLimit', 'Staff roles', { numeric: true })}
-            {field('attendanceUserLimit', 'Biometric attendance users', { numeric: true })}
-          </Inline>
 
           <Text variant="heading3" weight="semibold">
             Features

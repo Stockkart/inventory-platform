@@ -134,10 +134,10 @@ export function AddOnFormModal({ open, addOn, onClose }: AddOnFormModalProps) {
 
           <Inline gap="md" flexWrap align="start">
             <FormField
-              label="Add-on type"
+              label="What it gives"
               htmlFor="addon-grant-type"
               required
-              hint={isNew ? 'What the shop gets. Fixed once created.' : undefined}
+              hint={isNew ? 'Fixed once created.' : undefined}
             >
               <Select
                 id="addon-grant-type"
@@ -198,7 +198,7 @@ export function AddOnFormModal({ open, addOn, onClose }: AddOnFormModalProps) {
             </FormField>
             {feature ? null : (
               <FormField
-                label="Max quantity per purchase"
+                label="Most per order"
                 htmlFor="addon-max"
                 hint="Empty for no limit."
                 error={errors.maxQuantity}
