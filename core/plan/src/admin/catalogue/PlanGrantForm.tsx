@@ -14,7 +14,7 @@ import {
 import { useNotify } from '@inventory-platform/session';
 import type { ShopPlanStatusResponse } from '@inventory-platform/contracts';
 import type { PlanGrantRequest } from '@inventory-platform/plan/types';
-import { useAdminPlansQuery, useGrantPlanMutation } from '../../queries/admin.hooks';
+import { useAdminPlansQuery, useGrantPlanMutation } from '../hooks';
 import { adminErrorMessage, formatAdminDate } from '../format';
 import {
   CATALOGUE_LIMITS,

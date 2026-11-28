@@ -8,7 +8,6 @@ import type {
   PlanResponse,
   ReferralAttributionStatus,
   ReferralRewardStatus,
-  VoucherTarget,
   VoucherType,
 } from './types.js';
 
@@ -164,11 +163,7 @@ export interface ShopAddOn {
 export interface AdminVoucher {
   id: string;
   code: string;
-  /** Never null: legacy vouchers without a target read as ADD_ON. */
-  target: VoucherTarget;
-  addOnCode: string | null;
-  planCode: string | null;
-  planName: string | null;
+  addOnCode: string;
   type: VoucherType;
   value: number | null;
   quantity: number;
@@ -191,10 +186,7 @@ export interface VoucherGenerateRequest {
   code?: string;
   count?: number;
   prefix?: string;
-  /** Omitted means ADD_ON, so clients that predate plan vouchers keep working. */
-  target?: VoucherTarget;
-  addOnCode?: string;
-  planCode?: string;
+  addOnCode: string;
   type: VoucherType;
   /** Percent or rupees; omitted for FREE_ADDON. */
   value?: number;
@@ -205,35 +197,6 @@ export interface VoucherGenerateRequest {
   validFrom?: string;
   validTo?: string;
   note?: string;
-}
-
-/** What the admin has typed so far for a plan voucher; nothing is saved. */
-export interface PlanVoucherPreviewRequest {
-  planCode: string;
-  type: VoucherType;
-  value: number | null;
-}
-
-/** Live figures for a plan voucher before it is created. `message` is null when allowed. */
-export interface PlanVoucherPreviewResponse {
-  planCode: string;
-  planName: string;
-  price: number;
-  discount: number;
-  priceAfter: number;
-  basePrice: number | null;
-  floor: number | null;
-  maxFlat: number | null;
-  maxPercent: number | null;
-  allowed: boolean;
-  message: string | null;
-}
-
-/** Filters for the voucher list; any left out is not applied. */
-export interface VoucherListFilters {
-  addOnCode?: string;
-  planCode?: string;
-  target?: VoucherTarget;
 }
 
 /**
@@ -253,9 +216,7 @@ export interface AdminVoucherRedemption {
   voucherCode: string;
   shopId: string;
   orderId: string;
-  target: VoucherTarget;
-  addOnCode: string | null;
-  planCode: string | null;
+  addOnCode: string;
   discount: number;
   status: VoucherRedemptionStatus;
   reservedAt: string | null;

@@ -14,7 +14,7 @@ import {
 } from '@inventory-platform/ui-kit';
 import type { BadgeVariant } from '@inventory-platform/ui-kit';
 import type { AdminVoucher, VoucherRedemptionStatus } from '@inventory-platform/plan/types';
-import { useVoucherRedemptionsQuery } from '../../queries/admin.hooks';
+import { useVoucherRedemptionsQuery } from '../hooks';
 import { adminErrorMessage, formatAdminDate } from '../format';
 import { formatRupees } from '../../ui/planPricing';
 
@@ -44,7 +44,6 @@ export function RedemptionsModal({ voucher, onClose }: RedemptionsModalProps) {
           <TableHead>
             <TableRow>
               <TableHeaderCell>Shop</TableHeaderCell>
-              <TableHeaderCell>Applies to</TableHeaderCell>
               <TableHeaderCell>Order</TableHeaderCell>
               <TableHeaderCell>Discount</TableHeaderCell>
               <TableHeaderCell>Status</TableHeaderCell>
@@ -53,20 +52,15 @@ export function RedemptionsModal({ voucher, onClose }: RedemptionsModalProps) {
           </TableHead>
           <TableBody>
             {query.isLoading ? (
-              <TableLoadingRow colSpan={6} />
+              <TableLoadingRow colSpan={5} />
             ) : rows.length === 0 ? (
-              <TableEmptyRow colSpan={6} message="Not used yet." />
+              <TableEmptyRow colSpan={5} message="Not used yet." />
             ) : (
               rows.map((r) => {
                 const badge = STATUS_BADGE[r.status];
                 return (
                   <TableRow key={r.id}>
                     <TableCell>{r.shopId}</TableCell>
-                    <TableCell>
-                      {r.target === 'PLAN'
-                        ? `Plan: ${r.planCode ?? ''}`
-                        : `Add-on: ${r.addOnCode ?? ''}`}
-                    </TableCell>
                     <TableCell>{r.orderId}</TableCell>
                     <TableCell>{formatRupees(r.discount)}</TableCell>
                     <TableCell>

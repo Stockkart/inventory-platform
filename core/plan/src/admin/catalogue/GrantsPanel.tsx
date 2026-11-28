@@ -23,11 +23,7 @@ import {
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import type { AdminAddOn, ShopAddOn } from '@inventory-platform/plan/types';
-import {
-  useAdminAddOnsQuery,
-  useGrantAddOnMutation,
-  useShopAddOnsQuery,
-} from '../../queries/admin.hooks';
+import { useAdminAddOnsQuery, useGrantAddOnMutation, useShopAddOnsQuery } from '../hooks';
 import { adminErrorMessage, formatAdminDate } from '../format';
 import { emptyGrantForm, toGrantRequest, type GrantFormState } from './catalogueForm';
 import { PlanGrantForm } from './PlanGrantForm';

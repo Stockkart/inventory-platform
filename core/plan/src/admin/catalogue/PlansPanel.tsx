@@ -14,11 +14,11 @@ import {
   TableLoadingRow,
   TableRow,
   Text,
-  ReasonDialog,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import type { AdminPlan } from '@inventory-platform/plan/types';
-import { useAdminPlansQuery, useSetPlanActiveMutation } from '../../queries/admin.hooks';
+import { useAdminPlansQuery, useSetPlanActiveMutation } from '../hooks';
+import { ReasonDialog } from '../ReasonDialog';
 import { adminErrorMessage } from '../format';
 import { formatRupees } from '../../ui/planPricing';
 import { TRIAL_PLAN_CODE } from './catalogueForm';

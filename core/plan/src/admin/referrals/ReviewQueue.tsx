@@ -17,7 +17,6 @@ import {
   TableLoadingRow,
   TableRow,
   Text,
-  ReasonDialog,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import type {
@@ -28,7 +27,8 @@ import {
   useAdminAttributionsQuery,
   useApproveAttributionMutation,
   useRejectAttributionMutation,
-} from '../../queries/admin.hooks';
+} from '../hooks';
+import { ReasonDialog } from '../ReasonDialog';
 import {
   adminErrorMessage,
   attributionStatusBadge,

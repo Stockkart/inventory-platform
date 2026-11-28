@@ -17,7 +17,6 @@ import {
   TableLoadingRow,
   TableRow,
   Text,
-  ReasonDialog,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import type { AdminCampaign } from '@inventory-platform/plan/types';
@@ -25,7 +24,8 @@ import {
   useAdminCampaignThemesQuery,
   useAdminCampaignsQuery,
   useSetCampaignActiveMutation,
-} from '../queries/admin.hooks';
+} from '../admin/hooks';
+import { ReasonDialog } from '../admin/ReasonDialog';
 import { adminErrorMessage, formatAdminDate } from '../admin/format';
 import { campaignThemeLabel, campaignVisibility } from '../admin/campaigns/campaignForm';
 import { CampaignFormModal } from '../admin/campaigns/CampaignFormModal';

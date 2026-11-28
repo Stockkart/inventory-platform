@@ -14,11 +14,11 @@ import {
   TableLoadingRow,
   TableRow,
   Text,
-  ReasonDialog,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import type { AdminAddOn } from '@inventory-platform/plan/types';
-import { useAdminAddOnsQuery, useSetAddOnActiveMutation } from '../../queries/admin.hooks';
+import { useAdminAddOnsQuery, useSetAddOnActiveMutation } from '../hooks';
+import { ReasonDialog } from '../ReasonDialog';
 import { adminErrorMessage } from '../format';
 import { FEATURE_LABELS, formatRupees } from '../../ui/planPricing';
 import { describeAddOnGrant } from './catalogueForm';

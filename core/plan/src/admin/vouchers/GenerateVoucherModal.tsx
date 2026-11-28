@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   Button,
@@ -11,38 +11,28 @@ import {
   Stack,
   Text,
   Textarea,
-  useDebouncedValue,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
-import type {
-  AdminAddOn,
-  AdminVoucher,
-  VoucherTarget,
-  VoucherType,
-} from '@inventory-platform/plan/types';
-import {
-  useAdminPlansQuery,
-  useGenerateVouchersMutation,
-  usePlanVoucherPreview,
-} from '../../queries/admin.hooks';
+import type { AdminAddOn, AdminVoucher, VoucherType } from '@inventory-platform/plan/types';
+import { useGenerateVouchersMutation } from '../hooks';
 import { adminErrorMessage } from '../format';
 import {
   emptyVoucherForm,
-  TARGET_OPTIONS,
   toGenerateRequest,
-  typeOptionsFor,
   VOUCHER_MAX_BATCH,
-  withTarget,
+  VOUCHER_TYPE_LABEL,
   type VoucherFormState,
 } from './voucherForm';
-import { describePlanVoucherPreview, previewRequestFor } from './planVoucherPreview';
 
 const MODE_OPTIONS = [
   { value: 'single', label: 'One code' },
   { value: 'batch', label: 'Batch of codes' },
 ] as const;
 
-const PREVIEW_DEBOUNCE_MS = 300;
+const TYPE_OPTIONS = (Object.keys(VOUCHER_TYPE_LABEL) as VoucherType[]).map((type) => ({
+  value: type,
+  label: VOUCHER_TYPE_LABEL[type],
+}));
 
 export interface GenerateVoucherModalProps {
   open: boolean;
@@ -62,21 +52,6 @@ export function GenerateVoucherModal({
   const [showErrors, setShowErrors] = useState(false);
   const [created, setCreated] = useState<AdminVoucher[] | null>(null);
   const mutation = useGenerateVouchersMutation();
-  const plans = useAdminPlansQuery();
-  const isPlan = form.target === 'PLAN';
-  // The preview follows what was typed 300 ms ago, so it is only trusted once it has caught up.
-  const typed = useMemo(
-    () => previewRequestFor(form),
-    [form.target, form.planCode, form.type, form.value],
-  );
-  const settled = useDebouncedValue(typed, PREVIEW_DEBOUNCE_MS);
-  const caughtUp = typed === settled;
-  const preview = usePlanVoucherPreview(isPlan ? settled : null);
-  const previewLine = preview.data ? describePlanVoucherPreview(preview.data) : null;
-  const previewBlocks =
-    isPlan &&
-    typed !== null &&
-    (!caughtUp || preview.isFetching || preview.isError || previewLine?.allowed === false);
   const result = toGenerateRequest(form);
   const errors = showErrors && !result.ok ? result.errors : {};
   const busy = mutation.isPending;
@@ -88,8 +63,6 @@ export function GenerateVoucherModal({
     setCreated(null);
     mutation.reset();
   }, [open]);
-
-  const setTarget = (target: VoucherTarget) => setForm((prev) => withTarget(prev, target));
 
   const set = <K extends keyof VoucherFormState>(key: K, value: VoucherFormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -120,13 +93,6 @@ export function GenerateVoucherModal({
   const addOnOptions = [
     { value: '', label: 'Choose an add-on' },
     ...addOns.map((a) => ({ value: a.code, label: `${a.name} (${a.code})` })),
-  ];
-
-  const planOptions = [
-    { value: '', label: plans.isLoading ? 'Loading plans…' : 'Choose a plan' },
-    ...(plans.data ?? [])
-      .filter((p) => p.active && p.code)
-      .map((p) => ({ value: p.code as string, label: p.planName })),
   ];
 
   return (
@@ -213,47 +179,21 @@ export function GenerateVoucherModal({
               )}
             </Inline>
 
-            {plans.isError ? (
-              <Alert variant="danger">
-                {adminErrorMessage(plans.error, 'Could not load plans.')}
-              </Alert>
-            ) : null}
             <Inline gap="md" flexWrap align="start">
-              <FormField label="Applies to" htmlFor="voucher-target" required>
+              <FormField label="Add-on" htmlFor="voucher-addon" required error={errors.addOnCode}>
                 <Select
-                  id="voucher-target"
-                  value={form.target}
-                  options={TARGET_OPTIONS}
-                  onChange={(e) => setTarget(e.target.value as VoucherTarget)}
+                  id="voucher-addon"
+                  value={form.addOnCode}
+                  options={addOnOptions}
+                  onChange={(e) => set('addOnCode', e.target.value)}
                   disabled={busy}
                 />
               </FormField>
-              {isPlan ? (
-                <FormField label="Plan" htmlFor="voucher-plan" required error={errors.planCode}>
-                  <Select
-                    id="voucher-plan"
-                    value={form.planCode}
-                    options={planOptions}
-                    onChange={(e) => set('planCode', e.target.value)}
-                    disabled={busy || plans.isLoading}
-                  />
-                </FormField>
-              ) : (
-                <FormField label="Add-on" htmlFor="voucher-addon" required error={errors.addOnCode}>
-                  <Select
-                    id="voucher-addon"
-                    value={form.addOnCode}
-                    options={addOnOptions}
-                    onChange={(e) => set('addOnCode', e.target.value)}
-                    disabled={busy}
-                  />
-                </FormField>
-              )}
-              <FormField label="Discount" htmlFor="voucher-type" required error={errors.type}>
+              <FormField label="Discount" htmlFor="voucher-type" required>
                 <Select
                   id="voucher-type"
                   value={form.type}
-                  options={typeOptionsFor(form.target)}
+                  options={TYPE_OPTIONS}
                   onChange={(e) => set('type', e.target.value as VoucherType)}
                   disabled={busy}
                 />
@@ -274,38 +214,22 @@ export function GenerateVoucherModal({
                   />
                 </FormField>
               ) : null}
-              {isPlan ? null : (
-                <FormField
-                  label="Quantity"
-                  htmlFor="voucher-quantity"
-                  required
-                  hint="Units of the add-on per use."
-                  error={errors.quantity}
-                >
-                  <Input
-                    id="voucher-quantity"
-                    inputMode="numeric"
-                    value={form.quantity}
-                    onChange={(e) => set('quantity', e.target.value)}
-                    disabled={busy}
-                  />
-                </FormField>
-              )}
-            </Inline>
-
-            {isPlan && typed ? (
-              <Text
-                variant="caption"
-                color={previewLine?.allowed === false || preview.isError ? 'danger' : 'secondary'}
-                aria-live="polite"
+              <FormField
+                label="Quantity"
+                htmlFor="voucher-quantity"
+                required
+                hint="Units of the add-on per use."
+                error={errors.quantity}
               >
-                {preview.isError
-                  ? adminErrorMessage(preview.error, 'Could not check this discount. Try again.')
-                  : previewLine && caughtUp && !preview.isFetching
-                  ? previewLine.text
-                  : 'Checking the price…'}
-              </Text>
-            ) : null}
+                <Input
+                  id="voucher-quantity"
+                  inputMode="numeric"
+                  value={form.quantity}
+                  onChange={(e) => set('quantity', e.target.value)}
+                  disabled={busy}
+                />
+              </FormField>
+            </Inline>
 
             <Inline gap="md" flexWrap align="start">
               <FormField
@@ -402,7 +326,7 @@ export function GenerateVoucherModal({
             <Button variant="outline" onClick={onClose} disabled={busy}>
               Cancel
             </Button>
-            <Button variant="solid" loading={busy} disabled={previewBlocks} onClick={submit}>
+            <Button variant="solid" loading={busy} onClick={submit}>
               Create
             </Button>
           </>

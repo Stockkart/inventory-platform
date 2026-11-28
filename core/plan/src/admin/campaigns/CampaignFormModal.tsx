@@ -12,7 +12,7 @@ import {
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import type { AdminCampaign } from '@inventory-platform/plan/types';
-import { useAdminCampaignThemesQuery, useSaveCampaignMutation } from '../../queries/admin.hooks';
+import { useAdminCampaignThemesQuery, useSaveCampaignMutation } from '../hooks';
 import { adminErrorMessage } from '../format';
 import {
   CAMPAIGN_LIMITS,
