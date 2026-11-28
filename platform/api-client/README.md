@@ -18,12 +18,6 @@ things used to force callers out: a write needing a one-off header (an `Idempote
 a response that is a PDF rather than JSON. Both are covered here now, so there is no remaining
 reason for a domain API to construct its own axios call.
 
-## Token key
-
-The bearer token sits in localStorage under `auth_token` (shop app). `setTokenStorageKey(key)` moves
-it to another key; the admin app uses `stockkart_admin_token` (`core/admin/src/session/adminToken.ts`)
-so an admin token never shares a key with a shop sign-in. `hasToken()` reads the current key.
-
 ## Does not own
 
 - Domain endpoint maps (`core/*/api`)

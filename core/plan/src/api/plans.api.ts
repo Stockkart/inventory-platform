@@ -6,8 +6,6 @@ import type {
   CreatePlanCheckoutInput,
   PaymentConfigResponse,
   PlanCheckoutResponse,
-  PlanMisParams,
-  PlanMisResponse,
   PlanOrderStatusResponse,
   PlanResponse,
   PlanTransactionResponse,
@@ -145,14 +143,6 @@ export const plansApi = {
       PLAN_ENDPOINTS.CAMPAIGN_ACTIVE,
     );
     return response.data ?? null;
-  },
-
-  getPlanMis: async (params: PlanMisParams): Promise<PlanMisResponse> => {
-    const response = await apiClient.get<ApiResponse<PlanMisResponse>>(PLAN_ENDPOINTS.ADMIN_MIS, {
-      from: params.from,
-      to: params.to,
-    });
-    return response.data;
   },
 
   verifyPayment: async (data: VerifyPlanPaymentRequest): Promise<VerifyPlanPaymentResponse> => {

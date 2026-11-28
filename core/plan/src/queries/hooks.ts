@@ -13,8 +13,6 @@ import type {
   CampaignResponse,
   CreatePlanCheckoutInput,
   PlanCheckoutResponse,
-  PlanMisParams,
-  PlanMisResponse,
   PlanResponse,
   PlanTransactionResponse,
   QuoteRequest,
@@ -169,19 +167,6 @@ export function useReferralSummaryQuery(
   return useQuery({
     queryKey: planKeys.referralSummary(),
     queryFn: () => plansApi.getReferralSummary(),
-    ...options,
-  });
-}
-
-/** Platform admins only; keeps the last report on screen while a new range loads. */
-export function usePlanMisQuery(
-  params: PlanMisParams,
-  options?: Omit<UseQueryOptions<PlanMisResponse>, 'queryKey' | 'queryFn'>,
-) {
-  return useQuery({
-    queryKey: planKeys.adminMis(params),
-    queryFn: () => plansApi.getPlanMis(params),
-    placeholderData: keepPreviousData,
     ...options,
   });
 }
