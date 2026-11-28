@@ -17,25 +17,4 @@ export const PLAN_ENDPOINTS = {
   ADDONS: '/plans/addons',
   VOUCHER_VALIDATE: '/plans/vouchers/validate',
   CAMPAIGN_ACTIVE: '/campaigns/active',
-  ADMIN_MIS: '/admin/mis/plans',
-  ADMIN_REFERRAL_ATTRIBUTIONS: '/admin/referrals/attributions',
-  ADMIN_REFERRAL_ATTRIBUTION_ACTION: (id: string, action: 'approve' | 'reject') =>
-    `/admin/referrals/attributions/${id}/${action}`,
-  ADMIN_REFERRAL_REWARDS: '/admin/referrals/rewards',
-  ADMIN_REFERRAL_REWARD_ACTION: (id: string, action: 'approve' | 'void' | 'clawback') =>
-    `/admin/referrals/rewards/${id}/${action}`,
-  ADMIN_ADDONS: '/admin/addons',
-  ADMIN_VOUCHERS: '/admin/vouchers',
-  ADMIN_VOUCHER: (id: string) => `/admin/vouchers/${id}`,
-  ADMIN_VOUCHER_ACTIVE: (id: string) => `/admin/vouchers/${id}/active`,
-  ADMIN_VOUCHER_REDEMPTIONS: (id: string) => `/admin/vouchers/${id}/redemptions`,
-  ADMIN_CAMPAIGNS: '/admin/campaigns',
-  ADMIN_CAMPAIGN_THEMES: '/admin/campaigns/themes',
-  ADMIN_CAMPAIGN: (id: string) => `/admin/campaigns/${id}`,
-  ADMIN_CAMPAIGN_ACTIVE: (id: string) => `/admin/campaigns/${id}/active`,
-  ADMIN_WALLET: (shopId: string) => `/admin/wallets/${encodeURIComponent(shopId)}`,
-  ADMIN_WALLET_ADJUSTMENTS: (shopId: string) =>
-    `/admin/wallets/${encodeURIComponent(shopId)}/adjustments`,
-  ADMIN_WALLET_ADJUSTMENT_PREVIEW: (shopId: string) =>
-    `/admin/wallets/${encodeURIComponent(shopId)}/adjustments/preview`,
 } as const;
