@@ -33,7 +33,7 @@ Theme: wrap with `ThemeProvider`, or `@import '@inventory-platform/ui-kit/theme/
 | Layer       | Location                                     | Examples                                                                                                                                                                       |
 | ----------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Tokens      | `theme/`, `tokens/`                          | `--sk-*` CSS variables                                                                                                                                                         |
-| Primitives  | `forms/`, `layout/`, `feedback/`, `overlay/` | `Button`, `Box`, `Alert`, `Drawer`, `FloatingPanel`, `ReasonDialog`                                                                                                            |
+| Primitives  | `forms/`, `layout/`, `feedback/`, `overlay/` | `Button`, `Box`, `Alert`, `Drawer`, `FloatingPanel`                                                                                                                            |
 | Patterns    | `patterns/`                                  | `PageHeader`, `PaginationBar`, `AppShell`, `CalculatorPanel`, `ComparisonTable` (plan feature grid, pinned label column), `SaleBanner` (scrolling sale strip, no close button) |
 | Chrome maps | `patterns/*Chrome*`                          | CSS module class bags for domains                                                                                                                                              |
 
@@ -44,8 +44,6 @@ rows are also exported as `ColumnList` (with optional px width fields) for setti
 They are presentation only: the caller owns widths, order and saving.
 
 Domain widgets and pages stay in `core/*/ui` and `core/*/pages`.
-
-`useDebouncedValue(value, ms)` (`utils/`) follows a value once it has stopped changing, e.g. to debounce a live preview request; like `useMatchMedia` it holds no data.
 
 **Promo palette.** `--sk-color-promo` / `-promo-hover` / `-promo-text` are the brochure amber of the one headline promo (`Button variant="promo"`, the "Most popular" pills); `--sk-color-on-dark` is text on surfaces that stay dark in both themes (sale strip, My Plan hero). Same values in light and dark.
 

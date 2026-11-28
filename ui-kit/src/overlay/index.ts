@@ -16,4 +16,3 @@ export {
   type FloatingPanelProps,
   type FloatingPanelPosition,
 } from './FloatingPanel';
-export { ReasonDialog, type ReasonDialogProps } from './ReasonDialog';

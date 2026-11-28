@@ -13,7 +13,6 @@ type WorkspaceAliasConfig = {
 
 const DOMAIN_PACKAGES = [
   'accounting',
-  'admin',
   'analytics',
   'credit',
   'hr',
@@ -55,7 +54,7 @@ function routeAliasPackages(workspaceRoot: string): RouteAliasPackage[] {
   ];
 }
 
-/** Generate Vite resolve aliases for monorepo packages used by the inventory and admin apps. */
+/** Generate Vite resolve aliases for monorepo packages used by the inventory app. */
 export function generateInventoryWorkspaceAliases({
   workspaceRoot,
   appDir,
@@ -97,7 +96,6 @@ export function generateInventoryWorkspaceAliases({
     '@inventory-platform/schema/types': platform('schema/src/types/index.ts'),
     '@inventory-platform/shell/types': platform('shell/src/model/index.ts'),
     '@inventory-platform/plan/types': core('plan', 'src/model/index.ts'),
-    '@inventory-platform/admin/types': core('admin', 'src/model/index.ts'),
     '@inventory-platform/product/types': core('product', 'src/model/index.ts'),
     '@inventory-platform/user/types': core('user', 'src/model/index.ts'),
     '@inventory-platform/user/ui': core('user', 'src/ui/index.ts'),
@@ -132,13 +130,11 @@ export function generateInventoryWorkspaceAliases({
     '@inventory-platform/plan/api': core('plan', 'src/api/index.ts'),
     '@inventory-platform/plan': core('plan', 'src/index.ts'),
     '@inventory-platform/user': core('user', 'src/index.ts'),
-    '@inventory-platform/admin': core('admin', 'src/index.ts'),
     '@inventory-platform/pricing/api': core('pricing', 'src/api/index.ts'),
     '@inventory-platform/pricing': core('pricing', 'src/index.ts'),
     '@inventory-platform/product/api': core('product', 'src/api/index.ts'),
     '@inventory-platform/product/print': core('product', 'src/lib/printDocument.ts'),
     '@inventory-platform/product': core('product', 'src/index.ts'),
-    '@inventory-platform/plugin-registry/admin-routes': plugins('registry/src/routes/admin.ts'),
     '@inventory-platform/plugin-registry/routes': plugins('registry/src/routes/index.ts'),
     '@inventory-platform/plugin-registry': plugins('registry/src/index.ts'),
     '@inventory-platform/plugin-cafe/route-modules': plugins('cafe/src/routes.ts'),

@@ -99,8 +99,6 @@ export {
   clampToViewport,
   type FloatingPanelProps,
   type FloatingPanelPosition,
-  ReasonDialog,
-  type ReasonDialogProps,
 } from './overlay';
 
 // Data display — Layer 5
@@ -306,7 +304,6 @@ export {
 
 // Hooks
 export { useMatchMedia } from './utils/useMatchMedia';
-export { useDebouncedValue } from './utils/useDebouncedValue';
 
 // Icons
 export { Icon, type IconProps } from './icons';

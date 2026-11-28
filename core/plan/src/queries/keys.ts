@@ -1,9 +1,5 @@
 import { createQueryKeyFactory } from '@inventory-platform/query';
-import type {
-  PlanMisParams,
-  QuoteRequest,
-  VoucherListFilters,
-} from '@inventory-platform/plan/types';
+import type { QuoteRequest } from '@inventory-platform/plan/types';
 
 const base = createQueryKeyFactory('plan');
 
@@ -25,35 +21,6 @@ export const planKeys = {
   wallet: () => [...base.all, 'wallet'] as const,
   referralSummary: () => [...base.all, 'referral-summary'] as const,
   referralRewards: () => [...base.all, 'referral-rewards'] as const,
-  adminMis: (params: PlanMisParams) => [...base.all, 'admin-mis', params] as const,
-  adminReferrals: () => [...base.all, 'admin-referrals'] as const,
-  adminAttributions: (status: string) =>
-    [...base.all, 'admin-referrals', 'attributions', status] as const,
-  adminRewards: (status: string | null) =>
-    [...base.all, 'admin-referrals', 'rewards', status ?? 'all'] as const,
-  adminWallet: (shopId: string) => [...base.all, 'admin-wallet', shopId] as const,
-  adminAddOns: () => [...base.all, 'admin-addons'] as const,
-  adminPlans: () => [...base.all, 'admin-plans'] as const,
-  adminShopAddOns: (shopId: string) => [...base.all, 'admin-shop-addons', shopId] as const,
-  adminCampaigns: () => [...base.all, 'admin-campaigns'] as const,
-  adminCampaignThemes: () => [...base.all, 'admin-campaign-themes'] as const,
-  adminVouchers: () => [...base.all, 'admin-vouchers'] as const,
-  adminVoucherList: (filters: VoucherListFilters, page: number) =>
-    [
-      ...base.all,
-      'admin-vouchers',
-      'list',
-      filters.addOnCode ?? 'all',
-      filters.planCode ?? 'all',
-      filters.target ?? 'all',
-      page,
-    ] as const,
-  adminVoucherPlanPreview: (planCode: string, type: string, value: number | null) =>
-    [...base.all, 'admin-vouchers', 'plan-preview', planCode, type, value] as const,
-  adminVoucherRedemptions: (id: string) =>
-    [...base.all, 'admin-vouchers', 'redemptions', id] as const,
-  adminWalletPreview: (shopId: string, amount: number) =>
-    [...base.all, 'admin-wallet', shopId, 'preview', amount] as const,
 };
 
 /**

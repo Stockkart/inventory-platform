@@ -11,8 +11,6 @@ Subscription plans: status, payment flow, and marketing/landing plan surfaces.
 - Plans API, payment helpers, guards
 - Shop entitlements query (`useShopEntitlementsQuery`, key `planKeys.shopEntitlements(shopId)`). The dashboard layout passes it to the shell for nav and route gating. A verified payment invalidates `planKeys.all`, so the nav shows the new plan without a reload. The key carries the shop id, so a shop switch or a login as another shop never reads the previous shop's entitlements.
 - Marketing UI pieces used on public/plan pages
-- Admin tool API and Query hooks: `api/admin.api.ts`, `queries/admin.hooks.ts` (keys in `queries/keys.ts`); confirm dialogs use ui-kit `ReasonDialog`
-- Admin tool pages (MIS, referral operations, vouchers, campaigns, catalogue) as `planAdminToolRoutes`, mounted only in the admin app (`apps/admin`). The shop app has no admin routes or nav.
 
 ## Does not own
 
@@ -42,7 +40,7 @@ Trial badges and the My Plan trial line read the trial length from the API (`tri
 
 ## Sale banner
 
-`CampaignBanner` shows the active campaign as a scrolling strip on My Plan and on the public landing and plans pages. It has no close button, so the offer stays visible while the campaign runs. The campaign's `dismissible` field is still stored by the API but the UI no longer reads it, and the admin form no longer shows it.
+`CampaignBanner` shows the active campaign as a scrolling strip on My Plan and on the public landing and plans pages. It has no close button, so the offer stays visible while the campaign runs. The campaign's `dismissible` field is still stored by the API but the UI no longer reads it.
 
 ## Plan comparison
 
@@ -73,19 +71,9 @@ StockKart does not send SMS or WhatsApp yet. Every SMS / WhatsApp allowance carr
 
 `PlanPaymentPage` lists purchases with `PastPurchases` (replacing "Transaction History"), newest first as the API returns them: plan orders, add-on-only orders and admin-assigned plans (amount shown as "—"). `purchaseHistory.ts` only formats labels (title, period with "≈" when the term is estimated, refund text, status tag such as "Processing" / "Needs attention"); every figure comes from `GET /plans/shop/transactions`. The row amount is the full price (`totalAmount`, wallet part included; `amount` from an older API), with "₹300.00 wallet + ₹200.00 Razorpay" under it, or "Paid from wallet" when Razorpay took nothing (`paymentSplitLabel`, from the API's `walletAmount` and `gatewayAmount`); the breakdown's "Paid" row is the Razorpay part. Dates use `formatPlanDate`. Expanding a row shows the line breakdown when the API kept one. `VoucherField` shows "Applies to <plan>" for a plan-target voucher and "₹X off <plan>" once the quote carries that voucher's line discount.
 
-## Plan vouchers (admin)
-
-The admin **Vouchers** page (`VouchersAdminPage`) and `GenerateVoucherModal` create vouchers for an add-on or for a plan. **Applies to** (a `FormField required` over the ui-kit `Select`) switches the form between the two; `withTarget` (`voucherForm.ts`) resets the fields that only make sense for the other target, and a plan voucher is a percent or flat discount on one plan chosen from the plan catalogue.
-
-For a plan target the modal shows a live preview from `POST /admin/vouchers/plan-preview` (`usePlanVoucherPreview`, debounced 300 ms by ui-kit `useDebouncedValue`). The API decides what the discount comes to and whether it is allowed (for example a percent over the plan's allowed maximum); `describePlanVoucherPreview` only turns that answer into text. **Create** stays disabled while the preview is loading, behind what was typed, failed, or says the voucher is not allowed, so a voucher the API would reject cannot be submitted. No discount maths happens in the frontend. The value field only checks that it is a plain number with up to two decimals above 0 (`parseVoucherValue`); the API validates the rest. The list filters by **Applies to** and by add-on; the add-on filter is disabled while Plan is chosen. The list is paged (`GET /admin/vouchers` with `page` from 0 and `size` 100, `VOUCHER_PAGE_SIZE`): **Previous** / **Next** under the table, **Next** off when a page comes back shorter than `size` (`isLastVoucherPage`), and changing a filter goes back to the first page. Rows show the target (`describeVoucherTarget`). Shops redeem a plan voucher on the payment page (see `VoucherField` under Past purchases).
-
 ## Tests
 
 `nx test plan` runs `src/**/*.test.ts(x)` with the same setup as `core/user` (`vitest.config.ts`, `vitest.setup.ts`, `tsconfig.spec.json`): `src/ui/**` in jsdom, everything else in node. CI runs it with every other test target.
-
-## Wallet adjustments (admin)
-
-Referral operations → Wallet: the admin types a signed amount and presses **Review credit/debit**. A `ReasonDialog` shows the shop, the amount and the balance before → after from `POST /admin/wallets/{shopId}/adjustments/preview`; **Confirm** stays disabled until the API says the adjustment is allowed (it caps one adjustment) and a reason is typed. The same adjustment id is kept across retries so it is applied once.
 
 ## Usage tiles
 
@@ -104,14 +92,6 @@ The Referrals page lists `GET /plans/shop/wallet` entries with their `availableD
 ## Decisions from the API
 
 The plan screens show what the API decides and never re-derive it: plan selection leaves out plans with `selectable: false`; add-ons offered in a plan cart come from `GET /plans/addons?planCode=X` and top-ups from `GET /plans/shop/addon-options`, keeping those with `eligible !== false`; the My Plan top-up section shows only when plan status says `canBuyAddOnsAlone`; the billing limit text is the plan's `billingLimitLabel`; quote lines show `grossAmount`.
-
-## Add-on catalogue (admin)
-
-The add-on form sends what the admin chose; the API derives `billingType` from the grant type (OCR credits one-time, the rest annual) and, for a feature add-on, `grantsQuantity` 1 and not stackable, and rejects contradictory combinations (`toAddOnRequest` no longer sets them).
-
-## Plan grants (admin)
-
-Plans & add-ons → **Shop plan & add-ons**: after looking up a shop, **Grant a plan** (`PlanGrantForm`) takes a plan (the plan list's selectable plans, `planGrantOptions`), 1–36 months and a reason (at most 200 characters). **Review grant** opens a confirm dialog that repeats the shop, plan, months and reason; **Grant plan** sends `POST /admin/shops/{shopId}/plan-grants` and shows the plan and expiry from the returned plan status. The API decides the term (the same plan extends from the current expiry) and refuses another plan while paid days remain; its message is shown in the dialog.
 
 ## Dates
 
