@@ -79,6 +79,7 @@ export type {
   AddOnResponse,
   VoucherRejection,
   VoucherType,
+  VoucherTarget,
   VoucherCheckResponse,
   VoucherRejectedDetails,
 } from './plan.types.js';

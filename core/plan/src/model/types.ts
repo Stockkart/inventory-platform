@@ -26,6 +26,7 @@ export type {
   AddOnResponse,
   VoucherRejection,
   VoucherType,
+  VoucherTarget,
   VoucherCheckResponse,
   VoucherRejectedDetails,
 } from '@inventory-platform/contracts';
@@ -103,13 +104,60 @@ export interface PlanTransactionResponse {
   shopId: string;
   planId: string;
   planName: string;
-  amount: number;
+  /** Paid through Razorpay (0 when the wallet paid it all); null for ASSIGNED rows. */
+  amount: number | null;
   /** Null on add-on-only orders, which have no term. */
   durationMonths: number | null;
-  paymentMethod: string;
+  /** Null on order-only rows whose order recorded no method. */
+  paymentMethod: string | null;
   provider?: string | null;
   providerPaymentId?: string | null;
-  createdAt: string;
+  /** Purchase date shown; paidAt (else createdAt) for order-only rows. */
+  createdAt: string | null;
+  /** Null unless the payment was refunded. */
+  refundedAt: string | null;
+  planCode: string | null;
+  kind: PurchaseKind;
+  /** Order status; null for rows that have no order. */
+  status: string | null;
+  /** Null for ASSIGNED and legacy rows that kept no line snapshot. */
+  items: PurchaseLine[] | null;
+  subtotal: number | null;
+  discountTotal: number | null;
+  walletCredit: number | null;
+  /** Full price before wallet credit (walletAmount + gatewayAmount); null where amount is. Older APIs omit it. */
+  totalAmount?: number | null;
+  /** Part paid from the shop wallet; 0 when none. */
+  walletAmount?: number | null;
+  /** Part paid through Razorpay; same as amount. */
+  gatewayAmount?: number | null;
+  termStartsAt: string | null;
+  termEndsAt: string | null;
+  /** True when the term was derived from createdAt and the duration, not granted. */
+  termEstimated: boolean;
+  paymentOrderId: string | null;
+  /** Money returned to the original payment method; null when nothing was. */
+  refundedToPaymentMethod: number | null;
+  /** Wallet credit given back on a full refund; null otherwise. */
+  walletCreditReturned: number | null;
+  /** Time the list is sorted by, newest first. */
+  sortAt: string | null;
+}
+
+/** PLAN, ADD_ON_ONLY or ASSIGNED (set by an admin or the assign endpoint; no verified charge). */
+export type PurchaseKind = 'PLAN' | 'ADD_ON_ONLY' | 'ASSIGNED';
+
+/** One priced line of a past purchase, as the shop was charged. */
+export interface PurchaseLine {
+  type: string;
+  code: string;
+  name: string;
+  quantity: number;
+  unitPrice: number | null;
+  discount: number | null;
+  voucherCode: string | null;
+  walletCredit: number | null;
+  lineTotal: number | null;
 }
 
 export type WalletEntrySource =

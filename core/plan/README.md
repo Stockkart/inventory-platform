@@ -40,7 +40,7 @@ Trial badges and the My Plan trial line read the trial length from the API (`tri
 
 ## Sale banner
 
-`CampaignBanner` shows the active campaign as a scrolling strip on My Plan and on the public landing and plans pages. It has no close button, so the offer stays visible while the campaign runs. The campaign's `dismissible` field is still stored by the API but the UI no longer reads it, and the admin form no longer shows it.
+`CampaignBanner` shows the active campaign as a scrolling strip on My Plan and on the public landing and plans pages. It has no close button, so the offer stays visible while the campaign runs. The campaign's `dismissible` field is still stored by the API but the UI no longer reads it.
 
 ## Plan comparison
 
@@ -66,6 +66,10 @@ On an active paid plan (plan status `canBuyAddOnsAlone`, decided by the API) My 
 ## Coming soon: SMS and WhatsApp
 
 StockKart does not send SMS or WhatsApp yet. Every SMS / WhatsApp allowance carries the amber "Coming soon" badge (`surfaceChrome.planComingSoon`): plan card lines (`buildPlanFeatures` returns `{ label, comingSoon }`, rendered by `PlanGrid` and the ui-kit `PlanCard`), the "SMS per month" / "WhatsApp per month" rows of the comparison table, the My Plan usage tiles, and `grantType: 'SMS'` add-ons (shown, but Buy and the checkout checkbox are disabled; the API rejects them with "SMS packs are coming soon").
+
+## Past purchases
+
+`PlanPaymentPage` lists purchases with `PastPurchases` (replacing "Transaction History"), newest first as the API returns them: plan orders, add-on-only orders and admin-assigned plans (amount shown as "—"). `purchaseHistory.ts` only formats labels (title, period with "≈" when the term is estimated, refund text, status tag such as "Processing" / "Needs attention"); every figure comes from `GET /plans/shop/transactions`. The row amount is the full price (`totalAmount`, wallet part included; `amount` from an older API), with "₹300.00 wallet + ₹200.00 Razorpay" under it, or "Paid from wallet" when Razorpay took nothing (`paymentSplitLabel`, from the API's `walletAmount` and `gatewayAmount`); the breakdown's "Paid" row is the Razorpay part. Dates use `formatPlanDate`. Expanding a row shows the line breakdown when the API kept one. `VoucherField` shows "Applies to <plan>" for a plan-target voucher and "₹X off <plan>" once the quote carries that voucher's line discount.
 
 ## Tests
 
