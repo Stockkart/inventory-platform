@@ -10,19 +10,3 @@ export const planNav: NavContribution = {
     { path: '/dashboard/referrals', label: 'Referrals & Wallet', icon: 'handshake' },
   ],
 };
-
-/** Shown only to platform admins; see the shell's platform admin filter. */
-export const platformAdminNav: NavContribution = {
-  groupId: 'platform-admin',
-  label: 'Platform admin',
-  icon: 'lock',
-  items: [
-    { path: '/dashboard/platform-admin/mis', label: 'Revenue MIS', icon: 'trending-up' },
-    {
-      path: '/dashboard/platform-admin/referrals',
-      label: 'Referral operations',
-      icon: 'handshake',
-    },
-    { path: '/dashboard/platform-admin/vouchers', label: 'Vouchers', icon: 'receipt' },
-  ],
-};
