@@ -19,7 +19,6 @@
 /platform/contracts/ @your-org/stockkart-frontend
 
 /core/accounting/ @your-org/stockkart-frontend
-/core/admin/ @your-org/stockkart-frontend
 /core/analytics/ @your-org/stockkart-frontend
 /core/checkout/ @your-org/stockkart-frontend
 /core/credit/ @your-org/stockkart-frontend
@@ -38,4 +37,3 @@
 
 /.github/ @your-org/stockkart-frontend
 /apps/inventory/ @your-org/stockkart-frontend
-/apps/admin/ @your-org/stockkart-frontend
