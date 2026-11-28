@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   Alert,
   Button,
+  Checkbox,
   FormField,
   Inline,
   Input,
@@ -219,6 +220,14 @@ export function CampaignFormModal({ open, campaign, onClose }: CampaignFormModal
               />
             </FormField>
           </Inline>
+
+          <Checkbox
+            id="campaign-dismissible"
+            label="Shops can dismiss the banner"
+            checked={form.dismissible}
+            onChange={(e) => set('dismissible', e.target.checked)}
+            disabled={busy}
+          />
         </Stack>
       </Modal.Body>
       <Modal.Footer>
