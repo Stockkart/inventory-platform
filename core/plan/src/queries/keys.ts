@@ -25,12 +25,6 @@ export const planKeys = {
   adminRewards: (status: string | null) =>
     [...base.all, 'admin-referrals', 'rewards', status ?? 'all'] as const,
   adminWallet: (shopId: string) => [...base.all, 'admin-wallet', shopId] as const,
-  adminAddOns: () => [...base.all, 'admin-addons'] as const,
-  adminVouchers: () => [...base.all, 'admin-vouchers'] as const,
-  adminVoucherList: (addOnCode: string | null, page: number) =>
-    [...base.all, 'admin-vouchers', 'list', addOnCode ?? 'all', page] as const,
-  adminVoucherRedemptions: (id: string) =>
-    [...base.all, 'admin-vouchers', 'redemptions', id] as const,
   adminWalletPreview: (shopId: string, amount: number) =>
     [...base.all, 'admin-wallet', shopId, 'preview', amount] as const,
 };

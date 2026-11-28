@@ -23,6 +23,5 @@ export const platformAdminNav: NavContribution = {
       label: 'Referral operations',
       icon: 'handshake',
     },
-    { path: '/dashboard/platform-admin/vouchers', label: 'Vouchers', icon: 'receipt' },
   ],
 };
