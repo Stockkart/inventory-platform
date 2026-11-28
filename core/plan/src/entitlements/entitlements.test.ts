@@ -54,6 +54,12 @@ describe('features', () => {
     expect(isPlanFeature(null)).toBe(false);
   });
 
+  it('rejects inherited object keys from a crafted ?locked= link', () => {
+    expect(isPlanFeature('__proto__')).toBe(false);
+    expect(isPlanFeature('constructor')).toBe(false);
+    expect(isPlanFeature('toString')).toBe(false);
+  });
+
   it('splits included and locked features', () => {
     const entitlements = {
       features: ['ACCOUNTING', 'CREDIT_BALANCE'],

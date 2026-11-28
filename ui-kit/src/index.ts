@@ -226,6 +226,7 @@ export {
   MarketingFooter,
   type MarketingFooterProps,
   PlanCard,
+  type PlanCardFeature,
   type PlanCardProps,
   PlanCardGrid,
   type PlanCardGridProps,

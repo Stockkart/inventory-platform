@@ -22,3 +22,16 @@ export const Default: StoryObj<typeof PlanCard> = { args: base };
 export const WithListPriceAnchor: StoryObj<typeof PlanCard> = {
   args: { ...base, listPriceLabel: '₹12,999', highlighted: true, showPopularBadge: true },
 };
+
+/** Tag a line that is sold but not live yet, e.g. SMS before StockKart sends it. */
+export const WithComingSoonLines: StoryObj<typeof PlanCard> = {
+  args: {
+    ...base,
+    features: [
+      '5 users',
+      { label: '500 SMS/month', comingSoon: true },
+      { label: '500 WhatsApp/month', comingSoon: true },
+      'Accounting',
+    ],
+  },
+};

@@ -1,14 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '@inventory-platform/api-client';
-import type { AddOnResponse, PlanResponse } from '@inventory-platform/plan/types';
+import type { AddOnResponse } from '@inventory-platform/plan/types';
 import {
   addOnPriceLabel,
+  buildAddOnOnlyRequest,
   buildQuoteRequest,
+  checkoutFingerprint,
   maxQuantityFor,
   normaliseVoucherCode,
   paidFromWallet,
+  quoteFailureMessage,
   readVoucherRejection,
-  sellableAddOns,
+  eligibleAddOns,
+  vouchersAfterRejection,
 } from './cart';
 
 function addOn(overrides: Partial<AddOnResponse>): AddOnResponse {
@@ -28,29 +32,12 @@ function addOn(overrides: Partial<AddOnResponse>): AddOnResponse {
   };
 }
 
-const plan = {
-  id: 'p1',
-  planName: 'Growth',
-  code: 'GROWTH',
-  unlimited: false,
-  features: ['ACCOUNTING'],
-} as PlanResponse;
-
-describe('sellableAddOns', () => {
-  const accounting = addOn({ code: 'ACC', grantsFeature: 'ACCOUNTING' });
-  const salary = addOn({ code: 'SAL', grantsFeature: 'SALARY' });
-  const seats = addOn({ code: 'SEAT', grantType: 'SEATS', stackable: true });
-
-  it('hides features the plan already includes', () => {
-    expect(sellableAddOns([accounting, salary, seats], plan).map((a) => a.code)).toEqual([
-      'SAL',
-      'SEAT',
-    ]);
-  });
-
-  it('hides extra seats on unlimited plans', () => {
-    const unlimited = { ...plan, unlimited: true };
-    expect(sellableAddOns([salary, seats], unlimited).map((a) => a.code)).toEqual(['SAL']);
+describe('eligibleAddOns', () => {
+  it('keeps what the API marks eligible, and the plain catalogue (no flag)', () => {
+    const yes = addOn({ code: 'SAL', eligible: true });
+    const no = addOn({ code: 'ACC', eligible: false, ineligibleReason: 'Already included.' });
+    const plain = addOn({ code: 'SEAT', eligible: null });
+    expect(eligibleAddOns([yes, no, plain]).map((a) => a.code)).toEqual(['SAL', 'SEAT']);
   });
 });
 
@@ -98,6 +85,31 @@ describe('buildQuoteRequest', () => {
   });
 });
 
+describe('buildAddOnOnlyRequest', () => {
+  it('asks for wallet credit on a scan pack bought on its own', () => {
+    expect(buildAddOnOnlyRequest({ OCR_TOPUP_500: 1 }, [], true)).toEqual({
+      addOns: [{ code: 'OCR_TOPUP_500', quantity: 1 }],
+      applyWalletCredit: true,
+    });
+  });
+
+  it('sends add-ons with no plan code or duration', () => {
+    expect(buildAddOnOnlyRequest({ SEAT: 2, OCR: 1 }, ['B', 'A'], true)).toEqual({
+      addOns: [
+        { code: 'OCR', quantity: 1 },
+        { code: 'SEAT', quantity: 2 },
+      ],
+      voucherCodes: ['A', 'B'],
+      applyWalletCredit: true,
+    });
+  });
+
+  it('is null with nothing selected, since the server needs one add-on', () => {
+    expect(buildAddOnOnlyRequest({}, [])).toBeNull();
+    expect(buildAddOnOnlyRequest({ SEAT: 0 }, ['A'])).toBeNull();
+  });
+});
+
 describe('paidFromWallet', () => {
   it('is true only for wallet-provider checkouts', () => {
     const checkout = {
@@ -134,5 +146,65 @@ describe('readVoucherRejection', () => {
   it('ignores other errors', () => {
     expect(readVoucherRejection(new ApiError('bad', { status: 400 }))).toBeNull();
     expect(readVoucherRejection(new Error('boom'))).toBeNull();
+  });
+});
+
+describe('vouchersAfterRejection', () => {
+  it('drops only the voucher the API named', () => {
+    expect(
+      vouchersAfterRejection(['A', 'B'], {
+        voucherCode: 'B',
+        message: 'This voucher has expired.',
+      }),
+    ).toEqual(['A']);
+  });
+
+  it('clears every voucher when the API names none', () => {
+    expect(vouchersAfterRejection(['A', 'B'], { voucherCode: null, message: 'No.' })).toEqual([]);
+  });
+});
+
+describe('checkoutFingerprint', () => {
+  const request = buildQuoteRequest('GROWTH', {}, ['SAVE10']);
+
+  it('is the same for the same cart and totals, so a retry reuses the key', () => {
+    expect(checkoutFingerprint(request, { grandTotal: 900, walletCredit: 0 })).toBe(
+      checkoutFingerprint({ ...request }, { grandTotal: 900, walletCredit: 0 }),
+    );
+  });
+
+  it('changes when the quoted total or wallet credit changes for the same cart', () => {
+    const before = checkoutFingerprint(request, { grandTotal: 900, walletCredit: 0 });
+    expect(checkoutFingerprint(request, { grandTotal: 1000, walletCredit: 0 })).not.toBe(before);
+    expect(checkoutFingerprint(request, { grandTotal: 900, walletCredit: 100 })).not.toBe(before);
+  });
+});
+
+describe('quoteFailureMessage', () => {
+  const rejected = (voucherCode: string | null) =>
+    new ApiError('rejected', {
+      status: 400,
+      code: 'VOUCHER_REJECTED',
+      details: { voucherCode, reason: 'NOT_FOUND' },
+    });
+
+  it('is empty without an error', () => {
+    expect(quoteFailureMessage(null, [])).toBeNull();
+  });
+
+  it('leaves a rejected voucher that is applied to the voucher field', () => {
+    expect(quoteFailureMessage(rejected('A'), ['A', 'B'])).toBeNull();
+    expect(quoteFailureMessage(rejected(null), ['A'])).toBeNull();
+  });
+
+  it('reports a rejection that leaves nothing to drop, so the cart is not stuck pricing', () => {
+    expect(quoteFailureMessage(rejected('GONE'), ['A'])).toBe('This voucher code does not exist.');
+    expect(quoteFailureMessage(rejected(null), [])).toBe('This voucher code does not exist.');
+  });
+
+  it('reports any other error', () => {
+    expect(quoteFailureMessage(new ApiError('Server down', { status: 503 }), [])).toBe(
+      'Server down',
+    );
   });
 });

@@ -26,7 +26,7 @@ import type {
   WalletResponse,
 } from '@inventory-platform/plan/types';
 import { plansApi } from '../api/plans.api';
-import { planKeys } from './keys';
+import { isPlanDataExceptQuote, planKeys } from './keys';
 
 export function usePlansQuery(
   options?: Omit<UseQueryOptions<PlanResponse[]>, 'queryKey' | 'queryFn'>,
@@ -117,13 +117,27 @@ export function useActiveCampaignQuery(
   });
 }
 
+/** Add-ons for a cart buying `planCode`, each marked eligible or not by the API. */
 export function useAddOnsQuery(
+  planCode: string | null,
   options?: Omit<UseQueryOptions<AddOnResponse[]>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
-    queryKey: planKeys.addOns(),
-    queryFn: () => plansApi.listAddOns(),
+    queryKey: planKeys.addOns(planCode),
+    queryFn: () => plansApi.listAddOns(planCode),
     staleTime: 5 * 60_000,
+    ...options,
+  });
+}
+
+/** Add-ons the shop can buy on their own for its current plan (My Plan top-up). */
+export function useAddOnOptionsQuery(
+  options?: Omit<UseQueryOptions<AddOnResponse[]>, 'queryKey' | 'queryFn'>,
+) {
+  return useQuery({
+    queryKey: planKeys.addOnOptions(),
+    queryFn: () => plansApi.listAddOnOptions(),
+    staleTime: 60_000,
     ...options,
   });
 }
@@ -176,16 +190,29 @@ export function useCreatePlanCheckoutMutation(
   });
 }
 
+/** Cancel an abandoned unpaid order so its wallet and voucher holds come back at once. */
+export function useCancelPlanOrderMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (orderId: string) => plansApi.cancelOrder(orderId),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: planKeys.wallet() });
+      void queryClient.invalidateQueries({ queryKey: planKeys.quotes() });
+    },
+  });
+}
+
 export function useVerifyPlanPaymentMutation(
   options?: UseMutationOptions<VerifyPlanPaymentResponse, Error, VerifyPlanPaymentRequest>,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (data) => plansApi.verifyPayment(data),
+    // After the spread, so a caller's onSuccess runs alongside the invalidation, never instead.
     onSuccess: (...args) => {
-      void queryClient.invalidateQueries({ queryKey: planKeys.all });
+      void queryClient.invalidateQueries({ predicate: isPlanDataExceptQuote });
       options?.onSuccess?.(...args);
     },
-    ...options,
   });
 }

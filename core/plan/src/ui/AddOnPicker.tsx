@@ -1,6 +1,19 @@
-import { Checkbox, Inline, QtyStepper, Stack, Text } from '@inventory-platform/ui-kit';
+import {
+  Badge,
+  Checkbox,
+  Inline,
+  QtyStepper,
+  Stack,
+  Text,
+  surfaceChrome,
+} from '@inventory-platform/ui-kit';
 import type { AddOnResponse } from '@inventory-platform/plan/types';
-import { addOnPriceLabel, maxQuantityFor, type AddOnSelection } from '../checkout';
+import {
+  addOnPriceLabel,
+  isComingSoonAddOn,
+  maxQuantityFor,
+  type AddOnSelection,
+} from '../checkout';
 
 interface AddOnPickerProps {
   addOns: AddOnResponse[];
@@ -9,7 +22,10 @@ interface AddOnPickerProps {
   disabled?: boolean;
 }
 
-/** Add-ons for the chosen plan. Prices shown are catalogue prices; the quote is the total. */
+/**
+ * Add-ons for the chosen plan, or for the current plan on an add-on-only order. Prices shown are
+ * catalogue prices; the quote is the total. SMS packs show as coming soon and cannot be picked.
+ */
 export function AddOnPicker({ addOns, selection, onChange, disabled }: AddOnPickerProps) {
   if (addOns.length === 0) return null;
   return (
@@ -20,16 +36,24 @@ export function AddOnPicker({ addOns, selection, onChange, disabled }: AddOnPick
       {addOns.map((addOn) => {
         const quantity = selection[addOn.code] ?? 0;
         const max = maxQuantityFor(addOn);
+        const comingSoon = isComingSoonAddOn(addOn);
         return (
           <Inline key={addOn.code} justify="between" align="center" width="full" gap="md">
             <Stack gap="xs">
-              <Checkbox
-                id={`addon-${addOn.code}`}
-                label={addOn.name}
-                checked={quantity > 0}
-                disabled={disabled}
-                onChange={(event) => onChange(addOn.code, event.target.checked ? 1 : 0)}
-              />
+              <Inline gap="xs" align="center">
+                <Checkbox
+                  id={`addon-${addOn.code}`}
+                  label={addOn.name}
+                  checked={quantity > 0}
+                  disabled={disabled || comingSoon}
+                  onChange={(event) => onChange(addOn.code, event.target.checked ? 1 : 0)}
+                />
+                {comingSoon ? (
+                  <Badge variant="warning" className={surfaceChrome.planComingSoon}>
+                    Coming soon
+                  </Badge>
+                ) : null}
+              </Inline>
               {addOn.description ? (
                 <Text variant="caption" color="secondary">
                   {addOn.description}

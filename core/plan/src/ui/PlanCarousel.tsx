@@ -20,7 +20,7 @@ function planCardProps(
   },
 ) {
   const allFeatures = buildPlanFeatures(plan);
-  const features = plan.bestFor ? allFeatures.filter((f) => f !== plan.bestFor) : allFeatures;
+  const features = plan.bestFor ? allFeatures.filter((f) => f.label !== plan.bestFor) : allFeatures;
 
   const highlight = isMostPopular(plan);
   const showPopular = highlight && (options.isCenter ?? true);
@@ -32,8 +32,7 @@ function planCardProps(
     priceLabel: formatRupees(planYearlyPrice(plan)),
     listPriceLabel: planListPriceLabel(plan),
     periodLabel: '/year',
-    oneTimeLabel:
-      plan.price && plan.price > 0 ? `One-time ₹${plan.price.toLocaleString('en-IN')}` : null,
+    oneTimeLabel: plan.price && plan.price > 0 ? `One-time ${formatRupees(plan.price)}` : null,
     features,
     showTrialBadge: showTrial,
     trialLabel: freeTrialLabel(plan.trialDays),

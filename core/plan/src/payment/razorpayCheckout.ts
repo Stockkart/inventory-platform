@@ -1,4 +1,8 @@
-import type { PaymentCheckoutPort, RazorpayPaymentSuccess } from './types.js';
+import {
+  PaymentDismissedError,
+  type PaymentCheckoutPort,
+  type RazorpayPaymentSuccess,
+} from './types.js';
 import { ensureRazorpayLoaded } from './razorpayScript.js';
 
 export const razorpayCheckout: PaymentCheckoutPort = {
@@ -11,6 +15,9 @@ export const razorpayCheckout: PaymentCheckoutPort = {
     await ensureRazorpayLoaded();
 
     return new Promise((resolve, reject) => {
+      // A failed attempt keeps Razorpay's window open so the shopper can try another method;
+      // only closing the window ends this checkout.
+      let lastFailure: string | null = null;
       const rzp = new window.Razorpay!({
         key: payload.keyId,
         order_id: payload.orderId,
@@ -25,13 +32,12 @@ export const razorpayCheckout: PaymentCheckoutPort = {
         theme: { color: '#2563eb' },
         handler: (response: RazorpayPaymentSuccess) => resolve(response),
         modal: {
-          ondismiss: () => reject(new Error('Payment cancelled')),
+          ondismiss: () => reject(new PaymentDismissedError(lastFailure)),
         },
       });
 
       rzp.on('payment.failed', (response) => {
-        const description = response.error?.description ?? 'Payment failed. Please try again.';
-        reject(new Error(description));
+        lastFailure = response.error?.description ?? 'Payment failed. Please try again.';
       });
 
       rzp.open();
