@@ -15,9 +15,9 @@ import {
 import { PlanGrid } from '../ui/PlanGrid';
 import { formatPlanDate } from '../ui/planDate';
 import { FEATURE_LABELS, formatRupees } from '../ui/planPricing';
+import { trialLabel } from '../ui/trialLabel';
 import { boughtScansLeftLabel, isPlanFeature, splitFeatures, usageOfLimit } from '../entitlements';
 import { CampaignBanner } from '../campaign';
-import { trialLabel } from '../ui/trialLabel';
 import type { PlanResponse } from '@inventory-platform/plan/types';
 import { usePlansQuery, useShopEntitlementsQuery, useShopPlanStatusQuery } from '../queries/hooks';
 

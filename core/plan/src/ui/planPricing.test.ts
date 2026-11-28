@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { PlanResponse } from '@inventory-platform/plan/types';
-import { buildPlanComparison, formatRupees, planListPriceLabel } from './planPricing';
+import {
+  buildPlanComparison,
+  formatRupees,
+  planListPriceLabel,
+  plansForSelection,
+} from './planPricing';
 
 function plan(overrides: Partial<PlanResponse>): PlanResponse {
   return {
@@ -90,5 +95,14 @@ describe('buildPlanComparison', () => {
     expect(byKey.CREDIT_BALANCE).toEqual([true, true]);
     expect(byKey.ACCOUNTING).toEqual([false, true]);
     expect(byKey.SALARY).toBeUndefined();
+  });
+});
+
+describe('plansForSelection', () => {
+  it('leaves out the plans the API marks not selectable; they are sold at payment', () => {
+    const starter = plan({ id: 's', planName: 'Starter', selectable: true });
+    const extraUser = plan({ id: 'u', planName: 'Extra User Plan', selectable: false });
+    const older = plan({ id: 'o', planName: 'Older API plan' });
+    expect(plansForSelection([starter, extraUser, older])).toEqual([starter, older]);
   });
 });

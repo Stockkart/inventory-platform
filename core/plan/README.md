@@ -25,6 +25,10 @@ Subscription plans: status, payment flow, and marketing/landing plan surfaces.
 
 Use ui-kit marketing patterns (`PlanCard`, `MarketingHero`, …) and solid buttons for in-dashboard actions.
 
+## Trial length
+
+Trial badges and the My Plan trial line read the trial length from the API (`trialDays` on the plan list and on plan status, inventory-api `plan.trial-days`) through `trialLabel` / `freeTrialLabel` (`ui/trialLabel.ts`); an older API without the field shows "Free trial" with no number. ui-kit `PlanCard` takes the text as `trialLabel`.
+
 ## Related
 
 - `@inventory-platform/contracts` — plan types / guards

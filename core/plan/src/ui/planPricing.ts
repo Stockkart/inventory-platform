@@ -11,6 +11,14 @@ export const FEATURE_LABELS: Record<PlanFeature, string> = {
   ADVANCED_ACCESS_CONTROL: 'Advanced access control',
 };
 
+/**
+ * Plans a shop can pick from: the API marks legacy add-on rows (e.g. "Extra User Plan")
+ * `selectable: false`; add-ons only show once a plan is chosen, at payment.
+ */
+export function plansForSelection(plans: PlanResponse[]): PlanResponse[] {
+  return plans.filter((plan) => plan.selectable !== false);
+}
+
 /** Rupees as the rest of the app shows money: Indian grouping and always two decimals ("₹8,499.10"). */
 export function formatRupees(amount: number): string {
   const safe = Number.isFinite(amount) ? amount : 0;
