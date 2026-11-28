@@ -146,7 +146,7 @@ export default [
     },
   },
   {
-    files: ['apps/inventory/**/*.{ts,tsx}', 'apps/admin/**/*.{ts,tsx}'],
+    files: ['apps/inventory/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -164,7 +164,6 @@ export default [
             {
               group: [
                 '@inventory-platform/accounting',
-                '@inventory-platform/admin',
                 '@inventory-platform/analytics',
                 '@inventory-platform/credit',
                 '@inventory-platform/hr',
