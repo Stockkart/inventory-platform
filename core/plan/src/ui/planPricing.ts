@@ -10,6 +10,8 @@ export const FEATURE_LABELS: Record<PlanFeature, string> = {
   SALARY: 'Staff salary',
   BIOMETRIC_ATTENDANCE: 'Biometric attendance',
   ADVANCED_ACCESS_CONTROL: 'Advanced access control (roles & permissions)',
+  SHOP_BRANDING: 'Shop logo & digital signature on invoices',
+  PRIORITY_SUPPORT: 'Priority support',
 };
 
 /** Gated features that are sold but not live yet; shown with a "Coming soon" tag. */
@@ -35,10 +37,16 @@ export const CORE_FEATURES: readonly { key: string; label: string }[] = [
 export const FEATURE_GROUPS: readonly { title: string; features: readonly PlanFeature[] }[] = [
   {
     title: 'Money & accounts',
-    features: ['CREDIT_BALANCE', 'ACCOUNTING', 'BARCODE_GENERATOR', 'LOW_STOCK_NOTIFICATION'],
+    features: [
+      'CREDIT_BALANCE',
+      'ACCOUNTING',
+      'BARCODE_GENERATOR',
+      'SHOP_BRANDING',
+      'LOW_STOCK_NOTIFICATION',
+    ],
   },
   { title: 'Grow your business', features: ['MARKETING', 'SALARY', 'BIOMETRIC_ATTENDANCE'] },
-  { title: 'Team & support', features: ['ADVANCED_ACCESS_CONTROL'] },
+  { title: 'Team & support', features: ['ADVANCED_ACCESS_CONTROL', 'PRIORITY_SUPPORT'] },
 ];
 
 /**
@@ -92,6 +100,29 @@ function limitValue(limit: number | null | undefined, unlimited: boolean, zeroLa
  * cover every gated feature any shown plan includes, so a row is never all "not included".
  */
 const LIMITS_GROUP = 'Plan limits';
+
+/** The access row covers the basic roles every plan has, so it drops the word "Advanced". */
+const COMPARISON_LABELS: Partial<Record<PlanFeature, string>> = {
+  ADVANCED_ACCESS_CONTROL: 'Access control (roles & permissions)',
+};
+
+function roles(count: number): string {
+  return `${count} role${count === 1 ? '' : 's'}`;
+}
+
+/** A tick, a dash, or the cap the backend sent for that feature on this plan. */
+function featureValue(plan: PlanResponse, feature: PlanFeature): ComparisonValue {
+  const included = plan.features?.includes(feature) ?? false;
+  if (feature === 'BIOMETRIC_ATTENDANCE' && included && plan.attendanceUserLimit != null) {
+    return `Up to ${plan.attendanceUserLimit} users`;
+  }
+  if (feature === 'ADVANCED_ACCESS_CONTROL') {
+    if (included)
+      return plan.roleLimit != null ? `Advanced (${roles(plan.roleLimit)})` : 'Advanced';
+    return plan.roleLimit != null ? `Limited (${roles(plan.roleLimit)})` : false;
+  }
+  return included;
+}
 
 export function buildPlanComparison(allPlans: PlanResponse[]): PlanComparison {
   const plans = allPlans
@@ -152,11 +183,11 @@ export function buildPlanComparison(allPlans: PlanResponse[]): PlanComparison {
 
   for (const group of FEATURE_GROUPS) {
     for (const feature of group.features) {
-      const values = plans.map((plan) => plan.features?.includes(feature) ?? false);
+      const values = plans.map((plan) => featureValue(plan, feature));
       if (values.some(Boolean)) {
         rows.push({
           key: feature,
-          label: FEATURE_LABELS[feature],
+          label: COMPARISON_LABELS[feature] ?? FEATURE_LABELS[feature],
           group: group.title,
           values,
           comingSoon: COMING_SOON_FEATURES.includes(feature),

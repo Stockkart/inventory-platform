@@ -9,7 +9,9 @@ export type PlanFeature =
   | 'MARKETING'
   | 'SALARY'
   | 'BIOMETRIC_ATTENDANCE'
-  | 'ADVANCED_ACCESS_CONTROL';
+  | 'ADVANCED_ACCESS_CONTROL'
+  | 'SHOP_BRANDING'
+  | 'PRIORITY_SUPPORT';
 
 export interface PlanResponse {
   id: string;
@@ -29,6 +31,10 @@ export interface PlanResponse {
   displayOrder?: number | null;
   /** OCR invoices included per month. */
   ocrLimit?: number | null;
+  /** Staff roles the plan allows. Null = no cap. */
+  roleLimit?: number | null;
+  /** Users on biometric attendance. Null = no cap. */
+  attendanceUserLimit?: number | null;
   features?: PlanFeature[] | null;
   /** Marketing highlight chosen by the backend, e.g. MOST_POPULAR. */
   badge?: string | null;
