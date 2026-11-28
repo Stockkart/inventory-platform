@@ -28,11 +28,6 @@ export const platformAdminRoutes: RouteModule = {
       file: 'routes/platform-admin-mis.tsx',
       lazy: () => import('./routes/platform-admin-mis'),
     },
-    {
-      path: 'referrals',
-      file: 'routes/platform-admin-referrals.tsx',
-      lazy: () => import('./routes/platform-admin-referrals'),
-    },
   ],
 };
 

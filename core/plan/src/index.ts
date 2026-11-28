@@ -15,7 +15,6 @@ export { PlanStatusPage } from './pages/PlanStatusPage';
 export { PlanPaymentPage } from './pages/PlanPaymentPage';
 export { ReferralsPage } from './pages/ReferralsPage';
 export { PlanMisPage } from './pages/PlanMisPage';
-export { ReferralOpsPage } from './pages/ReferralOpsPage';
 export { PlanGrid, buildPlanFeatures } from './ui/PlanGrid';
 export { CampaignBanner, type CampaignBannerProps } from './campaign';
 export { readEntitlementError, type EntitlementDenial } from './entitlements';
